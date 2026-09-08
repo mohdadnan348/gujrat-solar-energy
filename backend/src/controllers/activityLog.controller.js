@@ -66,6 +66,7 @@ const getActivityLog = async (req, res, next) => {
   }
 };
 
+
 /**
  * Get activity logs
  */
