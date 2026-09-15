@@ -1,0 +1,234 @@
+.admin-create-leave-page {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.admin-create-leave-loading {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #64748b;
+}
+
+.admin-create-leave-loading p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Header */
+
+.admin-create-leave-header {
+  margin-bottom: 24px;
+}
+
+.admin-create-leave-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.admin-create-leave-breadcrumb a {
+  color: #0f766e;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-create-leave-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.admin-create-leave-header h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.admin-create-leave-header p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Alerts */
+
+.admin-create-leave-alert {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  margin-bottom: 18px;
+  padding: 11px 15px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-create-leave-alert.error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.admin-create-leave-alert.success {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+/* Form */
+
+.admin-create-leave-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-create-leave-card {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.admin-create-leave-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.admin-create-leave-card-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 17px;
+  line-height: 1.4;
+  font-weight: 750;
+}
+
+.admin-create-leave-card-header p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-create-leave-card-body {
+  padding: 22px;
+}
+
+/* Form Grid */
+
+.admin-create-leave-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 22px;
+}
+
+.admin-create-leave-field {
+  min-width: 0;
+}
+
+.admin-create-leave-textarea-field {
+  margin-bottom: 20px;
+}
+
+.admin-create-leave-textarea-field:last-child {
+  margin-bottom: 0;
+}
+
+/* Date Inputs */
+
+.admin-create-leave-field input[type="date"] {
+  cursor: pointer;
+}
+
+/* Readonly Days */
+
+.admin-create-leave-field input[readonly] {
+  cursor: default;
+  background: #f8fafc;
+  color: #475569;
+}
+
+/* Actions */
+
+.admin-create-leave-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+.admin-create-leave-actions button {
+  min-width: 150px;
+}
+
+/* Responsive */
+
+@media (max-width: 800px) {
+  .admin-create-leave-page {
+    padding: 18px;
+  }
+
+  .admin-create-leave-form-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .admin-create-leave-header h1 {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-create-leave-page {
+    padding: 14px;
+  }
+
+  .admin-create-leave-header {
+    margin-bottom: 18px;
+  }
+
+  .admin-create-leave-header h1 {
+    font-size: 22px;
+  }
+
+  .admin-create-leave-header p {
+    font-size: 13px;
+  }
+
+  .admin-create-leave-card-header,
+  .admin-create-leave-card-body {
+    padding: 17px;
+  }
+
+  .admin-create-leave-card-header h2 {
+    font-size: 16px;
+  }
+
+  .admin-create-leave-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .admin-create-leave-actions button {
+    width: 100%;
+    min-width: 0;
+  }
+}

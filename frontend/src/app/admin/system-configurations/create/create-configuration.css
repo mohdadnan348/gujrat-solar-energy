@@ -1,0 +1,373 @@
+.admin-create-configuration-page {
+  width: 100%;
+  min-height: 100%;
+  padding: 24px;
+  background: #f7f9fc;
+  color: #172033;
+}
+
+.admin-create-configuration-loading {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f9fc;
+}
+
+.admin-create-configuration-loading-card {
+  min-height: 280px;
+  padding: 40px 20px;
+  border: 1px solid #e7ebf0;
+  border-radius: 17px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.035);
+}
+
+.admin-create-configuration-loading-card p {
+  margin: 15px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* Header */
+
+.admin-create-configuration-header {
+  margin-bottom: 24px;
+}
+
+.admin-create-configuration-back {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 17px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.admin-create-configuration-back:hover {
+  color: #16a34a;
+}
+
+.admin-create-configuration-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-create-configuration-icon {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: #ffffff;
+  font-size: 25px;
+  box-shadow: 0 9px 22px rgba(34, 197, 94, 0.2);
+}
+
+.admin-create-configuration-title h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 750;
+  letter-spacing: -0.45px;
+}
+
+.admin-create-configuration-title p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Error */
+
+.admin-create-configuration-error {
+  margin-bottom: 20px;
+  padding: 15px 18px;
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+  background: #fff7f7;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.admin-create-configuration-error-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: #fee2e2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.admin-create-configuration-error strong {
+  display: block;
+  color: #991b1b;
+  font-size: 14px;
+}
+
+.admin-create-configuration-error p {
+  margin: 4px 0 0;
+  color: #b91c1c;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* Form */
+
+.admin-create-configuration-form {
+  width: 100%;
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-configuration-form-card {
+  border: 1px solid #e7ebf0;
+  border-radius: 17px;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.035);
+  overflow: hidden;
+}
+
+.admin-configuration-form-card-header {
+  min-height: 77px;
+  padding: 16px 22px;
+  border-bottom: 1px solid #edf0f3;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.admin-form-section-number {
+  width: 39px;
+  height: 39px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: #ecfdf3;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.admin-configuration-form-card-header h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 16px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.admin-configuration-form-card-header p {
+  margin: 4px 0 0;
+  color: #8793a5;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.admin-configuration-form-grid {
+  padding: 22px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 22px;
+}
+
+.admin-configuration-form-grid > * {
+  min-width: 0;
+}
+
+.admin-configuration-textarea {
+  padding: 22px;
+}
+
+/* Panel count */
+
+.admin-panel-count-field {
+  position: relative;
+  min-width: 0;
+}
+
+.admin-panel-count-field > .admin-calculate-button {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  height: 40px;
+  padding: 0 13px;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.admin-panel-count-field > .admin-calculate-button:hover {
+  border-color: #86efac;
+  background: #dcfce7;
+}
+
+.admin-panel-count-field > .admin-calculate-button:active {
+  transform: scale(0.98);
+}
+
+/* Actions */
+
+.admin-create-configuration-actions {
+  padding: 18px 20px;
+  border: 1px solid #e7ebf0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.035);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Select fallback styling */
+
+.admin-create-configuration-form select {
+  max-width: 100%;
+}
+
+/* Focus accessibility */
+
+.admin-create-configuration-page button:focus-visible,
+.admin-create-configuration-page input:focus-visible,
+.admin-create-configuration-page select:focus-visible,
+.admin-create-configuration-page textarea:focus-visible {
+  outline: 3px solid rgba(34, 197, 94, 0.18);
+  outline-offset: 1px;
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .admin-create-configuration-page {
+    padding: 20px;
+  }
+
+  .admin-create-configuration-form {
+    max-width: none;
+  }
+
+  .admin-configuration-form-grid {
+    gap: 18px;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-create-configuration-page {
+    padding: 15px;
+  }
+
+  .admin-create-configuration-title {
+    align-items: flex-start;
+  }
+
+  .admin-create-configuration-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    font-size: 21px;
+  }
+
+  .admin-create-configuration-title h1 {
+    font-size: 21px;
+  }
+
+  .admin-create-configuration-title p {
+    font-size: 12px;
+  }
+
+  .admin-configuration-form-grid {
+    grid-template-columns: 1fr;
+    padding: 18px;
+    gap: 17px;
+  }
+
+  .admin-configuration-textarea {
+    padding: 18px;
+  }
+
+  .admin-configuration-form-card-header {
+    padding: 15px 18px;
+  }
+
+  .admin-create-configuration-actions {
+    padding: 15px;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .admin-create-configuration-actions button {
+    width: 100%;
+  }
+
+  .admin-panel-count-field > .admin-calculate-button {
+    right: 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .admin-create-configuration-page {
+    padding: 12px;
+  }
+
+  .admin-create-configuration-back {
+    margin-bottom: 13px;
+    font-size: 12px;
+  }
+
+  .admin-configuration-form-card-header {
+    align-items: flex-start;
+  }
+
+  .admin-form-section-number {
+    width: 35px;
+    height: 35px;
+    border-radius: 9px;
+  }
+
+  .admin-configuration-form-card-header h2 {
+    font-size: 15px;
+  }
+
+  .admin-configuration-form-card-header p {
+    font-size: 11px;
+  }
+
+  .admin-create-configuration-error {
+    padding: 13px;
+  }
+}

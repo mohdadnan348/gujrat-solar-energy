@@ -1,0 +1,144 @@
+.lead-filters {
+  width: 100%;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.lead-filters-row {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.7fr) repeat(5, minmax(130px, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+.lead-filter-search,
+.lead-filter-field {
+  min-width: 0;
+}
+
+.lead-filters-custom-date {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+  max-width: 520px;
+}
+
+.lead-filters-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #eef2f7;
+}
+
+.lead-filters-actions button {
+  min-width: 115px;
+}
+
+/* Compact variant */
+
+.lead-filters-compact {
+  padding: 14px;
+  border-radius: 12px;
+}
+
+.lead-filters-compact .lead-filters-row {
+  grid-template-columns:
+    minmax(220px, 1.6fr)
+    repeat(4, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.lead-filters-compact .lead-filters-actions {
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+/* Input focus */
+
+.lead-filters input:focus,
+.lead-filters select:focus {
+  border-color: #22c55e;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+}
+
+/* Tablet */
+
+@media (max-width: 1200px) {
+  .lead-filters-row {
+    grid-template-columns:
+      repeat(3, minmax(160px, 1fr));
+  }
+
+  .lead-filter-search {
+    grid-column: 1 / -1;
+  }
+
+  .lead-filters-compact .lead-filters-row {
+    grid-template-columns:
+      repeat(3, minmax(150px, 1fr));
+  }
+
+  .lead-filters-compact .lead-filter-search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .lead-filters {
+    padding: 16px;
+    border-radius: 13px;
+  }
+
+  .lead-filters-row,
+  .lead-filters-compact .lead-filters-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .lead-filter-search {
+    grid-column: 1 / -1;
+  }
+
+  .lead-filters-custom-date {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+
+  .lead-filters-actions {
+    justify-content: stretch;
+  }
+
+  .lead-filters-actions button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .lead-filters {
+    padding: 14px;
+  }
+
+  .lead-filters-row,
+  .lead-filters-compact .lead-filters-row {
+    grid-template-columns: 1fr;
+  }
+
+  .lead-filter-search {
+    grid-column: auto;
+  }
+
+  .lead-filters-actions {
+    flex-direction: column;
+  }
+
+  .lead-filters-actions button {
+    width: 100%;
+  }
+}

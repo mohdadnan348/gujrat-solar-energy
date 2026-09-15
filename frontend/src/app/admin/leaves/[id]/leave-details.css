@@ -1,0 +1,504 @@
+.admin-leave-details-page {
+  width: 100%;
+  padding: 24px;
+}
+
+.admin-leave-details-loading {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #64748b;
+}
+
+.admin-leave-details-loading p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Header */
+
+.admin-leave-details-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.admin-leave-details-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.admin-leave-details-breadcrumb a {
+  color: #0f766e;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-leave-details-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.admin-leave-details-back {
+  display: block;
+  margin-bottom: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #475569;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.admin-leave-details-back:hover {
+  color: #0f766e;
+  transform: translateX(-2px);
+}
+
+.admin-leave-details-heading {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.admin-leave-details-avatar {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0f766e, #14b8a6);
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(15, 118, 110, 0.18);
+}
+
+.admin-leave-details-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-leave-details-title-row h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.admin-leave-details-heading p {
+  margin: 6px 0 0;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.admin-leave-details-employee-id {
+  display: block;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.admin-leave-details-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
+  flex-shrink: 0;
+}
+
+/* Errors */
+
+.admin-leave-details-action-error {
+  margin-bottom: 20px;
+  padding: 13px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-leave-details-error-page {
+  min-height: 65vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.admin-leave-details-error-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 18px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.admin-leave-details-error-page h2 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 750;
+}
+
+.admin-leave-details-error-page p {
+  max-width: 460px;
+  margin: 0 0 22px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Main Layout */
+
+.admin-leave-details-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+.admin-leave-details-main,
+.admin-leave-details-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Cards */
+
+.admin-leave-details-card {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.admin-leave-details-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 19px 22px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.admin-leave-details-card-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 17px;
+  line-height: 1.4;
+  font-weight: 750;
+}
+
+.admin-leave-details-card-header p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-leave-details-card-body {
+  padding: 22px;
+}
+
+/* Leave Information */
+
+.admin-leave-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 28px;
+}
+
+.admin-leave-info-item {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.admin-leave-info-item > span {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+}
+
+.admin-leave-info-item > strong {
+  color: #1e293b;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+/* Reason */
+
+.admin-leave-reason {
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Notes */
+
+.admin-leave-notes {
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Action Information */
+
+.admin-leave-action-info {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.admin-leave-action-info > div {
+  padding: 15px 16px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.admin-leave-action-info span {
+  display: block;
+  margin-bottom: 7px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.admin-leave-action-info p {
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Summary */
+
+.admin-leave-summary {
+  padding: 4px 22px 18px;
+}
+
+.admin-leave-summary > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 0;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.admin-leave-summary > div:last-child {
+  border-bottom: 0;
+}
+
+.admin-leave-summary span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-leave-summary strong {
+  max-width: 60%;
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* Record Information */
+
+.admin-leave-record-info {
+  padding: 4px 22px 18px;
+}
+
+.admin-leave-record-info > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 15px 0;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.admin-leave-record-info > div:last-child {
+  border-bottom: 0;
+}
+
+.admin-leave-record-info span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.admin-leave-record-info strong {
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+/* Responsive */
+
+@media (max-width: 1100px) {
+  .admin-leave-details-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-leave-details-sidebar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+@media (max-width: 850px) {
+  .admin-leave-details-page {
+    padding: 18px;
+  }
+
+  .admin-leave-details-header {
+    flex-direction: column;
+  }
+
+  .admin-leave-details-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .admin-leave-details-sidebar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .admin-leave-details-page {
+    padding: 14px;
+  }
+
+  .admin-leave-details-heading {
+    align-items: flex-start;
+  }
+
+  .admin-leave-details-avatar {
+    width: 50px;
+    height: 50px;
+    flex-basis: 50px;
+    border-radius: 14px;
+    font-size: 15px;
+  }
+
+  .admin-leave-details-title-row h1 {
+    font-size: 22px;
+  }
+
+  .admin-leave-details-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-leave-details-actions > * {
+    width: 100%;
+  }
+
+  .admin-leave-details-card-header,
+  .admin-leave-details-card-body {
+    padding: 17px;
+  }
+
+  .admin-leave-summary,
+  .admin-leave-record-info {
+    padding-left: 17px;
+    padding-right: 17px;
+  }
+
+  .admin-leave-info-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .admin-leave-summary > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-leave-summary strong {
+    max-width: 100%;
+    text-align: left;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-leave-details-breadcrumb {
+    font-size: 12px;
+  }
+
+  .admin-leave-details-back {
+    font-size: 12px;
+  }
+
+  .admin-leave-details-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+}

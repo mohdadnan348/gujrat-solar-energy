@@ -13,163 +13,70 @@ const {
   updateTaxSettings,
 } = require("../controllers/setting.controller");
 
-const {
-  protect,
-} = require("../middleware/auth.middleware");
-
-const {
-  allowRoles,
-} = require("../middleware/role.middleware");
+const { protect } = require("../middleware/auth.middleware");
+const { allowRoles } = require("../middleware/role.middleware");
 
 const router = express.Router();
 
-/*
-|--------------------------------------------------------------------------
-| Authentication
-|--------------------------------------------------------------------------
-*/
-
 router.use(protect);
-
-/*
-|--------------------------------------------------------------------------
-| Get Settings
-|--------------------------------------------------------------------------
-| GET /api/settings
-|--------------------------------------------------------------------------
-*/
 
 router.get(
   "/",
-  allowRoles("Admin", "Manager", "HR"),
+  allowRoles("ADMIN", "MANAGER", "HR"),
   getSettings
 );
 
-/*
-|--------------------------------------------------------------------------
-| Get Document Settings
-|--------------------------------------------------------------------------
-| GET /api/settings/document
-|--------------------------------------------------------------------------
-| PDF generation ke liye company/proposal/invoice settings
-|--------------------------------------------------------------------------
-*/
-
 router.get(
   "/document",
-  allowRoles("Admin", "Manager"),
+  allowRoles("ADMIN", "MANAGER"),
   getDocumentSettings
 );
 
-/*
-|--------------------------------------------------------------------------
-| Update All Settings
-|--------------------------------------------------------------------------
-| PUT /api/settings
-|--------------------------------------------------------------------------
-*/
-
 router.put(
   "/",
-  allowRoles("Admin"),
+  allowRoles("ADMIN"),
   updateSettings
 );
 
-/*
-|--------------------------------------------------------------------------
-| Company Information
-|--------------------------------------------------------------------------
-| PUT /api/settings/company
-|--------------------------------------------------------------------------
-*/
-
 router.put(
   "/company",
-  allowRoles("Admin"),
+  allowRoles("ADMIN"),
   updateCompany
 );
 
-/*
-|--------------------------------------------------------------------------
-| Bank Details
-|--------------------------------------------------------------------------
-| PUT /api/settings/bank
-|--------------------------------------------------------------------------
-*/
-
 router.put(
   "/bank",
-  allowRoles("Admin"),
+  allowRoles("ADMIN"),
   updateBankDetails
 );
 
-/*
-|--------------------------------------------------------------------------
-| Authorized Signature
-|--------------------------------------------------------------------------
-| PUT /api/settings/signature
-|--------------------------------------------------------------------------
-*/
-
 router.put(
   "/signature",
-  allowRoles("Admin"),
+  allowRoles("ADMIN"),
   updateSignature
 );
 
-/*
-|--------------------------------------------------------------------------
-| Proposal Settings
-|--------------------------------------------------------------------------
-| PUT /api/settings/proposal
-|--------------------------------------------------------------------------
-*/
-
 router.put(
   "/proposal",
-  allowRoles("Admin"),
+  allowRoles("ADMIN"),
   updateProposalSettings
 );
 
-/*
-|--------------------------------------------------------------------------
-| Quotation Settings
-|--------------------------------------------------------------------------
-| PUT /api/settings/quotation
-|--------------------------------------------------------------------------
-*/
-
 router.put(
   "/quotation",
-  allowRoles("Admin"),
+  allowRoles("ADMIN"),
   updateQuotationSettings
 );
 
-/*
-|--------------------------------------------------------------------------
-| Invoice Settings
-|--------------------------------------------------------------------------
-| PUT /api/settings/invoice
-|--------------------------------------------------------------------------
-*/
-
 router.put(
   "/invoice",
-  allowRoles("Admin"),
+  allowRoles("ADMIN"),
   updateInvoiceSettings
 );
 
-/*
-|--------------------------------------------------------------------------
-| Tax Settings
-|--------------------------------------------------------------------------
-| PUT /api/settings/tax
-|--------------------------------------------------------------------------
-*/
-
 router.put(
   "/tax",
-  allowRoles("Admin"),
+  allowRoles("ADMIN"),
   updateTaxSettings
 );
 

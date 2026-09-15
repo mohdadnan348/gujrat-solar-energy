@@ -1,0 +1,332 @@
+.gse-recent-quotations {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+}
+
+/* Header */
+.gse-recent-quotations-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.gse-recent-quotations-header h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.gse-recent-quotations-header p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* View All */
+.gse-recent-quotations-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    color 0.2s ease,
+    gap 0.2s ease;
+}
+
+.gse-recent-quotations-view-all:hover {
+  color: #166534;
+  gap: 9px;
+}
+
+.gse-recent-quotations-view-all span {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* List */
+.gse-recent-quotations-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Quotation Row */
+.gse-recent-quotation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 20px;
+  padding: 17px 22px;
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid #f1f5f9;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.gse-recent-quotation:last-child {
+  border-bottom: none;
+}
+
+.gse-recent-quotation:hover {
+  background: #f8fafc;
+}
+
+/* Main */
+.gse-recent-quotation-main {
+  min-width: 0;
+}
+
+.gse-recent-quotation-number {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gse-recent-quotation-customer {
+  margin-top: 4px;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Amount */
+.gse-recent-quotation-amount {
+  color: #166534;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Empty State */
+.gse-recent-quotations-empty {
+  display: flex;
+  min-height: 190px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  text-align: center;
+}
+
+.gse-recent-quotations-empty-icon {
+  display: flex;
+  width: 54px;
+  height: 54px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 14px;
+}
+
+.gse-recent-quotations-empty strong {
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.gse-recent-quotations-empty span {
+  margin-top: 5px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* Loading Skeleton */
+.gse-recent-quotations-title-skeleton {
+  width: 145px;
+  height: 17px;
+  border-radius: 5px;
+  background: #e2e8f0;
+  animation: gseQuotationSkeleton 1.5s ease-in-out infinite;
+}
+
+.gse-recent-quotations-subtitle-skeleton {
+  width: 220px;
+  height: 12px;
+  margin-top: 7px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  animation: gseQuotationSkeleton 1.5s ease-in-out infinite;
+}
+
+.gse-recent-quotations-link-skeleton {
+  width: 65px;
+  height: 14px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  animation: gseQuotationSkeleton 1.5s ease-in-out infinite;
+}
+
+.gse-recent-quotation-skeleton {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 20px;
+  padding: 17px 22px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.gse-recent-quotation-skeleton:last-child {
+  border-bottom: none;
+}
+
+.gse-recent-quotation-main-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.gse-recent-quotation-main-skeleton span:first-child {
+  width: 125px;
+  height: 13px;
+  border-radius: 4px;
+  background: #e2e8f0;
+}
+
+.gse-recent-quotation-main-skeleton span:last-child {
+  width: 95px;
+  height: 10px;
+  border-radius: 4px;
+  background: #f1f5f9;
+}
+
+.gse-recent-quotation-amount-skeleton {
+  width: 85px;
+  height: 14px;
+  border-radius: 4px;
+  background: #e2e8f0;
+}
+
+.gse-recent-quotation-status-skeleton {
+  width: 62px;
+  height: 24px;
+  border-radius: 999px;
+  background: #f1f5f9;
+}
+
+@keyframes gseQuotationSkeleton {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Tablet */
+@media (max-width: 768px) {
+  .gse-recent-quotations-header {
+    padding: 18px;
+  }
+
+  .gse-recent-quotation {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 15px 18px;
+  }
+
+  .gse-recent-quotation-amount {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .gse-recent-quotation .gse-badge {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+  }
+
+  .gse-recent-quotation-main {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+
+  .gse-recent-quotation-skeleton {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 15px 18px;
+  }
+
+  .gse-recent-quotation-main-skeleton {
+    grid-row: 1 / span 2;
+  }
+
+  .gse-recent-quotation-amount-skeleton {
+    grid-column: 2;
+  }
+
+  .gse-recent-quotation-status-skeleton {
+    grid-column: 2;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .gse-recent-quotations {
+    border-radius: 13px;
+  }
+
+  .gse-recent-quotations-header {
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  .gse-recent-quotations-header h3 {
+    font-size: 15px;
+  }
+
+  .gse-recent-quotations-header p {
+    font-size: 11px;
+  }
+
+  .gse-recent-quotations-view-all {
+    font-size: 12px;
+  }
+
+  .gse-recent-quotation {
+    padding: 14px 16px;
+  }
+
+  .gse-recent-quotation-number {
+    font-size: 13px;
+  }
+
+  .gse-recent-quotation-customer {
+    font-size: 11px;
+  }
+
+  .gse-recent-quotation-amount {
+    font-size: 12px;
+  }
+
+  .gse-recent-quotations-empty {
+    min-height: 170px;
+  }
+}

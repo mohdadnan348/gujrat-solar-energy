@@ -1,0 +1,261 @@
+.gse-button {
+  --button-primary: #16a34a;
+  --button-primary-hover: #15803d;
+  --button-danger: #dc2626;
+  --button-danger-hover: #b91c1c;
+  --button-warning: #d97706;
+  --button-warning-hover: #b45309;
+  --button-success: #16a34a;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  border: 1px solid transparent;
+  border-radius: 9px;
+
+  font-family: inherit;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+
+  outline: none;
+}
+
+.gse-button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+}
+
+.gse-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.gse-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =========================
+   Sizes
+========================= */
+
+.gse-button-small {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.gse-button-medium {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.gse-button-large {
+  min-height: 46px;
+  padding: 0 20px;
+  font-size: 15px;
+}
+
+/* =========================
+   Primary
+========================= */
+
+.gse-button-primary {
+  color: #ffffff;
+  background: var(--button-primary);
+  border-color: var(--button-primary);
+}
+
+.gse-button-primary:hover:not(:disabled) {
+  background: var(--button-primary-hover);
+  border-color: var(--button-primary-hover);
+  box-shadow: 0 5px 14px rgba(22, 163, 74, 0.2);
+}
+
+/* =========================
+   Secondary
+========================= */
+
+.gse-button-secondary {
+  color: #1f2937;
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+}
+
+.gse-button-secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+/* =========================
+   Success
+========================= */
+
+.gse-button-success {
+  color: #ffffff;
+  background: var(--button-success);
+  border-color: var(--button-success);
+}
+
+.gse-button-success:hover:not(:disabled) {
+  background: #15803d;
+  border-color: #15803d;
+  box-shadow: 0 5px 14px rgba(22, 163, 74, 0.2);
+}
+
+/* =========================
+   Danger
+========================= */
+
+.gse-button-danger {
+  color: #ffffff;
+  background: var(--button-danger);
+  border-color: var(--button-danger);
+}
+
+.gse-button-danger:hover:not(:disabled) {
+  background: var(--button-danger-hover);
+  border-color: var(--button-danger-hover);
+  box-shadow: 0 5px 14px rgba(220, 38, 38, 0.18);
+}
+
+/* =========================
+   Warning
+========================= */
+
+.gse-button-warning {
+  color: #ffffff;
+  background: var(--button-warning);
+  border-color: var(--button-warning);
+}
+
+.gse-button-warning:hover:not(:disabled) {
+  background: var(--button-warning-hover);
+  border-color: var(--button-warning-hover);
+}
+
+/* =========================
+   Outline
+========================= */
+
+.gse-button-outline {
+  color: var(--button-primary);
+  background: #ffffff;
+  border-color: #bbf7d0;
+}
+
+.gse-button-outline:hover:not(:disabled) {
+  color: #15803d;
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+/* =========================
+   Ghost
+========================= */
+
+.gse-button-ghost {
+  color: #374151;
+  background: transparent;
+  border-color: transparent;
+}
+
+.gse-button-ghost:hover:not(:disabled) {
+  color: #15803d;
+  background: #f0fdf4;
+}
+
+/* =========================
+   Icon
+========================= */
+
+.gse-button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 18px;
+  height: 18px;
+
+  flex-shrink: 0;
+}
+
+.gse-button-small .gse-button-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.gse-button-large .gse-button-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.gse-button-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* =========================
+   Full Width
+========================= */
+
+.gse-button-full {
+  width: 100%;
+}
+
+/* =========================
+   Loading
+========================= */
+
+.gse-button-loading {
+  pointer-events: none;
+}
+
+.gse-button-spinner {
+  width: 15px;
+  height: 15px;
+
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+
+  animation: gse-button-spin 0.7s linear infinite;
+}
+
+@keyframes gse-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================
+   Responsive
+========================= */
+
+@media (max-width: 640px) {
+  .gse-button-large {
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 14px;
+  }
+
+  .gse-button-medium {
+    min-height: 38px;
+    padding: 0 14px;
+  }
+}

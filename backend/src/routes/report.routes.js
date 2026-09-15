@@ -4,7 +4,6 @@ const {
   getLeadReport,
   getQuotationReport,
   getInvoiceReport,
-  getPaymentReport,
   getTaskReport,
   getAttendanceReport,
   getLeaveReport,
@@ -15,7 +14,6 @@ const {
 
 const { protect } = require("../middleware/auth.middleware");
 const { allowRoles } = require("../middleware/role.middleware");
-
 const { ROLES } = require("../config/constants");
 
 const router = express.Router();
@@ -64,17 +62,6 @@ router.get(
     ROLES.HR
   ),
   getInvoiceReport
-);
-
-// Payment report
-router.get(
-  "/payments",
-  allowRoles(
-    ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
-  ),
-  getPaymentReport
 );
 
 // Task report

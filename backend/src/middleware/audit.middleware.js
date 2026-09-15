@@ -1,48 +1,65 @@
-const AuditLog = require("../models/AuditLog");
+const ActivityLog = require("../models/ActivityLog");
 
-const auditMiddleware = async (req, res, next) => {
-  try {
-    const startTime = Date.now();
-
-    const userId = req.user?.id || req.user?._id || null;
-
+/**
+ * Audit middleware
+ *
+ * Captures the authenticated user's request details.
+ * It stores the audit entry after the response is completed.
+ */
+const auditMiddleware = (options = {}) => {
+  return (req, res, next) => {
     const originalSend = res.send;
 
     res.send = function (body) {
       res.send = originalSend;
 
-      const duration = Date.now() - startTime;
+      const shouldLog =
+        options.log !== false &&
+        req.user &&
+        req.method !== "GET";
 
-      const auditData = {
-        user: userId,
-        method: req.method,
-        endpoint: req.originalUrl,
-        ipAddress:
-          req.headers["x-forwarded-for"]?.split(",")[0] ||
-          req.socket?.remoteAddress ||
-          req.ip,
-        userAgent: req.headers["user-agent"],
-        statusCode: res.statusCode,
-        duration,
-      };
+      if (shouldLog) {
+        const action =
+          options.action ||
+          `${req.method} ${req.baseUrl || ""}${req.path || ""}`;
 
-      AuditLog.create(auditData).catch((error) => {
-        console.error("Audit Log Error:", error);
-      });
+        const logData = {
+          user: req.user.userId || req.user._id,
+          action,
+          module:
+            options.module ||
+            req.baseUrl?.split("/").filter(Boolean)[0] ||
+            "system",
+          description:
+            options.description ||
+            `${req.method} request performed on ${req.originalUrl}`,
+          ipAddress:
+            req.ip ||
+            req.headers["x-forwarded-for"] ||
+            req.socket?.remoteAddress,
+          userAgent: req.get("user-agent"),
+          metadata: {
+            method: req.method,
+            url: req.originalUrl,
+            statusCode: res.statusCode,
+            params: req.params,
+            query: req.query,
+          },
+        };
 
-      return originalSend.call(this, body);
-    };
+        ActivityLog.create(logData).catch((error) => {
+          console.error(
+            "Audit log creation failed:",
+            error.message
+          );
+        });
+      }
 
-    req.audit = {
-      startTime,
-      userId,
+      return res.send(body);
     };
 
     next();
-  } catch (error) {
-    console.error("Audit Middleware Error:", error);
-    next();
-  }
+  };
 };
 
 module.exports = auditMiddleware;

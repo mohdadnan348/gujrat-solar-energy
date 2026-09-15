@@ -1,0 +1,368 @@
+.gse-upcoming-tasks {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+}
+
+/* Header */
+.gse-upcoming-tasks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.gse-upcoming-tasks-header h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.gse-upcoming-tasks-header p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* View All */
+.gse-upcoming-tasks-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    color 0.2s ease,
+    gap 0.2s ease;
+}
+
+.gse-upcoming-tasks-view-all:hover {
+  color: #166534;
+  gap: 9px;
+}
+
+.gse-upcoming-tasks-view-all span {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* List */
+.gse-upcoming-tasks-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Task */
+.gse-upcoming-task {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 22px;
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+.gse-upcoming-task:last-child {
+  border-bottom: none;
+}
+
+.gse-upcoming-task:hover {
+  background: #f8fafc;
+}
+
+/* Task Icon */
+.gse-upcoming-task-icon {
+  display: flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 12px;
+}
+
+.gse-upcoming-task-info {
+  min-width: 0;
+}
+
+.gse-upcoming-task-title {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gse-upcoming-task-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.gse-upcoming-task-dot {
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+/* Due Date */
+.gse-upcoming-task-date {
+  display: flex;
+  min-width: 92px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  color: #475569;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.gse-upcoming-task-date-label {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.gse-upcoming-task-date-overdue {
+  color: #dc2626;
+}
+
+.gse-upcoming-task-date-overdue .gse-upcoming-task-date-label {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+/* Empty */
+.gse-upcoming-tasks-empty {
+  display: flex;
+  min-height: 190px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  text-align: center;
+}
+
+.gse-upcoming-tasks-empty-icon {
+  display: flex;
+  width: 54px;
+  height: 54px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 14px;
+}
+
+.gse-upcoming-tasks-empty strong {
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.gse-upcoming-tasks-empty span {
+  margin-top: 5px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* Skeleton */
+.gse-upcoming-tasks-title-skeleton {
+  width: 135px;
+  height: 17px;
+  border-radius: 5px;
+  background: #e2e8f0;
+  animation: gseUpcomingTaskSkeleton 1.5s ease-in-out infinite;
+}
+
+.gse-upcoming-tasks-subtitle-skeleton {
+  width: 190px;
+  height: 12px;
+  margin-top: 7px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  animation: gseUpcomingTaskSkeleton 1.5s ease-in-out infinite;
+}
+
+.gse-upcoming-tasks-link-skeleton {
+  width: 65px;
+  height: 14px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  animation: gseUpcomingTaskSkeleton 1.5s ease-in-out infinite;
+}
+
+.gse-upcoming-task-skeleton {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 22px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.gse-upcoming-task-skeleton:last-child {
+  border-bottom: none;
+}
+
+.gse-upcoming-task-icon-skeleton {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  animation: gseUpcomingTaskSkeleton 1.5s ease-in-out infinite;
+}
+
+.gse-upcoming-task-content-skeleton {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.gse-upcoming-task-content-skeleton span:first-child {
+  width: 150px;
+  max-width: 80%;
+  height: 13px;
+  border-radius: 4px;
+  background: #e2e8f0;
+}
+
+.gse-upcoming-task-content-skeleton span:last-child {
+  width: 100px;
+  height: 10px;
+  border-radius: 4px;
+  background: #f1f5f9;
+}
+
+.gse-upcoming-task-date-skeleton {
+  width: 76px;
+  height: 28px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  animation: gseUpcomingTaskSkeleton 1.5s ease-in-out infinite;
+}
+
+@keyframes gseUpcomingTaskSkeleton {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Tablet */
+@media (max-width: 768px) {
+  .gse-upcoming-tasks-header {
+    padding: 18px;
+  }
+
+  .gse-upcoming-task {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 12px;
+    padding: 15px 18px;
+  }
+
+  .gse-upcoming-task-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .gse-upcoming-task-date {
+    grid-column: 2;
+    grid-row: 2;
+    align-items: flex-start;
+    min-width: 0;
+    flex-direction: row;
+    gap: 5px;
+  }
+
+  .gse-upcoming-task-date-label {
+    font-size: 11px;
+  }
+
+  .gse-upcoming-task-skeleton {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 12px;
+    padding: 15px 18px;
+  }
+
+  .gse-upcoming-task-icon-skeleton {
+    width: 40px;
+    height: 40px;
+  }
+
+  .gse-upcoming-task-date-skeleton {
+    grid-column: 2;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .gse-upcoming-tasks {
+    border-radius: 13px;
+  }
+
+  .gse-upcoming-tasks-header {
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  .gse-upcoming-tasks-header h3 {
+    font-size: 15px;
+  }
+
+  .gse-upcoming-tasks-header p {
+    font-size: 11px;
+  }
+
+  .gse-upcoming-tasks-view-all {
+    font-size: 12px;
+  }
+
+  .gse-upcoming-task {
+    padding: 14px 16px;
+  }
+
+  .gse-upcoming-task-title {
+    font-size: 13px;
+  }
+
+  .gse-upcoming-task-meta {
+    font-size: 11px;
+  }
+
+  .gse-upcoming-task-date {
+    font-size: 11px;
+  }
+
+  .gse-upcoming-tasks-empty {
+    min-height: 170px;
+  }
+}

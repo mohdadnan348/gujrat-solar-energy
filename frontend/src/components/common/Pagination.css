@@ -1,0 +1,207 @@
+/* =========================
+   Pagination
+========================= */
+
+.gse-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  width: 100%;
+
+  padding: 4px 0;
+
+  color: #374151;
+}
+
+/* =========================
+   Page Info
+========================= */
+
+.gse-pagination-info {
+  flex-shrink: 0;
+
+  color: #6b7280;
+
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.gse-pagination-info strong {
+  color: #111827;
+  font-weight: 600;
+}
+
+/* =========================
+   Controls
+========================= */
+
+.gse-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.gse-pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* =========================
+   Buttons
+========================= */
+
+.gse-pagination-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 34px;
+  height: 34px;
+
+  padding: 0 8px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+
+  color: #4b5563;
+  background: #ffffff;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.gse-pagination-button:hover:not(:disabled) {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.gse-pagination-button:focus-visible {
+  outline: 2px solid #16a34a;
+  outline-offset: 2px;
+}
+
+.gse-pagination-button.active {
+  color: #ffffff;
+  background: #16a34a;
+  border-color: #16a34a;
+  box-shadow: 0 2px 5px rgba(22, 163, 74, 0.2);
+}
+
+.gse-pagination-button.active:hover {
+  color: #ffffff;
+  background: #15803d;
+  border-color: #15803d;
+}
+
+.gse-pagination-button:disabled {
+  color: #d1d5db;
+  background: #f9fafb;
+  border-color: #e5e7eb;
+
+  cursor: not-allowed;
+}
+
+/* =========================
+   First / Last
+========================= */
+
+.gse-pagination-first,
+.gse-pagination-last {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* =========================
+   Dots
+========================= */
+
+.gse-pagination-dots {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 26px;
+  height: 34px;
+
+  color: #9ca3af;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  user-select: none;
+}
+
+/* =========================
+   Responsive
+========================= */
+
+@media (max-width: 768px) {
+  .gse-pagination {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .gse-pagination-info {
+    text-align: center;
+  }
+
+  .gse-pagination-controls {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .gse-pagination-controls {
+    gap: 3px;
+  }
+
+  .gse-pagination-pages {
+    gap: 3px;
+  }
+
+  .gse-pagination-button {
+    min-width: 32px;
+    height: 32px;
+
+    padding: 0 6px;
+
+    font-size: 12px;
+  }
+
+  .gse-pagination-first,
+  .gse-pagination-last {
+    display: none;
+  }
+
+  .gse-pagination-dots {
+    min-width: 20px;
+    height: 32px;
+  }
+}
+
+/* =========================
+   Reduced Motion
+========================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .gse-pagination-button {
+    transition: none;
+  }
+}

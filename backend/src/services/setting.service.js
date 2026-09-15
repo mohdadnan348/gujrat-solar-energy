@@ -1,684 +1,142 @@
 const Setting = require("../models/Setting");
 
 const getSettings = async () => {
-  let settings = await Setting.findOne({
+  const settings = await Setting.find({ isActive: true })
+    .sort({ key: 1 })
+    .lean();
+
+  return settings;
+};
+
+const getDocumentSettings = async () => {
+  const settings = await Setting.find({
+    isActive: true,
+    key: {
+      $in: [
+        "company",
+        "quotation",
+        "invoice",
+        "tax",
+        "bank",
+        "signature",
+      ],
+    },
+  })
+    .sort({ key: 1 })
+    .lean();
+
+  return settings;
+};
+
+const getSettingByKey = async (key) => {
+  if (!key) {
+    throw new Error("Setting key is required.");
+  }
+
+  return Setting.findOne({
+    key,
     isActive: true,
   }).lean();
-
-  if (!settings) {
-    settings = await Setting.findOne().lean();
-  }
-
-  return settings;
 };
 
-const getSettingsById = async (
-  settingId
-) => {
-  const settings =
-    await Setting.findById(
-      settingId
-    ).lean();
-
-  if (!settings) {
-    const error = new Error(
-      "Settings not found"
-    );
-    error.statusCode = 404;
-    throw error;
+const upsertSetting = async (key, value, userId = null) => {
+  if (!key) {
+    throw new Error("Setting key is required.");
   }
 
-  return settings;
-};
-
-const createSettings = async (
-  data,
-  userId
-) => {
-  const existing =
-    await Setting.findOne();
-
-  if (existing) {
-    const error = new Error(
-      "Settings already exist. Use update settings instead."
-    );
-    error.statusCode = 409;
-    throw error;
-  }
-
-  const settings =
-    await Setting.create({
-      ...data,
-      createdBy: userId,
-      updatedBy: userId,
-    });
-
-  return settings;
-};
-
-const updateSettings = async (
-  data,
-  userId
-) => {
-  let settings =
-    await Setting.findOne({
-      isActive: true,
-    });
-
-  if (!settings) {
-    settings =
-      await Setting.findOne();
-  }
-
-  if (!settings) {
-    settings =
-      await Setting.create({
-        ...data,
-        createdBy: userId,
-        updatedBy: userId,
-      });
-
-    return settings;
-  }
-
-  const allowedFields = [
-    "company",
-    "companyProfile",
-    "bankDetails",
-    "signature",
-    "leadSources",
-    "leadStatuses",
-    "taskStatuses",
-    "taskPriorities",
-    "productMaster",
-    "taxSettings",
-    "quotationSettings",
-    "proposalSettings",
-    "invoiceSettings",
-    "leaveTypes",
-  ];
-
-  for (const field of allowedFields) {
-    if (
-      data[field] !== undefined
-    ) {
-      settings[field] =
-        data[field];
-    }
-  }
-
-  settings.updatedBy = userId;
-
-  await settings.save();
-
-  return settings;
-};
-
-const updateCompanySettings =
-  async (
-    companyData,
-    userId
-  ) => {
-    let settings =
-      await Setting.findOne({
-        isActive: true,
-      });
-
-    if (!settings) {
-      settings =
-        await Setting.findOne();
-    }
-
-    if (!settings) {
-      settings =
-        await Setting.create({
-          company: companyData,
-          createdBy: userId,
-          updatedBy: userId,
-        });
-
-      return settings;
-    }
-
-    settings.company = {
-      ...(settings.company || {}),
-      ...companyData,
-    };
-
-    settings.updatedBy = userId;
-
-    await settings.save();
-
-    return settings;
-  };
-
-const updateBankDetails =
-  async (
-    bankData,
-    userId
-  ) => {
-    let settings =
-      await Setting.findOne({
-        isActive: true,
-      });
-
-    if (!settings) {
-      settings =
-        await Setting.findOne();
-    }
-
-    if (!settings) {
-      const error = new Error(
-        "Settings not found"
-      );
-      error.statusCode = 404;
-      throw error;
-    }
-
-    settings.bankDetails = {
-      ...(settings.bankDetails || {}),
-      ...bankData,
-    };
-
-    settings.updatedBy = userId;
-
-    await settings.save();
-
-    return settings;
-  };
-
-const updateSignatureSettings =
-  async (
-    signatureData,
-    userId
-  ) => {
-    let settings =
-      await Setting.findOne({
-        isActive: true,
-      });
-
-    if (!settings) {
-      settings =
-        await Setting.findOne();
-    }
-
-    if (!settings) {
-      const error = new Error(
-        "Settings not found"
-      );
-      error.statusCode = 404;
-      throw error;
-    }
-
-    settings.signature = {
-      ...(settings.signature || {}),
-      ...signatureData,
-    };
-
-    settings.updatedBy = userId;
-
-    await settings.save();
-
-    return settings;
-  };
-
-const updateQuotationSettings =
-  async (
-    quotationData,
-    userId
-  ) => {
-    let settings =
-      await Setting.findOne({
-        isActive: true,
-      });
-
-    if (!settings) {
-      settings =
-        await Setting.findOne();
-    }
-
-    if (!settings) {
-      const error = new Error(
-        "Settings not found"
-      );
-      error.statusCode = 404;
-      throw error;
-    }
-
-    settings.quotationSettings = {
-      ...(settings.quotationSettings ||
-        {}),
-      ...quotationData,
-    };
-
-    settings.updatedBy = userId;
-
-    await settings.save();
-
-    return settings;
-  };
-
-const updateProposalSettings =
-  async (
-    proposalData,
-    userId
-  ) => {
-    let settings =
-      await Setting.findOne({
-        isActive: true,
-      });
-
-    if (!settings) {
-      settings =
-        await Setting.findOne();
-    }
-
-    if (!settings) {
-      const error = new Error(
-        "Settings not found"
-      );
-      error.statusCode = 404;
-      throw error;
-    }
-
-    settings.proposalSettings = {
-      ...(settings.proposalSettings ||
-        {}),
-      ...proposalData,
-    };
-
-    settings.updatedBy = userId;
-
-    await settings.save();
-
-    return settings;
-  };
-
-const updateInvoiceSettings =
-  async (
-    invoiceData,
-    userId
-  ) => {
-    let settings =
-      await Setting.findOne({
-        isActive: true,
-      });
-
-    if (!settings) {
-      settings =
-        await Setting.findOne();
-    }
-
-    if (!settings) {
-      const error = new Error(
-        "Settings not found"
-      );
-      error.statusCode = 404;
-      throw error;
-    }
-
-    settings.invoiceSettings = {
-      ...(settings.invoiceSettings ||
-        {}),
-      ...invoiceData,
-    };
-
-    settings.updatedBy = userId;
-
-    await settings.save();
-
-    return settings;
-  };
-
-const updateTaxSettings =
-  async (
-    taxData,
-    userId
-  ) => {
-    let settings =
-      await Setting.findOne({
-        isActive: true,
-      });
-
-    if (!settings) {
-      settings =
-        await Setting.findOne();
-    }
-
-    if (!settings) {
-      const error = new Error(
-        "Settings not found"
-      );
-      error.statusCode = 404;
-      throw error;
-    }
-
-    settings.taxSettings = {
-      ...(settings.taxSettings || {}),
-      ...taxData,
-    };
-
-    settings.updatedBy = userId;
-
-    await settings.save();
-
-    return settings;
-  };
-
-const updateLeadMasters =
-  async (
-    data,
-    userId
-  ) => {
-    let settings =
-      await Setting.findOne({
-        isActive: true,
-      });
-
-    if (!settings) {
-      settings =
-        await Setting.findOne();
-    }
-
-    if (!settings) {
-      const error = new Error(
-        "Settings not found"
-      );
-      error.statusCode = 404;
-      throw error;
-    }
-
-    if (
-      data.leadSources !==
-      undefined
-    ) {
-      settings.leadSources =
-        data.leadSources;
-    }
-
-    if (
-      data.leadStatuses !==
-      undefined
-    ) {
-      settings.leadStatuses =
-        data.leadStatuses;
-    }
-
-    settings.updatedBy = userId;
-
-    await settings.save();
-
-    return settings;
-  };
-
-const updateTaskMasters =
-  async (
-    data,
-    userId
-  ) => {
-    let settings =
-      await Setting.findOne({
-        isActive: true,
-      });
-
-    if (!settings) {
-      settings =
-        await Setting.findOne();
-    }
-
-    if (!settings) {
-      const error = new Error(
-        "Settings not found"
-      );
-      error.statusCode = 404;
-      throw error;
-    }
-
-    if (
-      data.taskStatuses !==
-      undefined
-    ) {
-      settings.taskStatuses =
-        data.taskStatuses;
-    }
-
-    if (
-      data.taskPriorities !==
-      undefined
-    ) {
-      settings.taskPriorities =
-        data.taskPriorities;
-    }
-
-    settings.updatedBy = userId;
-
-    await settings.save();
-
-    return settings;
-  };
-
-const updateProductMaster =
-  async (
-    productMaster,
-    userId
-  ) => {
-    let settings =
-      await Setting.findOne({
-        isActive: true,
-      });
-
-    if (!settings) {
-      settings =
-        await Setting.findOne();
-    }
-
-    if (!settings) {
-      const error = new Error(
-        "Settings not found"
-      );
-      error.statusCode = 404;
-      throw error;
-    }
-
-    settings.productMaster =
-      productMaster;
-
-    settings.updatedBy = userId;
-
-    await settings.save();
-
-    return settings;
-  };
-
-const updateLeaveTypes =
-  async (
-    leaveTypes,
-    userId
-  ) => {
-    let settings =
-      await Setting.findOne({
-        isActive: true,
-      });
-
-    if (!settings) {
-      settings =
-        await Setting.findOne();
-    }
-
-    if (!settings) {
-      const error = new Error(
-        "Settings not found"
-      );
-      error.statusCode = 404;
-      throw error;
-    }
-
-    settings.leaveTypes =
-      leaveTypes;
-
-    settings.updatedBy = userId;
-
-    await settings.save();
-
-    return settings;
-  };
-
-const activateSettings = async (
-  settingId,
-  userId
-) => {
-  const settings =
-    await Setting.findById(
-      settingId
-    );
-
-  if (!settings) {
-    const error = new Error(
-      "Settings not found"
-    );
-    error.statusCode = 404;
-    throw error;
-  }
-
-  await Setting.updateMany(
+  const setting = await Setting.findOneAndUpdate(
+    { key },
     {
-      _id: {
-        $ne: settingId,
-      },
-      isActive: true,
+      key,
+      value,
+      ...(userId ? { updatedBy: userId } : {}),
     },
     {
-      $set: {
-        isActive: false,
-        updatedBy: userId,
-      },
+      new: true,
+      upsert: true,
+      setDefaultsOnInsert: true,
     }
   );
 
-  settings.isActive = true;
-  settings.updatedBy = userId;
-
-  await settings.save();
-
-  return settings;
+  return setting;
 };
 
-const deactivateSettings =
-  async (
-    settingId,
-    userId
-  ) => {
-    const settings =
-      await Setting.findById(
-        settingId
-      );
+const updateSettings = async (settings, userId = null) => {
+  if (!settings || typeof settings !== "object") {
+    throw new Error("Settings data is required.");
+  }
 
-    if (!settings) {
-      const error = new Error(
-        "Settings not found"
-      );
-      error.statusCode = 404;
-      throw error;
-    }
+  const entries = Object.entries(settings);
 
-    settings.isActive = false;
-    settings.updatedBy = userId;
+  if (!entries.length) {
+    throw new Error("At least one setting is required.");
+  }
 
-    await settings.save();
+  const updatedSettings = [];
 
-    return settings;
-  };
+  for (const [key, value] of entries) {
+    const setting = await upsertSetting(
+      key,
+      value,
+      userId
+    );
 
-const getCompanySettings =
-  async () => {
-    const settings =
-      await getSettings();
+    updatedSettings.push(setting);
+  }
 
-    return settings?.company || {};
-  };
-
-const getBankDetails = async () => {
-  const settings =
-    await getSettings();
-
-  return settings?.bankDetails || {};
+  return updatedSettings;
 };
 
-const getSignatureSettings =
-  async () => {
-    const settings =
-      await getSettings();
+const updateCompany = async (data, userId = null) => {
+  return upsertSetting("company", data, userId);
+};
 
-    return settings?.signature || {};
-  };
+const updateBankDetails = async (data, userId = null) => {
+  return upsertSetting("bank", data, userId);
+};
 
-const getQuotationSettings =
-  async () => {
-    const settings =
-      await getSettings();
+const updateSignature = async (data, userId = null) => {
+  return upsertSetting("signature", data, userId);
+};
 
-    return (
-      settings?.quotationSettings || {}
-    );
-  };
+const updateProposalSettings = async (
+  data,
+  userId = null
+) => {
+  return upsertSetting("proposal", data, userId);
+};
 
-const getProposalSettings =
-  async () => {
-    const settings =
-      await getSettings();
+const updateQuotationSettings = async (
+  data,
+  userId = null
+) => {
+  return upsertSetting("quotation", data, userId);
+};
 
-    return (
-      settings?.proposalSettings || {}
-    );
-  };
+const updateInvoiceSettings = async (
+  data,
+  userId = null
+) => {
+  return upsertSetting("invoice", data, userId);
+};
 
-const getInvoiceSettings =
-  async () => {
-    const settings =
-      await getSettings();
-
-    return (
-      settings?.invoiceSettings || {}
-    );
-  };
-
-const getTaxSettings = async () => {
-  const settings =
-    await getSettings();
-
-  return (
-    settings?.taxSettings || {}
-  );
+const updateTaxSettings = async (
+  data,
+  userId = null
+) => {
+  return upsertSetting("tax", data, userId);
 };
 
 module.exports = {
   getSettings,
-  getSettingsById,
-  createSettings,
+  getDocumentSettings,
+  getSettingByKey,
   updateSettings,
-
-  updateCompanySettings,
+  updateCompany,
   updateBankDetails,
-  updateSignatureSettings,
-
-  updateQuotationSettings,
+  updateSignature,
   updateProposalSettings,
+  updateQuotationSettings,
   updateInvoiceSettings,
   updateTaxSettings,
-
-  updateLeadMasters,
-  updateTaskMasters,
-  updateProductMaster,
-  updateLeaveTypes,
-
-  activateSettings,
-  deactivateSettings,
-
-  getCompanySettings,
-  getBankDetails,
-  getSignatureSettings,
-  getQuotationSettings,
-  getProposalSettings,
-  getInvoiceSettings,
-  getTaxSettings,
 };

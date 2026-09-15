@@ -1,0 +1,24 @@
+.manager-layout {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.manager-layout-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 15px;
+}
+
+.manager-layout-content {
+  min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+  .manager-layout {
+    overflow-x: hidden;
+  }
+}

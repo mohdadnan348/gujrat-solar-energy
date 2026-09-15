@@ -1,111 +1,79 @@
 const { body, param } = require("express-validator");
 
 const createUserValidator = [
-  body("name")
+  body("username")
+    .optional()
     .trim()
-    .notEmpty()
-    .withMessage("Name is required")
-    .isLength({ min: 2, max: 100 })
-    .withMessage("Name must be between 2 and 100 characters"),
+    .isLength({ min: 3, max: 50 })
+    .withMessage("Username must be between 3 and 50 characters."),
 
   body("email")
     .trim()
     .notEmpty()
-    .withMessage("Email is required")
+    .withMessage("Email is required.")
     .isEmail()
-    .withMessage("Please provide a valid email address")
+    .withMessage("Please provide a valid email address.")
     .normalizeEmail(),
 
   body("password")
     .notEmpty()
-    .withMessage("Password is required")
+    .withMessage("Password is required.")
     .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters long"),
-
-  body("phone")
-    .optional({ checkFalsy: true })
-    .trim()
-    .matches(/^[0-9]{10}$/)
-    .withMessage("Phone number must be 10 digits"),
+    .withMessage("Password must be at least 6 characters long."),
 
   body("role")
     .optional()
-    .trim()
-    .isIn(["admin", "user"])
-    .withMessage("Role must be either admin or user"),
+    .isIn(["Admin", "Manager", "HR", "Employee"])
+    .withMessage("Invalid user role."),
 
   body("status")
     .optional()
-    .trim()
-    .isIn(["active", "inactive"])
-    .withMessage("Status must be either active or inactive"),
+    .isIn(["ACTIVE", "INACTIVE", "SUSPENDED"])
+    .withMessage("Invalid user status."),
 ];
 
 const updateUserValidator = [
   param("id")
     .isMongoId()
-    .withMessage("Invalid user ID"),
+    .withMessage("Invalid user ID."),
 
-  body("name")
+  body("username")
     .optional()
     .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage("Name must be between 2 and 100 characters"),
+    .isLength({ min: 3, max: 50 })
+    .withMessage("Username must be between 3 and 50 characters."),
 
   body("email")
     .optional()
     .trim()
     .isEmail()
-    .withMessage("Please provide a valid email address")
+    .withMessage("Please provide a valid email address.")
     .normalizeEmail(),
 
   body("password")
     .optional()
     .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters long"),
-
-  body("phone")
-    .optional({ checkFalsy: true })
-    .trim()
-    .matches(/^[0-9]{10}$/)
-    .withMessage("Phone number must be 10 digits"),
+    .withMessage("Password must be at least 6 characters long."),
 
   body("role")
     .optional()
-    .trim()
-    .isIn(["admin", "user"])
-    .withMessage("Role must be either admin or user"),
+    .isIn(["Admin", "Manager", "HR", "Employee"])
+    .withMessage("Invalid user role."),
 
   body("status")
     .optional()
-    .trim()
-    .isIn(["active", "inactive"])
-    .withMessage("Status must be either active or inactive"),
+    .isIn(["ACTIVE", "INACTIVE", "SUSPENDED"])
+    .withMessage("Invalid user status."),
 ];
 
 const userIdValidator = [
   param("id")
     .isMongoId()
-    .withMessage("Invalid user ID"),
-];
-
-const loginUserValidator = [
-  body("email")
-    .trim()
-    .notEmpty()
-    .withMessage("Email is required")
-    .isEmail()
-    .withMessage("Please provide a valid email address")
-    .normalizeEmail(),
-
-  body("password")
-    .notEmpty()
-    .withMessage("Password is required"),
+    .withMessage("Invalid user ID."),
 ];
 
 module.exports = {
   createUserValidator,
   updateUserValidator,
   userIdValidator,
-  loginUserValidator,
 };

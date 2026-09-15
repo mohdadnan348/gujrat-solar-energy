@@ -1,0 +1,351 @@
+.quotation-settings-page {
+  width: 100%;
+  padding: 24px;
+}
+
+.quotation-settings-header {
+  margin-bottom: 24px;
+}
+
+.quotation-settings-header h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.quotation-settings-header p {
+  margin: 7px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Alerts */
+
+.quotation-settings-alert {
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.quotation-settings-error {
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.quotation-settings-success {
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+/* Form */
+
+.quotation-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.quotation-settings-card {
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+}
+
+.quotation-settings-card-header {
+  padding: 20px 22px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.quotation-settings-card-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.quotation-settings-card-header p {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.quotation-settings-card-body {
+  padding: 22px;
+}
+
+/* Fields */
+
+.quotation-settings-grid,
+.quotation-settings-content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.quotation-settings-field {
+  min-width: 0;
+}
+
+.quotation-settings-field.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Display Options */
+
+.quotation-display-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.quotation-display-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 16px;
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.quotation-display-option:hover {
+  background: #f9fffa;
+  border-color: #bbf7d0;
+}
+
+.quotation-display-option input {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  margin: 2px 0 0;
+  accent-color: #16a34a;
+  cursor: pointer;
+}
+
+.quotation-display-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.quotation-display-option strong {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.quotation-display-option small {
+  color: #6b7280;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* Preview */
+
+.quotation-preview {
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.quotation-preview-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 22px;
+  background: #f0fdf4;
+}
+
+.quotation-preview-top > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.quotation-preview-validity {
+  text-align: right;
+}
+
+.quotation-preview-label {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.quotation-preview-top strong {
+  color: #166534;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.quotation-preview-divider {
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.quotation-preview-details {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.quotation-preview-details > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 17px 18px;
+  border-right: 1px solid #f0f1f3;
+}
+
+.quotation-preview-details > div:last-child {
+  border-right: none;
+}
+
+.quotation-preview-details span {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.quotation-preview-details strong {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+/* Actions */
+
+.quotation-settings-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Loading */
+
+.quotation-settings-loading {
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive */
+
+@media (max-width: 1050px) {
+  .quotation-display-options {
+    grid-template-columns: 1fr;
+  }
+
+  .quotation-preview-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quotation-preview-details > div:nth-child(2) {
+    border-right: none;
+  }
+
+  .quotation-preview-details > div:nth-child(-n + 2) {
+    border-bottom: 1px solid #f0f1f3;
+  }
+}
+
+@media (max-width: 760px) {
+  .quotation-settings-page {
+    padding: 18px;
+  }
+
+  .quotation-settings-grid,
+  .quotation-settings-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quotation-settings-field.full-width {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .quotation-settings-page {
+    padding: 14px;
+  }
+
+  .quotation-settings-header h1 {
+    font-size: 23px;
+  }
+
+  .quotation-settings-header p {
+    font-size: 13px;
+  }
+
+  .quotation-settings-card-header {
+    padding: 17px;
+  }
+
+  .quotation-settings-card-body {
+    padding: 17px;
+  }
+
+  .quotation-preview-top {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 17px;
+  }
+
+  .quotation-preview-validity {
+    text-align: left;
+  }
+
+  .quotation-preview-details {
+    grid-template-columns: 1fr;
+  }
+
+  .quotation-preview-details > div {
+    border-right: none !important;
+    border-bottom: 1px solid #f0f1f3 !important;
+  }
+
+  .quotation-preview-details > div:last-child {
+    border-bottom: none !important;
+  }
+
+  .quotation-settings-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
+
+@media print {
+  .quotation-settings-page {
+    padding: 0;
+  }
+
+  .quotation-settings-actions {
+    display: none;
+  }
+
+  .quotation-settings-card {
+    break-inside: avoid;
+  }
+}

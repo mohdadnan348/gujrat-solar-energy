@@ -1,0 +1,124 @@
+/* =========================
+   Confirm Dialog
+========================= */
+
+.gse-confirm-dialog {
+  text-align: center;
+}
+
+/* =========================
+   Content
+========================= */
+
+.gse-confirm-dialog-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 16px;
+
+  padding: 8px 4px 4px;
+}
+
+/* =========================
+   Icon
+========================= */
+
+.gse-confirm-dialog-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 54px;
+  height: 54px;
+
+  flex-shrink: 0;
+
+  color: #dc2626;
+  background: #fee2e2;
+
+  border-radius: 50%;
+}
+
+.gse-confirm-dialog-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+/* =========================
+   Message
+========================= */
+
+.gse-confirm-dialog-message {
+  max-width: 380px;
+
+  margin: 0;
+
+  color: #4b5563;
+
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.6;
+
+  text-align: center;
+}
+
+/* =========================
+   Actions
+========================= */
+
+.gse-confirm-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  width: 100%;
+}
+
+/* =========================
+   Responsive
+========================= */
+
+@media (max-width: 480px) {
+  .gse-confirm-dialog-content {
+    gap: 13px;
+
+    padding-top: 4px;
+  }
+
+  .gse-confirm-dialog-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .gse-confirm-dialog-icon svg {
+    width: 23px;
+    height: 23px;
+  }
+
+  .gse-confirm-dialog-message {
+    font-size: 13px;
+  }
+
+  .gse-confirm-dialog-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .gse-confirm-dialog-actions > * {
+    width: 100%;
+  }
+}
+
+/* =========================
+   Reduced Motion
+========================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .gse-confirm-dialog * {
+    transition: none !important;
+  }
+}

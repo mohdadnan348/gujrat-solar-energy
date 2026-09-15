@@ -1,0 +1,144 @@
+.report-table {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.report-table__wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.report-table table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: collapse;
+}
+
+.report-table th {
+  padding: 13px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.report-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #374151;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.report-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.report-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.report-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.report-table__empty {
+  padding: 0 !important;
+}
+
+.report-table__empty-content {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 240px;
+  padding: 30px;
+  text-align: center;
+}
+
+.report-table__empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 12px;
+  border: 1px solid #bbf7d0;
+  border-radius: 50%;
+  background: #f0fdf4;
+  color: #16a34a;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.report-table__empty-content strong {
+  color: #374151;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.report-table__empty-content p {
+  max-width: 350px;
+  margin: 5px 0 0;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.report-table__footer {
+  padding: 13px 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  text-align: right;
+}
+
+.report-table__footer strong {
+  color: #111827;
+  font-weight: 700;
+}
+
+.report-table--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 260px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.report-table__spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #dcfce7;
+  border-top-color: #16a34a;
+  border-radius: 50%;
+  animation: report-table-spin 0.8s linear infinite;
+}
+
+@keyframes report-table-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .report-table {
+    border-radius: 10px;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: 11px 12px;
+  }
+}

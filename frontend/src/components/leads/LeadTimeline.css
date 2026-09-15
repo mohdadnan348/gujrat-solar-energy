@@ -1,0 +1,259 @@
+.lead-timeline {
+  position: relative;
+  width: 100%;
+  padding: 4px 0;
+}
+
+.lead-timeline-line {
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 18px;
+  width: 2px;
+  background: #dcfce7;
+}
+
+.lead-timeline-item {
+  position: relative;
+  display: flex;
+  gap: 18px;
+  padding-bottom: 24px;
+}
+
+.lead-timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.lead-timeline-marker {
+  position: relative;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid #ffffff;
+  border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 0 1px #bbf7d0;
+}
+
+.lead-timeline-marker span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.lead-timeline-content {
+  min-width: 0;
+  flex: 1;
+  padding: 15px 17px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.lead-timeline-content:hover {
+  border-color: #bbf7d0;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+}
+
+.lead-timeline-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.lead-timeline-heading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.lead-timeline-heading h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.lead-timeline-date {
+  flex: 0 0 auto;
+  color: #94a3b8;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.lead-timeline-description {
+  margin: 10px 0 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.lead-timeline-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 13px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.lead-timeline-meta-separator {
+  color: #cbd5e1;
+}
+
+.lead-timeline-change {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 12px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.lead-timeline-change strong {
+  color: #166534;
+  font-weight: 700;
+}
+
+/* Empty State */
+
+.lead-timeline-empty {
+  min-height: 190px;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px dashed #dbe3ea;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.lead-timeline-empty-icon {
+  width: 42px;
+  height: 42px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f0fdf4;
+  color: #16a34a;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.lead-timeline-empty h3 {
+  margin: 0 0 5px;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.lead-timeline-empty p {
+  max-width: 420px;
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Loading */
+
+.lead-timeline-state {
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.lead-timeline-state p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* Responsive */
+
+@media (max-width: 640px) {
+  .lead-timeline-line {
+    left: 15px;
+  }
+
+  .lead-timeline-item {
+    gap: 12px;
+    padding-bottom: 18px;
+  }
+
+  .lead-timeline-marker {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+  }
+
+  .lead-timeline-marker span {
+    font-size: 11px;
+  }
+
+  .lead-timeline-content {
+    padding: 13px;
+    border-radius: 10px;
+  }
+
+  .lead-timeline-top {
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .lead-timeline-date {
+    white-space: normal;
+  }
+
+  .lead-timeline-meta {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 420px) {
+  .lead-timeline-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .lead-timeline-description {
+    font-size: 12px;
+  }
+
+  .lead-timeline-change {
+    width: 100%;
+  }
+}

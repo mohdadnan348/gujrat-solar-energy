@@ -126,7 +126,7 @@ const invoiceSchema = new mongoose.Schema(
       min: 0,
     },
 
-    totalDiscount: {
+    discount: {
       type: Number,
       default: 0,
       min: 0,
@@ -232,6 +232,11 @@ invoiceSchema.index({
 });
 
 invoiceSchema.index({
+  quotation: 1,
+  invoiceDate: -1,
+});
+
+invoiceSchema.index({
   status: 1,
   invoiceDate: -1,
 });
@@ -240,4 +245,7 @@ invoiceSchema.index({
   createdAt: -1,
 });
 
-module.exports = mongoose.model("Invoice", invoiceSchema);
+module.exports = mongoose.model(
+  "Invoice",
+  invoiceSchema
+);

@@ -1,27 +1,33 @@
 const Customer = require("../models/Customer");
 const Lead = require("../models/Lead");
-const { generateId } = require("../utils/generateId");
+const generateId = require("../utils/generateId");
 
 const buildFilter = ({
-  search,
+  search = "",
   status,
   customerType,
+  lead,
+  city,
+  state,
 }) => {
   const filter = {};
 
-  if (search) {
+  if (search.trim()) {
     filter.$or = [
-      { customerId: { $regex: search, $options: "i" } },
-      { name: { $regex: search, $options: "i" } },
-      { companyName: { $regex: search, $options: "i" } },
-      { mobile: { $regex: search, $options: "i" } },
-      { email: { $regex: search, $options: "i" } },
-      { gstNumber: { $regex: search, $options: "i" } },
+      { customerId: { $regex: search.trim(), $options: "i" } },
+      { name: { $regex: search.trim(), $options: "i" } },
+      { companyName: { $regex: search.trim(), $options: "i" } },
+      { mobile: { $regex: search.trim(), $options: "i" } },
+      { email: { $regex: search.trim(), $options: "i" } },
+      { gstNumber: { $regex: search.trim(), $options: "i" } },
     ];
   }
 
   if (status) filter.status = status;
   if (customerType) filter.customerType = customerType;
+  if (lead) filter.lead = lead;
+  if (city) filter.city = { $regex: city, $options: "i" };
+  if (state) filter.state = { $regex: state, $options: "i" };
 
   return filter;
 };
@@ -57,15 +63,11 @@ const createCustomer = async (data, createdBy) => {
     throw error;
   }
 
-  const customerId = await generateId(
-    Customer,
-    "customerId",
-    "CUS"
-  );
+  const customerId = generateId("CUS");
 
   const customer = await Customer.create({
     customerId,
-    lead: data.lead,
+    lead: data.lead || undefined,
     name: data.name,
     companyName: data.companyName,
     mobile: data.mobile,
@@ -85,9 +87,24 @@ const createCustomer = async (data, createdBy) => {
   });
 
   if (data.lead) {
-    await Lead.findByIdAndUpdate(data.lead, {
-      convertedCustomer: customer._id,
-    });
+    const lead = await Lead.findById(data.lead);
+
+    if (lead) {
+      lead.convertedCustomer = customer._id;
+
+      const statusPath = Lead.schema.path("status");
+
+      if (
+        statusPath &&
+        Array.isArray(statusPath.enumValues) &&
+        statusPath.enumValues.includes("CONVERTED")
+      ) {
+        lead.status = "CONVERTED";
+      }
+
+      lead.updatedBy = createdBy;
+      await lead.save();
+    }
   }
 
   return getCustomerById(customer._id);
@@ -99,15 +116,25 @@ const getCustomers = async ({
   search = "",
   status,
   customerType,
+  lead,
+  city,
+  state,
 }) => {
   const filter = buildFilter({
     search,
     status,
     customerType,
+    lead,
+    city,
+    state,
   });
 
-  const pageNumber = Math.max(Number(page), 1);
-  const limitNumber = Math.max(Number(limit), 1);
+  const pageNumber = Math.max(Number(page) || 1, 1);
+  const limitNumber = Math.min(
+    Math.max(Number(limit) || 10, 1),
+    100
+  );
+
   const skip = (pageNumber - 1) * limitNumber;
 
   const [customers, total] = await Promise.all([
@@ -138,17 +165,13 @@ const getCustomers = async ({
       page: pageNumber,
       limit: limitNumber,
       total,
-      totalPages: Math.ceil(
-        total / limitNumber
-      ),
+      totalPages: Math.ceil(total / limitNumber),
     },
   };
 };
 
 const getCustomerById = async (customerId) => {
-  const customer = await Customer.findById(
-    customerId
-  )
+  const customer = await Customer.findById(customerId)
     .populate(
       "lead",
       "leadId customerName companyName mobile email status"
@@ -171,9 +194,7 @@ const getCustomerById = async (customerId) => {
   return customer;
 };
 
-const getCustomerByCustomerId = async (
-  customerCode
-) => {
+const getCustomerByCustomerId = async (customerCode) => {
   const customer = await Customer.findOne({
     customerId: customerCode,
   })
@@ -204,9 +225,7 @@ const updateCustomer = async (
   data,
   updatedBy
 ) => {
-  const customer = await Customer.findById(
-    customerId
-  );
+  const customer = await Customer.findById(customerId);
 
   if (!customer) {
     const error = new Error("Customer not found");
@@ -214,7 +233,7 @@ const updateCustomer = async (
     throw error;
   }
 
-  if (data.mobile) {
+  if (data.mobile && data.mobile !== customer.mobile) {
     const existingMobile = await Customer.findOne({
       mobile: data.mobile,
       _id: { $ne: customerId },
@@ -238,9 +257,37 @@ const updateCustomer = async (
         error.statusCode = 404;
         throw error;
       }
-    }
 
-    customer.lead = data.lead || undefined;
+      if (
+        lead.convertedCustomer &&
+        String(lead.convertedCustomer) !== String(customer._id)
+      ) {
+        const error = new Error(
+          "This lead is already linked to another customer"
+        );
+        error.statusCode = 409;
+        throw error;
+      }
+
+      lead.convertedCustomer = customer._id;
+      lead.updatedBy = updatedBy;
+
+      const statusPath = Lead.schema.path("status");
+
+      if (
+        statusPath &&
+        Array.isArray(statusPath.enumValues) &&
+        statusPath.enumValues.includes("CONVERTED")
+      ) {
+        lead.status = "CONVERTED";
+      }
+
+      await lead.save();
+
+      customer.lead = lead._id;
+    } else {
+      customer.lead = undefined;
+    }
   }
 
   const allowedFields = [
@@ -279,9 +326,7 @@ const updateCustomerStatus = async (
   status,
   updatedBy
 ) => {
-  const customer = await Customer.findById(
-    customerId
-  );
+  const customer = await Customer.findById(customerId);
 
   if (!customer) {
     const error = new Error("Customer not found");
@@ -290,9 +335,7 @@ const updateCustomerStatus = async (
   }
 
   if (!["Active", "Inactive"].includes(status)) {
-    const error = new Error(
-      "Invalid customer status"
-    );
+    const error = new Error("Invalid customer status");
     error.statusCode = 400;
     throw error;
   }
@@ -305,13 +348,11 @@ const updateCustomerStatus = async (
   return getCustomerById(customer._id);
 };
 
-const deleteCustomer = async (
+const deactivateCustomer = async (
   customerId,
   updatedBy
 ) => {
-  const customer = await Customer.findById(
-    customerId
-  );
+  const customer = await Customer.findById(customerId);
 
   if (!customer) {
     const error = new Error("Customer not found");
@@ -319,17 +360,12 @@ const deleteCustomer = async (
     throw error;
   }
 
-  // Historical records preserve karne ke liye
-  // hard delete nahi kar rahe.
   customer.status = "Inactive";
   customer.updatedBy = updatedBy;
 
   await customer.save();
 
-  return {
-    message:
-      "Customer deactivated successfully",
-  };
+  return customer;
 };
 
 const getCustomersByLead = async (leadId) => {
@@ -346,6 +382,10 @@ const getCustomersByLead = async (leadId) => {
   })
     .populate(
       "createdBy",
+      "username email role"
+    )
+    .populate(
+      "updatedBy",
       "username email role"
     )
     .sort({ createdAt: -1 })
@@ -397,7 +437,7 @@ module.exports = {
   getCustomerByCustomerId,
   updateCustomer,
   updateCustomerStatus,
-  deleteCustomer,
+  deactivateCustomer,
   getCustomersByLead,
   getCustomerStats,
 };

@@ -1,0 +1,296 @@
+.quotation-table-wrapper {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.quotation-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.quotation-table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.quotation-table thead {
+  background: #f8fafc;
+}
+
+.quotation-table th {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.quotation-table td {
+  padding: 15px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.quotation-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.quotation-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.quotation-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.quotation-table-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 150px;
+}
+
+.quotation-table-link {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.quotation-table-link:hover {
+  color: #166534;
+  text-decoration: underline;
+}
+
+.quotation-table-secondary {
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.quotation-table-customer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+}
+
+.quotation-table-customer strong {
+  color: #1e293b;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.quotation-table-customer span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.quotation-table-date {
+  display: inline-block;
+  color: #475569;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.quotation-table-amount-column {
+  text-align: right;
+}
+
+.quotation-table-amount {
+  color: #0f172a !important;
+  font-size: 13px !important;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.quotation-table-actions-column {
+  min-width: 260px;
+}
+
+.quotation-table-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.quotation-table-state {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  text-align: center;
+}
+
+.quotation-table-state h3 {
+  margin: 14px 0 0;
+  color: #1e293b;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.quotation-table-state p {
+  max-width: 430px;
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.quotation-table-state-error {
+  border-color: #fecaca;
+  background: #fffafa;
+}
+
+.quotation-table-state-error h3 {
+  color: #b91c1c;
+}
+
+.quotation-table-state-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f0fdf4;
+  color: #16a34a;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.quotation-table-state-error
+  .quotation-table-state-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.quotation-table-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid #dcfce7;
+  border-top-color: #16a34a;
+  border-radius: 50%;
+  animation: quotation-table-spin 0.8s linear infinite;
+}
+
+@keyframes quotation-table-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.quotation-table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.quotation-table-pagination-info {
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.quotation-table-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quotation-table-page-numbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.quotation-table-page-button {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.quotation-table-page-button:hover {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.quotation-table-page-button-active {
+  border-color: #16a34a;
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.quotation-table-page-button-active:hover {
+  background: #15803d;
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .quotation-table-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .quotation-table-pagination-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .quotation-table-page-numbers {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .quotation-table-pagination-controls {
+    gap: 5px;
+  }
+
+  .quotation-table-page-button {
+    width: 30px;
+    height: 30px;
+  }
+}

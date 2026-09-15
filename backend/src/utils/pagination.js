@@ -1,6 +1,6 @@
 const getPagination = (page = 1, limit = 10) => {
-  const currentPage = Math.max(parseInt(page, 10) || 1, 1);
-  const perPage = Math.max(parseInt(limit, 10) || 10, 1);
+  const currentPage = Math.max(Number(page) || 1, 1);
+  const perPage = Math.min(Math.max(Number(limit) || 10, 1), 100);
 
   const skip = (currentPage - 1) * perPage;
 
@@ -11,24 +11,25 @@ const getPagination = (page = 1, limit = 10) => {
   };
 };
 
-const getPaginationMeta = (totalItems, page, limit) => {
-  const total = Number(totalItems) || 0;
-  const currentPage = Number(page) || 1;
-  const perPage = Number(limit) || 10;
-
-  const totalPages = Math.ceil(total / perPage);
+const getPaginationResponse = ({
+  page,
+  limit,
+  total,
+}) => {
+  const totalItems = Number(total) || 0;
+  const totalPages = Math.ceil(totalItems / limit);
 
   return {
-    totalItems: total,
+    page,
+    limit,
+    total: totalItems,
     totalPages,
-    currentPage,
-    limit: perPage,
-    hasNextPage: currentPage < totalPages,
-    hasPreviousPage: currentPage > 1,
+    hasNextPage: page < totalPages,
+    hasPreviousPage: page > 1,
   };
 };
 
 module.exports = {
   getPagination,
-  getPaginationMeta,
+  getPaginationResponse,
 };

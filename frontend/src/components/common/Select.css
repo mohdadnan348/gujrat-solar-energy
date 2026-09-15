@@ -1,0 +1,200 @@
+.gse-select-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.gse-select-full {
+  width: 100%;
+}
+
+/* =========================
+   Label
+========================= */
+
+.gse-select-label {
+  display: block;
+  margin: 0;
+
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.gse-select-required {
+  margin-left: 3px;
+  color: #dc2626;
+}
+
+/* =========================
+   Select Container
+========================= */
+
+.gse-select-container {
+  position: relative;
+  width: 100%;
+}
+
+/* =========================
+   Select Field
+========================= */
+
+.gse-select-field {
+  width: 100%;
+
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+
+  outline: none;
+  background-color: #ffffff;
+  color: #111827;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+
+  cursor: pointer;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.gse-select-field:hover:not(:disabled) {
+  border-color: #9ca3af;
+}
+
+.gse-select-field:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+.gse-select-field:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.gse-select-placeholder {
+  color: #9ca3af;
+}
+
+/* =========================
+   Sizes
+========================= */
+
+.gse-select-small {
+  min-height: 36px;
+  padding: 0 38px 0 11px;
+  font-size: 13px;
+}
+
+.gse-select-medium {
+  min-height: 42px;
+  padding: 0 42px 0 13px;
+  font-size: 14px;
+}
+
+.gse-select-large {
+  min-height: 48px;
+  padding: 0 44px 0 15px;
+  font-size: 15px;
+}
+
+/* =========================
+   Dropdown Arrow
+========================= */
+
+.gse-select-arrow {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 20px;
+  height: 20px;
+
+  color: #6b7280;
+
+  pointer-events: none;
+  transform: translateY(-50%);
+
+  transition: color 0.2s ease;
+}
+
+.gse-select-container:focus-within .gse-select-arrow {
+  color: #16a34a;
+}
+
+/* =========================
+   Error State
+========================= */
+
+.gse-select-field.gse-select-error {
+  border-color: #dc2626;
+}
+
+.gse-select-field.gse-select-error:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.gse-select-container:has(.gse-select-error) .gse-select-arrow {
+  color: #dc2626;
+}
+
+/* =========================
+   Messages
+========================= */
+
+.gse-select-message {
+  margin: 0;
+
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.gse-select-error-message {
+  color: #dc2626;
+}
+
+/* =========================
+   Option Styling
+========================= */
+
+.gse-select-field option {
+  color: #111827;
+  background: #ffffff;
+}
+
+.gse-select-field option:disabled {
+  color: #9ca3af;
+}
+
+/* =========================
+   Responsive
+========================= */
+
+@media (max-width: 640px) {
+  .gse-select-medium {
+    min-height: 40px;
+  }
+
+  .gse-select-large {
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  .gse-select-label {
+    font-size: 13px;
+  }
+}

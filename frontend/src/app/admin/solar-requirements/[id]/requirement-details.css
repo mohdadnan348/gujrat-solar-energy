@@ -1,0 +1,564 @@
+.admin-requirement-details-page {
+  width: 100%;
+  min-height: 100%;
+  padding: 24px;
+  background: #f7f9fc;
+  color: #172033;
+}
+
+.admin-requirement-details-loading {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f9fc;
+}
+
+/* Header */
+
+.admin-requirement-details-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.admin-requirement-back {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin-bottom: 16px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.admin-requirement-back:hover {
+  color: #16a34a;
+}
+
+.admin-requirement-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-requirement-icon {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: #ffffff;
+  font-size: 25px;
+  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.2);
+}
+
+.admin-requirement-title-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-requirement-title-row h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 750;
+  letter-spacing: -0.4px;
+}
+
+.admin-requirement-title-row p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.admin-requirement-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Summary */
+
+.admin-requirement-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-requirement-summary-card {
+  min-height: 118px;
+  padding: 20px;
+  border: 1px solid #e7ebf0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.admin-requirement-summary-card span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-requirement-summary-card strong {
+  margin-top: 14px;
+  color: #111827;
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 750;
+}
+
+/* Main Layout */
+
+.admin-requirement-details-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 20px;
+  align-items: start;
+}
+
+.admin-requirement-main,
+.admin-requirement-sidebar {
+  min-width: 0;
+}
+
+.admin-requirement-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-requirement-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Cards */
+
+.admin-requirement-detail-card {
+  border: 1px solid #e7ebf0;
+  border-radius: 17px;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.035);
+  overflow: hidden;
+}
+
+.admin-requirement-card-header {
+  padding: 20px 22px;
+  border-bottom: 1px solid #edf0f3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-requirement-card-header h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.admin-requirement-card-header p {
+  margin: 5px 0 0;
+  color: #7b8798;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Detail Grid */
+
+.admin-requirement-detail-grid {
+  padding: 4px 22px 20px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 34px;
+}
+
+.admin-requirement-detail-grid > div {
+  min-width: 0;
+  padding: 17px 0;
+  border-bottom: 1px solid #f0f2f5;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.admin-requirement-detail-grid > div:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.admin-requirement-detail-grid span,
+.admin-requirement-summary-list span,
+.admin-record-info span {
+  color: #7b8798;
+  font-size: 11px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+}
+
+.admin-requirement-detail-grid strong {
+  color: #273244;
+  font-size: 14px;
+  line-height: 1.55;
+  font-weight: 650;
+  word-break: break-word;
+}
+
+.admin-requirement-detail-full {
+  grid-column: 1 / -1;
+}
+
+.admin-requirement-detail-grid > .admin-requirement-detail-full:last-child {
+  border-bottom: 0;
+}
+
+/* Notes */
+
+.admin-requirement-notes {
+  padding: 21px 22px;
+}
+
+.admin-requirement-notes p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.admin-requirement-notes span {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* Sidebar */
+
+.admin-requirement-sidebar .admin-requirement-detail-card {
+  width: 100%;
+}
+
+.admin-requirement-summary-list {
+  padding: 4px 20px 16px;
+}
+
+.admin-requirement-summary-list > div {
+  min-width: 0;
+  padding: 14px 0;
+  border-bottom: 1px solid #f0f2f5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-requirement-summary-list > div:last-child {
+  border-bottom: 0;
+}
+
+.admin-requirement-summary-list strong {
+  color: #273244;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 650;
+  word-break: break-word;
+}
+
+/* Linked Lead */
+
+.admin-linked-lead {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.admin-linked-lead-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #ecfdf3;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.admin-linked-lead > div:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-linked-lead span {
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+}
+
+.admin-linked-lead strong {
+  color: #273244;
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.admin-linked-lead small {
+  color: #64748b;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* Record Information */
+
+.admin-record-info {
+  padding: 5px 20px 16px;
+}
+
+.admin-record-info > div {
+  padding: 14px 0;
+  border-bottom: 1px solid #f0f2f5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-record-info > div:last-child {
+  border-bottom: 0;
+}
+
+.admin-record-info strong {
+  color: #273244;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* Error */
+
+.admin-requirement-details-error {
+  max-width: 650px;
+  margin: 70px auto;
+  padding: 40px 30px;
+  border: 1px solid #e7ebf0;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
+  text-align: center;
+}
+
+.admin-requirement-error-icon {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.admin-requirement-details-error h2 {
+  margin: 0 0 8px;
+  color: #172033;
+  font-size: 20px;
+}
+
+.admin-requirement-details-error p {
+  margin: 0 auto;
+  max-width: 480px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.admin-requirement-error-actions {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Bottom */
+
+.admin-requirement-bottom-actions {
+  margin-top: 22px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Responsive */
+
+@media (max-width: 1180px) {
+  .admin-requirement-details-layout {
+    grid-template-columns: minmax(0, 1fr) 290px;
+  }
+
+  .admin-requirement-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-requirement-details-page {
+    padding: 20px;
+  }
+
+  .admin-requirement-details-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-requirement-header-actions {
+    justify-content: flex-start;
+  }
+
+  .admin-requirement-details-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-requirement-sidebar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-requirement-details-page {
+    padding: 15px;
+  }
+
+  .admin-requirement-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-requirement-title-row {
+    align-items: flex-start;
+  }
+
+  .admin-requirement-title-row h1 {
+    font-size: 21px;
+  }
+
+  .admin-requirement-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    font-size: 21px;
+  }
+
+  .admin-requirement-detail-grid {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+  }
+
+  .admin-requirement-detail-grid > div {
+    border-bottom: 1px solid #f0f2f5 !important;
+  }
+
+  .admin-requirement-detail-grid > div:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .admin-requirement-detail-full {
+    grid-column: auto;
+  }
+
+  .admin-requirement-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-requirement-card-header {
+    padding: 17px 18px;
+  }
+
+  .admin-requirement-detail-grid {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .admin-requirement-notes {
+    padding: 18px;
+  }
+
+  .admin-requirement-summary-list,
+  .admin-record-info {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .admin-linked-lead {
+    padding: 18px;
+  }
+
+  .admin-requirement-details-error {
+    margin: 40px auto;
+    padding: 30px 20px;
+  }
+}
+
+@media (max-width: 430px) {
+  .admin-requirement-title-line {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .admin-requirement-title-row p {
+    font-size: 12px;
+  }
+
+  .admin-requirement-summary-card {
+    min-height: 100px;
+    padding: 17px;
+  }
+
+  .admin-requirement-summary-card strong {
+    font-size: 19px;
+  }
+
+  .admin-requirement-error-actions {
+    flex-direction: column;
+  }
+
+  .admin-requirement-error-actions button {
+    width: 100%;
+  }
+
+  .admin-requirement-bottom-actions {
+    justify-content: stretch;
+  }
+
+  .admin-requirement-bottom-actions button {
+    width: 100%;
+  }
+}

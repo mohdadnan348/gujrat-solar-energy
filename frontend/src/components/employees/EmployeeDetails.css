@@ -1,0 +1,247 @@
+.employee-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.employee-form__card {
+  overflow: hidden;
+  border: 1px solid #e2e8e4;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(25, 45, 34, 0.04);
+}
+
+.employee-form__header {
+  padding: 20px 22px;
+  border-bottom: 1px solid #edf1ee;
+}
+
+.employee-form__title {
+  margin: 0;
+  color: #17221c;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.employee-form__description {
+  margin: 5px 0 0;
+  color: #7a837d;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.employee-form__body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 22px;
+}
+
+.employee-form__section {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.employee-form__section-title {
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #edf1ee;
+  color: #26332b;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.employee-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.employee-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.employee-form__field--full {
+  grid-column: 1 / -1;
+}
+
+.employee-form__label {
+  color: #354139;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.employee-form__required {
+  color: #d93636;
+}
+
+.employee-form__input,
+.employee-form__select,
+.employee-form__textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d8e0db;
+  border-radius: 9px;
+  outline: none;
+  background: #ffffff;
+  color: #1d2922;
+  font-family: inherit;
+  font-size: 14px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.employee-form__input,
+.employee-form__select {
+  height: 44px;
+  padding: 0 13px;
+}
+
+.employee-form__textarea {
+  min-height: 105px;
+  padding: 12px 13px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.employee-form__input::placeholder,
+.employee-form__textarea::placeholder {
+  color: #a5ada8;
+}
+
+.employee-form__input:hover,
+.employee-form__select:hover,
+.employee-form__textarea:hover {
+  border-color: #b8c7be;
+}
+
+.employee-form__input:focus,
+.employee-form__select:focus,
+.employee-form__textarea:focus {
+  border-color: #16834a;
+  box-shadow: 0 0 0 3px rgba(22, 131, 74, 0.1);
+}
+
+.employee-form__input:disabled,
+.employee-form__select:disabled,
+.employee-form__textarea:disabled {
+  cursor: not-allowed;
+  background: #f5f7f6;
+  color: #89928c;
+}
+
+.employee-form__error {
+  color: #c73535;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.employee-form__input--error,
+.employee-form__select--error,
+.employee-form__textarea--error {
+  border-color: #d33b3b;
+}
+
+.employee-form__input--error:focus,
+.employee-form__select--error:focus,
+.employee-form__textarea--error:focus {
+  border-color: #d33b3b;
+  box-shadow: 0 0 0 3px rgba(211, 59, 59, 0.1);
+}
+
+.employee-form__hint {
+  color: #89928c;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.employee-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 22px;
+  border-top: 1px solid #edf1ee;
+}
+
+.employee-form__alert {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  border: 1px solid #f0c1c1;
+  border-radius: 9px;
+  background: #fff3f3;
+  color: #a52a2a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.employee-form__success {
+  border-color: #b9e5ca;
+  background: #effaf3;
+  color: #176b3d;
+}
+
+.employee-form__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  color: #7a837d;
+  font-size: 13px;
+}
+
+.employee-form__spinner {
+  width: 25px;
+  height: 25px;
+  margin-right: 10px;
+  border: 3px solid #dce7df;
+  border-top-color: #16834a;
+  border-radius: 50%;
+  animation: employee-form-spin 0.8s linear infinite;
+}
+
+@keyframes employee-form-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 800px) {
+  .employee-form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-form__field--full {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .employee-form__header {
+    padding: 17px;
+  }
+
+  .employee-form__body {
+    padding: 17px;
+    gap: 20px;
+  }
+
+  .employee-form__actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    padding: 16px 17px;
+  }
+
+  .employee-form__actions button {
+    width: 100%;
+  }
+}

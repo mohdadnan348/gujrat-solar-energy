@@ -1,78 +1,143 @@
-const getCurrentDate = () => {
-  return new Date();
+const isValidDate = (value) => {
+  if (!value) return false;
+
+  const date = new Date(value);
+
+  return !Number.isNaN(date.getTime());
 };
 
-const formatDate = (date) => {
-  if (!date) return null;
+const startOfDay = (value = new Date()) => {
+  const date = new Date(value);
 
-  const value = new Date(date);
-
-  if (Number.isNaN(value.getTime())) {
+  if (!isValidDate(date)) {
     return null;
   }
 
-  return value.toISOString().split("T")[0];
+  date.setHours(0, 0, 0, 0);
+
+  return date;
 };
 
-const formatDateTime = (date) => {
-  if (!date) return null;
+const endOfDay = (value = new Date()) => {
+  const date = new Date(value);
 
-  const value = new Date(date);
-
-  if (Number.isNaN(value.getTime())) {
+  if (!isValidDate(date)) {
     return null;
   }
 
-  return value.toISOString();
+  date.setHours(23, 59, 59, 999);
+
+  return date;
 };
 
-const isValidDate = (date) => {
-  if (!date) return false;
+const startOfMonth = (value = new Date()) => {
+  const date = new Date(value);
 
-  const value = new Date(date);
-
-  return !Number.isNaN(value.getTime());
-};
-
-const addDays = (date, days) => {
-  const value = new Date(date);
-
-  if (Number.isNaN(value.getTime())) {
+  if (!isValidDate(date)) {
     return null;
   }
 
-  value.setDate(value.getDate() + Number(days));
+  date.setDate(1);
+  date.setHours(0, 0, 0, 0);
 
-  return value;
+  return date;
 };
 
-const subtractDays = (date, days) => {
-  return addDays(date, -Number(days));
+const endOfMonth = (value = new Date()) => {
+  const date = new Date(value);
+
+  if (!isValidDate(date)) {
+    return null;
+  }
+
+  date.setMonth(date.getMonth() + 1, 0);
+  date.setHours(23, 59, 59, 999);
+
+  return date;
 };
 
-const getStartOfDay = (date = new Date()) => {
-  const value = new Date(date);
+const addDays = (value, days = 0) => {
+  const date = new Date(value);
 
-  value.setHours(0, 0, 0, 0);
+  if (!isValidDate(date)) {
+    return null;
+  }
 
-  return value;
+  date.setDate(
+    date.getDate() + Number(days)
+  );
+
+  return date;
 };
 
-const getEndOfDay = (date = new Date()) => {
-  const value = new Date(date);
+const subtractDays = (value, days = 0) => {
+  return addDays(value, -Number(days));
+};
 
-  value.setHours(23, 59, 59, 999);
+const getDateRange = (
+  startDate,
+  endDate
+) => {
+  const start = startOfDay(startDate);
+  const end = endOfDay(endDate);
 
-  return value;
+  if (!start || !end) {
+    return null;
+  }
+
+  return {
+    $gte: start,
+    $lte: end,
+  };
+};
+
+const formatDate = (
+  value,
+  locale = "en-IN"
+) => {
+  if (!isValidDate(value)) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat(
+    locale,
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }
+  ).format(new Date(value));
+};
+
+const formatDateTime = (
+  value,
+  locale = "en-IN"
+) => {
+  if (!isValidDate(value)) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat(
+    locale,
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  ).format(new Date(value));
 };
 
 module.exports = {
-  getCurrentDate,
-  formatDate,
-  formatDateTime,
   isValidDate,
+  startOfDay,
+  endOfDay,
+  startOfMonth,
+  endOfMonth,
   addDays,
   subtractDays,
-  getStartOfDay,
-  getEndOfDay,
+  getDateRange,
+  formatDate,
+  formatDateTime,
 };

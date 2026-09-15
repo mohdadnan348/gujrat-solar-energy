@@ -1,0 +1,175 @@
+.gse-avatar {
+  position: relative;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  overflow: visible;
+
+  color: #166534;
+  background: #dcfce7;
+
+  font-weight: 600;
+  user-select: none;
+}
+
+/* =========================
+   Sizes
+========================= */
+
+.gse-avatar-small {
+  width: 32px;
+  height: 32px;
+  font-size: 11px;
+}
+
+.gse-avatar-medium {
+  width: 40px;
+  height: 40px;
+  font-size: 13px;
+}
+
+.gse-avatar-large {
+  width: 52px;
+  height: 52px;
+  font-size: 16px;
+}
+
+.gse-avatar-xl {
+  width: 68px;
+  height: 68px;
+  font-size: 20px;
+}
+
+/* =========================
+   Variants
+========================= */
+
+.gse-avatar-circle {
+  border-radius: 50%;
+}
+
+.gse-avatar-square {
+  border-radius: 10px;
+}
+
+.gse-avatar-rounded {
+  border-radius: 14px;
+}
+
+/* =========================
+   Image
+========================= */
+
+.gse-avatar-image {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  border-radius: inherit;
+}
+
+/* =========================
+   Initials
+========================= */
+
+.gse-avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+
+  overflow: hidden;
+
+  border-radius: inherit;
+
+  letter-spacing: 0.02em;
+}
+
+/* =========================
+   Border
+========================= */
+
+.gse-avatar-bordered {
+  border: 2px solid #ffffff;
+
+  box-shadow:
+    0 0 0 1px #d1d5db,
+    0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* =========================
+   Status
+========================= */
+
+.gse-avatar-status {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+
+  width: 11px;
+  height: 11px;
+
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+}
+
+.gse-avatar-small .gse-avatar-status {
+  width: 9px;
+  height: 9px;
+}
+
+.gse-avatar-large .gse-avatar-status {
+  width: 13px;
+  height: 13px;
+}
+
+.gse-avatar-xl .gse-avatar-status {
+  width: 15px;
+  height: 15px;
+}
+
+.gse-avatar-status-online {
+  background: #22c55e;
+}
+
+.gse-avatar-status-offline {
+  background: #9ca3af;
+}
+
+.gse-avatar-status-away {
+  background: #f59e0b;
+}
+
+.gse-avatar-status-busy {
+  background: #ef4444;
+}
+
+/* =========================
+   Responsive
+========================= */
+
+@media (max-width: 640px) {
+  .gse-avatar-medium {
+    width: 38px;
+    height: 38px;
+  }
+
+  .gse-avatar-large {
+    width: 48px;
+    height: 48px;
+  }
+
+  .gse-avatar-xl {
+    width: 60px;
+    height: 60px;
+  }
+}

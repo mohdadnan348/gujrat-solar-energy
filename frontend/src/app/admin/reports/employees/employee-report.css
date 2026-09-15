@@ -1,0 +1,420 @@
+.employee-report-page {
+  padding: 24px;
+  width: 100%;
+}
+
+.employee-report-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.employee-report-title h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.25;
+}
+
+.employee-report-title p {
+  margin: 7px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.employee-report-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Filters */
+
+.employee-report-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.employee-report-filter {
+  min-width: 0;
+}
+
+/* Summary */
+
+.employee-report-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.employee-report-stat {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 0;
+}
+
+.employee-report-stat-label {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.employee-report-stat-value {
+  color: #111827;
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Report Grid */
+
+.employee-report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.employee-report-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.employee-report-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.employee-report-card-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  color: #111827;
+}
+
+.employee-report-card-body {
+  padding: 20px;
+}
+
+/* Department Breakdown */
+
+.employee-department-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.employee-department-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.employee-department-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.employee-department-name {
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.employee-department-count {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+/* Progress */
+
+.employee-report-progress {
+  height: 7px;
+  width: 100%;
+  margin-top: 7px;
+  background: #f3f4f6;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.employee-report-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: #16a34a;
+  transition: width 0.25s ease;
+}
+
+/* Attendance Overview */
+
+.employee-attendance-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.employee-attendance-item {
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.employee-attendance-label {
+  color: #6b7280;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.employee-attendance-value {
+  color: #111827;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Employee Performance */
+
+.employee-performance-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.employee-performance-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.employee-performance-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.employee-performance-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.employee-performance-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.employee-performance-table th,
+.employee-performance-table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid #f0f1f3;
+  white-space: nowrap;
+}
+
+.employee-performance-table th {
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.employee-performance-table td {
+  color: #374151;
+  font-size: 13px;
+}
+
+.employee-performance-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.employee-performance-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.employee-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.employee-name {
+  color: #111827;
+  font-weight: 600;
+}
+
+.employee-email {
+  color: #6b7280;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* Empty State */
+
+.employee-report-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  padding: 24px;
+  color: #6b7280;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Loading */
+
+.employee-report-loading {
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Error */
+
+.employee-report-error {
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+/* Responsive */
+
+@media (max-width: 1100px) {
+  .employee-report-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .employee-report-filters {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .employee-report-page {
+    padding: 18px;
+  }
+
+  .employee-report-header {
+    flex-direction: column;
+  }
+
+  .employee-report-actions {
+    width: 100%;
+  }
+
+  .employee-report-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-attendance-overview {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .employee-report-page {
+    padding: 14px;
+  }
+
+  .employee-report-title h1 {
+    font-size: 23px;
+  }
+
+  .employee-report-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-report-filters {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .employee-report-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .employee-report-card-header,
+  .employee-performance-header {
+    padding: 15px;
+  }
+
+  .employee-report-card-body {
+    padding: 16px;
+  }
+
+  .employee-attendance-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-report-stat {
+    padding: 16px;
+  }
+
+  .employee-report-stat-value {
+    font-size: 22px;
+  }
+}
+
+@media print {
+  .employee-report-page {
+    padding: 0;
+  }
+
+  .employee-report-actions,
+  .employee-report-filters {
+    display: none;
+  }
+
+  .employee-report-card,
+  .employee-performance-card,
+  .employee-report-stat {
+    break-inside: avoid;
+    box-shadow: none;
+  }
+
+  .employee-performance-table-wrapper {
+    overflow: visible;
+  }
+
+  .employee-performance-table {
+    min-width: 0;
+  }
+}

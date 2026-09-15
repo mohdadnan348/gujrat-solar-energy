@@ -1,6 +1,7 @@
 const express = require("express");
 
 const authRoutes = require("./auth.routes");
+const userRoutes = require("./user.routes");
 const employeeRoutes = require("./employee.routes");
 const settingRoutes = require("./setting.routes");
 const leadRoutes = require("./lead.routes");
@@ -22,6 +23,7 @@ const pdfRoutes = require("./pdf.routes");
 const router = express.Router();
 
 router.use("/auth", authRoutes);
+router.use("/users", userRoutes);
 router.use("/employees", employeeRoutes);
 router.use("/settings", settingRoutes);
 router.use("/leads", leadRoutes);

@@ -13,17 +13,9 @@ const {
   markExpiredQuotations,
 } = require("../controllers/quotation.controller");
 
-const {
-  protect,
-} = require("../middleware/auth.middleware");
-
-const {
-  allowRoles,
-} = require("../middleware/role.middleware");
-
-const {
-  validate,
-} = require("../middleware/validation.middleware");
+const { protect } = require("../middleware/auth.middleware");
+const { allowRoles } = require("../middleware/role.middleware");
+const { validate } = require("../middleware/validation.middleware");
 
 const {
   createQuotationValidator,
@@ -35,160 +27,83 @@ const {
 
 const router = express.Router();
 
-/*
-|--------------------------------------------------------------------------
-| Authentication
-|--------------------------------------------------------------------------
-*/
-
 router.use(protect);
-
-/*
-|--------------------------------------------------------------------------
-| Quotation List
-|--------------------------------------------------------------------------
-| GET /api/quotations
-|--------------------------------------------------------------------------
-*/
 
 router.get(
   "/",
-  allowRoles("Admin", "Manager", "Employee"),
-  validate(quotationListValidator),
+  quotationListValidator,
+  validate,
+  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
   getQuotations
 );
 
-/*
-|--------------------------------------------------------------------------
-| Create Quotation
-|--------------------------------------------------------------------------
-| POST /api/quotations
-|--------------------------------------------------------------------------
-*/
-
 router.post(
   "/",
-  allowRoles("Admin", "Manager", "Employee"),
-  validate(createQuotationValidator),
+  createQuotationValidator,
+  validate,
+  allowRoles("ADMIN", "MANAGER"),
   createQuotation
 );
 
-/*
-|--------------------------------------------------------------------------
-| Mark Expired Quotations
-|--------------------------------------------------------------------------
-| PATCH /api/quotations/mark-expired
-|--------------------------------------------------------------------------
-*/
-
 router.patch(
   "/mark-expired",
-  allowRoles("Admin", "Manager"),
+  allowRoles("ADMIN", "MANAGER"),
   markExpiredQuotations
 );
 
-/*
-|--------------------------------------------------------------------------
-| Single Quotation
-|--------------------------------------------------------------------------
-| GET /api/quotations/:id
-|--------------------------------------------------------------------------
-*/
-
-router.get(
-  "/:id",
-  allowRoles("Admin", "Manager", "Employee"),
-  validate(quotationIdValidator),
-  getQuotation
-);
-
-/*
-|--------------------------------------------------------------------------
-| Quotation Items
-|--------------------------------------------------------------------------
-| GET /api/quotations/:id/items
-|--------------------------------------------------------------------------
-*/
-
 router.get(
   "/:id/items",
-  allowRoles("Admin", "Manager", "Employee"),
-  validate(quotationIdValidator),
+  quotationIdValidator,
+  validate,
+  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
   getQuotationItems
 );
 
-/*
-|--------------------------------------------------------------------------
-| Quotation BOM
-|--------------------------------------------------------------------------
-| GET /api/quotations/:id/bom
-|--------------------------------------------------------------------------
-*/
-
 router.get(
   "/:id/bom",
-  allowRoles("Admin", "Manager", "Employee"),
-  validate(quotationIdValidator),
+  quotationIdValidator,
+  validate,
+  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
   getQuotationBOM
 );
 
-/*
-|--------------------------------------------------------------------------
-| Update Quotation
-|--------------------------------------------------------------------------
-| PUT /api/quotations/:id
-|--------------------------------------------------------------------------
-*/
+router.get(
+  "/:id",
+  quotationIdValidator,
+  validate,
+  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
+  getQuotation
+);
 
 router.put(
   "/:id",
-  allowRoles("Admin", "Manager"),
-  validate(updateQuotationValidator),
+  updateQuotationValidator,
+  validate,
+  allowRoles("ADMIN", "MANAGER"),
   updateQuotation
 );
 
-/*
-|--------------------------------------------------------------------------
-| Send Quotation
-|--------------------------------------------------------------------------
-| PATCH /api/quotations/:id/send
-|--------------------------------------------------------------------------
-*/
-
 router.patch(
   "/:id/send",
-  allowRoles("Admin", "Manager", "Employee"),
-  validate(quotationIdValidator),
+  quotationIdValidator,
+  validate,
+  allowRoles("ADMIN", "MANAGER"),
   sendQuotation
 );
 
-/*
-|--------------------------------------------------------------------------
-| Accept Quotation
-|--------------------------------------------------------------------------
-| PATCH /api/quotations/:id/accept
-|--------------------------------------------------------------------------
-*/
-
 router.patch(
   "/:id/accept",
-  allowRoles("Admin", "Manager"),
-  validate(quotationIdValidator),
+  quotationIdValidator,
+  validate,
+  allowRoles("ADMIN", "MANAGER"),
   acceptQuotation
 );
 
-/*
-|--------------------------------------------------------------------------
-| Reject Quotation
-|--------------------------------------------------------------------------
-| PATCH /api/quotations/:id/reject
-|--------------------------------------------------------------------------
-*/
-
 router.patch(
   "/:id/reject",
-  allowRoles("Admin", "Manager"),
-  validate(rejectQuotationValidator),
+  rejectQuotationValidator,
+  validate,
+  allowRoles("ADMIN", "MANAGER"),
   rejectQuotation
 );
 

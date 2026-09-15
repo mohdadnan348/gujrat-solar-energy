@@ -1,0 +1,237 @@
+.gse-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  width: fit-content;
+  max-width: 100%;
+
+  border: 1px solid transparent;
+  border-radius: 999px;
+
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  vertical-align: middle;
+
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+/* =========================
+   Sizes
+========================= */
+
+.gse-badge-small {
+  min-height: 22px;
+  padding: 4px 9px;
+  font-size: 11px;
+}
+
+.gse-badge-medium {
+  min-height: 28px;
+  padding: 6px 11px;
+  font-size: 12px;
+}
+
+.gse-badge-large {
+  min-height: 34px;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+/* =========================
+   Variants
+========================= */
+
+.gse-badge-default {
+  color: #374151;
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+}
+
+.gse-badge-primary {
+  color: #166534;
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+
+.gse-badge-success {
+  color: #166534;
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+
+.gse-badge-danger {
+  color: #b91c1c;
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+
+.gse-badge-warning {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: #fde68a;
+}
+
+.gse-badge-info {
+  color: #1d4ed8;
+  background: #dbeafe;
+  border-color: #bfdbfe;
+}
+
+.gse-badge-secondary {
+  color: #4b5563;
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+}
+
+.gse-badge-outline {
+  color: #16a34a;
+  background: #ffffff;
+  border-color: #86efac;
+}
+
+/* =========================
+   Dot
+========================= */
+
+.gse-badge-with-dot {
+  padding-left: 8px;
+}
+
+.gse-badge-dot {
+  width: 7px;
+  height: 7px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.gse-badge-small .gse-badge-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.gse-badge-large .gse-badge-dot {
+  width: 8px;
+  height: 8px;
+}
+
+/* =========================
+   Icon
+========================= */
+
+.gse-badge-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  font-size: 0;
+}
+
+.gse-badge-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.gse-badge-small .gse-badge-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.gse-badge-large .gse-badge-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* =========================
+   Content
+========================= */
+
+.gse-badge-content {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+/* =========================
+   Remove Button
+========================= */
+
+.gse-badge-removable {
+  padding-right: 5px;
+}
+
+.gse-badge-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 18px;
+  height: 18px;
+
+  margin-left: 1px;
+  padding: 0;
+
+  border: 0;
+  border-radius: 50%;
+
+  color: currentColor;
+  background: transparent;
+
+  font-size: 16px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.gse-badge-remove:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.gse-badge-remove:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+.gse-badge-small .gse-badge-remove {
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+}
+
+.gse-badge-large .gse-badge-remove {
+  width: 20px;
+  height: 20px;
+  font-size: 18px;
+}
+
+/* =========================
+   Responsive
+========================= */
+
+@media (max-width: 640px) {
+  .gse-badge-medium {
+    min-height: 26px;
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  .gse-badge-large {
+    min-height: 32px;
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+}

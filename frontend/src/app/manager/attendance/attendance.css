@@ -1,0 +1,495 @@
+.manager-attendance-page {
+  min-height: 100%;
+  padding: 24px;
+  background: #f6f8fb;
+}
+
+.manager-attendance-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.manager-attendance-eyebrow {
+  display: inline-block;
+  margin-bottom: 7px;
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.manager-attendance-header h1 {
+  margin: 0;
+  color: #172033;
+  font-size: 28px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.manager-attendance-header p {
+  margin: 8px 0 0;
+  color: #697386;
+  font-size: 14px;
+}
+
+.manager-attendance-loading,
+.manager-attendance-table-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manager-attendance-loading {
+  min-height: 100vh;
+}
+
+.manager-attendance-table-loading {
+  min-height: 300px;
+}
+
+.manager-attendance-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fff1f2;
+  color: #b42318;
+  font-size: 14px;
+}
+
+.manager-attendance-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.manager-attendance-summary-card {
+  padding: 17px 18px;
+  border: 1px solid #e4e8ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(20, 30, 50, 0.025);
+}
+
+.manager-attendance-summary-card span {
+  display: block;
+  margin-bottom: 7px;
+  color: #788295;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.manager-attendance-summary-card strong {
+  color: #172033;
+  font-size: 23px;
+  font-weight: 750;
+}
+
+.manager-attendance-present {
+  border-color: #ccebd8;
+}
+
+.manager-attendance-present strong {
+  color: #159447;
+}
+
+.manager-attendance-absent {
+  border-color: #f2d2d5;
+}
+
+.manager-attendance-absent strong {
+  color: #c52f3b;
+}
+
+.manager-attendance-late {
+  border-color: #f4dfb9;
+}
+
+.manager-attendance-late strong {
+  color: #bd7a11;
+}
+
+.manager-attendance-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.manager-attendance-toolbar > *:first-child {
+  flex: 1;
+  max-width: 450px;
+}
+
+.manager-attendance-filter,
+.manager-attendance-date {
+  height: 42px;
+  padding: 0 13px;
+  border: 1px solid #d9dee8;
+  border-radius: 9px;
+  outline: none;
+  background: #fff;
+  color: #30394d;
+  font-size: 13px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.manager-attendance-filter {
+  min-width: 145px;
+  cursor: pointer;
+}
+
+.manager-attendance-date {
+  min-width: 155px;
+}
+
+.manager-attendance-filter:focus,
+.manager-attendance-date:focus {
+  border-color: #22a75a;
+  box-shadow: 0 0 0 3px rgba(34, 167, 90, 0.1);
+}
+
+.manager-attendance-card {
+  overflow: hidden;
+  border: 1px solid #e4e8ef;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 3px 14px rgba(20, 30, 50, 0.04);
+}
+
+.manager-attendance-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.manager-attendance-table {
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: collapse;
+}
+
+.manager-attendance-table th {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e8ebf0;
+  background: #fafbfc;
+  color: #70798a;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.manager-attendance-table td {
+  padding: 15px 16px;
+  border-bottom: 1px solid #eef0f4;
+  color: #3d4657;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.manager-attendance-table tbody tr {
+  transition: background 0.18s ease;
+}
+
+.manager-attendance-table tbody tr:hover {
+  background: #fafdfb;
+}
+
+.manager-attendance-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.manager-attendance-employee {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 210px;
+}
+
+.manager-attendance-avatar,
+.manager-attendance-modal-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e8f7ee;
+  color: #168b47;
+  font-weight: 750;
+}
+
+.manager-attendance-avatar {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  font-size: 11px;
+}
+
+.manager-attendance-employee div {
+  min-width: 0;
+}
+
+.manager-attendance-employee strong {
+  display: block;
+  overflow: hidden;
+  color: #202a3b;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manager-attendance-employee small {
+  display: block;
+  max-width: 210px;
+  margin-top: 4px;
+  overflow: hidden;
+  color: #8a93a3;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manager-attendance-id {
+  display: inline-flex;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #f3f5f7;
+  color: #596477;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.manager-attendance-date-value {
+  color: #4c5668;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.manager-attendance-time {
+  color: #485366;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.manager-attendance-hours {
+  color: #344054;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.manager-attendance-empty {
+  height: 250px;
+  text-align: center !important;
+}
+
+.manager-attendance-empty > div {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.manager-attendance-empty-icon {
+  display: flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: #f1f8f3;
+  font-size: 20px;
+}
+
+.manager-attendance-empty strong {
+  color: #30394b;
+  font-size: 14px;
+}
+
+.manager-attendance-empty p {
+  margin: 5px 0 0;
+  color: #8a93a3;
+  font-size: 12px;
+}
+
+.manager-attendance-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding: 15px 18px;
+  border-top: 1px solid #eef0f4;
+}
+
+/* Attendance Details Modal */
+
+.manager-attendance-modal-content {
+  padding: 2px;
+}
+
+.manager-attendance-modal-profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e9edf2;
+}
+
+.manager-attendance-modal-avatar {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  font-size: 16px;
+}
+
+.manager-attendance-modal-profile h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 19px;
+  font-weight: 750;
+}
+
+.manager-attendance-modal-profile p {
+  margin: 5px 0 0;
+  color: #788295;
+  font-size: 12px;
+}
+
+.manager-attendance-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 20px 0;
+}
+
+.manager-attendance-details-grid > div {
+  min-height: 65px;
+  padding: 13px 14px;
+  border: 1px solid #e7ebef;
+  border-radius: 10px;
+  background: #fbfcfd;
+}
+
+.manager-attendance-details-grid span {
+  display: block;
+  margin-bottom: 7px;
+  color: #858e9e;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.manager-attendance-details-grid strong {
+  display: block;
+  overflow: hidden;
+  color: #273247;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manager-attendance-notes {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #f7f8fa;
+}
+
+.manager-attendance-notes span {
+  display: block;
+  margin-bottom: 7px;
+  color: #596477;
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.manager-attendance-notes p {
+  margin: 0;
+  color: #697386;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.manager-attendance-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 14px;
+  border-top: 1px solid #e9edf2;
+}
+
+/* Responsive */
+
+@media (max-width: 950px) {
+  .manager-attendance-page {
+    padding: 18px;
+  }
+
+  .manager-attendance-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .manager-attendance-page {
+    padding: 14px;
+  }
+
+  .manager-attendance-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .manager-attendance-header h1 {
+    font-size: 23px;
+  }
+
+  .manager-attendance-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .manager-attendance-toolbar > *:first-child {
+    max-width: none;
+  }
+
+  .manager-attendance-filter,
+  .manager-attendance-date {
+    width: 100%;
+  }
+
+  .manager-attendance-details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 430px) {
+  .manager-attendance-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-attendance-error {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .manager-attendance-modal-profile {
+    align-items: flex-start;
+  }
+}

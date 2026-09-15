@@ -1,0 +1,332 @@
+/* =========================
+   SearchBox
+========================= */
+
+.gse-searchbox {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  width: 320px;
+  height: 42px;
+
+  color: #111827;
+  background: #ffffff;
+
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.gse-searchbox:focus-within {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+/* =========================
+   Full Width
+========================= */
+
+.gse-searchbox-full-width {
+  width: 100%;
+}
+
+/* =========================
+   Input
+========================= */
+
+.gse-searchbox input {
+  width: 100%;
+  height: 100%;
+
+  padding: 0 42px;
+
+  border: 0;
+  outline: 0;
+
+  color: #111827;
+  background: transparent;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+
+  appearance: none;
+}
+
+.gse-searchbox input::placeholder {
+  color: #9ca3af;
+}
+
+.gse-searchbox input:disabled {
+  cursor: not-allowed;
+}
+
+/* Remove browser search decorations */
+
+.gse-searchbox input::-webkit-search-decoration,
+.gse-searchbox input::-webkit-search-cancel-button,
+.gse-searchbox input::-webkit-search-results-button,
+.gse-searchbox input::-webkit-search-results-decoration {
+  display: none;
+}
+
+/* =========================
+   Default Search Icon
+========================= */
+
+.gse-searchbox-default-icon,
+.gse-searchbox-left-icon,
+.gse-searchbox-right-icon {
+  position: absolute;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #6b7280;
+
+  pointer-events: none;
+}
+
+.gse-searchbox-default-icon,
+.gse-searchbox-left-icon {
+  left: 13px;
+}
+
+.gse-searchbox-right-icon {
+  right: 13px;
+}
+
+.gse-searchbox-default-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* =========================
+   Custom Icons
+========================= */
+
+.gse-searchbox-left-icon svg,
+.gse-searchbox-right-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* =========================
+   Clear Button
+========================= */
+
+.gse-searchbox-clear {
+  position: absolute;
+  right: 9px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 26px;
+  height: 26px;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 50%;
+
+  color: #6b7280;
+  background: transparent;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.gse-searchbox-clear:hover {
+  color: #111827;
+  background: #f3f4f6;
+}
+
+.gse-searchbox-clear:focus-visible {
+  outline: 2px solid #16a34a;
+  outline-offset: 1px;
+}
+
+.gse-searchbox-clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gse-searchbox-clear svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* =========================
+   Loading
+========================= */
+
+.gse-searchbox-loading input {
+  cursor: wait;
+}
+
+.gse-searchbox-loader {
+  position: absolute;
+  right: 13px;
+
+  width: 17px;
+  height: 17px;
+
+  border: 2px solid #dcfce7;
+  border-top-color: #16a34a;
+
+  border-radius: 50%;
+
+  animation: gse-searchbox-spin 0.7s linear infinite;
+}
+
+@keyframes gse-searchbox-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================
+   Small
+========================= */
+
+.gse-searchbox-small {
+  width: 280px;
+  height: 36px;
+}
+
+.gse-searchbox-small input {
+  padding: 0 36px;
+
+  font-size: 13px;
+}
+
+.gse-searchbox-small .gse-searchbox-default-icon,
+.gse-searchbox-small .gse-searchbox-left-icon {
+  left: 11px;
+}
+
+.gse-searchbox-small .gse-searchbox-default-icon svg,
+.gse-searchbox-small .gse-searchbox-left-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.gse-searchbox-small .gse-searchbox-loader {
+  right: 11px;
+
+  width: 15px;
+  height: 15px;
+}
+
+/* =========================
+   Medium
+========================= */
+
+.gse-searchbox-medium {
+  height: 42px;
+}
+
+/* =========================
+   Large
+========================= */
+
+.gse-searchbox-large {
+  width: 360px;
+  height: 48px;
+}
+
+.gse-searchbox-large input {
+  padding: 0 48px;
+
+  font-size: 15px;
+}
+
+.gse-searchbox-large .gse-searchbox-default-icon,
+.gse-searchbox-large .gse-searchbox-left-icon {
+  left: 15px;
+}
+
+.gse-searchbox-large .gse-searchbox-default-icon svg,
+.gse-searchbox-large .gse-searchbox-left-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.gse-searchbox-large .gse-searchbox-clear {
+  right: 11px;
+}
+
+.gse-searchbox-large .gse-searchbox-loader {
+  right: 15px;
+
+  width: 19px;
+  height: 19px;
+}
+
+/* =========================
+   Disabled
+========================= */
+
+.gse-searchbox:has(input:disabled) {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  opacity: 0.7;
+}
+
+/* =========================
+   Responsive
+========================= */
+
+@media (max-width: 768px) {
+  .gse-searchbox {
+    width: 100%;
+  }
+
+  .gse-searchbox-large {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .gse-searchbox {
+    height: 40px;
+  }
+
+  .gse-searchbox input {
+    font-size: 13px;
+  }
+
+  .gse-searchbox-large {
+    height: 44px;
+  }
+}
+
+/* =========================
+   Reduced Motion
+========================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .gse-searchbox {
+    transition: none;
+  }
+
+  .gse-searchbox-loader {
+    animation-duration: 1.5s;
+  }
+}

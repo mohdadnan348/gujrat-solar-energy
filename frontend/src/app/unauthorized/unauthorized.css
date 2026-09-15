@@ -1,0 +1,140 @@
+.unauthorized-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      rgba(34, 197, 94, 0.08),
+      transparent 34%
+    ),
+    #f8fafc;
+}
+
+.unauthorized-card {
+  width: min(100%, 510px);
+  padding: 44px 38px 34px;
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 25px 65px rgba(15, 23, 42, 0.09);
+  text-align: center;
+}
+
+.security-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.unauthorized-card h1 {
+  margin-top: 13px;
+  color: #0f172a;
+  font-size: 35px;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+}
+
+.unauthorized-card > p {
+  max-width: 410px;
+  margin: 12px auto 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.unauthorized-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.unauthorized-primary,
+.unauthorized-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 17px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.unauthorized-primary {
+  background: #16a34a;
+  color: #ffffff;
+  box-shadow: 0 7px 18px rgba(22, 163, 74, 0.18);
+}
+
+.unauthorized-primary:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+.unauthorized-secondary {
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+}
+
+.unauthorized-secondary:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.security-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 25px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 31px;
+  text-align: left;
+}
+
+@media (max-width: 480px) {
+  .unauthorized-card {
+    padding: 38px 22px 30px;
+  }
+
+  .unauthorized-actions {
+    flex-direction: column;
+  }
+
+  .unauthorized-primary,
+  .unauthorized-secondary {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unauthorized-primary,
+  .unauthorized-secondary {
+    transition: none;
+  }
+}

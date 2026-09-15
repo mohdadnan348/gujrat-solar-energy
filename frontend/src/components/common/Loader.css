@@ -1,0 +1,153 @@
+.gse-loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  color: #16a34a;
+}
+
+/* =========================
+   Spinner
+========================= */
+
+.gse-loader-spinner {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+}
+
+.gse-loader-spinner::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  border: 2px solid #dcfce7;
+  border-top-color: #16a34a;
+
+  border-radius: 50%;
+
+  animation: gse-loader-spin 0.8s linear infinite;
+}
+
+.gse-loader-spinner span {
+  display: none;
+}
+
+/* =========================
+   Sizes
+========================= */
+
+.gse-loader-small .gse-loader-spinner {
+  width: 22px;
+  height: 22px;
+}
+
+.gse-loader-medium .gse-loader-spinner {
+  width: 30px;
+  height: 30px;
+}
+
+.gse-loader-large .gse-loader-spinner {
+  width: 42px;
+  height: 42px;
+}
+
+/* =========================
+   Text
+========================= */
+
+.gse-loader-text {
+  color: #4b5563;
+
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.gse-loader-small .gse-loader-text {
+  font-size: 12px;
+}
+
+.gse-loader-large .gse-loader-text {
+  font-size: 15px;
+}
+
+/* =========================
+   Full Screen
+========================= */
+
+.gse-loader-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  min-height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+
+  background: #ffffff;
+}
+
+/* =========================
+   Overlay
+========================= */
+
+.gse-loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+
+  display: flex;
+  flex-direction: column;
+
+  background: rgba(255, 255, 255, 0.78);
+
+  backdrop-filter: blur(2px);
+}
+
+/* =========================
+   Spin Animation
+========================= */
+
+@keyframes gse-loader-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================
+   Accessibility
+========================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .gse-loader-spinner::before {
+    animation-duration: 1.5s;
+  }
+}
+
+/* =========================
+   Responsive
+========================= */
+
+@media (max-width: 640px) {
+  .gse-loader-medium .gse-loader-spinner {
+    width: 28px;
+    height: 28px;
+  }
+
+  .gse-loader-large .gse-loader-spinner {
+    width: 38px;
+    height: 38px;
+  }
+}

@@ -5,67 +5,45 @@ const notificationSchema = new mongoose.Schema(
     recipient: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: [true, "Recipient is required"],
+      required: true,
       index: true,
     },
 
     type: {
       type: String,
-      required: [true, "Notification type is required"],
-      trim: true,
-      lowercase: true,
       enum: [
         "lead",
-        "follow_up",
         "quotation",
         "invoice",
-        "payment",
         "task",
         "attendance",
         "leave",
         "system",
-        "other",
       ],
-      default: "system",
+      required: true,
     },
 
     title: {
       type: String,
-      required: [true, "Notification title is required"],
+      required: true,
       trim: true,
-      maxlength: 200,
     },
 
     message: {
       type: String,
-      required: [true, "Notification message is required"],
+      required: true,
       trim: true,
-      maxlength: 1000,
     },
 
-    module: {
+    entityType: {
       type: String,
       trim: true,
-      lowercase: true,
-      default: "",
+      default: null,
     },
 
-    recordId: {
+    entityId: {
       type: mongoose.Schema.Types.ObjectId,
       default: null,
-      index: true,
-    },
-
-    recordType: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-
-    actionUrl: {
-      type: String,
-      trim: true,
-      default: "",
     },
 
     isRead: {
@@ -79,26 +57,9 @@ const notificationSchema = new mongoose.Schema(
       default: null,
     },
 
-    priority: {
-      type: String,
-      enum: ["low", "normal", "high", "urgent"],
-      default: "normal",
-    },
-
-    expiresAt: {
-      type: Date,
-      default: null,
-    },
-
     metadata: {
       type: mongoose.Schema.Types.Mixed,
-      default: null,
-    },
-
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
+      default: {},
     },
   },
   {
@@ -106,41 +67,21 @@ const notificationSchema = new mongoose.Schema(
   }
 );
 
-// Main notification listing
 notificationSchema.index({
   recipient: 1,
   isRead: 1,
   createdAt: -1,
 });
 
-// Unread notifications
-notificationSchema.index({
-  recipient: 1,
-  isRead: 1,
+notificationSchema.pre("save", function (next) {
+  if (this.isModified("isRead")) {
+    this.readAt = this.isRead ? new Date() : null;
+  }
+
+  next();
 });
 
-// Type-wise notifications
-notificationSchema.index({
-  recipient: 1,
-  type: 1,
-  createdAt: -1,
-});
-
-// Module / record history
-notificationSchema.index({
-  module: 1,
-  recordId: 1,
-  createdAt: -1,
-});
-
-// Expiry
-notificationSchema.index({
-  expiresAt: 1,
-});
-
-const Notification = mongoose.model(
+module.exports = mongoose.model(
   "Notification",
   notificationSchema
 );
-
-module.exports = Notification;

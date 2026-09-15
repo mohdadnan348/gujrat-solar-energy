@@ -1,10 +1,11 @@
 const Invoice = require("../models/Invoice");
 const InvoiceItem = require("../models/InvoiceItem");
 const Quotation = require("../models/Quotation");
+const QuotationItem = require("../models/QuotationItem");
 const Lead = require("../models/Lead");
 const Customer = require("../models/Customer");
 
-const { generateNumber } = require("../utils/generateNumber");
+const generateNumber = require("../utils/generateNumber");
 const { INVOICE_STATUS } = require("../config/constants");
 
 const round = (value) =>
@@ -65,9 +66,7 @@ const numberToWords = (amount) => {
 
     return (
       `${ones[Math.floor(num / 100)]} Hundred` +
-      (num % 100
-        ? ` ${twoDigits(num % 100)}`
-        : "")
+      (num % 100 ? ` ${twoDigits(num % 100)}` : "")
     );
   };
 
@@ -104,8 +103,7 @@ const numberToWords = (amount) => {
 const calculateItem = (item) => {
   const quantity = Number(item.quantity) || 0;
   const rate = Number(item.rate) || 0;
-  const discountPercent =
-    Number(item.discount) || 0;
+  const discountPercent = Number(item.discount) || 0;
   const taxRate = Number(item.taxRate) || 0;
 
   const grossAmount = quantity * rate;
@@ -124,6 +122,8 @@ const calculateItem = (item) => {
   const amount = taxableAmount + taxAmount;
 
   return {
+    grossAmount: round(grossAmount),
+    discountAmount: round(discountAmount),
     taxableAmount: round(taxableAmount),
     taxAmount: round(taxAmount),
     amount: round(amount),
@@ -141,20 +141,10 @@ const calculateTotals = (items = []) => {
   let igst = 0;
 
   items.forEach((item) => {
-    const quantity = Number(item.quantity) || 0;
-    const rate = Number(item.rate) || 0;
-    const discountPercent =
-      Number(item.discount) || 0;
-
-    const grossAmount = quantity * rate;
-
-    const discountAmount =
-      (grossAmount * discountPercent) / 100;
-
     const calculated = calculateItem(item);
 
-    subtotal += grossAmount;
-    totalDiscount += discountAmount;
+    subtotal += calculated.grossAmount;
+    totalDiscount += calculated.discountAmount;
     taxableAmount += calculated.taxableAmount;
     totalTax += calculated.taxAmount;
 
@@ -163,10 +153,6 @@ const calculateTotals = (items = []) => {
     igst += Number(item.igstAmount) || 0;
   });
 
-  /*
-   * Agar individual tax split nahi diya gaya,
-   * to totalTax ko CGST + SGST mein split karenge.
-   */
   if (
     cgst === 0 &&
     sgst === 0 &&
@@ -177,9 +163,6 @@ const calculateTotals = (items = []) => {
     sgst = totalTax / 2;
   }
 
-  const calculatedGrandTotal =
-    taxableAmount + totalTax;
-
   return {
     subtotal: round(subtotal),
     totalDiscount: round(totalDiscount),
@@ -188,32 +171,29 @@ const calculateTotals = (items = []) => {
     cgst: round(cgst),
     sgst: round(sgst),
     igst: round(igst),
-    grandTotal: round(calculatedGrandTotal),
+    grandTotal: round(taxableAmount + totalTax),
   };
 };
 
 const validateReferences = async (data) => {
   if (data.quotation) {
-    const quotationExists =
-      await Quotation.exists({
-        _id: data.quotation,
-      });
+    const exists = await Quotation.exists({
+      _id: data.quotation,
+    });
 
-    if (!quotationExists) {
-      const error = new Error(
-        "Quotation not found"
-      );
+    if (!exists) {
+      const error = new Error("Quotation not found");
       error.statusCode = 404;
       throw error;
     }
   }
 
   if (data.lead) {
-    const leadExists = await Lead.exists({
+    const exists = await Lead.exists({
       _id: data.lead,
     });
 
-    if (!leadExists) {
+    if (!exists) {
       const error = new Error("Lead not found");
       error.statusCode = 404;
       throw error;
@@ -221,79 +201,104 @@ const validateReferences = async (data) => {
   }
 
   if (data.customer) {
-    const customerExists =
-      await Customer.exists({
-        _id: data.customer,
-      });
+    const exists = await Customer.exists({
+      _id: data.customer,
+    });
 
-    if (!customerExists) {
-      const error = new Error(
-        "Customer not found"
-      );
+    if (!exists) {
+      const error = new Error("Customer not found");
       error.statusCode = 404;
       throw error;
     }
   }
 };
 
-const getNextInvoiceNumber = async () => {
-  return generateNumber(
-    Invoice,
-    "invoiceNumber",
-    "INV"
-  );
-};
+const getNextInvoiceNumber = async () =>
+  generateNumber({
+    Model: Invoice,
+    field: "invoiceNumber",
+    prefix: "INV",
+    padding: 5,
+    start: 1,
+  });
 
 const buildCustomerSnapshot = (
   customer,
   lead
 ) => {
-  const source = customer || lead;
-
-  if (!source) return {};
+  if (!customer && !lead) return {};
 
   return {
-    name: customer
-      ? customer.name
-      : lead?.customerName,
+    name:
+      customer?.name ||
+      lead?.customerName ||
+      "",
 
     company:
       customer?.companyName ||
-      lead?.companyName,
+      lead?.companyName ||
+      "",
 
     mobile:
       customer?.mobile ||
-      lead?.mobile,
+      lead?.mobile ||
+      "",
 
     alternateMobile:
       customer?.alternateMobile ||
-      lead?.alternateMobile,
+      lead?.alternateMobile ||
+      "",
 
     email:
       customer?.email ||
-      lead?.email,
+      lead?.email ||
+      "",
 
     address:
       customer?.address ||
-      lead?.address,
+      lead?.address ||
+      "",
 
     city:
       customer?.city ||
-      lead?.city,
+      lead?.city ||
+      "",
 
     state:
       customer?.state ||
-      lead?.state,
+      lead?.state ||
+      "",
 
     pincode:
       customer?.pincode ||
-      lead?.pincode,
+      lead?.pincode ||
+      "",
 
     gst:
       customer?.gstNumber ||
-      undefined,
+      "",
   };
 };
+
+const prepareInvoiceItems = (
+  items,
+  createdBy
+) =>
+  items.map((item, index) => {
+    const calculated = calculateItem(item);
+
+    return {
+      ...item,
+      taxableAmount: calculated.taxableAmount,
+      taxAmount: calculated.taxAmount,
+      amount: calculated.amount,
+      sortOrder:
+        item.sortOrder !== undefined
+          ? item.sortOrder
+          : index,
+      createdBy,
+    };
+  });
 
 const createInvoice = async (
   data,
@@ -306,10 +311,9 @@ const createInvoice = async (
   let customer = null;
 
   if (data.quotation) {
-    quotation =
-      await Quotation.findById(
-        data.quotation
-      ).lean();
+    quotation = await Quotation.findById(
+      data.quotation
+    ).lean();
   }
 
   if (data.lead) {
@@ -319,92 +323,188 @@ const createInvoice = async (
   }
 
   if (data.customer) {
-    customer =
-      await Customer.findById(
-        data.customer
-      ).lean();
+    customer = await Customer.findById(
+      data.customer
+    ).lean();
   }
 
-  /*
-   * Agar quotation diya hai aur items nahi diye,
-   * to quotation ke items se invoice items
-   * automatically create honge.
-   */
-  let sourceItems = data.items || [];
+  let sourceItems = Array.isArray(data.items)
+    ? data.items
+    : [];
 
-  if (
-    !sourceItems.length &&
-    quotation
-  ) {
-    sourceItems =
-      await InvoiceItem.find({
-        invoice: quotation._id,
-      }).lean();
+  if (!sourceItems.length && quotation) {
+    sourceItems = await QuotationItem.find({
+      quotation: quotation._id,
+    })
+      .sort({ sortOrder: 1 })
+      .lean();
   }
 
-  const invoiceNumber =
-    await getNextInvoiceNumber();
-
-  const items = (data.items || []).map(
-    (item, index) => {
-      const calculated =
-        calculateItem(item);
-
-      return {
-        ...item,
-
-        taxableAmount:
-          calculated.taxableAmount,
-
-        taxAmount:
-          calculated.taxAmount,
-
-        amount:
-          calculated.amount,
-
-        sortOrder:
-          item.sortOrder !== undefined
-            ? item.sortOrder
-            : index,
-
-        createdBy,
-      };
-    }
+  const items = prepareInvoiceItems(
+    sourceItems,
+    createdBy
   );
 
   const totals = calculateTotals(items);
 
-  const customerDetails =
-    data.customerDetails ||
-    buildCustomerSnapshot(
-      customer,
-      lead
+  const invoiceNumber =
+    await getNextInvoiceNumber();
+
+  const invoice = await Invoice.create({
+    invoiceNumber,
+    quotation: data.quotation,
+    lead: data.lead,
+    customer: data.customer,
+    invoiceDate:
+      data.invoiceDate || new Date(),
+    dueDate: data.dueDate,
+
+    status:
+      data.status || INVOICE_STATUS.DRAFT,
+
+    customerDetails:
+      data.customerDetails ||
+      buildCustomerSnapshot(
+        customer,
+        lead
+      ),
+
+    subtotal: totals.subtotal,
+
+    totalDiscount:
+      totals.totalDiscount,
+
+    taxableAmount:
+      totals.taxableAmount,
+
+    totalTax:
+      totals.totalTax,
+
+    cgst: totals.cgst,
+    sgst: totals.sgst,
+    igst: totals.igst,
+
+    grandTotal:
+      totals.grandTotal,
+
+    amountInWords:
+      data.amountInWords ||
+      numberToWords(
+        totals.grandTotal
+      ),
+
+    termsAndConditions:
+      data.termsAndConditions,
+
+    notes: data.notes,
+    createdBy,
+  });
+
+  if (items.length) {
+    await InvoiceItem.insertMany(
+      items.map((item) => ({
+        ...item,
+        invoice: invoice._id,
+      }))
     );
+  }
 
-  const invoiceDate =
-    data.invoiceDate || new Date();
+  return getInvoiceById(invoice._id);
+};
 
-  const dueDate = data.dueDate;
+const createInvoiceFromQuotation = async (
+  quotationId,
+  data = {},
+  createdBy
+) => {
+  const quotation =
+    await Quotation.findById(
+      quotationId
+    ).lean();
+
+  if (!quotation) {
+    const error = new Error(
+      "Quotation not found"
+    );
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (
+    quotation.status &&
+    !["Accepted", "accepted"].includes(
+      quotation.status
+    )
+  ) {
+    const error = new Error(
+      "Invoice can only be generated from an accepted quotation"
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const quotationItems =
+    await QuotationItem.find({
+      quotation: quotation._id,
+    })
+      .sort({ sortOrder: 1 })
+      .lean();
+
+  let customerId =
+    data.customer || quotation.customer;
+
+  let leadId =
+    data.lead || quotation.lead;
+
+  let customer = null;
+  let lead = null;
+
+  if (customerId) {
+    customer = await Customer.findById(
+      customerId
+    ).lean();
+  }
+
+  if (leadId) {
+    lead = await Lead.findById(
+      leadId
+    ).lean();
+  }
+
+  const items = prepareInvoiceItems(
+    quotationItems,
+    createdBy
+  );
+
+  const totals = calculateTotals(items);
+
+  const invoiceNumber =
+    await getNextInvoiceNumber();
 
   const invoice =
     await Invoice.create({
       invoiceNumber,
 
-      quotation: data.quotation,
+      quotation: quotation._id,
 
-      lead: data.lead,
+      lead: leadId,
 
-      customer: data.customer,
+      customer: customerId,
 
-      invoiceDate,
+      invoiceDate:
+        data.invoiceDate || new Date(),
 
-      dueDate,
+      dueDate: data.dueDate,
 
       status:
-        data.status ||
-        INVOICE_STATUS.DRAFT,
+        data.status || INVOICE_STATUS.DRAFT,
 
-      customerDetails,
+      customerDetails:
+        data.customerDetails ||
+        buildCustomerSnapshot(
+          customer,
+          lead
+        ),
 
       subtotal: totals.subtotal,
 
@@ -418,45 +518,40 @@ const createInvoice = async (
         totals.totalTax,
 
       cgst: totals.cgst,
-
       sgst: totals.sgst,
-
       igst: totals.igst,
 
       grandTotal:
         totals.grandTotal,
 
       amountInWords:
-        data.amountInWords ||
         numberToWords(
           totals.grandTotal
         ),
 
       termsAndConditions:
-        data.termsAndConditions,
+        data.termsAndConditions ||
+        quotation.termsAndConditions,
 
-      notes: data.notes,
+      notes:
+        data.notes ||
+        quotation.notes,
 
       createdBy,
     });
 
-  /*
-   * Invoice items ko quotation items
-   * se copy karna ho to quotationItem
-   * mapping alag se nahi kar rahe.
-   */
   if (items.length) {
     await InvoiceItem.insertMany(
       items.map((item) => ({
         ...item,
         invoice: invoice._id,
+        quotationItem:
+          item._id || undefined,
       }))
     );
   }
 
-  return getInvoiceById(
-    invoice._id
-  );
+  return getInvoiceById(invoice._id);
 };
 
 const getInvoices = async ({
@@ -467,48 +562,37 @@ const getInvoices = async ({
   quotation,
   lead,
   customer,
-}) => {
+} = {}) => {
   const filter = {};
 
-  if (status) {
-    filter.status = status;
-  }
+  if (status) filter.status = status;
+  if (quotation) filter.quotation = quotation;
+  if (lead) filter.lead = lead;
+  if (customer) filter.customer = customer;
 
-  if (quotation) {
-    filter.quotation = quotation;
-  }
-
-  if (lead) {
-    filter.lead = lead;
-  }
-
-  if (customer) {
-    filter.customer = customer;
-  }
-
-  if (search) {
+  if (search.trim()) {
     filter.$or = [
       {
         invoiceNumber: {
-          $regex: search,
+          $regex: search.trim(),
           $options: "i",
         },
       },
       {
         "customerDetails.name": {
-          $regex: search,
+          $regex: search.trim(),
           $options: "i",
         },
       },
       {
         "customerDetails.company": {
-          $regex: search,
+          $regex: search.trim(),
           $options: "i",
         },
       },
       {
         "customerDetails.mobile": {
-          $regex: search,
+          $regex: search.trim(),
           $options: "i",
         },
       },
@@ -516,18 +600,17 @@ const getInvoices = async ({
   }
 
   const pageNumber = Math.max(
-    Number(page),
+    Number(page) || 1,
     1
   );
 
-  const limitNumber = Math.max(
-    Number(limit),
-    1
+  const limitNumber = Math.min(
+    Math.max(Number(limit) || 10, 1),
+    100
   );
 
   const skip =
-    (pageNumber - 1) *
-    limitNumber;
+    (pageNumber - 1) * limitNumber;
 
   const [invoices, total] =
     await Promise.all([
@@ -554,6 +637,7 @@ const getInvoices = async ({
         )
         .sort({
           invoiceDate: -1,
+          createdAt: -1,
         })
         .skip(skip)
         .limit(limitNumber)
@@ -564,7 +648,6 @@ const getInvoices = async ({
 
   return {
     invoices,
-
     pagination: {
       page: pageNumber,
       limit: limitNumber,
@@ -580,9 +663,7 @@ const getInvoiceById = async (
   invoiceId
 ) => {
   const invoice =
-    await Invoice.findById(
-      invoiceId
-    )
+    await Invoice.findById(invoiceId)
       .populate(
         "quotation",
         "quotationNumber status grandTotal quotationDate"
@@ -656,6 +737,17 @@ const updateInvoice = async (
     throw error;
   }
 
+  if (
+    invoice.status ===
+    INVOICE_STATUS.ISSUED
+  ) {
+    const error = new Error(
+      "Issued invoice cannot be edited"
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
   await validateReferences(data);
 
   const allowedFields = [
@@ -669,68 +761,49 @@ const updateInvoice = async (
     "notes",
   ];
 
-  allowedFields.forEach(
-    (field) => {
-      if (
-        data[field] !==
-        undefined
-      ) {
-        invoice[field] =
-          data[field];
-      }
+  allowedFields.forEach((field) => {
+    if (data[field] !== undefined) {
+      invoice[field] = data[field];
     }
-  );
+  });
 
   if (data.status !== undefined) {
+    if (
+      !Object.values(
+        INVOICE_STATUS
+      ).includes(data.status)
+    ) {
+      const error = new Error(
+        "Invalid invoice status"
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
     invoice.status = data.status;
   }
 
-  if (data.items) {
+  if (Array.isArray(data.items)) {
+    const items = prepareInvoiceItems(
+      data.items,
+      updatedBy
+    );
+
     await InvoiceItem.deleteMany({
       invoice: invoice._id,
     });
 
-    const items =
-      data.items.map(
-        (item, index) => {
-          const calculated =
-            calculateItem(item);
-
-          return {
-            invoice:
-              invoice._id,
-
-            ...item,
-
-            taxableAmount:
-              calculated.taxableAmount,
-
-            taxAmount:
-              calculated.taxAmount,
-
-            amount:
-              calculated.amount,
-
-            sortOrder:
-              item.sortOrder !==
-              undefined
-                ? item.sortOrder
-                : index,
-
-            createdBy:
-              updatedBy,
-          };
-        }
+    if (items.length) {
+      await InvoiceItem.insertMany(
+        items.map((item) => ({
+          ...item,
+          invoice: invoice._id,
+        }))
       );
-
-    await InvoiceItem.insertMany(
-      items
-    );
+    }
 
     const totals =
-      calculateTotals(
-        items
-      );
+      calculateTotals(items);
 
     invoice.subtotal =
       totals.subtotal;
@@ -762,8 +835,7 @@ const updateInvoice = async (
       );
   }
 
-  invoice.updatedBy =
-    updatedBy;
+  invoice.updatedBy = updatedBy;
 
   await invoice.save();
 
@@ -803,28 +875,47 @@ const updateInvoiceStatus = async (
     throw error;
   }
 
-  invoice.status = status;
-  invoice.updatedBy =
-    updatedBy;
-
   if (
     status ===
     INVOICE_STATUS.ISSUED
   ) {
-    invoice.issuedAt =
-      new Date();
+    if (
+      invoice.status ===
+      INVOICE_STATUS.CANCELLED
+    ) {
+      const error = new Error(
+        "Cancelled invoice cannot be issued"
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    invoice.issuedAt = new Date();
   }
 
   if (
     status ===
     INVOICE_STATUS.CANCELLED
   ) {
+    if (
+      invoice.status ===
+      INVOICE_STATUS.CANCELLED
+    ) {
+      return getInvoiceById(
+        invoice._id
+      );
+    }
+
     invoice.cancelledAt =
       new Date();
 
     invoice.cancellationReason =
-      cancellationReason;
+      cancellationReason ||
+      "Invoice cancelled";
   }
+
+  invoice.status = status;
+  invoice.updatedBy = updatedBy;
 
   await invoice.save();
 
@@ -836,30 +927,53 @@ const updateInvoiceStatus = async (
 const issueInvoice = async (
   invoiceId,
   updatedBy
-) => {
-  return updateInvoiceStatus(
+) =>
+  updateInvoiceStatus(
     invoiceId,
     INVOICE_STATUS.ISSUED,
     updatedBy
   );
-};
 
 const cancelInvoice = async (
   invoiceId,
   cancellationReason,
   updatedBy
-) => {
-  return updateInvoiceStatus(
+) =>
+  updateInvoiceStatus(
     invoiceId,
     INVOICE_STATUS.CANCELLED,
     updatedBy,
     cancellationReason
   );
+
+const getInvoiceItems = async (
+  invoiceId
+) => {
+  const invoice =
+    await Invoice.exists({
+      _id: invoiceId,
+    });
+
+  if (!invoice) {
+    const error = new Error(
+      "Invoice not found"
+    );
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return InvoiceItem.find({
+    invoice: invoiceId,
+  })
+    .sort({
+      sortOrder: 1,
+    })
+    .lean();
 };
 
 const getInvoicesByCustomer =
-  async (customerId) => {
-    return Invoice.find({
+  async (customerId) =>
+    Invoice.find({
       customer: customerId,
     })
       .populate(
@@ -870,11 +984,10 @@ const getInvoicesByCustomer =
         invoiceDate: -1,
       })
       .lean();
-  };
 
 const getInvoicesByQuotation =
-  async (quotationId) => {
-    return Invoice.find({
+  async (quotationId) =>
+    Invoice.find({
       quotation: quotationId,
     })
       .populate(
@@ -885,7 +998,6 @@ const getInvoicesByQuotation =
         invoiceDate: -1,
       })
       .lean();
-  };
 
 const deleteInvoice = async (
   invoiceId,
@@ -905,39 +1017,51 @@ const deleteInvoice = async (
   }
 
   if (
-    invoice.status ===
+    invoice.status !==
     INVOICE_STATUS.CANCELLED
   ) {
-    return {
-      message:
-        "Invoice is already cancelled",
-    };
+    invoice.status =
+      INVOICE_STATUS.CANCELLED;
+
+    invoice.cancelledAt =
+      new Date();
+
+    invoice.cancellationReason =
+      "Invoice cancelled";
+
+    invoice.updatedBy =
+      updatedBy;
+
+    await invoice.save();
   }
 
-  invoice.status =
-    INVOICE_STATUS.CANCELLED;
+  return invoice;
+};
 
-  invoice.cancelledAt =
-    new Date();
+const markInvoicesOverdue = async () => {
+  const today = new Date();
 
-  invoice.cancellationReason =
-    "Invoice deactivated";
-
-  invoice.updatedBy =
-    updatedBy;
-
-  await invoice.save();
-
-  return {
-    message:
-      "Invoice cancelled successfully",
-  };
+  return Invoice.updateMany(
+    {
+      dueDate: {
+        $lt: today,
+      },
+      status: INVOICE_STATUS.ISSUED,
+    },
+    {
+      $set: {
+        status: INVOICE_STATUS.OVERDUE,
+      },
+    }
+  );
 };
 
 module.exports = {
   createInvoice,
+  createInvoiceFromQuotation,
   getInvoices,
   getInvoiceById,
+  getInvoiceItems,
   updateInvoice,
   updateInvoiceStatus,
   issueInvoice,
@@ -945,6 +1069,7 @@ module.exports = {
   getInvoicesByCustomer,
   getInvoicesByQuotation,
   deleteInvoice,
+  markInvoicesOverdue,
   calculateItem,
   calculateTotals,
   numberToWords,

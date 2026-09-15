@@ -1,27 +1,31 @@
 const reportService = require("../services/report.service");
 
+const getOverallReport = async (req, res, next) => {
+  try {
+    const data = await reportService.getOverallReport(
+      req.query,
+      req.user
+    );
+
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getLeadReport = async (req, res, next) => {
   try {
-    const {
-      startDate,
-      endDate,
-      assignedTo,
-      status,
-      leadSource,
-    } = req.query;
+    const data = await reportService.getLeadReport(
+      req.query,
+      req.user
+    );
 
-    const report = await reportService.getLeadReport({
-      startDate,
-      endDate,
-      assignedTo,
-      status,
-      leadSource,
-    });
-
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Lead report fetched successfully",
-      data: report,
+      data,
     });
   } catch (error) {
     next(error);
@@ -30,24 +34,14 @@ const getLeadReport = async (req, res, next) => {
 
 const getQuotationReport = async (req, res, next) => {
   try {
-    const {
-      startDate,
-      endDate,
-      status,
-      customer,
-    } = req.query;
+    const data = await reportService.getQuotationReport(
+      req.query,
+      req.user
+    );
 
-    const report = await reportService.getQuotationReport({
-      startDate,
-      endDate,
-      status,
-      customer,
-    });
-
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Quotation report fetched successfully",
-      data: report,
+      data,
     });
   } catch (error) {
     next(error);
@@ -56,52 +50,14 @@ const getQuotationReport = async (req, res, next) => {
 
 const getInvoiceReport = async (req, res, next) => {
   try {
-    const {
-      startDate,
-      endDate,
-      status,
-      customer,
-    } = req.query;
+    const data = await reportService.getInvoiceReport(
+      req.query,
+      req.user
+    );
 
-    const report = await reportService.getInvoiceReport({
-      startDate,
-      endDate,
-      status,
-      customer,
-    });
-
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Invoice report fetched successfully",
-      data: report,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getPaymentReport = async (req, res, next) => {
-  try {
-    const {
-      startDate,
-      endDate,
-      paymentMethod,
-      customer,
-      invoice,
-    } = req.query;
-
-    const report = await reportService.getPaymentReport({
-      startDate,
-      endDate,
-      paymentMethod,
-      customer,
-      invoice,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Payment report fetched successfully",
-      data: report,
+      data,
     });
   } catch (error) {
     next(error);
@@ -110,26 +66,14 @@ const getPaymentReport = async (req, res, next) => {
 
 const getTaskReport = async (req, res, next) => {
   try {
-    const {
-      startDate,
-      endDate,
-      status,
-      priority,
-      assignedTo,
-    } = req.query;
+    const data = await reportService.getTaskReport(
+      req.query,
+      req.user
+    );
 
-    const report = await reportService.getTaskReport({
-      startDate,
-      endDate,
-      status,
-      priority,
-      assignedTo,
-    });
-
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Task report fetched successfully",
-      data: report,
+      data,
     });
   } catch (error) {
     next(error);
@@ -138,24 +82,15 @@ const getTaskReport = async (req, res, next) => {
 
 const getAttendanceReport = async (req, res, next) => {
   try {
-    const {
-      startDate,
-      endDate,
-      employee,
-      status,
-    } = req.query;
+    const data =
+      await reportService.getAttendanceReport(
+        req.query,
+        req.user
+      );
 
-    const report = await reportService.getAttendanceReport({
-      startDate,
-      endDate,
-      employee,
-      status,
-    });
-
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Attendance report fetched successfully",
-      data: report,
+      data,
     });
   } catch (error) {
     next(error);
@@ -164,26 +99,14 @@ const getAttendanceReport = async (req, res, next) => {
 
 const getLeaveReport = async (req, res, next) => {
   try {
-    const {
-      startDate,
-      endDate,
-      employee,
-      leaveType,
-      status,
-    } = req.query;
+    const data = await reportService.getLeaveReport(
+      req.query,
+      req.user
+    );
 
-    const report = await reportService.getLeaveReport({
-      startDate,
-      endDate,
-      employee,
-      leaveType,
-      status,
-    });
-
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Leave report fetched successfully",
-      data: report,
+      data,
     });
   } catch (error) {
     next(error);
@@ -192,68 +115,36 @@ const getLeaveReport = async (req, res, next) => {
 
 const getEmployeeReport = async (req, res, next) => {
   try {
-    const {
-      department,
-      role,
-      status,
-    } = req.query;
+    const data =
+      await reportService.getEmployeeReport(
+        req.query,
+        req.user
+      );
 
-    const report = await reportService.getEmployeeReport({
-      department,
-      role,
-      status,
-    });
-
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Employee report fetched successfully",
-      data: report,
+      data,
     });
   } catch (error) {
     next(error);
   }
 };
 
-const getSalesPerformanceReport = async (req, res, next) => {
+const getSalesPerformanceReport = async (
+  req,
+  res,
+  next
+) => {
   try {
-    const {
-      startDate,
-      endDate,
-      employee,
-    } = req.query;
+    const data =
+      await reportService.getSalesPerformanceReport(
+        req.query,
+        req.user
+      );
 
-    const report = await reportService.getSalesPerformanceReport({
-      startDate,
-      endDate,
-      employee,
-    });
-
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Sales performance report fetched successfully",
-      data: report,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getOverallReport = async (req, res, next) => {
-  try {
-    const {
-      startDate,
-      endDate,
-    } = req.query;
-
-    const report = await reportService.getOverallReport({
-      startDate,
-      endDate,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Overall report fetched successfully",
-      data: report,
+      data,
     });
   } catch (error) {
     next(error);
@@ -261,14 +152,13 @@ const getOverallReport = async (req, res, next) => {
 };
 
 module.exports = {
+  getOverallReport,
   getLeadReport,
   getQuotationReport,
   getInvoiceReport,
-  getPaymentReport,
   getTaskReport,
   getAttendanceReport,
   getLeaveReport,
   getEmployeeReport,
   getSalesPerformanceReport,
-  getOverallReport,
 };

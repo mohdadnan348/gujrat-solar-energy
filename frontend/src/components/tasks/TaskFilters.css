@@ -1,0 +1,138 @@
+.task-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8e4;
+  border-radius: 12px;
+}
+
+.task-filters__group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 160px;
+}
+
+.task-filters__label {
+  color: #5e6b63;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.task-filters__input,
+.task-filters__select {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid #d7e1db;
+  border-radius: 8px;
+  outline: none;
+  background: #ffffff;
+  color: #344139;
+  font-family: inherit;
+  font-size: 13px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.task-filters__input::placeholder {
+  color: #9aa69f;
+}
+
+.task-filters__input:focus,
+.task-filters__select:focus {
+  border-color: #16834a;
+  box-shadow: 0 0 0 3px rgba(22, 131, 74, 0.08);
+}
+
+.task-filters__search {
+  flex: 1;
+  min-width: 220px;
+}
+
+.task-filters__actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.task-filters__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid #d7e1db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #16834a;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.task-filters__button:hover {
+  background: #16834a;
+  border-color: #16834a;
+  color: #ffffff;
+}
+
+.task-filters__button--reset {
+  color: #68756d;
+}
+
+.task-filters__button--reset:hover {
+  background: #f1f5f2;
+  border-color: #cfdad3;
+  color: #344139;
+}
+
+@media (max-width: 900px) {
+  .task-filters {
+    flex-wrap: wrap;
+  }
+
+  .task-filters__group,
+  .task-filters__search {
+    flex: 1 1 200px;
+    min-width: 180px;
+  }
+
+  .task-filters__actions {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .task-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .task-filters__group,
+  .task-filters__search {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .task-filters__actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .task-filters__button {
+    flex: 1;
+  }
+}

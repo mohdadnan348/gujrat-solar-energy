@@ -48,7 +48,7 @@ router.post(
 
 /*
 |--------------------------------------------------------------------------
-| Create Invoice From Accepted Quotation
+| Create Invoice From Quotation
 |--------------------------------------------------------------------------
 */
 
@@ -72,20 +72,6 @@ router.patch(
 
 /*
 |--------------------------------------------------------------------------
-| Single Invoice
-|--------------------------------------------------------------------------
-*/
-
-router.get(
-  "/:id",
-  invoiceIdValidator,
-  validate,
-  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
-  invoiceController.getInvoice
-);
-
-/*
-|--------------------------------------------------------------------------
 | Invoice Items
 |--------------------------------------------------------------------------
 */
@@ -96,6 +82,20 @@ router.get(
   validate,
   allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
   invoiceController.getInvoiceItems
+);
+
+/*
+|--------------------------------------------------------------------------
+| Single Invoice
+|--------------------------------------------------------------------------
+*/
+
+router.get(
+  "/:id",
+  invoiceIdValidator,
+  validate,
+  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
+  invoiceController.getInvoice
 );
 
 /*

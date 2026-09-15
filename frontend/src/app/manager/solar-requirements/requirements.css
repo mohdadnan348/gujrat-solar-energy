@@ -1,0 +1,479 @@
+.manager-requirements-page {
+  min-height: 100%;
+  padding: 28px;
+  background: #f6f8fb;
+}
+
+.manager-requirements-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.manager-requirements-eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.manager-requirements-header h1 {
+  margin: 0;
+  color: #172033;
+  font-size: 29px;
+  line-height: 1.2;
+  font-weight: 750;
+}
+
+.manager-requirements-header p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.manager-requirements-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 13px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.manager-requirements-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.manager-requirements-toolbar > *:first-child {
+  flex: 1;
+  max-width: 520px;
+}
+
+.manager-requirements-status-filter {
+  min-width: 170px;
+  height: 42px;
+  padding: 0 13px;
+  border: 1px solid #dfe5eb;
+  border-radius: 9px;
+  outline: none;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.manager-requirements-status-filter:focus {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.manager-requirements-summary {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.manager-requirements-summary > div {
+  min-width: 150px;
+  padding: 14px 17px;
+  border: 1px solid #e5e7eb;
+  border-radius: 11px;
+  background: #ffffff;
+}
+
+.manager-requirements-summary span {
+  display: block;
+  margin-bottom: 5px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.manager-requirements-summary strong {
+  color: #172033;
+  font-size: 20px;
+  font-weight: 750;
+}
+
+.manager-requirements-card {
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+}
+
+.manager-requirements-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.manager-requirements-table {
+  width: 100%;
+  min-width: 950px;
+  border-collapse: collapse;
+}
+
+.manager-requirements-table th {
+  padding: 14px 17px;
+  border-bottom: 1px solid #e9edf1;
+  background: #fafbfc;
+  color: #7b8798;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.manager-requirements-table td {
+  padding: 15px 17px;
+  border-bottom: 1px solid #f0f2f5;
+  color: #475569;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.manager-requirements-table tbody tr {
+  transition: background 0.18s ease;
+}
+
+.manager-requirements-table tbody tr:hover {
+  background: #f9fcfa;
+}
+
+.manager-requirements-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.manager-requirement-customer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 180px;
+}
+
+.manager-requirement-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.manager-requirement-customer > div:last-child {
+  min-width: 0;
+}
+
+.manager-requirement-customer strong {
+  display: block;
+  overflow: hidden;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manager-requirement-customer span {
+  display: block;
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.manager-requirement-number {
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.manager-requirements-empty {
+  height: 280px;
+  text-align: center !important;
+}
+
+.manager-requirements-empty > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.manager-requirements-empty span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 45px;
+  height: 45px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-size: 22px;
+}
+
+.manager-requirements-empty strong {
+  color: #475569;
+  font-size: 14px;
+}
+
+.manager-requirements-empty p {
+  margin: 5px 0 0;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.manager-requirements-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding: 15px 17px;
+  border-top: 1px solid #eef1f4;
+}
+
+.manager-requirements-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f6f8fb;
+}
+
+/* Modal */
+
+.manager-requirement-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(3px);
+}
+
+.manager-requirement-modal {
+  width: 100%;
+  max-width: 720px;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.2);
+}
+
+.manager-requirement-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 21px 23px;
+  border-bottom: 1px solid #eef1f4;
+}
+
+.manager-requirement-modal-header span {
+  display: block;
+  margin-bottom: 5px;
+  color: #16a34a;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.manager-requirement-modal-header h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 19px;
+  font-weight: 750;
+}
+
+.manager-requirement-modal-header button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.manager-requirement-modal-header button:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.manager-requirement-modal-body {
+  padding: 23px;
+}
+
+.manager-requirement-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid #edf0f3;
+  border-radius: 11px;
+  overflow: hidden;
+}
+
+.manager-requirement-detail-grid > div {
+  min-width: 0;
+  padding: 15px;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.manager-requirement-detail-grid > div:nth-child(odd) {
+  border-right: 1px solid #edf0f3;
+}
+
+.manager-requirement-detail-grid > div:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.manager-requirement-detail-grid span,
+.manager-requirement-detail-block span {
+  display: block;
+  margin-bottom: 6px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.manager-requirement-detail-grid strong {
+  display: block;
+  overflow: hidden;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manager-requirement-detail-block {
+  margin-top: 18px;
+  padding: 15px;
+  border: 1px solid #edf0f3;
+  border-radius: 10px;
+  background: #fafbfc;
+}
+
+.manager-requirement-detail-block p {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.manager-requirement-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 23px;
+  border-top: 1px solid #eef1f4;
+}
+
+@media (max-width: 768px) {
+  .manager-requirements-page {
+    padding: 20px 16px;
+  }
+
+  .manager-requirements-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .manager-requirements-header > button {
+    width: 100%;
+  }
+
+  .manager-requirements-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .manager-requirements-toolbar > *:first-child {
+    max-width: none;
+  }
+
+  .manager-requirements-status-filter {
+    width: 100%;
+  }
+
+  .manager-requirements-summary {
+    overflow-x: auto;
+  }
+
+  .manager-requirement-modal-overlay {
+    padding: 14px;
+  }
+
+  .manager-requirement-modal {
+    max-height: calc(100vh - 28px);
+  }
+}
+
+@media (max-width: 480px) {
+  .manager-requirements-page {
+    padding: 16px 12px;
+  }
+
+  .manager-requirements-header h1 {
+    font-size: 23px;
+  }
+
+  .manager-requirements-summary > div {
+    min-width: 135px;
+  }
+
+  .manager-requirement-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-requirement-detail-grid > div:nth-child(odd) {
+    border-right: 0;
+  }
+
+  .manager-requirement-detail-grid > div:last-child {
+    border-bottom: 0;
+  }
+
+  .manager-requirement-detail-grid > div:not(:last-child) {
+    border-bottom: 1px solid #edf0f3;
+  }
+
+  .manager-requirement-modal-header,
+  .manager-requirement-modal-body {
+    padding: 18px;
+  }
+
+  .manager-requirement-modal-footer {
+    padding: 14px 18px;
+  }
+}

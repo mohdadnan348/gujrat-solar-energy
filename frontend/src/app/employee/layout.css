@@ -1,0 +1,24 @@
+.employee-layout {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.employee-layout-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 15px;
+}
+
+.employee-layout-content {
+  min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+  .employee-layout {
+    overflow-x: hidden;
+  }
+}

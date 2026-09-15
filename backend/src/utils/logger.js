@@ -1,52 +1,40 @@
-const fs = require("fs");
-const path = require("path");
+const logger = {
+  info(message, meta = {}) {
+    console.log(
+      `[INFO] ${new Date().toISOString()} - ${message}`,
+      Object.keys(meta).length ? meta : ""
+    );
+  },
 
-const logsDirectory = path.join(__dirname, "../../logs");
+  warn(message, meta = {}) {
+    console.warn(
+      `[WARN] ${new Date().toISOString()} - ${message}`,
+      Object.keys(meta).length ? meta : ""
+    );
+  },
 
-if (!fs.existsSync(logsDirectory)) {
-  fs.mkdirSync(logsDirectory, { recursive: true });
-}
+  error(message, error = null, meta = {}) {
+    console.error(
+      `[ERROR] ${new Date().toISOString()} - ${message}`
+    );
 
-const getTimestamp = () => {
-  return new Date().toISOString();
+    if (error) {
+      console.error(error);
+    }
+
+    if (Object.keys(meta).length) {
+      console.error(meta);
+    }
+  },
+
+  debug(message, meta = {}) {
+    if (process.env.NODE_ENV === "development") {
+      console.debug(
+        `[DEBUG] ${new Date().toISOString()} - ${message}`,
+        Object.keys(meta).length ? meta : ""
+      );
+    }
+  },
 };
 
-const writeLog = (level, message, meta = {}) => {
-  const logFile = path.join(logsDirectory, "app.log");
-
-  const logEntry = {
-    timestamp: getTimestamp(),
-    level,
-    message,
-    ...(Object.keys(meta).length > 0 && { meta }),
-  };
-
-  fs.appendFileSync(
-    logFile,
-    `${JSON.stringify(logEntry)}\n`,
-    "utf8"
-  );
-};
-
-const info = (message, meta = {}) => {
-  writeLog("INFO", message, meta);
-};
-
-const warn = (message, meta = {}) => {
-  writeLog("WARN", message, meta);
-};
-
-const error = (message, meta = {}) => {
-  writeLog("ERROR", message, meta);
-};
-
-const debug = (message, meta = {}) => {
-  writeLog("DEBUG", message, meta);
-};
-
-module.exports = {
-  info,
-  warn,
-  error,
-  debug,
-};
+module.exports = logger;

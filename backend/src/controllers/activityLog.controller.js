@@ -3,7 +3,6 @@ const activityLogService = require("../services/activityLog.service");
 /**
  * Create activity log
  */
-
 const createActivityLog = async (req, res, next) => {
   try {
     const {
@@ -45,7 +44,6 @@ const createActivityLog = async (req, res, next) => {
   }
 };
 
-
 /**
  * Get activity log by ID
  */
@@ -65,7 +63,6 @@ const getActivityLog = async (req, res, next) => {
     next(error);
   }
 };
-
 
 /**
  * Get activity logs

@@ -17,12 +17,16 @@ const createInvoice = async (req, res, next) => {
   }
 };
 
-const createInvoiceFromQuotation = async (req, res, next) => {
+const createInvoiceFromQuotation = async (
+  req,
+  res,
+  next
+) => {
   try {
     const invoice =
       await invoiceService.createInvoiceFromQuotation(
         req.params.quotationId,
-        req.body,
+        req.body || {},
         req.user._id
       );
 
@@ -30,21 +34,6 @@ const createInvoiceFromQuotation = async (req, res, next) => {
       success: true,
       message:
         "Invoice created successfully from quotation",
-      data: invoice,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getInvoice = async (req, res, next) => {
-  try {
-    const invoice =
-      await invoiceService.getInvoiceById(req.params.id);
-
-    return res.status(200).json({
-      success: true,
-      message: "Invoice fetched successfully",
       data: invoice,
     });
   } catch (error) {
@@ -69,7 +58,50 @@ const getInvoices = async (req, res, next) => {
   }
 };
 
-const updateInvoice = async (req, res, next) => {
+const getInvoice = async (req, res, next) => {
+  try {
+    const invoice =
+      await invoiceService.getInvoiceById(
+        req.params.id
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: "Invoice fetched successfully",
+      data: invoice,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getInvoiceItems = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const items =
+      await invoiceService.getInvoiceItems(
+        req.params.id
+      );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Invoice items fetched successfully",
+      data: items,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateInvoice = async (
+  req,
+  res,
+  next
+) => {
   try {
     const invoice =
       await invoiceService.updateInvoice(
@@ -88,7 +120,11 @@ const updateInvoice = async (req, res, next) => {
   }
 };
 
-const issueInvoice = async (req, res, next) => {
+const issueInvoice = async (
+  req,
+  res,
+  next
+) => {
   try {
     const invoice =
       await invoiceService.issueInvoice(
@@ -106,12 +142,16 @@ const issueInvoice = async (req, res, next) => {
   }
 };
 
-const cancelInvoice = async (req, res, next) => {
+const cancelInvoice = async (
+  req,
+  res,
+  next
+) => {
   try {
     const invoice =
       await invoiceService.cancelInvoice(
         req.params.id,
-        req.body.reason,
+        req.body?.reason,
         req.user._id
       );
 
@@ -125,34 +165,24 @@ const cancelInvoice = async (req, res, next) => {
   }
 };
 
-const getInvoiceItems = async (req, res, next) => {
-  try {
-    const items =
-      await invoiceService.getInvoiceItems(
-        req.params.id
-      );
-
-    return res.status(200).json({
-      success: true,
-      message: "Invoice items fetched successfully",
-      data: items,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const markInvoicesOverdue = async (req, res, next) => {
+const markInvoicesOverdue = async (
+  req,
+  res,
+  next
+) => {
   try {
     const result =
       await invoiceService.markInvoicesOverdue();
 
     return res.status(200).json({
       success: true,
-      message: "Overdue invoices updated successfully",
+      message:
+        "Overdue invoices updated successfully",
       data: {
-        matched: result.matchedCount,
-        modified: result.modifiedCount,
+        matched:
+          result.matchedCount || 0,
+        modified:
+          result.modifiedCount || 0,
       },
     });
   } catch (error) {
@@ -163,11 +193,11 @@ const markInvoicesOverdue = async (req, res, next) => {
 module.exports = {
   createInvoice,
   createInvoiceFromQuotation,
-  getInvoice,
   getInvoices,
+  getInvoice,
+  getInvoiceItems,
   updateInvoice,
   issueInvoice,
   cancelInvoice,
-  getInvoiceItems,
   markInvoicesOverdue,
-};1
+};

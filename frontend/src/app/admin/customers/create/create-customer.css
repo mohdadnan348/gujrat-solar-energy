@@ -1,0 +1,356 @@
+.admin-create-customer-page {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+  color: #172033;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.admin-create-customer-header {
+  margin-bottom: 24px;
+}
+
+.admin-create-customer-back {
+  border: 0;
+  padding: 0;
+  margin-bottom: 16px;
+  background: transparent;
+  color: #16803c;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.admin-create-customer-back:hover {
+  color: #0d642e;
+  transform: translateX(-2px);
+}
+
+.admin-create-customer-title {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.admin-create-customer-title-icon {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #16803c, #27a957);
+  color: #ffffff;
+  font-size: 22px;
+  box-shadow: 0 10px 25px rgba(22, 128, 60, 0.18);
+}
+
+.admin-create-customer-title h1 {
+  margin: 0;
+  color: #172033;
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.admin-create-customer-title p {
+  margin: 7px 0 0;
+  color: #697386;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* =========================
+   ALERTS
+========================= */
+
+.admin-create-customer-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+}
+
+.admin-create-customer-alert.error {
+  border: 1px solid #fecaca;
+  background: #fff7f7;
+  color: #991b1b;
+}
+
+.admin-create-customer-alert.success {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.admin-create-customer-alert-icon {
+  width: 25px;
+  height: 25px;
+  min-width: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-create-customer-alert.error
+  .admin-create-customer-alert-icon {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.admin-create-customer-alert.success
+  .admin-create-customer-alert-icon {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.admin-create-customer-alert strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-create-customer-alert p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* =========================
+   FORM
+========================= */
+
+.admin-create-customer-form {
+  width: 100%;
+}
+
+.admin-create-customer-card {
+  padding: 24px;
+  margin-bottom: 20px;
+  border: 1px solid #e6e9ee;
+  border-radius: 17px;
+  background: #ffffff;
+  box-shadow: 0 6px 25px rgba(15, 23, 42, 0.035);
+}
+
+.admin-create-customer-card-header {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 24px;
+}
+
+.admin-create-customer-section-number {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: #ecfdf3;
+  color: #16803c;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.admin-create-customer-card-header h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.admin-create-customer-card-header p {
+  margin: 4px 0 0;
+  color: #7b8495;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* =========================
+   FORM GRID
+========================= */
+
+.admin-create-customer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 19px;
+}
+
+.admin-create-customer-full-field {
+  grid-column: 1 / -1;
+}
+
+/* =========================
+   ACTIONS
+========================= */
+
+.admin-create-customer-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 15px 18px;
+  margin-top: 8px;
+  border: 1px solid #e1e6e3;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -8px 30px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.admin-create-customer-actions > div:first-child {
+  min-width: 0;
+}
+
+.admin-create-customer-actions > div:first-child span {
+  color: #7b8495;
+  font-size: 12px;
+}
+
+.admin-create-customer-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* =========================
+   FOCUS / DISABLED
+========================= */
+
+.admin-create-customer-page input:focus,
+.admin-create-customer-page select:focus,
+.admin-create-customer-page textarea:focus {
+  outline: none;
+}
+
+.admin-create-customer-page button:disabled {
+  cursor: not-allowed;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 900px) {
+  .admin-create-customer-page {
+    padding: 18px;
+  }
+
+  .admin-create-customer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-create-customer-full-field {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-create-customer-page {
+    padding: 14px;
+  }
+
+  .admin-create-customer-title {
+    align-items: flex-start;
+    gap: 11px;
+  }
+
+  .admin-create-customer-title-icon {
+    width: 45px;
+    height: 45px;
+    min-width: 45px;
+    border-radius: 12px;
+    font-size: 19px;
+  }
+
+  .admin-create-customer-title h1 {
+    font-size: 22px;
+  }
+
+  .admin-create-customer-title p {
+    font-size: 12px;
+  }
+
+  .admin-create-customer-card {
+    padding: 17px;
+    margin-bottom: 14px;
+    border-radius: 14px;
+  }
+
+  .admin-create-customer-card-header {
+    align-items: flex-start;
+    margin-bottom: 18px;
+  }
+
+  .admin-create-customer-card-header h2 {
+    font-size: 15px;
+  }
+
+  .admin-create-customer-card-header p {
+    font-size: 12px;
+  }
+
+  .admin-create-customer-actions {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 14px;
+  }
+
+  .admin-create-customer-actions
+    > div:first-child {
+    text-align: center;
+  }
+
+  .admin-create-customer-action-buttons {
+    width: 100%;
+  }
+
+  .admin-create-customer-action-buttons > button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-create-customer-page {
+    padding: 10px;
+  }
+
+  .admin-create-customer-back {
+    font-size: 13px;
+  }
+
+  .admin-create-customer-title h1 {
+    font-size: 20px;
+  }
+
+  .admin-create-customer-card {
+    padding: 15px;
+  }
+
+  .admin-create-customer-action-buttons {
+    flex-direction: column;
+  }
+
+  .admin-create-customer-action-buttons > button {
+    width: 100%;
+    flex: none;
+  }
+}

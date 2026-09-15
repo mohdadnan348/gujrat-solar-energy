@@ -39,8 +39,6 @@ const QUOTATION_STATUS = Object.freeze({
 const INVOICE_STATUS = Object.freeze({
   DRAFT: "Draft",
   ISSUED: "Issued",
-  PARTIALLY_PAID: "Partially Paid",
-  PAID: "Paid",
   OVERDUE: "Overdue",
   CANCELLED: "Cancelled",
 });

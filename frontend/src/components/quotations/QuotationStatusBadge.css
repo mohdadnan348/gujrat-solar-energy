@@ -1,0 +1,34 @@
+.quotation-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.quotation-status-draft {
+  color: #475569;
+}
+
+.quotation-status-sent {
+  color: #0369a1;
+}
+
+.quotation-status-viewed {
+  color: #2563eb;
+}
+
+.quotation-status-accepted {
+  color: #15803d;
+}
+
+.quotation-status-rejected {
+  color: #dc2626;
+}
+
+.quotation-status-expired {
+  color: #b45309;
+}
+
+.quotation-status-cancelled {
+  color: #dc2626;
+}

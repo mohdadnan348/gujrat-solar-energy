@@ -1,0 +1,22 @@
+/* frontend/src/app/admin/layout.css */
+
+.admin-layout {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.admin-layout-content {
+  width: 100%;
+  min-height: 100%;
+}
+
+.admin-layout-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #f7f9fc;
+  color: #4b5565;
+  font-size: 14px;
+  font-weight: 600;
+}

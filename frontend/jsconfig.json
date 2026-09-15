@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/app/*": ["./src/app/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/context/*": ["./src/context/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/services/*": ["./src/services/*"],
+      "@/utils/*": ["./src/utils/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/middleware/*": ["./src/middleware/*"]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    ".next",
+    "out"
+  ]
+}

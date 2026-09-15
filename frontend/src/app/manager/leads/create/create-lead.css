@@ -1,0 +1,233 @@
+.manager-create-lead-page {
+  min-height: 100%;
+  padding: 28px;
+  background: #f6f8fb;
+}
+
+.manager-create-lead-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.manager-create-lead-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  margin-bottom: 14px;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.manager-create-lead-back:hover {
+  color: #15803d;
+}
+
+.manager-create-lead-eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.manager-create-lead-header h1 {
+  margin: 0;
+  color: #172033;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 750;
+}
+
+.manager-create-lead-header p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.manager-create-lead-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 13px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.manager-create-lead-error button {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #b91c1c;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.manager-create-lead-error button:hover {
+  background: #fee2e2;
+}
+
+.manager-create-lead-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1100px;
+}
+
+.manager-create-lead-card {
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+}
+
+.manager-create-lead-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 22px;
+  border-bottom: 1px solid #eef1f4;
+}
+
+.manager-create-lead-card-header h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.manager-create-lead-card-header p {
+  margin: 5px 0 0;
+  color: #7b8798;
+  font-size: 13px;
+}
+
+.manager-required-note {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.manager-create-lead-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  padding: 22px;
+}
+
+.manager-create-lead-full {
+  grid-column: 1 / -1;
+}
+
+.manager-create-lead-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 2px 0 10px;
+}
+
+.manager-create-lead-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f6f8fb;
+  color: #64748b;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .manager-create-lead-page {
+    padding: 20px 16px;
+  }
+
+  .manager-create-lead-header {
+    margin-bottom: 20px;
+  }
+
+  .manager-create-lead-header h1 {
+    font-size: 25px;
+  }
+
+  .manager-create-lead-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 18px;
+  }
+
+  .manager-create-lead-full {
+    grid-column: auto;
+  }
+
+  .manager-create-lead-card-header {
+    align-items: flex-start;
+    padding: 18px;
+  }
+
+  .manager-create-lead-actions {
+    width: 100%;
+  }
+
+  .manager-create-lead-actions button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .manager-create-lead-page {
+    padding: 16px 12px;
+  }
+
+  .manager-create-lead-header h1 {
+    font-size: 22px;
+  }
+
+  .manager-create-lead-card {
+    border-radius: 11px;
+  }
+
+  .manager-create-lead-card-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .manager-required-note {
+    align-self: flex-start;
+  }
+
+  .manager-create-lead-grid {
+    padding: 15px;
+  }
+
+  .manager-create-lead-actions {
+    flex-direction: column-reverse;
+  }
+
+  .manager-create-lead-actions button {
+    width: 100%;
+  }
+}

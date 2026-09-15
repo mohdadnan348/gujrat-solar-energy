@@ -1,0 +1,237 @@
+.gse-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.gse-input-full {
+  width: 100%;
+}
+
+/* =========================
+   Label
+========================= */
+
+.gse-input-label {
+  display: block;
+  margin: 0;
+
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.gse-input-required {
+  margin-left: 3px;
+  color: #dc2626;
+}
+
+/* =========================
+   Input Container
+========================= */
+
+.gse-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* =========================
+   Input Field
+========================= */
+
+.gse-input-field {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+  outline: none;
+
+  background: #ffffff;
+  color: #111827;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+
+  appearance: none;
+}
+
+.gse-input-field::placeholder {
+  color: #9ca3af;
+}
+
+.gse-input-field:hover:not(:disabled) {
+  border-color: #9ca3af;
+}
+
+.gse-input-field:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+.gse-input-field:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.gse-input-field[readonly] {
+  background: #f9fafb;
+}
+
+/* =========================
+   Sizes
+========================= */
+
+.gse-input-small {
+  min-height: 36px;
+  padding: 0 11px;
+  font-size: 13px;
+}
+
+.gse-input-medium {
+  min-height: 42px;
+  padding: 0 13px;
+  font-size: 14px;
+}
+
+.gse-input-large {
+  min-height: 48px;
+  padding: 0 15px;
+  font-size: 15px;
+}
+
+/* =========================
+   Icons
+========================= */
+
+.gse-input-with-left-icon {
+  padding-left: 40px;
+}
+
+.gse-input-with-right-icon {
+  padding-right: 40px;
+}
+
+.gse-input-icon {
+  position: absolute;
+  top: 50%;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 20px;
+  height: 20px;
+
+  color: #6b7280;
+
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.gse-input-icon-left {
+  left: 12px;
+}
+
+.gse-input-icon-right {
+  right: 12px;
+}
+
+/* =========================
+   Error State
+========================= */
+
+.gse-input-field.gse-input-error {
+  border-color: #dc2626;
+}
+
+.gse-input-field.gse-input-error:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* =========================
+   Messages
+========================= */
+
+.gse-input-message {
+  margin: 0;
+
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.gse-input-error-message {
+  color: #dc2626;
+}
+
+/* =========================
+   Number Input
+========================= */
+
+.gse-input-field[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.gse-input-field[type="number"]::-webkit-inner-spin-button,
+.gse-input-field[type="number"]::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+/* =========================
+   Search / Date / File
+========================= */
+
+.gse-input-field[type="date"],
+.gse-input-field[type="datetime-local"],
+.gse-input-field[type="time"] {
+  cursor: pointer;
+}
+
+.gse-input-field[type="file"] {
+  padding-top: 9px;
+  padding-bottom: 9px;
+  cursor: pointer;
+}
+
+/* =========================
+   Autofill
+========================= */
+
+.gse-input-field:-webkit-autofill,
+.gse-input-field:-webkit-autofill:hover,
+.gse-input-field:-webkit-autofill:focus {
+  -webkit-text-fill-color: #111827;
+  box-shadow: 0 0 0 1000px #ffffff inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* =========================
+   Responsive
+========================= */
+
+@media (max-width: 640px) {
+  .gse-input-medium {
+    min-height: 40px;
+  }
+
+  .gse-input-large {
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  .gse-input-label {
+    font-size: 13px;
+  }
+}

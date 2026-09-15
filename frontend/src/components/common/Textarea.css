@@ -1,0 +1,192 @@
+.gse-textarea-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.gse-textarea-full {
+  width: 100%;
+}
+
+/* =========================
+   Label
+========================= */
+
+.gse-textarea-label {
+  display: block;
+  margin: 0;
+
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.gse-textarea-required {
+  margin-left: 3px;
+  color: #dc2626;
+}
+
+/* =========================
+   Textarea Field
+========================= */
+
+.gse-textarea-field {
+  width: 100%;
+
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+
+  outline: none;
+  background: #ffffff;
+  color: #111827;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+
+  appearance: none;
+}
+
+.gse-textarea-field::placeholder {
+  color: #9ca3af;
+}
+
+.gse-textarea-field:hover:not(:disabled) {
+  border-color: #9ca3af;
+}
+
+.gse-textarea-field:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+.gse-textarea-field:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.gse-textarea-field[readonly] {
+  background: #f9fafb;
+}
+
+/* =========================
+   Sizes
+========================= */
+
+.gse-textarea-small {
+  min-height: 80px;
+  padding: 9px 11px;
+  font-size: 13px;
+}
+
+.gse-textarea-medium {
+  min-height: 100px;
+  padding: 11px 13px;
+  font-size: 14px;
+}
+
+.gse-textarea-large {
+  min-height: 130px;
+  padding: 13px 15px;
+  font-size: 15px;
+}
+
+/* =========================
+   Resize
+========================= */
+
+.gse-textarea-resize-none {
+  resize: none;
+}
+
+.gse-textarea-resize-vertical {
+  resize: vertical;
+}
+
+.gse-textarea-resize-horizontal {
+  resize: horizontal;
+}
+
+.gse-textarea-resize-both {
+  resize: both;
+}
+
+/* =========================
+   Error State
+========================= */
+
+.gse-textarea-field.gse-textarea-error {
+  border-color: #dc2626;
+}
+
+.gse-textarea-field.gse-textarea-error:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* =========================
+   Footer
+========================= */
+
+.gse-textarea-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 17px;
+}
+
+/* =========================
+   Messages
+========================= */
+
+.gse-textarea-message {
+  margin: 0;
+
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.gse-textarea-error-message {
+  color: #dc2626;
+}
+
+/* =========================
+   Character Count
+========================= */
+
+.gse-textarea-count {
+  flex-shrink: 0;
+
+  color: #9ca3af;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* =========================
+   Responsive
+========================= */
+
+@media (max-width: 640px) {
+  .gse-textarea-label {
+    font-size: 13px;
+  }
+
+  .gse-textarea-medium {
+    min-height: 90px;
+  }
+
+  .gse-textarea-large {
+    min-height: 115px;
+    font-size: 14px;
+  }
+}

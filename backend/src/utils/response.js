@@ -1,44 +1,42 @@
-const successResponse = (
+const successResponse = ({
   res,
-  data = null,
+  statusCode = 200,
   message = "Request successful",
-  statusCode = 200
-) => {
-  return res.status(statusCode).json({
+  data = null,
+  pagination = null,
+}) => {
+  const response = {
     success: true,
     message,
     data,
-  });
+  };
+
+  if (pagination) {
+    response.pagination = pagination;
+  }
+
+  return res.status(statusCode).json(response);
 };
 
-const errorResponse = (
+const errorResponse = ({
   res,
-  message = "Something went wrong",
   statusCode = 500,
-  errors = null
-) => {
-  return res.status(statusCode).json({
+  message = "Something went wrong",
+  errors = null,
+}) => {
+  const response = {
     success: false,
     message,
-    ...(errors && { errors }),
-  });
-};
+  };
 
-const createdResponse = (
-  res,
-  data = null,
-  message = "Created successfully"
-) => {
-  return successResponse(res, data, message, 201);
-};
+  if (errors) {
+    response.errors = errors;
+  }
 
-const noContentResponse = (res) => {
-  return res.status(204).send();
+  return res.status(statusCode).json(response);
 };
 
 module.exports = {
   successResponse,
   errorResponse,
-  createdResponse,
-  noContentResponse,
 };
