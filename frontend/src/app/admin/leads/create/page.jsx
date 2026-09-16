@@ -1,5 +1,3 @@
-// frontend/src/app/admin/leads/create/page.jsx
-
 "use client";
 
 import React, { useState } from "react";
@@ -11,19 +9,23 @@ import Select from "@/components/common/Select";
 import Textarea from "@/components/common/Textarea";
 import { useAuth } from "@/hooks/useAuth";
 import leadService from "@/services/lead.service";
+import "./create-lead.css";
 
 const CreateAdminLeadPage = () => {
   const router = useRouter();
   const { user, logout, loading: authLoading } = useAuth();
 
   const [form, setForm] = useState({
-    name: "",
+    customerName: "",
     companyName: "",
-    phone: "",
+    mobile: "",
+    alternateMobile: "",
     email: "",
     address: "",
     city: "",
-    source: "WEBSITE",
+    state: "",
+    pincode: "",
+    leadSource: "WEBSITE",
     requirement: "",
     status: "NEW",
     priority: "MEDIUM",
@@ -60,16 +62,16 @@ const CreateAdminLeadPage = () => {
   const validateForm = () => {
     const nextErrors = {};
 
-    if (!form.name.trim()) {
-      nextErrors.name = "Lead name is required.";
+    if (!form.customerName.trim()) {
+      nextErrors.customerName = "Customer name is required.";
     }
 
-    if (!form.phone.trim()) {
-      nextErrors.phone = "Phone number is required.";
+    if (!form.mobile.trim()) {
+      nextErrors.mobile = "Mobile number is required.";
     } else if (
-      !/^[0-9+\-\s()]{10,15}$/.test(form.phone.trim())
+      !/^[0-9+\-\s()]{10,15}$/.test(form.mobile.trim())
     ) {
-      nextErrors.phone = "Enter a valid phone number.";
+      nextErrors.mobile = "Enter a valid mobile number.";
     }
 
     if (
@@ -103,18 +105,22 @@ const CreateAdminLeadPage = () => {
       setError("");
 
       await leadService.createLead({
-        name: form.name.trim(),
-        companyName: form.companyName.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim(),
-        address: form.address.trim(),
-        city: form.city.trim(),
-        source: form.source,
+        customerName: form.customerName.trim(),
+        companyName: form.companyName.trim() || undefined,
+        mobile: form.mobile.trim(),
+        alternateMobile:
+          form.alternateMobile.trim() || undefined,
+        email: form.email.trim().toLowerCase() || undefined,
+        address: form.address.trim() || undefined,
+        city: form.city.trim() || undefined,
+        state: form.state.trim() || undefined,
+        pincode: form.pincode.trim() || undefined,
+        leadSource: form.leadSource,
         requirement: form.requirement.trim(),
         status: form.status,
         priority: form.priority,
-        followUpDate: form.followUpDate || null,
-        notes: form.notes.trim(),
+        followUpDate: form.followUpDate || undefined,
+        notes: form.notes.trim() || undefined,
       });
 
       router.push("/admin/leads");
@@ -122,12 +128,19 @@ const CreateAdminLeadPage = () => {
       console.error("Create admin lead error:", err);
 
       setError(
-        err?.message ||
-          err?.response?.data?.message ||
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.message ||
           "Unable to create lead. Please try again."
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleBack = () => {
+    if (!saving) {
+      router.push("/admin/leads");
     }
   };
 
@@ -173,7 +186,8 @@ const CreateAdminLeadPage = () => {
           <Button
             type="button"
             variant="secondary"
-            onClick={() => router.push("/admin/leads")}
+            onClick={handleBack}
+            disabled={saving}
           >
             ← Back to Leads
           </Button>
@@ -200,6 +214,7 @@ const CreateAdminLeadPage = () => {
 
               <div>
                 <h2>Customer Information</h2>
+
                 <p>
                   Basic details of the person or business
                   enquiring about solar.
@@ -209,14 +224,17 @@ const CreateAdminLeadPage = () => {
 
             <div className="admin-create-lead-grid">
               <Input
-                label="Lead Name"
+                label="Customer Name"
                 required
-                value={form.name}
+                value={form.customerName}
                 onChange={(event) =>
-                  updateField("name", event.target.value)
+                  updateField(
+                    "customerName",
+                    event.target.value
+                  )
                 }
                 placeholder="Enter customer name"
-                error={errors.name}
+                error={errors.customerName}
               />
 
               <Input
@@ -232,14 +250,29 @@ const CreateAdminLeadPage = () => {
               />
 
               <Input
-                label="Phone Number"
+                label="Mobile Number"
                 required
-                value={form.phone}
+                value={form.mobile}
                 onChange={(event) =>
-                  updateField("phone", event.target.value)
+                  updateField(
+                    "mobile",
+                    event.target.value
+                  )
                 }
                 placeholder="+91 9876543210"
-                error={errors.phone}
+                error={errors.mobile}
+              />
+
+              <Input
+                label="Alternate Mobile"
+                value={form.alternateMobile}
+                onChange={(event) =>
+                  updateField(
+                    "alternateMobile",
+                    event.target.value
+                  )
+                }
+                placeholder="Enter alternate mobile number"
               />
 
               <Input
@@ -247,7 +280,10 @@ const CreateAdminLeadPage = () => {
                 type="email"
                 value={form.email}
                 onChange={(event) =>
-                  updateField("email", event.target.value)
+                  updateField(
+                    "email",
+                    event.target.value
+                  )
                 }
                 placeholder="customer@example.com"
                 error={errors.email}
@@ -257,22 +293,51 @@ const CreateAdminLeadPage = () => {
                 label="City"
                 value={form.city}
                 onChange={(event) =>
-                  updateField("city", event.target.value)
+                  updateField(
+                    "city",
+                    event.target.value
+                  )
                 }
                 placeholder="Enter city"
               />
 
               <Input
-                label="Address"
-                value={form.address}
+                label="State"
+                value={form.state}
                 onChange={(event) =>
                   updateField(
-                    "address",
+                    "state",
                     event.target.value
                   )
                 }
-                placeholder="Enter complete address"
+                placeholder="Enter state"
               />
+
+              <Input
+                label="Pincode"
+                value={form.pincode}
+                onChange={(event) =>
+                  updateField(
+                    "pincode",
+                    event.target.value
+                  )
+                }
+                placeholder="Enter pincode"
+              />
+
+              <div className="admin-create-lead-full-field">
+                <Input
+                  label="Address"
+                  value={form.address}
+                  onChange={(event) =>
+                    updateField(
+                      "address",
+                      event.target.value
+                    )
+                  }
+                  placeholder="Enter complete address"
+                />
+              </div>
             </div>
           </section>
 
@@ -285,6 +350,7 @@ const CreateAdminLeadPage = () => {
 
               <div>
                 <h2>Lead Information</h2>
+
                 <p>
                   Configure the source, requirement and
                   current lead stage.
@@ -295,10 +361,10 @@ const CreateAdminLeadPage = () => {
             <div className="admin-create-lead-grid">
               <Select
                 label="Lead Source"
-                value={form.source}
+                value={form.leadSource}
                 onChange={(event) =>
                   updateField(
-                    "source",
+                    "leadSource",
                     event.target.value
                   )
                 }
@@ -308,28 +374,24 @@ const CreateAdminLeadPage = () => {
                     value: "WEBSITE",
                   },
                   {
+                    label: "WhatsApp",
+                    value: "WHATSAPP",
+                  },
+                  {
+                    label: "Call",
+                    value: "CALL",
+                  },
+                  {
                     label: "Referral",
                     value: "REFERRAL",
                   },
                   {
-                    label: "Facebook",
-                    value: "FACEBOOK",
-                  },
-                  {
-                    label: "Instagram",
-                    value: "INSTAGRAM",
-                  },
-                  {
-                    label: "Google",
-                    value: "GOOGLE",
+                    label: "Social Media",
+                    value: "SOCIAL_MEDIA",
                   },
                   {
                     label: "Walk-in",
                     value: "WALK_IN",
-                  },
-                  {
-                    label: "Phone",
-                    value: "PHONE",
                   },
                   {
                     label: "Other",
@@ -353,6 +415,10 @@ const CreateAdminLeadPage = () => {
                     value: "NEW",
                   },
                   {
+                    label: "Assigned",
+                    value: "ASSIGNED",
+                  },
+                  {
                     label: "Contacted",
                     value: "CONTACTED",
                   },
@@ -361,16 +427,16 @@ const CreateAdminLeadPage = () => {
                     value: "QUALIFIED",
                   },
                   {
-                    label: "Proposal Sent",
-                    value: "PROPOSAL_SENT",
+                    label: "Site Visit",
+                    value: "SITE_VISIT",
                   },
                   {
-                    label: "Negotiation",
-                    value: "NEGOTIATION",
+                    label: "Quotation",
+                    value: "QUOTATION",
                   },
                   {
-                    label: "Converted",
-                    value: "CONVERTED",
+                    label: "Won",
+                    value: "WON",
                   },
                   {
                     label: "Lost",
@@ -431,7 +497,7 @@ const CreateAdminLeadPage = () => {
                       event.target.value
                     )
                   }
-                  placeholder="Example: 5 KW rooftop solar system for home..."
+                  placeholder="Example: 5 kW rooftop solar system for home..."
                   rows={4}
                   error={errors.requirement}
                 />
@@ -459,7 +525,7 @@ const CreateAdminLeadPage = () => {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => router.push("/admin/leads")}
+              onClick={handleBack}
               disabled={saving}
             >
               Cancel
@@ -470,7 +536,9 @@ const CreateAdminLeadPage = () => {
               variant="primary"
               disabled={saving}
             >
-              {saving ? "Creating Lead..." : "Create Lead"}
+              {saving
+                ? "Creating Lead..."
+                : "Create Lead"}
             </Button>
           </div>
         </form>

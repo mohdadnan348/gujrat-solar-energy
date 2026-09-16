@@ -2,13 +2,23 @@ const Lead = require("../models/Lead");
 const LeadActivity = require("../models/LeadActivity");
 const Customer = require("../models/Customer");
 const { generateId } = require("../utils/generateId");
+
 const {
   LEAD_STATUS,
   LEAD_PRIORITY,
   LEAD_SOURCES,
 } = require("../config/constants");
 
-const buildFilter = ({ search, status, priority, leadSource, assignedTo }) => {
+/**
+ * Build lead filters
+ */
+const buildFilter = ({
+  search,
+  status,
+  priority,
+  leadSource,
+  assignedTo,
+}) => {
   const filter = {};
 
   if (search) {
@@ -21,14 +31,28 @@ const buildFilter = ({ search, status, priority, leadSource, assignedTo }) => {
     ];
   }
 
-  if (status) filter.status = status;
-  if (priority) filter.priority = priority;
-  if (leadSource) filter.leadSource = leadSource;
-  if (assignedTo) filter.assignedTo = assignedTo;
+  if (status) {
+    filter.status = status;
+  }
+
+  if (priority) {
+    filter.priority = priority;
+  }
+
+  if (leadSource) {
+    filter.leadSource = leadSource;
+  }
+
+  if (assignedTo) {
+    filter.assignedTo = assignedTo;
+  }
 
   return filter;
 };
 
+/**
+ * Create Lead
+ */
 const createLead = async (data, createdBy) => {
   const leadId = await generateId(Lead, "leadId", "LD");
 
@@ -63,10 +87,16 @@ const createLead = async (data, createdBy) => {
   });
 
   return Lead.findById(lead._id)
-    .populate("assignedTo", "employeeId name email department designation")
+    .populate(
+      "assignedTo",
+      "employeeId name email department designation"
+    )
     .populate("createdBy", "username email role");
 };
 
+/**
+ * Get Leads
+ */
 const getLeads = async ({
   page = 1,
   limit = 10,
@@ -90,8 +120,14 @@ const getLeads = async ({
 
   const [leads, total] = await Promise.all([
     Lead.find(filter)
-      .populate("assignedTo", "employeeId name email department designation")
-      .populate("convertedCustomer", "customerId name companyName mobile")
+      .populate(
+        "assignedTo",
+        "employeeId name email department designation"
+      )
+      .populate(
+        "convertedCustomer",
+        "customerId name companyName mobile"
+      )
       .populate("createdBy", "username email role")
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -112,10 +148,19 @@ const getLeads = async ({
   };
 };
 
+/**
+ * Get Lead By MongoDB ID
+ */
 const getLeadById = async (id) => {
   const lead = await Lead.findById(id)
-    .populate("assignedTo", "employeeId name email department designation")
-    .populate("convertedCustomer", "customerId name companyName mobile email")
+    .populate(
+      "assignedTo",
+      "employeeId name email department designation"
+    )
+    .populate(
+      "convertedCustomer",
+      "customerId name companyName mobile email"
+    )
     .populate("createdBy", "username email role")
     .populate("updatedBy", "username email role");
 
@@ -128,10 +173,19 @@ const getLeadById = async (id) => {
   return lead;
 };
 
+/**
+ * Get Lead By Human-readable Lead ID
+ */
 const getLeadByLeadId = async (leadId) => {
   const lead = await Lead.findOne({ leadId })
-    .populate("assignedTo", "employeeId name email department designation")
-    .populate("convertedCustomer", "customerId name companyName mobile email")
+    .populate(
+      "assignedTo",
+      "employeeId name email department designation"
+    )
+    .populate(
+      "convertedCustomer",
+      "customerId name companyName mobile email"
+    )
     .populate("createdBy", "username email role");
 
   if (!lead) {
@@ -143,6 +197,9 @@ const getLeadByLeadId = async (leadId) => {
   return lead;
 };
 
+/**
+ * Update Lead
+ */
 const updateLead = async (id, data, updatedBy) => {
   const lead = await Lead.findById(id);
 
@@ -153,6 +210,7 @@ const updateLead = async (id, data, updatedBy) => {
   }
 
   const oldStatus = lead.status;
+
   const oldAssignedTo = lead.assignedTo
     ? String(lead.assignedTo)
     : null;
@@ -187,6 +245,9 @@ const updateLead = async (id, data, updatedBy) => {
 
   await lead.save();
 
+  /**
+   * Status activity
+   */
   if (data.status && data.status !== oldStatus) {
     await LeadActivity.create({
       lead: lead._id,
@@ -199,6 +260,9 @@ const updateLead = async (id, data, updatedBy) => {
     });
   }
 
+  /**
+   * Assignment activity
+   */
   if (
     data.assignedTo !== undefined &&
     String(data.assignedTo || "") !== String(oldAssignedTo || "")
@@ -216,7 +280,15 @@ const updateLead = async (id, data, updatedBy) => {
   return getLeadById(lead._id);
 };
 
-const updateLeadStatus = async (id, status, lostReason, updatedBy) => {
+/**
+ * Update Lead Status
+ */
+const updateLeadStatus = async (
+  id,
+  status,
+  lostReason,
+  updatedBy
+) => {
   if (!Object.values(LEAD_STATUS).includes(status)) {
     const error = new Error("Invalid lead status");
     error.statusCode = 400;
@@ -260,7 +332,14 @@ const updateLeadStatus = async (id, status, lostReason, updatedBy) => {
   return getLeadById(lead._id);
 };
 
-const assignLead = async (id, assignedTo, updatedBy) => {
+/**
+ * Assign Lead
+ */
+const assignLead = async (
+  id,
+  assignedTo,
+  updatedBy
+) => {
   const lead = await Lead.findById(id);
 
   if (!lead) {
@@ -286,7 +365,18 @@ const assignLead = async (id, assignedTo, updatedBy) => {
   return getLeadById(lead._id);
 };
 
-const convertLeadToCustomer = async (id, data, createdBy) => {
+/**
+ * Convert Lead To Customer
+ *
+ * Important:
+ * Customer conversion is tracked using convertedCustomer.
+ * Lead status remains part of the existing Lead status flow.
+ */
+const convertLeadToCustomer = async (
+  id,
+  data = {},
+  createdBy
+) => {
   const lead = await Lead.findById(id);
 
   if (!lead) {
@@ -296,12 +386,18 @@ const convertLeadToCustomer = async (id, data, createdBy) => {
   }
 
   if (lead.convertedCustomer) {
-    const error = new Error("Lead is already converted to customer");
+    const error = new Error(
+      "Lead is already converted to customer"
+    );
     error.statusCode = 409;
     throw error;
   }
 
-  const customerId = await generateId(Customer, "customerId", "CUS");
+  const customerId = await generateId(
+    Customer,
+    "customerId",
+    "CUS"
+  );
 
   const customer = await Customer.create({
     customerId,
@@ -321,14 +417,24 @@ const convertLeadToCustomer = async (id, data, createdBy) => {
     pincode: data.pincode || lead.pincode,
     gstNumber: data.gstNumber,
     panNumber: data.panNumber,
-    customerType: data.customerType || "Individual",
+    customerType:
+      data.customerType || "Individual",
     siteAddress: data.siteAddress,
     notes: data.notes,
     createdBy,
   });
 
+  /**
+   * Link customer with lead.
+   *
+   * Do NOT use LEAD_STATUS.CONVERTED because that status
+   * does not belong to the current Lead status enum.
+   *
+   * A successfully converted lead is represented by WON
+   * plus the convertedCustomer reference.
+   */
   lead.convertedCustomer = customer._id;
-  lead.status = LEAD_STATUS.CONVERTED;
+  lead.status = LEAD_STATUS.WON;
   lead.updatedBy = createdBy;
 
   await lead.save();
@@ -338,7 +444,7 @@ const convertLeadToCustomer = async (id, data, createdBy) => {
     activityType: "CONVERSION",
     title: "Lead converted to customer",
     description: `Customer ${customer.customerId} created`,
-    status: LEAD_STATUS.CONVERTED,
+    status: LEAD_STATUS.WON,
     createdBy,
     assignedTo: lead.assignedTo,
   });
@@ -349,6 +455,11 @@ const convertLeadToCustomer = async (id, data, createdBy) => {
   };
 };
 
+/**
+ * Deactivate Lead
+ *
+ * Historical records are preserved.
+ */
 const deleteLead = async (id, updatedBy) => {
   const lead = await Lead.findById(id);
 
@@ -358,7 +469,6 @@ const deleteLead = async (id, updatedBy) => {
     throw error;
   }
 
-  // Historical records preserve karne ke liye hard delete nahi.
   lead.status = LEAD_STATUS.LOST;
   lead.lostReason = "Lead deactivated";
   lead.updatedBy = updatedBy;
@@ -380,36 +490,61 @@ const deleteLead = async (id, updatedBy) => {
   };
 };
 
+/**
+ * Lead Statistics
+ */
 const getLeadStats = async () => {
-  const [statusStats, priorityStats, sourceStats] = await Promise.all([
+  const [
+    statusStats,
+    priorityStats,
+    sourceStats,
+  ] = await Promise.all([
     Lead.aggregate([
       {
         $group: {
           _id: "$status",
-          count: { $sum: 1 },
+          count: {
+            $sum: 1,
+          },
         },
       },
-      { $sort: { count: -1 } },
+      {
+        $sort: {
+          count: -1,
+        },
+      },
     ]),
 
     Lead.aggregate([
       {
         $group: {
           _id: "$priority",
-          count: { $sum: 1 },
+          count: {
+            $sum: 1,
+          },
         },
       },
-      { $sort: { count: -1 } },
+      {
+        $sort: {
+          count: -1,
+        },
+      },
     ]),
 
     Lead.aggregate([
       {
         $group: {
           _id: "$leadSource",
-          count: { $sum: 1 },
+          count: {
+            $sum: 1,
+          },
         },
       },
-      { $sort: { count: -1 } },
+      {
+        $sort: {
+          count: -1,
+        },
+      },
     ]),
   ]);
 

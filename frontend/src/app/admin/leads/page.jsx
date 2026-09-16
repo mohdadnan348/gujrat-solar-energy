@@ -1,5 +1,3 @@
-// frontend/src/app/admin/leads/page.jsx
-
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -14,8 +12,27 @@ import Modal from "@/components/common/Modal";
 import { useAuth } from "@/hooks/useAuth";
 import leadService from "@/services/lead.service";
 import employeeService from "@/services/employee.service";
+import "./leads.css";
 
 const ITEMS_PER_PAGE = 10;
+
+const STATUS_OPTIONS = [
+  { label: "New", value: "NEW" },
+  { label: "Assigned", value: "ASSIGNED" },
+  { label: "Contacted", value: "CONTACTED" },
+  { label: "Qualified", value: "QUALIFIED" },
+  { label: "Site Visit", value: "SITE_VISIT" },
+  { label: "Quotation", value: "QUOTATION" },
+  { label: "Won", value: "WON" },
+  { label: "Lost", value: "LOST" },
+];
+
+const PRIORITY_OPTIONS = [
+  { label: "Urgent", value: "URGENT" },
+  { label: "High", value: "HIGH" },
+  { label: "Medium", value: "MEDIUM" },
+  { label: "Low", value: "LOW" },
+];
 
 const AdminLeadsPage = () => {
   const router = useRouter();
@@ -59,8 +76,14 @@ const AdminLeadsPage = () => {
 
       const [leadResponse, employeeResponse] =
         await Promise.all([
-          leadService.getLeads(),
-          employeeService.getEmployees(),
+          leadService.getLeads({
+            page: 1,
+            limit: 1000,
+          }),
+          employeeService.getEmployees({
+            page: 1,
+            limit: 1000,
+          }),
         ]);
 
       const leadData =
@@ -85,8 +108,9 @@ const AdminLeadsPage = () => {
       console.error("Admin leads loading error:", err);
 
       setError(
-        err?.message ||
-          err?.response?.data?.message ||
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.message ||
           "Unable to load leads."
       );
     } finally {
@@ -100,22 +124,23 @@ const AdminLeadsPage = () => {
   }, []);
 
   const getLeadId = (lead) =>
-    lead?._id || lead?.id || "—";
+    lead?.leadId ||
+    lead?._id ||
+    lead?.id ||
+    "—";
 
   const getLeadName = (lead) =>
-    lead?.name ||
     lead?.customerName ||
+    lead?.name ||
     lead?.fullName ||
     "Unnamed Lead";
 
   const getCompanyName = (lead) =>
-    lead?.companyName ||
-    lead?.company ||
-    "Individual Customer";
+    lead?.companyName || "Individual Customer";
 
   const getPhone = (lead) =>
-    lead?.phone ||
     lead?.mobile ||
+    lead?.phone ||
     lead?.contactNumber ||
     "—";
 
@@ -129,7 +154,7 @@ const AdminLeadsPage = () => {
     String(lead?.priority || "MEDIUM").toUpperCase();
 
   const getSource = (lead) =>
-    String(lead?.source || "OTHER").toUpperCase();
+    String(lead?.leadSource || lead?.source || "OTHER").toUpperCase();
 
   const getAssignedEmployeeId = (lead) => {
     const assigned =
@@ -137,13 +162,20 @@ const AdminLeadsPage = () => {
       lead?.assignedEmployee ||
       lead?.employee;
 
-    if (!assigned) return "";
+    if (!assigned) {
+      return "";
+    }
 
     if (typeof assigned === "string") {
       return assigned;
     }
 
-    return assigned?._id || assigned?.id || "";
+    return (
+      assigned?._id ||
+      assigned?.id ||
+      assigned?.employeeId ||
+      ""
+    );
   };
 
   const getAssignedEmployeeName = (lead) => {
@@ -159,40 +191,37 @@ const AdminLeadsPage = () => {
     if (typeof assigned === "string") {
       const employee = employees.find(
         (item) =>
-          String(item?._id || item?.id) ===
-          String(assigned)
+          String(
+            item?._id ||
+              item?.id ||
+              item?.employeeId
+          ) === String(assigned)
       );
 
-      if (employee) {
-        return (
-          employee?.name ||
-          employee?.fullName ||
-          `${employee?.firstName || ""} ${
-            employee?.lastName || ""
-          }`.trim() ||
-          "Assigned"
-        );
-      }
-
-      return "Assigned";
+      return (
+        employee?.name ||
+        employee?.fullName ||
+        "Assigned"
+      );
     }
 
     return (
       assigned?.name ||
       assigned?.fullName ||
-      `${assigned?.firstName || ""} ${
-        assigned?.lastName || ""
-      }`.trim() ||
       "Assigned"
     );
   };
 
   const formatDate = (value) => {
-    if (!value) return "—";
+    if (!value) {
+      return "—";
+    }
 
     const date = new Date(value);
 
-    if (Number.isNaN(date.getTime())) return "—";
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
 
     return date.toLocaleDateString("en-IN", {
       day: "2-digit",
@@ -213,20 +242,28 @@ const AdminLeadsPage = () => {
     switch (status) {
       case "NEW":
         return "info";
+
+      case "ASSIGNED":
+        return "info";
+
       case "CONTACTED":
         return "warning";
+
       case "QUALIFIED":
         return "success";
-      case "PROPOSAL_SENT":
-        return "info";
-      case "NEGOTIATION":
+
+      case "SITE_VISIT":
         return "warning";
-      case "CONVERTED":
+
+      case "QUOTATION":
+        return "info";
+
+      case "WON":
         return "success";
+
       case "LOST":
         return "danger";
-      case "CLOSED":
-        return "secondary";
+
       default:
         return "secondary";
     }
@@ -235,13 +272,15 @@ const AdminLeadsPage = () => {
   const getPriorityVariant = (priority) => {
     switch (priority) {
       case "HIGH":
-        return "danger";
       case "URGENT":
         return "danger";
+
       case "MEDIUM":
         return "warning";
+
       case "LOW":
         return "secondary";
+
       default:
         return "secondary";
     }
@@ -261,14 +300,23 @@ const AdminLeadsPage = () => {
     const searchValue = search.trim().toLowerCase();
 
     return leads.filter((lead) => {
-      const leadName = getLeadName(lead).toLowerCase();
-      const company = getCompanyName(lead).toLowerCase();
-      const phone = getPhone(lead).toLowerCase();
-      const email = getEmail(lead).toLowerCase();
+      const leadName =
+        getLeadName(lead).toLowerCase();
+
+      const company =
+        getCompanyName(lead).toLowerCase();
+
+      const phone =
+        getPhone(lead).toLowerCase();
+
+      const email =
+        getEmail(lead).toLowerCase();
+
       const status = getStatus(lead);
       const priority = getPriority(lead);
       const source = getSource(lead);
-      const employeeId = getAssignedEmployeeId(lead);
+      const employeeId =
+        getAssignedEmployeeId(lead);
 
       const matchesSearch =
         !searchValue ||
@@ -291,7 +339,8 @@ const AdminLeadsPage = () => {
 
       const matchesEmployee =
         employeeFilter === "ALL" ||
-        employeeId === employeeFilter;
+        String(employeeId) ===
+          String(employeeFilter);
 
       return (
         matchesSearch &&
@@ -317,7 +366,10 @@ const AdminLeadsPage = () => {
     )
   );
 
-  const currentPage = Math.min(page, totalPages);
+  const currentPage = Math.min(
+    page,
+    totalPages
+  );
 
   const paginatedLeads = useMemo(() => {
     const start =
@@ -346,19 +398,21 @@ const AdminLeadsPage = () => {
       (lead) => getStatus(lead) === "QUALIFIED"
     ).length;
 
-    const converted = leads.filter(
-      (lead) => getStatus(lead) === "CONVERTED"
+    const won = leads.filter(
+      (lead) => getStatus(lead) === "WON"
     ).length;
 
     const highPriority = leads.filter((lead) =>
-      ["HIGH", "URGENT"].includes(getPriority(lead))
+      ["HIGH", "URGENT"].includes(
+        getPriority(lead)
+      )
     ).length;
 
     return {
       total,
       newLeads,
       qualified,
-      converted,
+      won,
       highPriority,
     };
   }, [leads]);
@@ -460,7 +514,9 @@ const AdminLeadsPage = () => {
         {/* Stats */}
         <div className="admin-leads-stats">
           <div className="admin-lead-stat-card">
-            <div className="admin-lead-stat-icon">👥</div>
+            <div className="admin-lead-stat-icon">
+              👥
+            </div>
 
             <div>
               <span>Total Leads</span>
@@ -469,7 +525,9 @@ const AdminLeadsPage = () => {
           </div>
 
           <div className="admin-lead-stat-card">
-            <div className="admin-lead-stat-icon">🆕</div>
+            <div className="admin-lead-stat-icon">
+              🆕
+            </div>
 
             <div>
               <span>New Leads</span>
@@ -478,7 +536,9 @@ const AdminLeadsPage = () => {
           </div>
 
           <div className="admin-lead-stat-card">
-            <div className="admin-lead-stat-icon">✓</div>
+            <div className="admin-lead-stat-icon">
+              ✓
+            </div>
 
             <div>
               <span>Qualified</span>
@@ -487,16 +547,20 @@ const AdminLeadsPage = () => {
           </div>
 
           <div className="admin-lead-stat-card">
-            <div className="admin-lead-stat-icon">🏆</div>
+            <div className="admin-lead-stat-icon">
+              🏆
+            </div>
 
             <div>
-              <span>Converted</span>
-              <strong>{stats.converted}</strong>
+              <span>Won</span>
+              <strong>{stats.won}</strong>
             </div>
           </div>
 
           <div className="admin-lead-stat-card">
-            <div className="admin-lead-stat-icon">⚠</div>
+            <div className="admin-lead-stat-icon">
+              ⚠
+            </div>
 
             <div>
               <span>High Priority</span>
@@ -524,25 +588,18 @@ const AdminLeadsPage = () => {
               }}
               className="admin-leads-filter-select"
             >
-              <option value="ALL">All Status</option>
-              <option value="NEW">New</option>
-              <option value="CONTACTED">
-                Contacted
+              <option value="ALL">
+                All Status
               </option>
-              <option value="QUALIFIED">
-                Qualified
-              </option>
-              <option value="PROPOSAL_SENT">
-                Proposal Sent
-              </option>
-              <option value="NEGOTIATION">
-                Negotiation
-              </option>
-              <option value="CONVERTED">
-                Converted
-              </option>
-              <option value="LOST">Lost</option>
-              <option value="CLOSED">Closed</option>
+
+              {STATUS_OPTIONS.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
+                </option>
+              ))}
             </select>
 
             <select
@@ -553,11 +610,18 @@ const AdminLeadsPage = () => {
               }}
               className="admin-leads-filter-select"
             >
-              <option value="ALL">All Priority</option>
-              <option value="URGENT">Urgent</option>
-              <option value="HIGH">High</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="LOW">Low</option>
+              <option value="ALL">
+                All Priority
+              </option>
+
+              {PRIORITY_OPTIONS.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
+                </option>
+              ))}
             </select>
 
             <select
@@ -568,10 +632,15 @@ const AdminLeadsPage = () => {
               }}
               className="admin-leads-filter-select"
             >
-              <option value="ALL">All Sources</option>
+              <option value="ALL">
+                All Sources
+              </option>
 
               {sourceOptions.map((source) => (
-                <option key={source} value={source}>
+                <option
+                  key={source}
+                  value={source}
+                >
                   {formatLabel(source)}
                 </option>
               ))}
@@ -591,18 +660,20 @@ const AdminLeadsPage = () => {
 
               {employees.map((employee) => {
                 const id =
-                  employee?._id || employee?.id;
+                  employee?._id ||
+                  employee?.id ||
+                  employee?.employeeId;
 
                 const name =
                   employee?.name ||
                   employee?.fullName ||
-                  `${employee?.firstName || ""} ${
-                    employee?.lastName || ""
-                  }`.trim() ||
                   "Employee";
 
                 return (
-                  <option key={id} value={id}>
+                  <option
+                    key={id}
+                    value={id}
+                  >
                     {name}
                   </option>
                 );
@@ -678,7 +749,13 @@ const AdminLeadsPage = () => {
 
                   <tbody>
                     {paginatedLeads.map((lead) => (
-                      <tr key={getLeadId(lead)}>
+                      <tr
+                        key={
+                          lead?._id ||
+                          lead?.leadId ||
+                          lead?.id
+                        }
+                      >
                         <td>
                           <span className="admin-lead-id">
                             {getLeadId(lead)}
@@ -699,8 +776,13 @@ const AdminLeadsPage = () => {
 
                         <td>
                           <div className="admin-lead-contact-cell">
-                            <span>{getPhone(lead)}</span>
-                            <small>{getEmail(lead)}</small>
+                            <span>
+                              {getPhone(lead)}
+                            </span>
+
+                            <small>
+                              {getEmail(lead)}
+                            </small>
                           </div>
                         </td>
 
@@ -747,8 +829,7 @@ const AdminLeadsPage = () => {
                         <td>
                           <span className="admin-lead-date">
                             {formatDate(
-                              lead?.createdAt ||
-                                lead?.createdDate
+                              lead?.createdAt
                             )}
                           </span>
                         </td>
@@ -833,7 +914,14 @@ const AdminLeadsPage = () => {
 
               <div className="admin-lead-details-grid">
                 <div>
-                  <span>Phone</span>
+                  <span>Lead ID</span>
+                  <strong>
+                    {getLeadId(selectedLead)}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Mobile</span>
                   <strong>
                     {getPhone(selectedLead)}
                   </strong>
@@ -881,6 +969,13 @@ const AdminLeadsPage = () => {
                     )}
                   </strong>
                 </div>
+
+                <div>
+                  <span>City</span>
+                  <strong>
+                    {selectedLead?.city || "—"}
+                  </strong>
+                </div>
               </div>
 
               <div className="admin-lead-detail-block">
@@ -888,7 +983,6 @@ const AdminLeadsPage = () => {
 
                 <p>
                   {selectedLead?.requirement ||
-                    selectedLead?.description ||
                     "No requirement information available."}
                 </p>
               </div>
@@ -897,8 +991,14 @@ const AdminLeadsPage = () => {
                 <span>Address</span>
 
                 <p>
-                  {selectedLead?.address ||
-                    selectedLead?.city ||
+                  {[
+                    selectedLead?.address,
+                    selectedLead?.city,
+                    selectedLead?.state,
+                    selectedLead?.pincode,
+                  ]
+                    .filter(Boolean)
+                    .join(", ") ||
                     "No address information available."}
                 </p>
               </div>
@@ -926,9 +1026,7 @@ const AdminLeadsPage = () => {
                   variant="primary"
                   onClick={() =>
                     router.push(
-                      `/admin/leads/${getLeadId(
-                        selectedLead
-                      )}`
+                      `/admin/leads/${selectedLead?._id}`
                     )
                   }
                 >

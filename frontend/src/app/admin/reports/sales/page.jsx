@@ -15,7 +15,7 @@ const getArray = (value) => {
   if (Array.isArray(value)) return value;
 
   if (Array.isArray(value?.data)) return value.data;
- if (Array.isArray(value?.items)) return value.items;
+  if (Array.isArray(value?.items)) return value.items;
   if (Array.isArray(value?.results)) return value.results;
 
   return [];
@@ -106,7 +106,12 @@ const getInvoiceNumber = (item) => {
 };
 
 const getStatus = (item) => {
-  return item?.status || item?.quotationStatus || item?.invoiceStatus || "-";
+  return (
+    item?.status ||
+    item?.quotationStatus ||
+    item?.invoiceStatus ||
+    "-"
+  );
 };
 
 const getStatusVariant = (status) => {
@@ -116,7 +121,9 @@ const getStatusVariant = (status) => {
     normalized.includes("approved") ||
     normalized.includes("converted") ||
     normalized.includes("completed") ||
-    normalized.includes("issued")
+    normalized.includes("issued") ||
+    normalized.includes("accepted") ||
+    normalized.includes("won")
   ) {
     return "success";
   }
@@ -124,7 +131,8 @@ const getStatusVariant = (status) => {
   if (
     normalized.includes("pending") ||
     normalized.includes("draft") ||
-    normalized.includes("sent")
+    normalized.includes("sent") ||
+    normalized.includes("quotation")
   ) {
     return "warning";
   }
@@ -132,7 +140,8 @@ const getStatusVariant = (status) => {
   if (
     normalized.includes("cancel") ||
     normalized.includes("reject") ||
-    normalized.includes("lost")
+    normalized.includes("lost") ||
+    normalized.includes("expired")
   ) {
     return "danger";
   }
@@ -176,7 +185,8 @@ const SalesReportPage = () => {
         params.type = filters.type;
       }
 
-      const response = await reportService.getSalesReport(params);
+      const response =
+        await reportService.getSalesPerformanceReport(params);
 
       setReport(getReportPayload(response));
     } catch (err) {
@@ -219,28 +229,10 @@ const SalesReportPage = () => {
       setExporting(true);
       setError("");
 
-      if (typeof reportService.exportSalesReport === "function") {
-        const response = await reportService.exportSalesReport(filters);
-
-        if (response?.data instanceof Blob) {
-          const url = window.URL.createObjectURL(response.data);
-          const link = document.createElement("a");
-
-          link.href = url;
-          link.download = "sales-report.xlsx";
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-
-          window.URL.revokeObjectURL(url);
-        }
-
-        return;
-      }
-
       window.print();
     } catch (err) {
       console.error("Failed to export sales report:", err);
+
       setError(
         err?.message ||
           err?.response?.data?.message ||
@@ -269,6 +261,7 @@ const SalesReportPage = () => {
           "totalAmount",
         ])
       ),
+
       totalQuotations: Number(
         getValue(summaryData, [
           "totalQuotations",
@@ -276,9 +269,15 @@ const SalesReportPage = () => {
           "quotationCount",
         ])
       ),
+
       totalInvoices: Number(
-        getValue(summaryData, ["totalInvoices", "invoices", "invoiceCount"])
+        getValue(summaryData, [
+          "totalInvoices",
+          "invoices",
+          "invoiceCount",
+        ])
       ),
+
       averageSale: Number(
         getValue(summaryData, [
           "averageSale",
@@ -286,6 +285,7 @@ const SalesReportPage = () => {
           "averageOrderValue",
         ])
       ),
+
       conversionRate: Number(
         getValue(summaryData, [
           "conversionRate",
@@ -384,6 +384,7 @@ const SalesReportPage = () => {
             </div>
 
             <h1>Sales Report</h1>
+
             <p>
               Analyze quotation, invoice, revenue, and sales performance.
             </p>
@@ -439,8 +440,9 @@ const SalesReportPage = () => {
                 { value: "", label: "All Statuses" },
                 { value: "DRAFT", label: "Draft" },
                 { value: "SENT", label: "Sent" },
-                { value: "APPROVED", label: "Approved" },
+                { value: "ACCEPTED", label: "Accepted" },
                 { value: "REJECTED", label: "Rejected" },
+                { value: "EXPIRED", label: "Expired" },
                 { value: "ISSUED", label: "Issued" },
                 { value: "CANCELLED", label: "Cancelled" },
               ]}
@@ -485,7 +487,9 @@ const SalesReportPage = () => {
 
             <div>
               <span>Total Sales</span>
-              <strong>{formatCurrency(summary.totalSales)}</strong>
+              <strong>
+                {formatCurrency(summary.totalSales)}
+              </strong>
             </div>
           </div>
 
@@ -496,7 +500,9 @@ const SalesReportPage = () => {
 
             <div>
               <span>Total Quotations</span>
-              <strong>{formatNumber(summary.totalQuotations)}</strong>
+              <strong>
+                {formatNumber(summary.totalQuotations)}
+              </strong>
             </div>
           </div>
 
@@ -507,7 +513,9 @@ const SalesReportPage = () => {
 
             <div>
               <span>Total Invoices</span>
-              <strong>{formatNumber(summary.totalInvoices)}</strong>
+              <strong>
+                {formatNumber(summary.totalInvoices)}
+              </strong>
             </div>
           </div>
 
@@ -518,7 +526,9 @@ const SalesReportPage = () => {
 
             <div>
               <span>Average Sale</span>
-              <strong>{formatCurrency(summary.averageSale)}</strong>
+              <strong>
+                {formatCurrency(summary.averageSale)}
+              </strong>
             </div>
           </div>
 
@@ -543,7 +553,9 @@ const SalesReportPage = () => {
             <div className="admin-sales-report-card-header">
               <div>
                 <h2>Monthly Sales</h2>
-                <p>Sales performance over the selected period.</p>
+                <p>
+                  Sales performance over the selected period.
+                </p>
               </div>
             </div>
 
@@ -577,7 +589,9 @@ const SalesReportPage = () => {
                       >
                         <div className="admin-sales-report-month-top">
                           <span>{label}</span>
-                          <strong>{formatCurrency(amount)}</strong>
+                          <strong>
+                            {formatCurrency(amount)}
+                          </strong>
                         </div>
 
                         <div className="admin-sales-report-month-bar">
@@ -599,7 +613,9 @@ const SalesReportPage = () => {
                   <div className="admin-sales-report-empty-icon">
                     —
                   </div>
+
                   <h3>No monthly sales data</h3>
+
                   <p>
                     No monthly sales records are available for the
                     selected filters.
@@ -613,7 +629,9 @@ const SalesReportPage = () => {
             <div className="admin-sales-report-card-header">
               <div>
                 <h2>Sales by Status</h2>
-                <p>Sales distribution across document statuses.</p>
+                <p>
+                  Sales distribution across document statuses.
+                </p>
               </div>
             </div>
 
@@ -656,7 +674,10 @@ const SalesReportPage = () => {
                       >
                         <div className="admin-sales-report-status-top">
                           <span>{status}</span>
-                          <strong>{formatCurrency(amount)}</strong>
+
+                          <strong>
+                            {formatCurrency(amount)}
+                          </strong>
                         </div>
 
                         <div className="admin-sales-report-status-bar">
@@ -684,7 +705,9 @@ const SalesReportPage = () => {
                   <div className="admin-sales-report-empty-icon">
                     —
                   </div>
+
                   <h3>No status data</h3>
+
                   <p>
                     No sales status records are available for the
                     selected filters.
@@ -699,7 +722,10 @@ const SalesReportPage = () => {
           <div className="admin-sales-report-card-header">
             <div>
               <h2>Recent Sales</h2>
-              <p>Latest quotations and invoices included in the report.</p>
+
+              <p>
+                Latest quotations and invoices included in the report.
+              </p>
             </div>
           </div>
 
@@ -740,7 +766,9 @@ const SalesReportPage = () => {
                         }
                       >
                         <td>
-                          <strong>{getCustomerName(item)}</strong>
+                          <strong>
+                            {getCustomerName(item)}
+                          </strong>
 
                           {item?.customer?.phone && (
                             <span className="admin-sales-report-subtext">
@@ -749,16 +777,24 @@ const SalesReportPage = () => {
                           )}
                         </td>
 
-                        <td>{getQuotationNumber(item)}</td>
-
-                        <td>{getInvoiceNumber(item)}</td>
-
                         <td>
-                          <strong>{formatCurrency(amount)}</strong>
+                          {getQuotationNumber(item)}
                         </td>
 
                         <td>
-                          <Badge variant={getStatusVariant(status)}>
+                          {getInvoiceNumber(item)}
+                        </td>
+
+                        <td>
+                          <strong>
+                            {formatCurrency(amount)}
+                          </strong>
+                        </td>
+
+                        <td>
+                          <Badge
+                            variant={getStatusVariant(status)}
+                          >
                             {status}
                           </Badge>
                         </td>
@@ -782,7 +818,9 @@ const SalesReportPage = () => {
               <div className="admin-sales-report-empty-icon">
                 —
               </div>
+
               <h3>No recent sales</h3>
+
               <p>
                 No sales records are available for the selected filters.
               </p>

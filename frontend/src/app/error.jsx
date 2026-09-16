@@ -27,7 +27,11 @@ export default function GlobalError({ error, reset }) {
         </p>
 
         <div className="error-actions">
-          <button type="button" onClick={() => reset()} className="retry-btn">
+          <button
+            type="button"
+            onClick={() => reset()}
+            className="retry-btn"
+          >
             <FiRefreshCw size={17} />
             Try Again
           </button>
@@ -44,7 +48,7 @@ export default function GlobalError({ error, reset }) {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .error-page {
           min-height: 100vh;
           display: flex;
@@ -129,9 +133,11 @@ export default function GlobalError({ error, reset }) {
         }
 
         .retry-btn {
+          border: none;
           background: #16a34a;
           color: #ffffff;
           box-shadow: 0 7px 18px rgba(22, 163, 74, 0.18);
+          cursor: pointer;
         }
 
         .retry-btn:hover {

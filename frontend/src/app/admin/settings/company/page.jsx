@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Button from "@/components/common/Button";
-import companyService from "@/services/company.service";
+import settingService from "@/services/setting.service";
 import "./company-settings.css";
 
 const initialForm = {
@@ -36,13 +36,15 @@ export default function CompanySettingsPage() {
       setLoading(true);
       setError("");
 
-      const response = await companyService.getSettings();
+      const response = await settingService.getSettings();
 
       const data = response?.data?.data || response?.data || {};
 
+      const company = data?.company || data?.companyProfile || data;
+
       setForm((prev) => ({
         ...prev,
-        ...data,
+        ...company,
       }));
     } catch (err) {
       setError(
@@ -74,7 +76,7 @@ export default function CompanySettingsPage() {
       setMessage("");
       setError("");
 
-      await companyService.updateSettings(form);
+      await settingService.updateCompany(form);
 
       setMessage("Company settings updated successfully.");
     } catch (err) {

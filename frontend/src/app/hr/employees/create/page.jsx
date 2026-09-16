@@ -5,26 +5,26 @@ import { useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/MainLayout";
 import employeeService from "@/services/employee.service";
 import { useAuth } from "@/hooks/useAuth";
+import "./create-employee.css";
 
 const initialForm = {
+  employeeId: "",
   firstName: "",
   lastName: "",
   email: "",
-  phone: "",
-  alternatePhone: "",
+  mobile: "",
+  alternateMobile: "",
   role: "EMPLOYEE",
   department: "",
   designation: "",
   joiningDate: "",
-  dateOfBirth: "",
-  gender: "",
   address: "",
-  city: "",
-  state: "",
-  pincode: "",
-  emergencyContactName: "",
-  emergencyContactPhone: "",
-  emergencyContactRelation: "",
+  notes: "",
+};
+
+const generateEmployeeId = () => {
+  const randomNumber = Math.floor(100000 + Math.random() * 900000);
+  return `EMP-${randomNumber}`;
 };
 
 const CreateEmployeePage = () => {
@@ -66,13 +66,13 @@ const CreateEmployeePage = () => {
     if (!form.email.trim()) {
       nextErrors.email = "Email is required.";
     } else if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
     ) {
       nextErrors.email = "Enter a valid email address.";
     }
 
-    if (!form.phone.trim()) {
-      nextErrors.phone = "Phone number is required.";
+    if (!form.mobile.trim()) {
+      nextErrors.mobile = "Mobile number is required.";
     }
 
     if (!form.role) {
@@ -80,8 +80,7 @@ const CreateEmployeePage = () => {
     }
 
     if (!form.joiningDate) {
-      nextErrors.joiningDate =
-        "Joining date is required.";
+      nextErrors.joiningDate = "Joining date is required.";
     }
 
     setErrors(nextErrors);
@@ -90,28 +89,30 @@ const CreateEmployeePage = () => {
   };
 
   const buildPayload = () => {
+    const fullName = [form.firstName.trim(), form.lastName.trim()]
+      .filter(Boolean)
+      .join(" ");
+
     return {
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
+      employeeId: form.employeeId.trim() || generateEmployeeId(),
+
+      name: fullName,
+
       email: form.email.trim().toLowerCase(),
-      phone: form.phone.trim(),
-      alternatePhone: form.alternatePhone.trim(),
-      role: form.role,
-      department: form.department.trim(),
-      designation: form.designation.trim(),
+
+      mobile: form.mobile.trim(),
+
+      department: form.department.trim() || undefined,
+
+      designation: form.designation.trim() || undefined,
+
       joiningDate: form.joiningDate || undefined,
-      dateOfBirth: form.dateOfBirth || undefined,
-      gender: form.gender || undefined,
+
+      role: form.role.toUpperCase(),
+
       address: form.address.trim(),
-      city: form.city.trim(),
-      state: form.state.trim(),
-      pincode: form.pincode.trim(),
-      emergencyContactName:
-        form.emergencyContactName.trim(),
-      emergencyContactPhone:
-        form.emergencyContactPhone.trim(),
-      emergencyContactRelation:
-        form.emergencyContactRelation.trim(),
+
+      notes: form.notes.trim(),
     };
   };
 
@@ -126,20 +127,16 @@ const CreateEmployeePage = () => {
       setSaving(true);
       setSubmitError("");
 
-      await employeeService.createEmployee(
-        buildPayload()
-      );
+      await employeeService.createEmployee(buildPayload());
 
       router.push("/hr/employees");
     } catch (error) {
-      console.error(
-        "Failed to create employee:",
-        error
-      );
+      console.error("Failed to create employee:", error);
 
       const backendMessage =
         error?.response?.data?.message ||
-        error?.response?.data?.error;
+        error?.response?.data?.error ||
+        error?.response?.data?.errors?.[0];
 
       setSubmitError(
         backendMessage ||
@@ -188,8 +185,7 @@ const CreateEmployeePage = () => {
             <h1>Create Employee</h1>
 
             <p>
-              Add a new employee profile to the
-              organization.
+              Add a new employee profile to the organization.
             </p>
           </div>
         </div>
@@ -205,6 +201,7 @@ const CreateEmployeePage = () => {
           onSubmit={handleSubmit}
           noValidate
         >
+          {/* Personal Information */}
           <section className="hr-create-section">
             <div className="hr-create-section-header">
               <div className="hr-create-section-number">
@@ -214,8 +211,7 @@ const CreateEmployeePage = () => {
               <div>
                 <h2>Personal Information</h2>
                 <p>
-                  Enter the employee&apos;s basic
-                  personal details.
+                  Enter the employee&apos;s basic personal details.
                 </p>
               </div>
             </div>
@@ -234,9 +230,7 @@ const CreateEmployeePage = () => {
                   onChange={handleChange}
                   placeholder="Enter first name"
                   className={
-                    errors.firstName
-                      ? "has-error"
-                      : ""
+                    errors.firstName ? "has-error" : ""
                   }
                 />
 
@@ -283,80 +277,66 @@ const CreateEmployeePage = () => {
               </div>
 
               <div className="hr-field">
-                <label htmlFor="phone">
-                  Phone Number <span>*</span>
+                <label htmlFor="mobile">
+                  Mobile Number <span>*</span>
                 </label>
 
                 <input
-                  id="phone"
-                  name="phone"
+                  id="mobile"
+                  name="mobile"
                   type="tel"
-                  value={form.phone}
+                  value={form.mobile}
                   onChange={handleChange}
-                  placeholder="Enter phone number"
+                  placeholder="Enter mobile number"
                   className={
-                    errors.phone ? "has-error" : ""
+                    errors.mobile ? "has-error" : ""
                   }
                 />
 
-                {errors.phone && (
-                  <small>{errors.phone}</small>
+                {errors.mobile && (
+                  <small>{errors.mobile}</small>
                 )}
               </div>
 
               <div className="hr-field">
-                <label htmlFor="alternatePhone">
-                  Alternate Phone
+                <label htmlFor="alternateMobile">
+                  Alternate Mobile
                 </label>
 
                 <input
-                  id="alternatePhone"
-                  name="alternatePhone"
+                  id="alternateMobile"
+                  name="alternateMobile"
                   type="tel"
-                  value={form.alternatePhone}
+                  value={form.alternateMobile}
                   onChange={handleChange}
-                  placeholder="Enter alternate number"
+                  placeholder="Enter alternate mobile number"
                 />
               </div>
 
               <div className="hr-field">
-                <label htmlFor="dateOfBirth">
-                  Date of Birth
+                <label htmlFor="joiningDate">
+                  Joining Date <span>*</span>
                 </label>
 
                 <input
-                  id="dateOfBirth"
-                  name="dateOfBirth"
+                  id="joiningDate"
+                  name="joiningDate"
                   type="date"
-                  value={form.dateOfBirth}
+                  value={form.joiningDate}
                   onChange={handleChange}
+                  className={
+                    errors.joiningDate ? "has-error" : ""
+                  }
                 />
-              </div>
 
-              <div className="hr-field">
-                <label htmlFor="gender">
-                  Gender
-                </label>
-
-                <select
-                  id="gender"
-                  name="gender"
-                  value={form.gender}
-                  onChange={handleChange}
-                >
-                  <option value="">
-                    Select gender
-                  </option>
-                  <option value="MALE">Male</option>
-                  <option value="FEMALE">
-                    Female
-                  </option>
-                  <option value="OTHER">Other</option>
-                </select>
+                {errors.joiningDate && (
+                  <small>{errors.joiningDate}</small>
+                )}
               </div>
             </div>
           </section>
 
+          {/* Employment Information */}
           <section className="hr-create-section">
             <div className="hr-create-section-header">
               <div className="hr-create-section-number">
@@ -366,13 +346,37 @@ const CreateEmployeePage = () => {
               <div>
                 <h2>Employment Information</h2>
                 <p>
-                  Configure the employee&apos;s role
-                  and organization details.
+                  Configure the employee&apos;s role and organization
+                  details.
                 </p>
               </div>
             </div>
 
             <div className="hr-create-fields">
+              <div className="hr-field">
+                <label htmlFor="employeeId">
+                  Employee ID
+                </label>
+
+                <input
+                  id="employeeId"
+                  name="employeeId"
+                  type="text"
+                  value={form.employeeId}
+                  onChange={handleChange}
+                  placeholder="Auto-generated if empty"
+                />
+
+                <small
+                  style={{
+                    color: "#7a867f",
+                    fontWeight: 500,
+                  }}
+                >
+                  Leave empty to generate automatically.
+                </small>
+              </div>
+
               <div className="hr-field">
                 <label htmlFor="role">
                   Role <span>*</span>
@@ -390,10 +394,14 @@ const CreateEmployeePage = () => {
                   <option value="EMPLOYEE">
                     Employee
                   </option>
+
                   <option value="MANAGER">
                     Manager
                   </option>
-                  <option value="HR">HR</option>
+
+                  <option value="HR">
+                    HR
+                  </option>
                 </select>
 
                 {errors.role && (
@@ -430,34 +438,10 @@ const CreateEmployeePage = () => {
                   placeholder="Enter designation"
                 />
               </div>
-
-              <div className="hr-field">
-                <label htmlFor="joiningDate">
-                  Joining Date <span>*</span>
-                </label>
-
-                <input
-                  id="joiningDate"
-                  name="joiningDate"
-                  type="date"
-                  value={form.joiningDate}
-                  onChange={handleChange}
-                  className={
-                    errors.joiningDate
-                      ? "has-error"
-                      : ""
-                  }
-                />
-
-                {errors.joiningDate && (
-                  <small>
-                    {errors.joiningDate}
-                  </small>
-                )}
-              </div>
             </div>
           </section>
 
+          {/* Address Information */}
           <section className="hr-create-section">
             <div className="hr-create-section-header">
               <div className="hr-create-section-number">
@@ -467,8 +451,7 @@ const CreateEmployeePage = () => {
               <div>
                 <h2>Address Information</h2>
                 <p>
-                  Add the employee&apos;s current
-                  contact address.
+                  Add the employee&apos;s current contact address.
                 </p>
               </div>
             </div>
@@ -488,50 +471,10 @@ const CreateEmployeePage = () => {
                   placeholder="Enter complete address"
                 />
               </div>
-
-              <div className="hr-field">
-                <label htmlFor="city">City</label>
-
-                <input
-                  id="city"
-                  name="city"
-                  type="text"
-                  value={form.city}
-                  onChange={handleChange}
-                  placeholder="Enter city"
-                />
-              </div>
-
-              <div className="hr-field">
-                <label htmlFor="state">State</label>
-
-                <input
-                  id="state"
-                  name="state"
-                  type="text"
-                  value={form.state}
-                  onChange={handleChange}
-                  placeholder="Enter state"
-                />
-              </div>
-
-              <div className="hr-field">
-                <label htmlFor="pincode">
-                  Pincode
-                </label>
-
-                <input
-                  id="pincode"
-                  name="pincode"
-                  type="text"
-                  value={form.pincode}
-                  onChange={handleChange}
-                  placeholder="Enter pincode"
-                />
-              </div>
             </div>
           </section>
 
+          {/* Additional Information */}
           <section className="hr-create-section">
             <div className="hr-create-section-header">
               <div className="hr-create-section-number">
@@ -539,59 +482,26 @@ const CreateEmployeePage = () => {
               </div>
 
               <div>
-                <h2>Emergency Contact</h2>
+                <h2>Additional Information</h2>
                 <p>
-                  Add an emergency contact for the
-                  employee.
+                  Add optional notes related to the employee.
                 </p>
               </div>
             </div>
 
             <div className="hr-create-fields">
-              <div className="hr-field">
-                <label htmlFor="emergencyContactName">
-                  Contact Name
+              <div className="hr-field hr-field-full">
+                <label htmlFor="notes">
+                  Notes
                 </label>
 
-                <input
-                  id="emergencyContactName"
-                  name="emergencyContactName"
-                  type="text"
-                  value={form.emergencyContactName}
+                <textarea
+                  id="notes"
+                  name="notes"
+                  rows={4}
+                  value={form.notes}
                   onChange={handleChange}
-                  placeholder="Enter contact name"
-                />
-              </div>
-
-              <div className="hr-field">
-                <label htmlFor="emergencyContactPhone">
-                  Contact Phone
-                </label>
-
-                <input
-                  id="emergencyContactPhone"
-                  name="emergencyContactPhone"
-                  type="tel"
-                  value={form.emergencyContactPhone}
-                  onChange={handleChange}
-                  placeholder="Enter contact phone"
-                />
-              </div>
-
-              <div className="hr-field">
-                <label htmlFor="emergencyContactRelation">
-                  Relationship
-                </label>
-
-                <input
-                  id="emergencyContactRelation"
-                  name="emergencyContactRelation"
-                  type="text"
-                  value={
-                    form.emergencyContactRelation
-                  }
-                  onChange={handleChange}
-                  placeholder="Enter relationship"
+                  placeholder="Enter additional notes"
                 />
               </div>
             </div>
