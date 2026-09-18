@@ -20,8 +20,8 @@ const seedAdmin = async () => {
     username: "admin",
     email: adminEmail.toLowerCase(),
     password: hashedPassword,
-    role: "Admin",
-    status: "ACTIVE",
+    role: "ADMIN",
+    status: "Active",
   });
 
   return admin;

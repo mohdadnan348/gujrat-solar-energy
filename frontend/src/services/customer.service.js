@@ -245,4 +245,5 @@ const customerService = {
   getCustomerStats,
 };
 
+export { customerService };
 export default customerService;

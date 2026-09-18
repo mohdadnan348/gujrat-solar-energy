@@ -169,4 +169,5 @@ const quotationService = {
   getQuotationsByStatus,
 };
 
+export { quotationService };
 export default quotationService;

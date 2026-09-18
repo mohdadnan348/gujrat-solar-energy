@@ -197,7 +197,15 @@ const getDashboardStats = async ({
     },
   };
 };
-
+const getDashboardSummary = async ({
+  startDate,
+  endDate,
+} = {}) => {
+  return getDashboardStats({
+    from: startDate,
+    to: endDate,
+  });
+};
 const getLeadStats = async ({
   from,
   to,
@@ -282,6 +290,17 @@ const getLeadStats = async ({
   };
 };
 
+const getLeadStatusSummary = async ({
+  startDate,
+  endDate,
+} = {}) => {
+  const stats = await getLeadStats({
+    from: startDate,
+    to: endDate,
+  });
+
+  return stats.status;
+};
 const getQuotationStats = async ({
   from,
   to,
@@ -319,7 +338,15 @@ const getQuotationStats = async ({
 
   return stats;
 };
-
+const getQuotationSummary = async ({
+  startDate,
+  endDate,
+} = {}) => {
+  return getQuotationStats({
+    from: startDate,
+    to: endDate,
+  });
+};
 const getInvoiceStats = async ({
   from,
   to,
@@ -364,6 +391,15 @@ const getInvoiceStats = async ({
   return stats;
 };
 
+const getInvoiceSummary = async ({
+  startDate,
+  endDate,
+} = {}) => {
+  return getInvoiceStats({
+    from: startDate,
+    to: endDate,
+  });
+};
 const getTaskStats = async ({
   from,
   to,
@@ -444,6 +480,86 @@ const getTaskStats = async ({
   };
 };
 
+const getEmployeePerformance = async ({
+  startDate,
+  endDate,
+} = {}) => {
+  const { start, end } = getDateRange(
+    startDate,
+    endDate
+  );
+
+  const employees = await Employee.find({
+    status: "Active",
+  })
+    .select(
+      "employeeId name email user"
+    )
+    .lean();
+
+  const performance = await Promise.all(
+    employees.map(async (employee) => {
+      const employeeId = employee._id;
+
+      const [
+        assignedLeads,
+        completedTasks,
+        pendingTasks,
+      ] = await Promise.all([
+        Lead.countDocuments({
+          assignedTo: employeeId,
+          createdAt: {
+            $gte: start,
+            $lte: end,
+          },
+        }),
+
+        Task.countDocuments({
+          assignedTo: employeeId,
+          status: TASK_STATUS.COMPLETED,
+          createdAt: {
+            $gte: start,
+            $lte: end,
+          },
+        }),
+
+        Task.countDocuments({
+          assignedTo: employeeId,
+          status: {
+            $nin: [
+              TASK_STATUS.COMPLETED,
+              TASK_STATUS.CANCELLED,
+            ],
+          },
+          createdAt: {
+            $gte: start,
+            $lte: end,
+          },
+        }),
+      ]);
+
+      return {
+        employeeId: employee.employeeId,
+        name: employee.name,
+        email: employee.email,
+        leads: assignedLeads,
+        completedTasks,
+        pendingTasks,
+      };
+    })
+  );
+
+  return performance;
+};
+const getTaskSummary = async ({
+  startDate,
+  endDate,
+} = {}) => {
+  return getTaskStats({
+    from: startDate,
+    to: endDate,
+  });
+};
 const getAttendanceStats = async ({
   from,
   to,
@@ -662,15 +778,29 @@ const getDashboard = async (
 
 module.exports = {
   getDashboardStats,
+  getDashboardSummary,
+
   getLeadStats,
+  getLeadStatusSummary,
+
   getQuotationStats,
+  getQuotationSummary,
+
   getInvoiceStats,
+  getInvoiceSummary,
+
   getTaskStats,
+  getTaskSummary,
+
   getAttendanceStats,
   getLeaveStats,
+
+  getEmployeePerformance,
+
   getRecentLeads,
   getRecentQuotations,
   getRecentInvoices,
   getUpcomingTasks,
+
   getDashboard,
 };

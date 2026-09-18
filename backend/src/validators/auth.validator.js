@@ -1,20 +1,22 @@
 const validateRegister = (req, res, next) => {
   const { username, email, password, role } = req.body;
-
   const errors = [];
 
+  // Email
   if (!email || typeof email !== "string") {
     errors.push("Email is required");
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errors.push("Please provide a valid email");
   }
 
+  // Password
   if (!password || typeof password !== "string") {
     errors.push("Password is required");
   } else if (password.length < 6) {
     errors.push("Password must be at least 6 characters");
   }
 
+  // Username
   if (username !== undefined && username !== null && username !== "") {
     if (typeof username !== "string") {
       errors.push("Username must be a string");
@@ -23,6 +25,7 @@ const validateRegister = (req, res, next) => {
     }
   }
 
+  // Role
   if (role !== undefined && typeof role !== "string") {
     errors.push("Role must be a string");
   }
@@ -38,13 +41,16 @@ const validateRegister = (req, res, next) => {
   next();
 };
 
+
 const validateLogin = (req, res, next) => {
-  const { login, password } = req.body;
+  const { email, password } = req.body;
 
   const errors = [];
 
-  if (!login || typeof login !== "string") {
-    errors.push("Email or username is required");
+  if (!email || typeof email !== "string") {
+    errors.push("Email is required");
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.push("Please provide a valid email");
   }
 
   if (!password || typeof password !== "string") {
@@ -62,11 +68,12 @@ const validateLogin = (req, res, next) => {
   next();
 };
 
+
 const validateForgotPassword = (req, res, next) => {
   const { email } = req.body;
-
   const errors = [];
 
+  // Email
   if (!email || typeof email !== "string") {
     errors.push("Email is required");
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -84,15 +91,17 @@ const validateForgotPassword = (req, res, next) => {
   next();
 };
 
+
 const validateResetPassword = (req, res, next) => {
   const { token, newPassword } = req.body;
-
   const errors = [];
 
+  // Token
   if (!token || typeof token !== "string") {
     errors.push("Reset token is required");
   }
 
+  // New Password
   if (!newPassword || typeof newPassword !== "string") {
     errors.push("New password is required");
   } else if (newPassword.length < 6) {
@@ -109,6 +118,7 @@ const validateResetPassword = (req, res, next) => {
 
   next();
 };
+
 
 module.exports = {
   validateRegister,

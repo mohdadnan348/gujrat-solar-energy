@@ -2,7 +2,7 @@
 
 import React from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { useAuth } from "@/hooks/useAuth";
+import useAuth from "@/hooks/useAuth";
 
 const DashboardPage = () => {
   const { user, logout, loading } = useAuth();

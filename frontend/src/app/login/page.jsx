@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   FiArrowRight,
@@ -11,10 +12,17 @@ import {
   FiSun,
 } from "react-icons/fi";
 
+import { useAuth } from "@/hooks/useAuth";
+
 import "./login.css";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const [form, setForm] = useState({
     email: "",
@@ -31,14 +39,55 @@ export default function LoginPage() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Authentication API will be connected in the API/Auth integration phase.
-    console.log("Login form submitted:", {
-      email: form.email,
-      rememberMe: form.rememberMe,
-    });
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const result = await login({
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+      });
+
+      const user = result?.user;
+
+      const role =
+        user?.role?.name ||
+        user?.role ||
+        result?.data?.user?.role?.name ||
+        result?.data?.user?.role ||
+        "";
+
+      const normalizedRole = String(role).trim().toLowerCase();
+
+      if (normalizedRole === "admin") {
+        router.push("/admin/dashboard");
+      } else if (normalizedRole === "manager") {
+        router.push("/manager/dashboard");
+      } else if (normalizedRole === "hr") {
+        router.push("/hr/dashboard");
+      } else if (normalizedRole === "employee") {
+        router.push("/employee/dashboard");
+      } else {
+        setErrorMessage(
+          `Login successful, but user role "${role}" is not configured.`
+        );
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.errors?.[0] ||
+        error?.message ||
+        "Unable to login. Please check your email and password.";
+
+      setErrorMessage(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -99,7 +148,10 @@ export default function LoginPage() {
 
           <div className="brand-footer">
             <span>Secure internal business platform</span>
-            <span>© {new Date().getFullYear()} GUJRAT SOLAR ENERGY</span>
+
+            <span>
+              © {new Date().getFullYear()} GUJRAT SOLAR ENERGY
+            </span>
           </div>
         </div>
 
@@ -118,7 +170,9 @@ export default function LoginPage() {
 
           <div className="login-card">
             <div className="login-heading">
-              <span className="login-eyebrow">WELCOME BACK</span>
+              <span className="login-eyebrow">
+                WELCOME BACK
+              </span>
 
               <h2>Sign in to your account</h2>
 
@@ -127,10 +181,29 @@ export default function LoginPage() {
               </p>
             </div>
 
+            {/* Error Message */}
+            {errorMessage && (
+              <div
+                style={{
+                  marginBottom: "16px",
+                  padding: "12px 14px",
+                  borderRadius: "8px",
+                  background: "#fff1f2",
+                  color: "#be123c",
+                  fontSize: "14px",
+                  lineHeight: "1.5",
+                }}
+              >
+                {errorMessage}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="login-form">
               {/* Email */}
               <div className="field-group">
-                <label htmlFor="email">Email Address</label>
+                <label htmlFor="email">
+                  Email Address
+                </label>
 
                 <div className="input-wrapper">
                   <FiMail size={17} />
@@ -144,6 +217,7 @@ export default function LoginPage() {
                     placeholder="Enter your email"
                     autoComplete="email"
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -151,7 +225,9 @@ export default function LoginPage() {
               {/* Password */}
               <div className="field-group">
                 <div className="password-label">
-                  <label htmlFor="password">Password</label>
+                  <label htmlFor="password">
+                    Password
+                  </label>
 
                   <Link href="/forgot-password">
                     Forgot password?
@@ -170,19 +246,23 @@ export default function LoginPage() {
                     placeholder="Enter your password"
                     autoComplete="current-password"
                     required
+                    disabled={isSubmitting}
                   />
 
                   <button
                     type="button"
                     className="password-toggle"
                     onClick={() =>
-                      setShowPassword((current) => !current)
+                      setShowPassword(
+                        (current) => !current
+                      )
                     }
                     aria-label={
                       showPassword
                         ? "Hide password"
                         : "Show password"
                     }
+                    disabled={isSubmitting}
                   >
                     {showPassword ? (
                       <FiEyeOff size={17} />
@@ -200,6 +280,7 @@ export default function LoginPage() {
                   name="rememberMe"
                   checked={form.rememberMe}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                 />
 
                 <span className="custom-checkbox" />
@@ -208,9 +289,18 @@ export default function LoginPage() {
               </label>
 
               {/* Submit */}
-              <button type="submit" className="login-button">
-                Sign In
-                <FiArrowRight size={18} />
+              <button
+                type="submit"
+                className="login-button"
+                disabled={isSubmitting}
+              >
+                {isSubmitting
+                  ? "Signing in..."
+                  : "Sign In"}
+
+                {!isSubmitting && (
+                  <FiArrowRight size={18} />
+                )}
               </button>
             </form>
 
@@ -224,7 +314,8 @@ export default function LoginPage() {
                 <strong>Secure Login</strong>
 
                 <span>
-                  Your account access is protected by role-based permissions.
+                  Your account access is protected by
+                  role-based permissions.
                 </span>
               </div>
             </div>
@@ -238,7 +329,9 @@ export default function LoginPage() {
 function Feature({ number, title, text }) {
   return (
     <div className="feature-item">
-      <div className="feature-number">{number}</div>
+      <div className="feature-number">
+        {number}
+      </div>
 
       <div>
         <strong>{title}</strong>
