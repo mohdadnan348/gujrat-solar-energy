@@ -12,7 +12,7 @@ import Loader from "@/components/common/Loader";
 import { useAuth } from "@/hooks/useAuth";
 import { quotationService } from "@/services/quotation.service";
 import { customerService } from "@/services/customer.service";
-import { systemConfigurationService } from "@/services/systemConfiguration.service";
+import systemConfigurationService from "@/services/systemConfiguration.service";
 
 const CreateQuotationPage = () => {
   const router = useRouter();

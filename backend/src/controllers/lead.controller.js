@@ -74,28 +74,36 @@ const getLeads = async (req, res, next) => {
 
 const getMyLeads = async (req, res, next) => {
   try {
+    const Employee = require("../models/Employee");
+
+    const employee = await Employee.findOne({
+      user: req.user.userId,
+    }).select("_id");
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee profile not found for this user",
+      });
+    }
+
     const {
       page = 1,
       limit = 10,
       search = "",
       status,
+      priority,
+      leadSource,
     } = req.query;
 
-    const employeeId = req.user.employeeId;
-
-    if (!employeeId) {
-      return res.status(400).json({
-        success: false,
-        message: "Employee profile is not linked with this user",
-      });
-    }
-
     const result = await leadService.getMyLeads({
-      employeeId,
+      employeeId: employee._id,
       page,
       limit,
       search,
       status,
+      priority,
+      leadSource,
     });
 
     return res.status(200).json({
@@ -108,7 +116,6 @@ const getMyLeads = async (req, res, next) => {
     next(error);
   }
 };
-
 const updateLead = async (req, res, next) => {
   try {
     const lead = await leadService.updateLead(

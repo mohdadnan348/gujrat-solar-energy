@@ -10,7 +10,7 @@ import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
 import Modal from "@/components/common/Modal";
 import { useAuth } from "@/hooks/useAuth";
-import { systemConfigurationService } from "@/services/systemConfiguration.service";
+import  systemConfigurationService from "@/services/systemConfiguration.service";
 
 const PAGE_SIZE = 10;
 

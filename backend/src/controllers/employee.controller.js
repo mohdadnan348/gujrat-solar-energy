@@ -41,6 +41,7 @@ const getEmployees = async (req, res, next) => {
       search = "",
       department,
       role,
+      manager,
       status,
     } = req.query;
 
@@ -50,6 +51,7 @@ const getEmployees = async (req, res, next) => {
       search,
       department,
       role,
+       manager,
       status,
     });
 

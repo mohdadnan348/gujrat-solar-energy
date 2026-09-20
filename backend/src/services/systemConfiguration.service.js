@@ -432,13 +432,18 @@ const getConfigurationsByRequirement = async (
 };
 
 module.exports = {
-  createConfiguration,
-  getConfigurations,
-  getConfigurationById,
-  updateConfiguration,
-  createNewVersion,
-  getLatestConfiguration,
+  createSystemConfiguration: createConfiguration,
+
+  getSystemConfigurations: getConfigurations,
+  getSystemConfiguration: getConfigurationById,
+getSystemConfigurationById: getConfigurationById,
+
+  updateSystemConfiguration: updateConfiguration,
+
+  getLatestConfigurationByLead: getLatestConfiguration,
   getConfigurationsByLead,
+
   getConfigurationsByRequirement,
-  calculateTotals,
+
+  createNewVersion,
 };

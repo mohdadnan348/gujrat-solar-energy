@@ -25,10 +25,10 @@ const CreateAdminLeadPage = () => {
     city: "",
     state: "",
     pincode: "",
-    leadSource: "WEBSITE",
+    leadSource: "Website",
     requirement: "",
-    status: "NEW",
-    priority: "MEDIUM",
+    status: "New",
+priority: "Medium",
     followUpDate: "",
     notes: "",
   });
@@ -103,6 +103,11 @@ const CreateAdminLeadPage = () => {
     try {
       setSaving(true);
       setError("");
+
+      console.log("LEAD PAYLOAD VALUES:", {
+  status: form.status,
+  priority: form.priority,
+});
 
       await leadService.createLead({
         customerName: form.customerName.trim(),

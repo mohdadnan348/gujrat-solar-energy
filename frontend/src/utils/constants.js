@@ -35,14 +35,14 @@ export const USER_STATUS_LABELS = {
 /* Lead */
 
 export const LEAD_STATUS = {
-  NEW: "NEW",
-  ASSIGNED: "ASSIGNED",
-  CONTACTED: "CONTACTED",
-  QUALIFIED: "QUALIFIED",
-  SITE_VISIT: "SITE_VISIT",
-  QUOTATION: "QUOTATION",
-  WON: "WON",
-  LOST: "LOST",
+  NEW: "New",
+  ASSIGNED: "Assigned",
+  CONTACTED: "Contacted",
+  QUALIFIED: "Qualified",
+  SITE_VISIT: "Site Visit",
+  QUOTATION: "Quotation",
+  WON: "Won",
+  LOST: "Lost",
 };
 
 export const LEAD_STATUS_LABELS = {
@@ -57,17 +57,15 @@ export const LEAD_STATUS_LABELS = {
 };
 
 export const LEAD_PRIORITY = {
-  LOW: "LOW",
-  MEDIUM: "MEDIUM",
-  HIGH: "HIGH",
-  URGENT: "URGENT",
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
 };
 
 export const LEAD_PRIORITY_LABELS = {
   [LEAD_PRIORITY.LOW]: "Low",
   [LEAD_PRIORITY.MEDIUM]: "Medium",
   [LEAD_PRIORITY.HIGH]: "High",
-  [LEAD_PRIORITY.URGENT]: "Urgent",
 };
 
 export const LEAD_SOURCES = [

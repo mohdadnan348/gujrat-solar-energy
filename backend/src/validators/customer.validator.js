@@ -30,9 +30,6 @@ const validateCustomer = (req, res, next) => {
 
   const errors = [];
 
-  if (!customerId || typeof customerId !== "string") {
-    errors.push("Customer ID is required");
-  }
 
   if (
     lead !== undefined &&

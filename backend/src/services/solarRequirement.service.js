@@ -383,16 +383,20 @@ const getRequirementsByCustomer = async (customerId) => {
     .sort({ createdAt: -1 })
     .lean();
 };
-
 module.exports = {
   createSolarRequirement,
-  getRequirements,
-  getRequirementById,
-  updateRequirement,
+
+  getSolarRequirements: getRequirements,
+  getSolarRequirementById: getRequirementById,
+  getSolarRequirementByLead: getRequirementsByLead,
+
+  updateSolarRequirement: updateRequirement,
+
   updateSurveyStatus,
-  addPhoto,
-  addDocument,
+
+  addPhotos: addPhoto,
+  addDocuments: addDocument,
+
   deleteRequirement,
-  getRequirementsByLead,
   getRequirementsByCustomer,
 };

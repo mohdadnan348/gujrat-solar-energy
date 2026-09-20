@@ -171,10 +171,27 @@ const getUserEmployee = async (userId) => {
 
   return employee;
 };
+const updateUserStatus = async (id, status, updatedBy) => {
+  const user = await User.findById(id);
+
+  if (!user) {
+    const error = new Error("User not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  user.status = status;
+  user.updatedBy = updatedBy;
+
+  await user.save();
+
+  return user;
+};
 
 module.exports = {
   createUser,
   getUsers,
+  updateUserStatus,
   getUserById,
   updateUser,
   deleteUser,

@@ -27,15 +27,11 @@ const validateLead = (req, res, next) => {
 
   const errors = [];
 
-  // Lead ID
-  if (!leadId || typeof leadId !== "string") {
-    errors.push("Lead ID is required");
-  }
-
+  
+  
   // Customer Name
-  if (!customerName || typeof customerName !== "string") {
-    errors.push("Customer name is required");
-  } else if (customerName.trim().length < 2) {
+  
+   if (customerName.trim().length < 2) {
     errors.push("Customer name must be at least 2 characters");
   }
 

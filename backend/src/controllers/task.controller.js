@@ -161,13 +161,11 @@ const completeTask = async (req, res, next) => {
   try {
     const { completionNotes = "" } = req.body;
 
-    const task =
-      await taskService.completeTask(
-        req.params.id,
-        completionNotes,
-        req.user.userId
-      );
-
+    const task = await taskService.completeTask(
+  req.params.id,
+  req.user.userId,
+  completionNotes
+);
     return res.status(200).json({
       success: true,
       message: "Task completed successfully",
@@ -182,13 +180,11 @@ const cancelTask = async (req, res, next) => {
   try {
     const { cancellationReason } = req.body;
 
-    const task =
-      await taskService.cancelTask(
-        req.params.id,
-        cancellationReason,
-        req.user.userId
-      );
-
+    const task = await taskService.cancelTask(
+  req.params.id,
+  req.user.userId,
+  cancellationReason
+);
     return res.status(200).json({
       success: true,
       message: "Task cancelled successfully",

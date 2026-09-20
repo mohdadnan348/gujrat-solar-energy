@@ -23,11 +23,9 @@ router.use(protect);
 | Invoice List
 |--------------------------------------------------------------------------
 */
-
 router.get(
   "/",
-  invoiceListValidator,
-  validate,
+  validate([invoiceListValidator]),
   allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
   invoiceController.getInvoices
 );
@@ -37,11 +35,9 @@ router.get(
 | Create Invoice
 |--------------------------------------------------------------------------
 */
-
 router.post(
   "/",
-  createInvoiceValidator,
-  validate,
+  validate([createInvoiceValidator]),
   allowRoles("ADMIN", "MANAGER"),
   invoiceController.createInvoice
 );
@@ -51,7 +47,6 @@ router.post(
 | Create Invoice From Quotation
 |--------------------------------------------------------------------------
 */
-
 router.post(
   "/from-quotation/:quotationId",
   allowRoles("ADMIN", "MANAGER"),
@@ -63,7 +58,6 @@ router.post(
 | Mark Overdue Invoices
 |--------------------------------------------------------------------------
 */
-
 router.patch(
   "/mark-overdue",
   allowRoles("ADMIN", "MANAGER"),
@@ -75,11 +69,9 @@ router.patch(
 | Invoice Items
 |--------------------------------------------------------------------------
 */
-
 router.get(
   "/:id/items",
-  invoiceIdValidator,
-  validate,
+  validate([invoiceIdValidator]),
   allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
   invoiceController.getInvoiceItems
 );
@@ -89,11 +81,9 @@ router.get(
 | Single Invoice
 |--------------------------------------------------------------------------
 */
-
 router.get(
   "/:id",
-  invoiceIdValidator,
-  validate,
+  validate([invoiceIdValidator]),
   allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
   invoiceController.getInvoice
 );
@@ -103,11 +93,9 @@ router.get(
 | Update Invoice
 |--------------------------------------------------------------------------
 */
-
 router.put(
   "/:id",
-  updateInvoiceValidator,
-  validate,
+  validate([updateInvoiceValidator]),
   allowRoles("ADMIN", "MANAGER"),
   invoiceController.updateInvoice
 );
@@ -117,11 +105,9 @@ router.put(
 | Issue Invoice
 |--------------------------------------------------------------------------
 */
-
 router.patch(
   "/:id/issue",
-  invoiceIdValidator,
-  validate,
+  validate([invoiceIdValidator]),
   allowRoles("ADMIN", "MANAGER"),
   invoiceController.issueInvoice
 );
@@ -131,11 +117,9 @@ router.patch(
 | Cancel Invoice
 |--------------------------------------------------------------------------
 */
-
 router.patch(
   "/:id/cancel",
-  cancelInvoiceValidator,
-  validate,
+  validate([cancelInvoiceValidator]),
   allowRoles("ADMIN", "MANAGER"),
   invoiceController.cancelInvoice
 );

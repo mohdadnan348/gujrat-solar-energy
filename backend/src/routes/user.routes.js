@@ -1,10 +1,13 @@
 const express = require("express");
 
 const {
+  createUser,
   getUsers,
   getUser,
   updateUser,
   deleteUser,
+  getUserEmployee,
+  updateUserStatus,
 } = require("../controllers/user.controller");
 
 const { protect } = require("../middleware/auth.middleware");
@@ -19,6 +22,13 @@ router.get(
   "/",
   allowRoles("ADMIN", "MANAGER", "HR"),
   getUsers
+);
+
+// Update user status
+router.patch(
+  "/:id/status",
+  allowRoles("ADMIN"),
+  updateUserStatus
 );
 
 // Get user by ID

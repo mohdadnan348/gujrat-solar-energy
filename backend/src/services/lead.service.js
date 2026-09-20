@@ -1,7 +1,7 @@
 const Lead = require("../models/Lead");
 const LeadActivity = require("../models/LeadActivity");
 const Customer = require("../models/Customer");
-const { generateId } = require("../utils/generateId");
+const  generateId  = require("../utils/generateId");
 
 const {
   LEAD_STATUS,
@@ -17,6 +17,9 @@ const buildFilter = ({
   status,
   priority,
   leadSource,
+  followUpDate,
+startDate,
+  endDate,
   assignedTo,
 }) => {
   const filter = {};
@@ -46,6 +49,23 @@ const buildFilter = ({
   if (assignedTo) {
     filter.assignedTo = assignedTo;
   }
+  if (followUpDate) {
+  filter.followUpDate = followUpDate;
+}
+
+if (startDate || endDate) {
+  filter.createdAt = {};
+
+  if (startDate) {
+    filter.createdAt.$gte = new Date(startDate);
+  }
+
+  if (endDate) {
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    filter.createdAt.$lte = end;
+  }
+}
 
   return filter;
 };
@@ -554,7 +574,70 @@ const getLeadStats = async () => {
     bySource: sourceStats,
   };
 };
+const getMyLeads = async ({
+  employeeId,
+  page = 1,
+  limit = 10,
+  search = "",
+  status,
+  priority,
+  leadSource,
+}) => {
+  return getLeads({
+    page,
+    limit,
+    search,
+    status,
+    priority,
+    leadSource,
+    assignedTo: employeeId,
+  });
+};
 
+const transferLead = async (
+  id,
+  assignedTo,
+  transferredBy
+) => {
+  const lead = await Lead.findById(id);
+
+  if (!lead) {
+    const error = new Error("Lead not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const oldAssignedTo = lead.assignedTo;
+
+  lead.assignedTo = assignedTo;
+  lead.updatedBy = transferredBy;
+
+  await lead.save();
+
+  await LeadActivity.create({
+    lead: lead._id,
+    activityType: "ASSIGNMENT",
+    title: "Lead transferred",
+    description: "Lead transferred to another employee",
+    assignedTo,
+    createdBy: transferredBy,
+  });
+
+  return getLeadById(lead._id);
+};
+
+const closeLead = async (
+  id,
+  lostReason,
+  closedBy
+) => {
+  return updateLeadStatus(
+    id,
+    LEAD_STATUS.LOST,
+    lostReason,
+    closedBy
+  );
+};
 module.exports = {
   createLead,
   getLeads,
@@ -563,6 +646,9 @@ module.exports = {
   updateLead,
   updateLeadStatus,
   assignLead,
+  getMyLeads,
+  transferLead,
+  closeLead,
   convertLeadToCustomer,
   deleteLead,
   getLeadStats,

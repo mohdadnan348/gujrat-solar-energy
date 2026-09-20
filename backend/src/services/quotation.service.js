@@ -1062,6 +1062,7 @@ module.exports = {
   getQuotationBOM,
   getQuotationsByLead,
   getQuotationsByCustomer,
+  markExpiredQuotations: expireQuotation,
   deleteQuotation,
   calculateItem,
   calculateTotals,

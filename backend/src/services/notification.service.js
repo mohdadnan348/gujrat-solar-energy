@@ -23,12 +23,16 @@ const createNotification = async (data) => {
     throw error;
   }
 
-  const notification =
+    const notification =
     await Notification.create({
       recipient: data.recipient,
       type: data.type || "other",
       title: data.title,
       message: data.message,
+      module: data.module,
+      recordId: data.recordId,
+      recordType: data.recordType,
+      actionUrl: data.actionUrl,
       priority: data.priority || "normal",
       metadata: data.metadata || {},
       expiresAt: data.expiresAt,
@@ -340,13 +344,16 @@ const deleteExpiredNotifications =
         result.deletedCount || 0,
     };
   };
-
 const createBulkNotifications =
   async ({
     recipients,
     type,
     title,
     message,
+    module,
+    recordId,
+    recordType,
+    actionUrl,
     priority = "normal",
     metadata = {},
     expiresAt,
@@ -365,20 +372,17 @@ const createBulkNotifications =
 
     const uniqueRecipients = [
       ...new Set(
-        recipients.map(
-          (id) => String(id)
-        )
+        recipients.map((id) => String(id))
       ),
     ];
 
-    const users =
-      await User.find({
-        _id: {
-          $in: uniqueRecipients,
-        },
-      })
-        .select("_id")
-        .lean();
+    const users = await User.find({
+      _id: {
+        $in: uniqueRecipients,
+      },
+    })
+      .select("_id")
+      .lean();
 
     if (
       users.length !==
@@ -392,18 +396,20 @@ const createBulkNotifications =
     }
 
     const documents =
-      uniqueRecipients.map(
-        (recipient) => ({
-          recipient,
-          type: type || "other",
-          title,
-          message,
-          priority,
-          metadata,
-          expiresAt,
-          createdBy,
-        })
-      );
+      uniqueRecipients.map((recipient) => ({
+        recipient,
+        type: type || "other",
+        title,
+        message,
+        module,
+        recordId,
+        recordType,
+        actionUrl,
+        priority,
+        metadata,
+        expiresAt,
+        createdBy,
+      }));
 
     return Notification.insertMany(
       documents
@@ -415,6 +421,10 @@ const notifyUser = async ({
   type,
   title,
   message,
+  module,
+  recordId,
+  recordType,
+  actionUrl,
   priority,
   metadata,
   expiresAt,
@@ -425,6 +435,10 @@ const notifyUser = async ({
     type,
     title,
     message,
+    module,
+    recordId,
+    recordType,
+    actionUrl,
     priority,
     metadata,
     expiresAt,
@@ -437,6 +451,10 @@ const notifyUsers = async ({
   type,
   title,
   message,
+  module,
+  recordId,
+  recordType,
+  actionUrl,
   priority,
   metadata,
   expiresAt,
@@ -447,6 +465,10 @@ const notifyUsers = async ({
     type,
     title,
     message,
+    module,
+    recordId,
+    recordType,
+    actionUrl,
     priority,
     metadata,
     expiresAt,
@@ -454,11 +476,97 @@ const notifyUsers = async ({
   });
 };
 
+const getMyNotifications = async (
+  userId,
+  options = {}
+) => {
+  return getNotifications({
+    ...options,
+    recipient: userId,
+  });
+};
+
+const deleteReadNotifications = async (
+  userId
+) => {
+  const result =
+    await Notification.deleteMany({
+      recipient: userId,
+      isRead: true,
+    });
+
+  return {
+    deleted: result.deletedCount || 0,
+  };
+};
+
+const getRecordNotifications = async (
+  recordId,
+  { page = 1, limit = 20 } = {}
+) => {
+  const filter = {
+    $or: [
+      { recordId },
+      {
+        "metadata.recordId":
+          recordId,
+      },
+    ],
+  };
+
+  const pageNumber = Math.max(
+    Number(page),
+    1
+  );
+
+  const limitNumber = Math.max(
+    Number(limit),
+    1
+  );
+
+  const skip =
+    (pageNumber - 1) *
+    limitNumber;
+
+  const [
+    notifications,
+    total,
+  ] = await Promise.all([
+    Notification.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNumber)
+      .lean(),
+
+    Notification.countDocuments(
+      filter
+    ),
+  ]);
+
+  return {
+    notifications,
+    pagination: {
+      page: pageNumber,
+      limit: limitNumber,
+      total,
+      totalPages: Math.ceil(
+        total / limitNumber
+      ),
+    },
+  };
+};
+
+const removeExpiredNotifications =
+  async () => {
+    return deleteExpiredNotifications();
+  };
+
 module.exports = {
   createNotification,
   createBulkNotifications,
 
   getNotifications,
+  getMyNotifications,
   getNotificationById,
 
   markAsRead,
@@ -468,7 +576,11 @@ module.exports = {
   getUnreadCount,
 
   deleteNotification,
+  deleteReadNotifications,
   deleteExpiredNotifications,
+  removeExpiredNotifications,
+
+  getRecordNotifications,
 
   notifyUser,
   notifyUsers,

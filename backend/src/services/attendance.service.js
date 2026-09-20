@@ -612,13 +612,24 @@ const deleteAttendance = async (
 
 module.exports = {
   createAttendance,
-  checkIn,
-  checkOut,
+
+  checkInEmployee: checkIn,
+  checkOutEmployee: checkOut,
+
   getAttendances,
   getAttendanceById,
   getEmployeeAttendance,
+
+  getMyAttendance: getEmployeeAttendance,
+
   updateAttendance,
+
   getTodayAttendance,
+
+  // Controller compatibility
+  getAttendanceByDate: getTodayAttendance,
+  getAttendanceSummary: getAttendanceStats,
+
   getAttendanceStats,
   markAbsent,
   deleteAttendance,

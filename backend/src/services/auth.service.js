@@ -143,9 +143,69 @@ const changePassword = async ({
   };
 };
 
+const crypto = require("crypto");
+
+const forgotPassword = async (email) => {
+  const user = await User.findOne({ email }).select(
+    "+passwordResetToken +passwordResetExpires"
+  );
+
+  // Security ke liye user existence expose nahi karni
+  if (!user) {
+    return {
+      message: "If the email exists, a password reset link has been generated.",
+    };
+  }
+
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  user.passwordResetToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  user.passwordResetExpires = Date.now() + 15 * 60 * 1000;
+
+  await user.save();
+
+  return {
+    message: "Password reset token generated successfully",
+    resetToken,
+  };
+};
+
+const resetPassword = async (token, newPassword) => {
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: Date.now() },
+  }).select("+passwordResetToken +passwordResetExpires +password");
+
+  if (!user) {
+    const error = new Error("Invalid or expired password reset token");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  user.password = newPassword;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+
+  await user.save();
+
+  return {
+    message: "Password reset successfully",
+  };
+};
 module.exports = {
   login,
   register,
   getProfile,
+  forgotPassword,
+  resetPassword,
   changePassword,
 };

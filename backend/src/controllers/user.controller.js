@@ -134,8 +134,35 @@ const getUserEmployee = async (
   }
 };
 
+const updateUserStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: "Status is required",
+      });
+    }
+
+    const user = await userService.updateUserStatus(
+      req.params.id,
+      status,
+      req.user.userId
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "User status updated successfully",
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 module.exports = {
   createUser,
+  updateUserStatus,
   getUsers,
   getUser,
   updateUser,

@@ -940,6 +940,14 @@ module.exports = {
   getLeaveRequests,
   getLeaveRequestById,
   updateLeaveRequest,
+
+  // Controller compatibility
+  approveLeaveRequest: approveLeave,
+  rejectLeaveRequest: rejectLeave,
+  cancelLeaveRequest: cancelLeave,
+  getMyLeaveRequests: getEmployeeLeaveRequests,
+  getLeaveBalanceForEmployee: getLeaveStats,
+
   approveLeave,
   rejectLeave,
   cancelLeave,

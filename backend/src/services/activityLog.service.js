@@ -76,11 +76,11 @@ const createActivityLog = async ({
   user,
   action,
   module,
+  recordId,
+  recordType,
   description,
-  entityType,
-  entityId,
-  oldData,
-  newData,
+  beforeData,
+  afterData,
   metadata,
   ipAddress,
   userAgent,
@@ -90,16 +90,15 @@ const createActivityLog = async ({
     action,
     module,
     description,
-    entityType,
-    entityId,
-    oldData,
-    newData,
+    entityType: recordType,
+    entityId: recordId,
+    oldData: beforeData,
+    newData: afterData,
     metadata,
     ipAddress,
     userAgent,
   });
 };
-
 const getLogs = async ({
   page = 1,
   limit = 20,
@@ -543,15 +542,137 @@ const deleteOldLogs = async (
       "Audit logs are retained as historical records and are not deleted.",
   };
 };
+const getActivityLogs = async (options = {}) => {
+  return getLogs({
+    ...options,
+    from: options.startDate,
+    to: options.endDate,
+  });
+};
 
+const getActivityLogById = async (logId) => {
+  return getLogById(logId);
+};
+
+const getRecordActivityLogs = async (
+  recordId,
+  { page = 1, limit = 20 } = {}
+) => {
+  const pageNumber = Math.max(Number(page), 1);
+  const limitNumber = Math.max(Number(limit), 1);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const filter = {
+    $or: [
+      { entityId: recordId },
+      { recordId: recordId },
+    ],
+  };
+
+  const [logs, total] = await Promise.all([
+    ActivityLog.find(filter)
+      .populate("user", "username email role")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNumber)
+      .lean(),
+
+    ActivityLog.countDocuments(filter),
+  ]);
+
+  return {
+    logs,
+    pagination: {
+      page: pageNumber,
+      limit: limitNumber,
+      total,
+      totalPages: Math.ceil(total / limitNumber),
+    },
+  };
+};
+
+const getUserActivityLogs = async (
+  userId,
+  { page = 1, limit = 20 } = {}
+) => {
+  const pageNumber = Math.max(Number(page), 1);
+  const limitNumber = Math.max(Number(limit), 1);
+
+  const logs = await getUserLogs(userId, {
+    limit: limitNumber,
+  });
+
+  const start = (pageNumber - 1) * limitNumber;
+  const paginatedLogs = logs.slice(start, start + limitNumber);
+
+  return {
+    logs: paginatedLogs,
+    pagination: {
+      page: pageNumber,
+      limit: limitNumber,
+      total: logs.length,
+      totalPages: Math.ceil(
+        logs.length / limitNumber
+      ),
+    },
+  };
+};
+
+const getModuleActivityLogs = async (
+  module,
+  {
+    page = 1,
+    limit = 20,
+    startDate,
+    endDate,
+  } = {}
+) => {
+  const pageNumber = Math.max(Number(page), 1);
+  const limitNumber = Math.max(Number(limit), 1);
+
+  const logs = await getModuleLogs(module, {
+    from: startDate,
+    to: endDate,
+    limit: 10000,
+  });
+
+  const start = (pageNumber - 1) * limitNumber;
+  const paginatedLogs = logs.slice(
+    start,
+    start + limitNumber
+  );
+
+  return {
+    logs: paginatedLogs,
+    pagination: {
+      page: pageNumber,
+      limit: limitNumber,
+      total: logs.length,
+      totalPages: Math.ceil(
+        logs.length / limitNumber
+      ),
+    },
+  };
+};
 module.exports = {
   createLog,
   createActivityLog,
+
   getLogs,
+  getActivityLogs,
+
   getLogById,
+  getActivityLogById,
+
   getEntityLogs,
+  getRecordActivityLogs,
+
   getUserLogs,
+  getUserActivityLogs,
+
   getModuleLogs,
+  getModuleActivityLogs,
+
   getActivitySummary,
   deleteOldLogs,
 };

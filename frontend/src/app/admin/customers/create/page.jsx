@@ -103,29 +103,40 @@ const CreateCustomerPage = () => {
       setSuccess("");
 
       const payload = {
-        name: form.name.trim(),
-        companyName:
-          form.companyName.trim() || undefined,
-        phone: form.phone.trim(),
-        alternatePhone:
-          form.alternatePhone.trim() || undefined,
-        email:
-          form.email.trim() || undefined,
-        address:
-          form.address.trim() || undefined,
-        city:
-          form.city.trim() || undefined,
-        state:
-          form.state.trim() || undefined,
-        pincode:
-          form.pincode.trim() || undefined,
-        customerType:
-          form.customerType,
-        source:
-          form.source,
-        notes:
-          form.notes.trim() || undefined,
-      };
+  name: form.name.trim(),
+
+  companyName:
+    form.companyName.trim() || undefined,
+
+  mobile:
+    form.phone.trim(),
+
+  alternateMobile:
+    form.alternatePhone.trim() || undefined,
+
+  email:
+    form.email.trim() || undefined,
+
+  address:
+    form.address.trim() || undefined,
+
+  city:
+    form.city.trim() || undefined,
+
+  state:
+    form.state.trim() || undefined,
+
+  pincode:
+    form.pincode.trim() || undefined,
+
+  customerType:
+    form.customerType === "BUSINESS"
+      ? "Business"
+      : "Individual",
+
+  notes:
+    form.notes.trim() || undefined,
+};
 
       await customerService.createCustomer(
         payload

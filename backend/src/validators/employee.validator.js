@@ -34,12 +34,7 @@ const validateEmployee = (req, res, next) => {
   const errors = [];
 
   // Employee ID
-  if (!employeeId || typeof employeeId !== "string") {
-    errors.push("Employee ID is required");
-  } else if (employeeId.trim().length < 2) {
-    errors.push("Employee ID must be at least 2 characters");
-  }
-
+ 
   // User reference
   if (user !== undefined && user !== null && user !== "") {
     if (typeof user !== "string") {
@@ -181,7 +176,7 @@ const validateEmployee = (req, res, next) => {
 
 const validateEmployeeUpdate = (req, res, next) => {
   const {
-    employeeId,
+    
     name,
     email,
     mobile,

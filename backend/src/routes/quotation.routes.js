@@ -29,80 +29,81 @@ const router = express.Router();
 
 router.use(protect);
 
+// Get quotations
 router.get(
   "/",
-  quotationListValidator,
-  validate,
+  validate([quotationListValidator]),
   allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
   getQuotations
 );
 
+// Create quotation
 router.post(
   "/",
-  createQuotationValidator,
-  validate,
+  validate([createQuotationValidator]),
   allowRoles("ADMIN", "MANAGER"),
   createQuotation
 );
 
+// Mark expired quotations
 router.patch(
   "/mark-expired",
   allowRoles("ADMIN", "MANAGER"),
   markExpiredQuotations
 );
 
+// Get quotation items
 router.get(
   "/:id/items",
-  quotationIdValidator,
-  validate,
+  validate([quotationIdValidator]),
   allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
   getQuotationItems
 );
 
+// Get quotation BOM
 router.get(
   "/:id/bom",
-  quotationIdValidator,
-  validate,
+  validate([quotationIdValidator]),
   allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
   getQuotationBOM
 );
 
+// Get quotation by ID
 router.get(
   "/:id",
-  quotationIdValidator,
-  validate,
+  validate([quotationIdValidator]),
   allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
   getQuotation
 );
 
+// Update quotation
 router.put(
   "/:id",
-  updateQuotationValidator,
-  validate,
+  validate([updateQuotationValidator]),
   allowRoles("ADMIN", "MANAGER"),
   updateQuotation
 );
 
+// Send quotation
 router.patch(
   "/:id/send",
-  quotationIdValidator,
-  validate,
+  validate([quotationIdValidator]),
   allowRoles("ADMIN", "MANAGER"),
   sendQuotation
 );
 
+// Accept quotation
 router.patch(
   "/:id/accept",
-  quotationIdValidator,
-  validate,
+  validate([quotationIdValidator]),
   allowRoles("ADMIN", "MANAGER"),
   acceptQuotation
 );
 
+// Reject quotation
 router.patch(
   "/:id/reject",
-  rejectQuotationValidator,
-  validate,
+  validate([rejectQuotationValidator]),
   allowRoles("ADMIN", "MANAGER"),
   rejectQuotation
 );

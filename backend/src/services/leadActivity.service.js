@@ -205,5 +205,7 @@ module.exports = {
   getLeadTimeline,
   updateActivity,
   deleteActivity,
+ getLeadActivities: getActivities,
+getFollowUps: getUpcomingFollowUps,
   getUpcomingFollowUps,
 };

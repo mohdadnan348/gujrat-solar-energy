@@ -533,6 +533,28 @@ const cancelTask = async (
     }
   );
 };
+const getMyTasks = async ({
+  employeeId,
+  page = 1,
+  limit = 10,
+  search = "",
+  status,
+  priority,
+  dueDateFrom,
+  dueDateTo,
+}) => {
+  return getTasks({
+    page,
+    limit,
+    search,
+    status,
+    priority,
+    assignedTo: employeeId,
+    dueDateFrom,
+    dueDateTo,
+  });
+};
+
 
 const getTasksByEmployee = async (
   employeeId,
@@ -763,6 +785,7 @@ module.exports = {
   startTask,
   completeTask,
   cancelTask,
+  getMyTasks,
   getTasksByEmployee,
   getTasksByLead,
   getTasksByCustomer,

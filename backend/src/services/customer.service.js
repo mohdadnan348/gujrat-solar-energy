@@ -439,5 +439,6 @@ module.exports = {
   updateCustomerStatus,
   deactivateCustomer,
   getCustomersByLead,
+  getCustomerByLead: getCustomersByLead,
   getCustomerStats,
 };
