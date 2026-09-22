@@ -11,6 +11,7 @@ const Select = forwardRef(
       value = "",
       onChange,
       options = [],
+      children,
       placeholder = "Select an option",
       error = "",
       helperText = "",
@@ -75,38 +76,44 @@ const Select = forwardRef(
             }
             {...props}
           >
-            {placeholder && (
-              <option value="" disabled>
-                {placeholder}
-              </option>
-            )}
+            {children ? (
+  children
+) : (
+  <>
+    {placeholder && (
+      <option value="" disabled>
+        {placeholder}
+      </option>
+    )}
 
-            {options.map((option, index) => {
-              const isObject =
-                typeof option === "object" && option !== null;
+    {options.map((option, index) => {
+      const isObject =
+        typeof option === "object" && option !== null;
 
-              const optionValue = isObject
-                ? option.value
-                : option;
+      const optionValue = isObject
+        ? option.value
+        : option;
 
-              const optionLabel = isObject
-                ? option.label
-                : option;
+      const optionLabel = isObject
+        ? option.label
+        : option;
 
-              const optionDisabled = isObject
-                ? Boolean(option.disabled)
-                : false;
+      const optionDisabled = isObject
+        ? Boolean(option.disabled)
+        : false;
 
-              return (
-                <option
-                  key={`${optionValue}-${index}`}
-                  value={optionValue}
-                  disabled={optionDisabled}
-                >
-                  {optionLabel}
-                </option>
-              );
-            })}
+      return (
+        <option
+          key={`${optionValue}-${index}`}
+          value={optionValue}
+          disabled={optionDisabled}
+        >
+          {optionLabel}
+        </option>
+      );
+    })}
+  </>
+)}
           </select>
 
           <span className="gse-select-arrow" aria-hidden="true">

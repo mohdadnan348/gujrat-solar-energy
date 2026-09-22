@@ -74,7 +74,7 @@ if (startDate || endDate) {
  * Create Lead
  */
 const createLead = async (data, createdBy) => {
-  const leadId = await generateId(Lead, "leadId", "LD");
+  const leadId = await generateId("LD");
 
   const lead = await Lead.create({
     leadId,
