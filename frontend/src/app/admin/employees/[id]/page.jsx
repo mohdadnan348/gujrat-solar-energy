@@ -9,7 +9,7 @@ import Badge from "@/components/common/Badge";
 import Loader from "@/components/common/Loader";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 
-import { employeeService } from "@/services/employee.service";
+import employeeService  from "@/services/employee.service";
 
 import "./employee-details.css";
 
@@ -70,19 +70,9 @@ const EmployeeDetailsPage = () => {
       setLoading(true);
       setError("");
 
-      if (
-        typeof employeeService.getEmployeeById !==
-        "function"
-      ) {
-        throw new Error(
-          "Employee details service is not available."
-        );
-      }
+      
 
-      const response =
-        await employeeService.getEmployeeById(
-          employeeId
-        );
+     const response = await getEmployeeById(id);
 
       const data =
         response?.data ||

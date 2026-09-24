@@ -9,8 +9,8 @@ import Select from "@/components/common/Select";
 import Textarea from "@/components/common/Textarea";
 import Loader from "@/components/common/Loader";
 import { useAuth } from "@/hooks/useAuth";
-import { systemConfigurationService } from "@/services/systemConfiguration.service";
-import { solarRequirementService } from "@/services/solarRequirement.service";
+import systemConfigurationService  from "@/services/systemConfiguration.service";
+import solarRequirementService  from "@/services/solarRequirement.service";
 
 const CreateSystemConfigurationPage = () => {
   const router = useRouter();
@@ -317,68 +317,64 @@ const CreateSystemConfigurationPage = () => {
       setError("");
 
       const payload = {
-        solarRequirementId:
-          form.solarRequirementId,
+  lead: form.leadId,
 
-        customerName:
-          form.customerName || undefined,
+  solarRequirement: form.solarRequirementId,
 
-        systemType: form.systemType,
+  customer: undefined,
 
-        systemSizeKW: Number(
-          form.systemSizeKW
-        ),
+  version: 1,
 
-        panelMake:
-          form.panelMake || undefined,
+  panels: form.panelMake
+    ? [
+        {
+          name: form.panelMake,
+          quantity: form.panelCount
+            ? Number(form.panelCount)
+            : 1,
+          unit: "Nos",
+          rate: 0,
+        },
+      ]
+    : undefined,
 
-        panelWattage: form.panelWattage
-          ? Number(form.panelWattage)
-          : undefined,
+  inverter: form.inverterMake
+    ? [
+        {
+          name: form.inverterMake,
+          quantity: form.inverterCount
+            ? Number(form.inverterCount)
+            : 1,
+          unit: "Nos",
+          rate: 0,
+        },
+      ]
+    : undefined,
 
-        panelCount: form.panelCount
-          ? Number(form.panelCount)
-          : undefined,
+  battery: form.batteryRequired === "YES"
+    ? [
+        {
+          name: "Battery",
+          quantity: 1,
+          unit: "Nos",
+          rate: 0,
+        },
+      ]
+    : undefined,
 
-        inverterMake:
-          form.inverterMake || undefined,
+  installation: form.installationType
+    ? [
+        {
+          name: form.installationType,
+          quantity: 1,
+          unit: "Job",
+          rate: 0,
+        },
+      ]
+    : undefined,
 
-        inverterCapacity:
-          form.inverterCapacity || undefined,
-
-        inverterCount: form.inverterCount
-          ? Number(form.inverterCount)
-          : undefined,
-
-        batteryRequired:
-          form.batteryRequired === "YES",
-
-        batteryCapacity:
-          form.batteryCapacity || undefined,
-
-        mountingStructure:
-          form.mountingStructure || undefined,
-
-        cableSpecification:
-          form.cableSpecification || undefined,
-
-        earthing:
-          form.earthing || undefined,
-
-        protection:
-          form.protection || undefined,
-
-        generationEstimate:
-          form.generationEstimate || undefined,
-
-        annualGeneration:
-          form.annualGeneration || undefined,
-
-        installationType:
-          form.installationType || undefined,
-
-        notes: form.notes || undefined,
-      };
+  notes: form.notes || undefined,
+};
 
       await systemConfigurationService.createSystemConfiguration(
         payload
@@ -387,21 +383,23 @@ const CreateSystemConfigurationPage = () => {
       router.push(
         "/admin/system-configurations"
       );
-    } catch (err) {
-      console.error(
-        "Failed to create system configuration:",
-        err
-      );
+    }     catch (err) {
+  console.error("SYSTEM CONFIG ERROR FULL:", err);
+  console.error("STATUS:", err?.response?.status);
+  console.error("DATA:", err?.response?.data);
+  console.error("HEADERS:", err?.response?.headers);
+  console.error("REQUEST:", err?.config);
 
-      setError(
-        err?.message ||
-          "System configuration create nahi ho paayi."
-      );
-    } finally {
+  setError(
+    err?.response?.data?.message ||
+    err?.response?.data?.errors?.join(", ") ||
+    "System configuration creation failed"
+  );
+}
+     finally {
       setSaving(false);
     }
   };
-
   if (authLoading) {
     return (
       <AdminLayout>

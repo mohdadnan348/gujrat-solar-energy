@@ -10,8 +10,12 @@ import Select from "@/components/common/Select";
 import Textarea from "@/components/common/Textarea";
 import Loader from "@/components/common/Loader";
 
-import { employeeService } from "@/services/employee.service";
-
+import employeeService from "@/services/employee.service";
+console.log("EMPLOYEE SERVICE:", employeeService);
+console.log(
+  "GET EMPLOYEE BY ID:",
+  employeeService?.getEmployeeById
+);
 import "./create-employee.css";
 
 const CreateEmployeePage = () => {
@@ -37,7 +41,7 @@ const CreateEmployeePage = () => {
     department: "",
     designation: "",
     joiningDate: "",
-    status: "ACTIVE",
+    status: "Active",
     address: "",
     city: "",
     state: "",
@@ -469,11 +473,11 @@ const CreateEmployeePage = () => {
     () => [
       {
         label: "Active",
-        value: "ACTIVE",
+        value: "Active",
       },
       {
         label: "Inactive",
-        value: "INACTIVE",
+        value: "Inactive",
       },
       {
         label: "On Leave",

@@ -12,9 +12,9 @@ import Loader from "@/components/common/Loader";
 import Select from "@/components/common/Select";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 
-import { taskService } from "@/services/task.service";
-import { employeeService } from "@/services/employee.service";
+import  taskService  from "@/services/task.service";
 
+import { getEmployees } from "@/services/employee.service";
 import "./tasks.css";
 
 const AdminTasksPage = () => {
@@ -128,7 +128,7 @@ const AdminTasksPage = () => {
         employeesResponse,
       ] = await Promise.all([
         taskService.getTasks(),
-        employeeService.getEmployees(),
+       getEmployees(),
       ]);
 
       setTasks(

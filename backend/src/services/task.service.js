@@ -9,7 +9,7 @@ const {
   LEAD_PRIORITY,
 } = require("../config/constants");
 
-const { generateId } = require("../utils/generateId");
+const generateId  = require("../utils/generateId");
 
 const validateReferences = async ({
   lead,

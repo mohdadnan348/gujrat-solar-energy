@@ -239,32 +239,45 @@ const CreateSolarRequirementPage = () => {
       setError("");
 
       const payload = {
-        leadId: form.leadId,
-        customerName: form.customerName.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim() || undefined,
-        requiredKW: Number(form.requiredKW),
-        monthlyBill: form.monthlyBill
-          ? Number(form.monthlyBill)
-          : undefined,
-        units: form.units
-          ? Number(form.units)
-          : undefined,
-        roofType: form.roofType || undefined,
-        roofArea: form.roofArea
-          ? Number(form.roofArea)
-          : undefined,
-        siteAddress: form.siteAddress.trim(),
-        location: form.location.trim(),
-        connectionLoad:
-          form.connectionLoad.trim() || undefined,
-        systemType: form.systemType || undefined,
-        batteryRequirement:
-          form.batteryRequirement,
-        siteSurvey: form.siteSurvey,
-        notes: form.notes.trim() || undefined,
-      };
+  lead: form.leadId,
+  customer: undefined,
 
+  requiredKw: Number(form.requiredKW),
+
+  monthlyBill: form.monthlyBill
+    ? Number(form.monthlyBill)
+    : undefined,
+
+  monthlyUnits: form.units
+    ? Number(form.units)
+    : undefined,
+
+  roofType: form.roofType || undefined,
+
+  roofArea: form.roofArea
+    ? Number(form.roofArea)
+    : undefined,
+
+  siteAddress: form.siteAddress.trim(),
+
+  location: form.location.trim(),
+
+  connectionType: form.connectionLoad.trim() || undefined,
+
+  sanctionedLoad: undefined,
+
+  systemType: form.systemType || undefined,
+
+  batteryRequired: form.batteryRequirement === "Yes",
+
+  batteryCapacity: undefined,
+
+  siteSurveyRequired: form.siteSurvey === "Required",
+
+  siteSurveyCompleted: form.siteSurvey === "Completed",
+
+  notes: form.notes.trim() || undefined,
+};
       await solarRequirementService.createSolarRequirement(
         payload
       );
@@ -516,15 +529,17 @@ const CreateSolarRequirementPage = () => {
                   <option value="">
                     Select system type
                   </option>
-                  <option value="ON_GRID">
-                    On-Grid
-                  </option>
-                  <option value="OFF_GRID">
-                    Off-Grid
-                  </option>
-                  <option value="HYBRID">
-                    Hybrid
-                  </option>
+                  <option value="On-grid">
+  On-Grid
+</option>
+
+<option value="Off-grid">
+  Off-Grid
+</option>
+
+<option value="Hybrid">
+  Hybrid
+</option>
                 </Select>
               </div>
 

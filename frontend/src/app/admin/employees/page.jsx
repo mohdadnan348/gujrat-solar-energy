@@ -12,7 +12,7 @@ import Loader from "@/components/common/Loader";
 import Select from "@/components/common/Select";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 
-import { employeeService } from "@/services/employee.service";
+import  employeeService  from "@/services/employee.service";
 
 import "./employees.css";
 

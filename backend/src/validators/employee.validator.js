@@ -118,18 +118,22 @@ const validateEmployee = (req, res, next) => {
   }
 
   // Status
-  if (status !== undefined && status !== null && status !== "") {
-    if (
-      typeof status !== "string" ||
-      !Object.values(USER_STATUS).includes(status.toUpperCase())
-    ) {
-      errors.push(
-        `Invalid status. Allowed statuses: ${Object.values(USER_STATUS).join(
-          ", "
-        )}`
-      );
-    }
+  // Status
+if (status !== undefined && status !== null && status !== "") {
+  const normalizedStatus = String(status).trim().toLowerCase();
+
+  const isValidStatus = Object.values(USER_STATUS).some(
+    (value) => String(value).trim().toLowerCase() === normalizedStatus
+  );
+
+  if (!isValidStatus) {
+    errors.push(
+      `Invalid status. Allowed statuses: ${Object.values(USER_STATUS).join(
+        ", "
+      )}`
+    );
   }
+}
 
   // Profile image
   if (
@@ -164,13 +168,14 @@ const validateEmployee = (req, res, next) => {
   }
 
   if (errors.length > 0) {
-    return res.status(400).json({
-      success: false,
-      message: "Employee validation failed",
-      errors,
-    });
-  }
+  console.log("EMPLOYEE VALIDATION ERRORS:", errors);
 
+  return res.status(400).json({
+    success: false,
+    message: "Employee validation failed",
+    errors,
+  });
+}
   next();
 };
 

@@ -10,8 +10,8 @@ import Select from "@/components/common/Select";
 import Textarea from "@/components/common/Textarea";
 import Loader from "@/components/common/Loader";
 
-import { taskService } from "@/services/task.service";
-import { employeeService } from "@/services/employee.service";
+import taskService  from "@/services/task.service";
+import { getEmployees } from "@/services/employee.service";import { employeeService } from "@/services/employee.service";
 
 import "./create-task.css";
 
@@ -32,8 +32,8 @@ const CreateTaskPage = () => {
     title: "",
     description: "",
     assignedTo: "",
-    priority: "MEDIUM",
-    status: "PENDING",
+   priority: "Medium",
+    status: "Pending",
     dueDate: "",
     notes: "",
   });
@@ -145,7 +145,7 @@ const CreateTaskPage = () => {
       setError("");
 
       const employeeResponse =
-        await employeeService.getEmployees();
+        await getEmployees();
 
       setEmployees(
         normalizeList(
@@ -218,20 +218,19 @@ const CreateTaskPage = () => {
             ),
           assignedTo:
             assignedToId,
-          priority:
-            String(
-              getValue(
-                task,
-                ["priority"],
-                "MEDIUM"
-              )
-            ).toUpperCase(),
+         priority: String(
+  getValue(
+    task,
+    ["priority"],
+    "Medium"
+  )
+),
           status:
             String(
               getValue(
                 task,
                 ["status"],
-                "PENDING"
+                "Pending"
               )
             ).toUpperCase(),
           dueDate:
@@ -598,22 +597,22 @@ const CreateTaskPage = () => {
                       )
                     }
                     options={[
-                      {
-                        label: "Urgent",
-                        value: "URGENT",
-                      },
-                      {
-                        label: "High",
-                        value: "HIGH",
-                      },
-                      {
-                        label: "Medium",
-                        value: "MEDIUM",
-                      },
-                      {
-                        label: "Low",
-                        value: "LOW",
-                      },
+                     {
+  label: "Urgent",
+  value: "Urgent",
+},
+{
+  label: "High",
+  value: "High",
+},
+{
+  label: "Medium",
+  value: "Medium",
+},
+{
+  label: "Low",
+  value: "LOw",
+},
                     ]}
                   />
                 </div>
@@ -637,22 +636,22 @@ const CreateTaskPage = () => {
                     options={[
                       {
                         label: "Pending",
-                        value: "PENDING",
+                        value: "Pending",
                       },
                       {
                         label: "In Progress",
                         value:
-                          "IN_PROGRESS",
+                          "In Progress",
                       },
                       {
                         label: "Completed",
                         value:
-                          "COMPLETED",
+                          "Completed",
                       },
                       {
                         label: "Cancelled",
                         value:
-                          "CANCELLED",
+                          "Cancelled",
                       },
                     ]}
                   />
