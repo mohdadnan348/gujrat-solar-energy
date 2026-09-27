@@ -1,10 +1,6 @@
 const dashboardService = require("../services/dashboard.service");
 
-const getDashboard = async (
-  req,
-  res,
-  next
-) => {
+const getDashboard = async (req, res, next) => {
   try {
     const {
       startDate,
@@ -15,11 +11,13 @@ const getDashboard = async (
       await dashboardService.getDashboard({
         startDate,
         endDate,
+        userId: req.user.userId,
+        role: req.user.role,
       });
 
     return res.status(200).json({
       success: true,
-      message: "Dashboard data fetched successfully",
+      message: "Dashboard fetched successfully",
       data: dashboard,
     });
   } catch (error) {
@@ -42,6 +40,8 @@ const getDashboardSummary = async (
       await dashboardService.getDashboardSummary({
         startDate,
         endDate,
+        userId: req.user.userId,
+        role: req.user.role,
       });
 
     return res.status(200).json({
@@ -69,6 +69,8 @@ const getLeadStatusSummary = async (
       await dashboardService.getLeadStatusSummary({
         startDate,
         endDate,
+        userId: req.user.userId,
+        role: req.user.role,
       });
 
     return res.status(200).json({
@@ -96,6 +98,8 @@ const getQuotationSummary = async (
       await dashboardService.getQuotationSummary({
         startDate,
         endDate,
+        userId: req.user.userId,
+        role: req.user.role,
       });
 
     return res.status(200).json({
@@ -123,6 +127,8 @@ const getInvoiceSummary = async (
       await dashboardService.getInvoiceSummary({
         startDate,
         endDate,
+        userId: req.user.userId,
+        role: req.user.role,
       });
 
     return res.status(200).json({
@@ -150,6 +156,8 @@ const getTaskSummary = async (
       await dashboardService.getTaskSummary({
         startDate,
         endDate,
+        userId: req.user.userId,
+        role: req.user.role,
       });
 
     return res.status(200).json({
@@ -195,11 +203,15 @@ const getRecentLeads = async (
   next
 ) => {
   try {
-    const { limit = 5 } = req.query;
+    const {
+      limit = 5,
+    } = req.query;
 
     const leads =
       await dashboardService.getRecentLeads(
-        limit
+        limit,
+        req.user.userId,
+        req.user.role
       );
 
     return res.status(200).json({
@@ -218,11 +230,15 @@ const getRecentQuotations = async (
   next
 ) => {
   try {
-    const { limit = 5 } = req.query;
+    const {
+      limit = 5,
+    } = req.query;
 
     const quotations =
       await dashboardService.getRecentQuotations(
-        limit
+        limit,
+        req.user.userId,
+        req.user.role
       );
 
     return res.status(200).json({
@@ -241,11 +257,15 @@ const getRecentInvoices = async (
   next
 ) => {
   try {
-    const { limit = 5 } = req.query;
+    const {
+      limit = 5,
+    } = req.query;
 
     const invoices =
       await dashboardService.getRecentInvoices(
-        limit
+        limit,
+        req.user.userId,
+        req.user.role
       );
 
     return res.status(200).json({
@@ -264,11 +284,15 @@ const getUpcomingTasks = async (
   next
 ) => {
   try {
-    const { limit = 5 } = req.query;
+    const {
+      limit = 5,
+    } = req.query;
 
     const tasks =
       await dashboardService.getUpcomingTasks(
-        limit
+        limit,
+        req.user.userId,
+        req.user.role
       );
 
     return res.status(200).json({

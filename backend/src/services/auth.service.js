@@ -1,32 +1,30 @@
 const User = require("../models/User");
 const Employee = require("../models/Employee");
-const Role = require("../models/Role");
 const { hashPassword, comparePassword } = require("../utils/password");
 const { generateToken } = require("../utils/jwt");
 
 const login = async ({ email, password }) => {
-  const user = await User.findOne({ email: email.toLowerCase() })
-    .select("+password")
-    .populate("role", "name description");
+  const normalizedEmail = email.toLowerCase().trim();
+
+  const user = await User.findOne({
+    email: normalizedEmail,
+  }).select("+password");
 
   if (!user) {
-    const error = new Error("Invalid email or password");
-    error.statusCode = 401;
-    throw error;
+    throw new Error("Invalid email or password");
+  }
+
+  const isPasswordValid = await comparePassword(
+    password,
+    user.password
+  );
+
+  if (!isPasswordValid) {
+    throw new Error("Invalid email or password");
   }
 
   if (user.status !== "Active") {
-    const error = new Error("User account is inactive");
-    error.statusCode = 403;
-    throw error;
-  }
-
-  const isPasswordValid = await comparePassword(password, user.password);
-
-  if (!isPasswordValid) {
-    const error = new Error("Invalid email or password");
-    error.statusCode = 401;
-    throw error;
+    throw new Error("Your account is inactive");
   }
 
   user.lastLoginAt = new Date();
@@ -37,91 +35,104 @@ const login = async ({ email, password }) => {
     role: user.role,
   });
 
-  const employee = await Employee.findOne({ user: user._id }).select(
+  const employee = await Employee.findOne({
+    user: user._id,
+  }).select(
     "employeeId name email mobile department designation joiningDate role manager status profileImage"
   );
 
+  const userData = user.toObject();
+  delete userData.password;
+
   return {
-    user: {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      lastLoginAt: user.lastLoginAt,
-    },
+    user: userData,
     employee,
     token,
   };
 };
 
-const register = async ({
-  username,
-  email,
-  password,
-  role = "EMPLOYEE",
-}) => {
+const register = async (data) => {
+  const {
+    username,
+    email,
+    password,
+    role = "EMPLOYEE",
+    status = "Active",
+  } = data;
+
+  const normalizedEmail = email.toLowerCase().trim();
+
   const existingUser = await User.findOne({
-    $or: [
-      { email: email.toLowerCase() },
-      ...(username ? [{ username }] : []),
-    ],
+    email: normalizedEmail,
   });
 
   if (existingUser) {
-    const error = new Error("User with this email or username already exists");
-    error.statusCode = 409;
-    throw error;
+    throw new Error("User with this email already exists");
+  }
+
+  const existingUsername = await User.findOne({
+    username: username.toLowerCase().trim(),
+  });
+
+  if (existingUsername) {
+    throw new Error("Username already exists");
   }
 
   const hashedPassword = await hashPassword(password);
 
   const user = await User.create({
-    username,
-    email: email.toLowerCase(),
+    username: username.toLowerCase().trim(),
+    email: normalizedEmail,
     password: hashedPassword,
     role,
+    status,
   });
 
-  const safeUser = await User.findById(user._id).select(
-    "-password -passwordResetToken -passwordResetExpires"
-  );
+  const token = generateToken({
+    userId: user._id,
+    role: user.role,
+  });
 
-  return safeUser;
+  const userData = user.toObject();
+  delete userData.password;
+
+  return {
+    user: userData,
+    token,
+  };
 };
 
 const getProfile = async (userId) => {
-  const user = await User.findById(userId)
-    .populate("role", "name description")
-    .select("-password -passwordResetToken -passwordResetExpires");
+  const user = await User.findById(userId);
 
   if (!user) {
-    const error = new Error("User not found");
-    error.statusCode = 404;
-    throw error;
+    throw new Error("User not found");
   }
 
-  const employee = await Employee.findOne({ user: user._id }).select(
+  const employee = await Employee.findOne({
+    user: user._id,
+  }).select(
     "employeeId name email mobile department designation joiningDate role manager status profileImage address notes"
   );
 
+  const userData = user.toObject();
+  delete userData.password;
+
   return {
-    user,
+    user: userData,
     employee,
   };
 };
 
-const changePassword = async ({
+const changePassword = async (
   userId,
   currentPassword,
-  newPassword,
-}) => {
+  newPassword
+) => {
   const user = await User.findById(userId).select("+password");
 
   if (!user) {
-    const error = new Error("User not found");
-    error.statusCode = 404;
-    throw error;
+    throw new Error("User not found");
   }
 
   const isCurrentPasswordValid = await comparePassword(
@@ -130,12 +141,11 @@ const changePassword = async ({
   );
 
   if (!isCurrentPasswordValid) {
-    const error = new Error("Current password is incorrect");
-    error.statusCode = 400;
-    throw error;
+    throw new Error("Current password is incorrect");
   }
 
   user.password = await hashPassword(newPassword);
+
   await user.save();
 
   return {
@@ -143,57 +153,65 @@ const changePassword = async ({
   };
 };
 
-const crypto = require("crypto");
-
 const forgotPassword = async (email) => {
-  const user = await User.findOne({ email }).select(
-    "+passwordResetToken +passwordResetExpires"
-  );
+  const normalizedEmail = email.toLowerCase().trim();
 
-  // Security ke liye user existence expose nahi karni
+  const user = await User.findOne({
+    email: normalizedEmail,
+  }).select("+resetPasswordToken +resetPasswordExpires");
+
   if (!user) {
     return {
-      message: "If the email exists, a password reset link has been generated.",
+      message:
+        "If an account exists with this email, a password reset link will be sent",
     };
   }
 
+  const crypto = require("crypto");
+
   const resetToken = crypto.randomBytes(32).toString("hex");
 
-  user.passwordResetToken = crypto
+  user.resetPasswordToken = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
 
-  user.passwordResetExpires = Date.now() + 15 * 60 * 1000;
+  user.resetPasswordExpires =
+    Date.now() + 15 * 60 * 1000;
 
   await user.save();
 
   return {
-    message: "Password reset token generated successfully",
+    message:
+      "If an account exists with this email, a password reset link will be sent",
     resetToken,
   };
 };
 
 const resetPassword = async (token, newPassword) => {
+  const crypto = require("crypto");
+
   const hashedToken = crypto
     .createHash("sha256")
     .update(token)
     .digest("hex");
 
   const user = await User.findOne({
-    passwordResetToken: hashedToken,
-    passwordResetExpires: { $gt: Date.now() },
-  }).select("+passwordResetToken +passwordResetExpires +password");
+    resetPasswordToken: hashedToken,
+    resetPasswordExpires: {
+      $gt: Date.now(),
+    },
+  }).select(
+    "+resetPasswordToken +resetPasswordExpires +password"
+  );
 
   if (!user) {
-    const error = new Error("Invalid or expired password reset token");
-    error.statusCode = 400;
-    throw error;
+    throw new Error("Invalid or expired reset token");
   }
 
-  user.password = newPassword;
-  user.passwordResetToken = undefined;
-  user.passwordResetExpires = undefined;
+  user.password = await hashPassword(newPassword);
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
 
   await user.save();
 
@@ -201,11 +219,12 @@ const resetPassword = async (token, newPassword) => {
     message: "Password reset successfully",
   };
 };
+
 module.exports = {
   login,
   register,
   getProfile,
+  changePassword,
   forgotPassword,
   resetPassword,
-  changePassword,
 };

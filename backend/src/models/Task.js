@@ -46,7 +46,7 @@ const taskSchema = new mongoose.Schema(
     // Employee responsible for completing task
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Employee",
       required: [true, "Assigned employee is required"],
       index: true,
     },
@@ -131,7 +131,7 @@ const taskSchema = new mongoose.Schema(
 // Indexes
 
 // taskId par unique: true already index create karta hai.
-// Isliye separate taskId index remove kiya gaya hai.
+// Isliye separate taskId index ki zarurat nahi hai.
 
 taskSchema.index({
   assignedTo: 1,

@@ -1,188 +1,204 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import axios from "../lib/axios";
+import { createContext, useCallback, useEffect, useMemo, useState } from "react";
+import api from "@/lib/axios";
 
 const AuthContext = createContext(null);
 
 const TOKEN_KEY = "gse_access_token";
 const USER_KEY = "gse_user";
+const EMPLOYEE_KEY = "gse_employee";
 
-export const AuthProvider = ({ children }) => {
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const saveAuth = useCallback((userData, token) => {
-    if (typeof window === "undefined") return;
+  const isAuthenticated = Boolean(user);
+
+  const saveAuth = useCallback((userData, employeeData, token) => {
+    if (userData) {
+      setUser(userData);
+      localStorage.setItem(USER_KEY, JSON.stringify(userData));
+    }
+
+    if (employeeData) {
+      setEmployee(employeeData);
+      localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(employeeData));
+    } else {
+      setEmployee(null);
+      localStorage.removeItem(EMPLOYEE_KEY);
+    }
 
     if (token) {
       localStorage.setItem(TOKEN_KEY, token);
     }
-
-    if (userData) {
-      localStorage.setItem(USER_KEY, JSON.stringify(userData));
-      setUser(userData);
-    }
   }, []);
 
   const clearAuth = useCallback(() => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
-    }
-
     setUser(null);
+    setEmployee(null);
+
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(EMPLOYEE_KEY);
   }, []);
 
-  const login = useCallback(
-    async (credentials) => {
-      const response = await axios.post("/auth/login", credentials);
+ const login = useCallback(
+  async ({ email, password }) => {
+    try {
+      const response = await api.post("/auth/login", {
+        email,
+        password,
+      });
 
-      const responseData = response?.data?.data || response?.data;
+      const responseData =
+        response?.data?.data || response?.data || {};
 
-      const token =
-        responseData?.token ||
-        responseData?.accessToken ||
-        response?.data?.token ||
-        response?.data?.accessToken;
+      const token = responseData?.token;
+      const userData = responseData?.user;
+      const employeeData = responseData?.employee || null;
 
-      const userData =
-        responseData?.user ||
-        response?.data?.user ||
-        null;
-
-      if (!token) {
-        throw new Error("Authentication token was not returned by the server.");
+      if (!token || !userData) {
+        throw new Error("Invalid login response");
       }
 
-      saveAuth(userData, token);
+      saveAuth(userData, employeeData, token);
 
       return {
         success: true,
         user: userData,
+        employee: employeeData,
         token,
         data: responseData,
       };
-    },
-    [saveAuth]
-  );
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Login failed";
+
+      const normalizedError = new Error(message);
+      normalizedError.response = error?.response;
+
+      throw normalizedError;
+    }
+  },
+  [saveAuth]
+);
 
   const fetchCurrentUser = useCallback(async () => {
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem(TOKEN_KEY)
-        : null;
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
 
-    if (!token) {
-      setUser(null);
+      if (!token) {
+        clearAuth();
+        return null;
+      }
+
+      const response = await api.get("/auth/me");
+
+      const responseData = response.data?.data || response.data;
+
+      const userData = responseData?.user;
+      const employeeData = responseData?.employee || null;
+
+      if (!userData) {
+        clearAuth();
+        return null;
+      }
+
+      setUser(userData);
+      localStorage.setItem(USER_KEY, JSON.stringify(userData));
+
+      if (employeeData) {
+        setEmployee(employeeData);
+        localStorage.setItem(
+          EMPLOYEE_KEY,
+          JSON.stringify(employeeData)
+        );
+      } else {
+        setEmployee(null);
+        localStorage.removeItem(EMPLOYEE_KEY);
+      }
+
+      return {
+        user: userData,
+        employee: employeeData,
+      };
+    } catch (error) {
+      clearAuth();
       return null;
     }
-
-    try {
-      const response = await axios.get("/auth/me");
-
-      const responseData = response?.data?.data || response?.data;
-
-      const currentUser =
-        responseData?.user ||
-        responseData ||
-        null;
-
-      if (currentUser) {
-        saveAuth(currentUser, token);
-      }
-
-      return currentUser;
-    } catch (error) {
-      if (error?.response?.status === 401) {
-        clearAuth();
-      }
-
-      throw error;
-    }
-  }, [clearAuth, saveAuth]);
+  }, [clearAuth]);
 
   const logout = useCallback(async () => {
     try {
-      await axios.post("/auth/logout");
+      await api.post("/auth/logout");
     } catch (error) {
-      // Clear local authentication even if the server request fails.
+      // Logout should still clear local authentication data
     } finally {
       clearAuth();
     }
   }, [clearAuth]);
 
   useEffect(() => {
-    let mounted = true;
-
     const initializeAuth = async () => {
       try {
-        if (typeof window === "undefined") return;
-
         const token = localStorage.getItem(TOKEN_KEY);
-        const storedUser = localStorage.getItem(USER_KEY);
 
         if (!token) {
-          if (mounted) {
-            setUser(null);
-            setLoading(false);
-          }
+          setLoading(false);
           return;
         }
 
-        if (storedUser && mounted) {
-          try {
-            setUser(JSON.parse(storedUser));
-          } catch {
-            localStorage.removeItem(USER_KEY);
-          }
+        const storedUser = localStorage.getItem(USER_KEY);
+        const storedEmployee = localStorage.getItem(EMPLOYEE_KEY);
+
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+
+        if (storedEmployee) {
+          setEmployee(JSON.parse(storedEmployee));
         }
 
         await fetchCurrentUser();
       } catch (error) {
-        if (error?.response?.status === 401) {
-          clearAuth();
-        }
+        clearAuth();
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
     initializeAuth();
-
-    return () => {
-      mounted = false;
-    };
-  }, [clearAuth, fetchCurrentUser]);
+  }, [fetchCurrentUser, clearAuth]);
 
   const value = useMemo(
     () => ({
       user,
+      employee,
       loading,
-      isAuthenticated: Boolean(user),
+      isAuthenticated,
+
       login,
       logout,
       fetchCurrentUser,
-      clearAuth,
-      saveAuth,
+
+      token:
+        typeof window !== "undefined"
+          ? localStorage.getItem(TOKEN_KEY)
+          : null,
     }),
     [
       user,
+      employee,
       loading,
+      isAuthenticated,
       login,
       logout,
       fetchCurrentUser,
-      clearAuth,
-      saveAuth,
     ]
   );
 
@@ -191,16 +207,6 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider.");
-  }
-
-  return context;
-};
+}
 
 export default AuthContext;

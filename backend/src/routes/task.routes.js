@@ -1,3 +1,4 @@
+
 const express = require("express");
 
 const {
@@ -27,7 +28,12 @@ const router = express.Router();
 
 router.use(protect);
 
-// Create task
+/*
+|--------------------------------------------------------------------------
+| Create Task
+|--------------------------------------------------------------------------
+| Admin / Manager can create tasks.
+*/
 router.post(
   "/",
   allowRoles(
@@ -38,7 +44,12 @@ router.post(
   createTask
 );
 
-// Get my assigned tasks
+/*
+|--------------------------------------------------------------------------
+| My Tasks
+|--------------------------------------------------------------------------
+| Each role can fetch tasks assigned to its own employee/user context.
+*/
 router.get(
   "/my",
   allowRoles(
@@ -50,17 +61,30 @@ router.get(
   getMyTasks
 );
 
-// Get overdue tasks
+/*
+|--------------------------------------------------------------------------
+| Overdue Tasks
+|--------------------------------------------------------------------------
+| Admin / Manager can view all overdue tasks.
+| Employee gets only own overdue tasks through controller/service scope.
+*/
 router.get(
   "/overdue",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.MANAGER,
+    ROLES.EMPLOYEE
   ),
   getOverdueTasks
 );
 
-// Get all tasks
+/*
+|--------------------------------------------------------------------------
+| All Tasks
+|--------------------------------------------------------------------------
+| Admin / Manager / HR can access task listing.
+| Employee uses /my instead.
+*/
 router.get(
   "/",
   allowRoles(
@@ -71,7 +95,12 @@ router.get(
   getTasks
 );
 
-// Update task status
+/*
+|--------------------------------------------------------------------------
+| Update Task Status
+|--------------------------------------------------------------------------
+| Employee can update status of own assigned task.
+*/
 router.patch(
   "/:id/status",
   allowRoles(
@@ -82,7 +111,12 @@ router.patch(
   updateTaskStatus
 );
 
-// Complete task
+/*
+|--------------------------------------------------------------------------
+| Complete Task
+|--------------------------------------------------------------------------
+| Employee can complete own assigned task.
+*/
 router.patch(
   "/:id/complete",
   allowRoles(
@@ -93,7 +127,12 @@ router.patch(
   completeTask
 );
 
-// Cancel task
+/*
+|--------------------------------------------------------------------------
+| Cancel Task
+|--------------------------------------------------------------------------
+| Only Admin / Manager can cancel a task.
+*/
 router.patch(
   "/:id/cancel",
   allowRoles(
@@ -103,18 +142,31 @@ router.patch(
   cancelTask
 );
 
-// Update task
+/*
+|--------------------------------------------------------------------------
+| Update Task
+|--------------------------------------------------------------------------
+| Admin / Manager can update any task.
+| Employee can update only own assigned task.
+| Service layer performs ownership validation.
+*/
 router.put(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.MANAGER,
+    ROLES.EMPLOYEE
   ),
   validateTaskUpdate,
   updateTask
 );
 
-// Deactivate task
+/*
+|--------------------------------------------------------------------------
+| Delete / Deactivate Task
+|--------------------------------------------------------------------------
+| Only Admin / Manager can deactivate tasks.
+*/
 router.delete(
   "/:id",
   allowRoles(
@@ -124,7 +176,12 @@ router.delete(
   deleteTask
 );
 
-// Get single task
+/*
+|--------------------------------------------------------------------------
+| Get Single Task
+|--------------------------------------------------------------------------
+| Service/controller handles employee ownership.
+*/
 router.get(
   "/:id",
   allowRoles(
