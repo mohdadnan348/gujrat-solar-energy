@@ -20,15 +20,25 @@ const LeadChart = ({
         item?.label ??
         item?.name ??
         item?.date ??
+        item?._id ??
         `Item ${index + 1}`,
-      value: Number(item?.value ?? item?.count ?? item?.total ?? 0),
+
+      value: Number(
+        item?.value ??
+          item?.count ??
+          item?.total ??
+          0
+      ),
     }));
   }, [data]);
 
   const maxValue = useMemo(() => {
     if (!chartData.length) return 1;
 
-    return Math.max(...chartData.map((item) => item.value), 1);
+    return Math.max(
+      ...chartData.map((item) => item.value),
+      1
+    );
   }, [chartData]);
 
   if (loading) {
@@ -36,8 +46,8 @@ const LeadChart = ({
       <div className="gse-lead-chart">
         <div className="gse-lead-chart-header">
           <div>
-            <h3>Lead Overview</h3>
-            <p>Lead performance over time</p>
+            <h3>{title}</h3>
+            <p>{subtitle}</p>
           </div>
         </div>
 
@@ -65,8 +75,12 @@ const LeadChart = ({
 
         <div className="gse-lead-chart-total">
           <span>Total</span>
+
           <strong>
-            {chartData.reduce((sum, item) => sum + item.value, 0)}
+            {chartData.reduce(
+              (sum, item) => sum + item.value,
+              0
+            )}
           </strong>
         </div>
       </div>
@@ -86,6 +100,7 @@ const LeadChart = ({
               strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
             >
               <path d="M3 3v18h18" />
               <path d="m7 16 4-5 3 3 5-7" />
@@ -93,7 +108,10 @@ const LeadChart = ({
           </div>
 
           <strong>No lead data available</strong>
-          <span>Lead statistics will appear here.</span>
+
+          <span>
+            Lead statistics will appear here.
+          </span>
         </div>
       ) : (
         <div
@@ -126,7 +144,9 @@ const LeadChart = ({
                   <div className="gse-lead-chart-bar-track">
                     <div
                       className="gse-lead-chart-bar"
-                      style={{ height: `${percentage}%` }}
+                      style={{
+                        height: `${percentage}%`,
+                      }}
                       title={`${item.label}: ${item.value}`}
                     />
                   </div>

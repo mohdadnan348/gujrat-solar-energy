@@ -1,18 +1,22 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
+import Link from "next/link";
+
 import Button from "@/components/common/Button";
 import SearchBox from "@/components/common/SearchBox";
 import Select from "@/components/common/Select";
 import Badge from "@/components/common/Badge";
 import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
+
 import { useAuth } from "@/hooks/useAuth";
 import invoiceService from "@/services/invoice.service";
 
+import "./invoices.css";
+
 const EmployeeInvoicesPage = () => {
-  const { user, logout, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,11 +36,11 @@ const EmployeeInvoicesPage = () => {
       const response = await invoiceService.getInvoices();
 
       const items =
-        response?.data?.invoices ||
-        response?.data?.items ||
-        response?.invoices ||
-        response?.items ||
-        response?.data ||
+        response?.data?.invoices ??
+        response?.data?.items ??
+        response?.invoices ??
+        response?.items ??
+        response?.data ??
         [];
 
       setInvoices(Array.isArray(items) ? items : []);
@@ -44,7 +48,8 @@ const EmployeeInvoicesPage = () => {
       console.error("Failed to load invoices:", err);
 
       setError(
-        err?.message ||
+        err?.response?.data?.message ||
+          err?.message ||
           "Unable to load invoices. Please try again."
       );
 
@@ -64,10 +69,11 @@ const EmployeeInvoicesPage = () => {
     const query = search.trim().toLowerCase();
 
     return invoices.filter((invoice) => {
-      const invoiceStatus =
+      const invoiceStatus = String(
         invoice?.status ||
-        invoice?.invoiceStatus ||
-        "";
+          invoice?.invoiceStatus ||
+          ""
+      ).toLowerCase();
 
       const searchableText = [
         invoice?.invoiceNumber,
@@ -89,7 +95,7 @@ const EmployeeInvoicesPage = () => {
 
       const matchesStatus =
         !status ||
-        invoiceStatus.toLowerCase() === status.toLowerCase();
+        invoiceStatus === status.toLowerCase();
 
       return matchesSearch && matchesStatus;
     });
@@ -104,16 +110,28 @@ const EmployeeInvoicesPage = () => {
     Math.ceil(filteredInvoices.length / limit)
   );
 
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
   const paginatedInvoices = useMemo(() => {
     const start = (page - 1) * limit;
 
-    return filteredInvoices.slice(start, start + limit);
+    return filteredInvoices.slice(
+      start,
+      start + limit
+    );
   }, [filteredInvoices, page]);
+
+  const getInvoiceId = (invoice) =>
+    invoice?._id || invoice?.id;
 
   const getInvoiceNumber = (invoice) =>
     invoice?.invoiceNumber ||
     invoice?.number ||
-    "—";
+    "Invoice";
 
   const getCustomerName = (invoice) =>
     invoice?.customerName ||
@@ -121,33 +139,65 @@ const EmployeeInvoicesPage = () => {
     invoice?.customer?.companyName ||
     "Unnamed Customer";
 
+  const getQuotationNumber = (invoice) =>
+    invoice?.quotationNumber ||
+    invoice?.quotation?.quotationNumber ||
+    "—";
+
   const getStatus = (invoice) =>
     invoice?.status ||
     invoice?.invoiceStatus ||
     "DRAFT";
 
   const getStatusVariant = (invoiceStatus) => {
-    const value = invoiceStatus.toLowerCase();
+    const value = String(
+      invoiceStatus || ""
+    ).toLowerCase();
 
     if (
-      ["issued", "approved", "sent", "completed"].includes(value)
+      [
+        "issued",
+        "approved",
+        "sent",
+        "paid",
+        "completed",
+      ].includes(value)
     ) {
       return "success";
     }
 
     if (
-      ["cancelled", "rejected", "void"].includes(value)
+      [
+        "cancelled",
+        "rejected",
+        "void",
+        "overdue",
+      ].includes(value)
     ) {
       return "danger";
     }
 
     if (
-      ["draft", "pending", "processing"].includes(value)
+      [
+        "draft",
+        "pending",
+        "processing",
+      ].includes(value)
     ) {
       return "warning";
     }
 
     return "default";
+  };
+
+  const getStatusLabel = (statusValue) => {
+    if (!statusValue) return "Draft";
+
+    return String(statusValue)
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (letter) =>
+        letter.toUpperCase()
+      );
   };
 
   const formatAmount = (invoice) => {
@@ -172,6 +222,17 @@ const EmployeeInvoicesPage = () => {
     }).format(Number(amount));
   };
 
+  const getNumericAmount = (invoice) => {
+    const amount =
+      invoice?.grandTotal ??
+      invoice?.totalAmount ??
+      invoice?.total ??
+      invoice?.netAmount ??
+      0;
+
+    return Number(amount) || 0;
+  };
+
   const formatDate = (date) => {
     if (!date) return "—";
 
@@ -181,27 +242,18 @@ const EmployeeInvoicesPage = () => {
       return "—";
     }
 
-    return parsedDate.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  const handleLogout = async () => {
-    await logout();
-  };
-
-  const handleViewInvoice = (invoice) => {
-    const id = invoice?._id || invoice?.id;
-
-    if (id) {
-      window.location.href = `/employee/invoices/${id}`;
-    }
+    return parsedDate.toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    );
   };
 
   const handleOpenPdf = async (invoice) => {
-    const id = invoice?._id || invoice?.id;
+    const id = getInvoiceId(invoice);
 
     if (!id) return;
 
@@ -216,9 +268,13 @@ const EmployeeInvoicesPage = () => {
             ? response.data
             : null;
 
-      if (!blob) return;
+      if (!blob) {
+        setError("Unable to generate invoice PDF.");
+        return;
+      }
 
-      const url = window.URL.createObjectURL(blob);
+      const url =
+        window.URL.createObjectURL(blob);
 
       window.open(
         url,
@@ -234,8 +290,47 @@ const EmployeeInvoicesPage = () => {
         "Failed to open invoice PDF:",
         err
       );
+
+      setError(
+        err?.response?.data?.message ||
+          "Unable to open invoice PDF."
+      );
     }
   };
+
+  const totalAmount = useMemo(() => {
+    return invoices.reduce(
+      (sum, invoice) =>
+        sum + getNumericAmount(invoice),
+      0
+    );
+  }, [invoices]);
+
+  const issuedCount = useMemo(() => {
+    return invoices.filter((invoice) =>
+      [
+        "issued",
+        "approved",
+        "sent",
+        "paid",
+        "completed",
+      ].includes(
+        String(getStatus(invoice)).toLowerCase()
+      )
+    ).length;
+  }, [invoices]);
+
+  const pendingCount = useMemo(() => {
+    return invoices.filter((invoice) =>
+      [
+        "draft",
+        "pending",
+        "processing",
+      ].includes(
+        String(getStatus(invoice)).toLowerCase()
+      )
+    ).length;
+  }, [invoices]);
 
   if (authLoading) {
     return (
@@ -246,43 +341,134 @@ const EmployeeInvoicesPage = () => {
   }
 
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      onSearch={setSearch}
-      notificationCount={0}
-    >
-      <div className="employee-invoices-page">
-        <div className="employee-invoices-header">
-          <div>
-            <span className="employee-invoices-eyebrow">
-              Billing Management
-            </span>
+    <div className="employee-invoices-page">
 
-            <h1>Invoices</h1>
+      {/* Page Header */}
+      <div className="employee-invoices-header">
+        <div>
+          <span className="employee-invoices-eyebrow">
+            Billing Management
+          </span>
 
-            <p>
-              View invoices generated for your assigned
-              customers.
-            </p>
-          </div>
+          <h1>Invoices</h1>
 
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={loadInvoices}
-          >
-            Refresh
-          </Button>
+          <p>
+            View invoices generated for your assigned
+            customers.
+          </p>
         </div>
 
-        <div className="employee-invoices-toolbar">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={loadInvoices}
+          disabled={loading}
+        >
+          {loading ? "Refreshing..." : "Refresh"}
+        </Button>
+      </div>
+
+      {/* Summary */}
+      {!loading && !error && (
+        <div className="employee-invoices-summary">
+
+          <div className="employee-invoice-summary-card">
+            <div className="employee-invoice-summary-icon">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="M6 2h9l4 4v16H6z" />
+                <path d="M14 2v5h5" />
+                <path d="M9 12h6M9 16h6" />
+              </svg>
+            </div>
+
+            <div>
+              <span>Total Invoices</span>
+              <strong>{invoices.length}</strong>
+            </div>
+          </div>
+
+          <div className="employee-invoice-summary-card">
+            <div className="employee-invoice-summary-icon success">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="m5 12 4 4L19 6" />
+              </svg>
+            </div>
+
+            <div>
+              <span>Issued</span>
+              <strong>{issuedCount}</strong>
+            </div>
+          </div>
+
+          <div className="employee-invoice-summary-card">
+            <div className="employee-invoice-summary-icon warning">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" />
+              </svg>
+            </div>
+
+            <div>
+              <span>Pending</span>
+              <strong>{pendingCount}</strong>
+            </div>
+          </div>
+
+          <div className="employee-invoice-summary-card">
+            <div className="employee-invoice-summary-icon amount">
+              ₹
+            </div>
+
+            <div>
+              <span>Total Value</span>
+              <strong>
+                ₹
+                {totalAmount.toLocaleString(
+                  "en-IN",
+                  {
+                    maximumFractionDigits: 0,
+                  }
+                )}
+              </strong>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="employee-invoices-toolbar">
+
+        <div className="employee-invoices-search">
           <SearchBox
             value={search}
             onChange={setSearch}
-            placeholder="Search invoices..."
+            placeholder="Search invoice, customer, quotation..."
           />
+        </div>
 
+        <div className="employee-invoices-filter">
           <Select
             value={status}
             onChange={(event) =>
@@ -314,6 +500,10 @@ const EmployeeInvoicesPage = () => {
                 label: "Approved",
               },
               {
+                value: "PAID",
+                label: "Paid",
+              },
+              {
                 value: "CANCELLED",
                 label: "Cancelled",
               },
@@ -321,187 +511,331 @@ const EmployeeInvoicesPage = () => {
           />
         </div>
 
-        {error && (
-          <div className="employee-invoices-error">
-            <span>{error}</span>
-
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={loadInvoices}
-            >
-              Retry
-            </Button>
-          </div>
+        {(search || status) && (
+          <button
+            type="button"
+            className="employee-invoices-clear"
+            onClick={() => {
+              setSearch("");
+              setStatus("");
+            }}
+          >
+            Clear Filters
+          </button>
         )}
+      </div>
 
-        <div className="employee-invoices-card">
-          {loading ? (
-            <div className="employee-invoices-loader">
-              <Loader />
+      {/* Error */}
+      {error && (
+        <div className="employee-invoices-error">
+          <div>
+            <strong>
+              Unable to load invoices
+            </strong>
+
+            <span>{error}</span>
+          </div>
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={loadInvoices}
+          >
+            Retry
+          </Button>
+        </div>
+      )}
+
+      {/* Invoice Card */}
+      <div className="employee-invoices-card">
+
+        {loading ? (
+          <div className="employee-invoices-loader">
+            <Loader />
+          </div>
+        ) : paginatedInvoices.length === 0 ? (
+
+          <div className="employee-invoices-empty">
+
+            <div className="employee-invoices-empty-icon">
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="M6 2h9l4 4v16H6z" />
+                <path d="M14 2v5h5" />
+                <path d="M9 12h6M9 16h4" />
+              </svg>
             </div>
-          ) : paginatedInvoices.length === 0 ? (
-            <div className="employee-invoices-empty">
-              <div className="employee-invoices-empty-icon">
-                ₹
+
+            <h3>
+              {search || status
+                ? "No matching invoices"
+                : "No invoices found"}
+            </h3>
+
+            <p>
+              {search || status
+                ? "Try changing your search or filter."
+                : "Invoices generated for your assigned customers will appear here."}
+            </p>
+
+            {(search || status) && (
+              <button
+                type="button"
+                className="employee-invoices-empty-button"
+                onClick={() => {
+                  setSearch("");
+                  setStatus("");
+                }}
+              >
+                Clear Filters
+              </button>
+            )}
+
+          </div>
+
+        ) : (
+
+          <>
+            <div className="employee-invoices-card-header">
+              <div>
+                <h2>
+                  Assigned Invoices
+                </h2>
+
+                <p>
+                  {filteredInvoices.length} invoice
+                  {filteredInvoices.length !== 1
+                    ? "s"
+                    : ""}{" "}
+                  found
+                </p>
               </div>
 
-              <h3>No invoices found</h3>
-
-              <p>
-                {search || status
-                  ? "Try changing your search or filter."
-                  : "No invoices are available yet."}
-              </p>
+              <span className="employee-invoices-count">
+                {filteredInvoices.length} Total
+              </span>
             </div>
-          ) : (
-            <>
-              <div className="employee-invoices-table-wrapper">
-                <table className="employee-invoices-table">
-                  <thead>
-                    <tr>
-                      <th>Invoice</th>
-                      <th>Customer</th>
-                      <th>Quotation</th>
-                      <th>Total Amount</th>
-                      <th>Status</th>
-                      <th>Invoice Date</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
 
-                  <tbody>
-                    {paginatedInvoices.map(
-                      (invoice, index) => {
-                        const id =
-                          invoice?._id ||
-                          invoice?.id ||
-                          index;
+            <div className="employee-invoices-table-wrapper">
 
-                        const invoiceStatus =
-                          getStatus(invoice);
+              <table className="employee-invoices-table">
 
-                        return (
-                          <tr key={id}>
-                            <td>
-                              <div className="employee-invoice-number">
-                                {getInvoiceNumber(invoice)}
+                <thead>
+                  <tr>
+                    <th>Invoice</th>
+                    <th>Customer</th>
+                    <th>Quotation</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Invoice Date</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {paginatedInvoices.map(
+                    (invoice, index) => {
+                      const id =
+                        getInvoiceId(invoice) ||
+                        index;
+
+                      const invoiceStatus =
+                        getStatus(invoice);
+
+                      return (
+                        <tr key={id}>
+
+                          {/* Invoice */}
+                          <td>
+                            <div className="employee-invoice-main">
+
+                              <div className="employee-invoice-icon">
+                                <svg
+                                  width="18"
+                                  height="18"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                >
+                                  <path d="M6 2h9l4 4v16H6z" />
+                                  <path d="M14 2v5h5" />
+                                  <path d="M9 12h6M9 16h5" />
+                                </svg>
                               </div>
 
-                              {invoice?.dueDate && (
-                                <div className="employee-invoice-subtext">
-                                  Due{" "}
-                                  {formatDate(
-                                    invoice.dueDate
+                              <div>
+                                <div className="employee-invoice-number">
+                                  {getInvoiceNumber(
+                                    invoice
                                   )}
                                 </div>
-                              )}
-                            </td>
 
-                            <td>
-                              <div className="employee-invoice-customer">
-                                {getCustomerName(invoice)}
+                                {invoice?.dueDate && (
+                                  <div className="employee-invoice-subtext">
+                                    Due{" "}
+                                    {formatDate(
+                                      invoice.dueDate
+                                    )}
+                                  </div>
+                                )}
                               </div>
 
-                              {(invoice?.phone ||
-                                invoice?.customer?.phone) && (
-                                <div className="employee-invoice-subtext">
-                                  {invoice?.phone ||
-                                    invoice?.customer?.phone}
-                                </div>
+                            </div>
+                          </td>
+
+                          {/* Customer */}
+                          <td>
+                            <div className="employee-invoice-customer">
+                              {getCustomerName(
+                                invoice
                               )}
-                            </td>
+                            </div>
 
-                            <td>
-                              {invoice?.quotationNumber ||
-                                invoice?.quotation
-                                  ?.quotationNumber ||
-                                "—"}
-                            </td>
+                            {(invoice?.phone ||
+                              invoice?.customer
+                                ?.phone) && (
+                              <div className="employee-invoice-subtext">
+                                {invoice?.phone ||
+                                  invoice?.customer
+                                    ?.phone}
+                              </div>
+                            )}
+                          </td>
 
-                            <td className="employee-invoice-amount">
-                              {formatAmount(invoice)}
-                            </td>
+                          {/* Quotation */}
+                          <td>
+                            <span className="employee-invoice-quotation">
+                              {getQuotationNumber(
+                                invoice
+                              )}
+                            </span>
+                          </td>
 
-                            <td>
-                              <Badge
-                                variant={getStatusVariant(
-                                  invoiceStatus
-                                )}
-                              >
-                                {invoiceStatus.replaceAll(
-                                  "_",
-                                  " "
-                                )}
-                              </Badge>
-                            </td>
+                          {/* Amount */}
+                          <td>
+                            <span className="employee-invoice-amount">
+                              {formatAmount(
+                                invoice
+                              )}
+                            </span>
+                          </td>
 
-                            <td>
+                          {/* Status */}
+                          <td>
+                            <Badge
+                              variant={getStatusVariant(
+                                invoiceStatus
+                              )}
+                            >
+                              {getStatusLabel(
+                                invoiceStatus
+                              )}
+                            </Badge>
+                          </td>
+
+                          {/* Date */}
+                          <td>
+                            <span className="employee-invoice-date">
                               {formatDate(
                                 invoice?.invoiceDate ||
                                   invoice?.date ||
                                   invoice?.createdAt
                               )}
-                            </td>
+                            </span>
+                          </td>
 
-                            <td>
-                              <div className="employee-invoice-actions">
-                                <Button
+                          {/* Actions */}
+                          <td>
+                            <div className="employee-invoice-actions">
+
+                              {getInvoiceId(
+                                invoice
+                              ) ? (
+                                <Link
+                                  href={`/employee/invoices/${getInvoiceId(
+                                    invoice
+                                  )}`}
+                                  className="employee-invoice-view-button"
+                                >
+                                  View
+                                  <svg
+                                    width="15"
+                                    height="15"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                  >
+                                    <path d="m9 18 6-6-6-6" />
+                                  </svg>
+                                </Link>
+                              ) : (
+                                <span>—</span>
+                              )}
+
+                              {getInvoiceId(
+                                invoice
+                              ) && (
+                                <button
                                   type="button"
-                                  variant="secondary"
+                                  className="employee-invoice-pdf-button"
                                   onClick={() =>
-                                    handleViewInvoice(
+                                    handleOpenPdf(
                                       invoice
                                     )
                                   }
                                 >
-                                  View
-                                </Button>
-
-                                <Button
-                                  type="button"
-                                  variant="secondary"
-                                  onClick={() =>
-                                    handleOpenPdf(invoice)
-                                  }
-                                >
                                   PDF
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      }
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                                </button>
+                              )}
 
-              <div className="employee-invoices-footer">
-                <span>
-                  Showing{" "}
-                  {filteredInvoices.length === 0
-                    ? 0
-                    : (page - 1) * limit + 1}{" "}
-                  -{" "}
-                  {Math.min(
-                    page * limit,
-                    filteredInvoices.length
-                  )}{" "}
-                  of {filteredInvoices.length} invoices
-                </span>
+                            </div>
+                          </td>
 
-                <Pagination
-                  currentPage={page}
-                  totalPages={totalPages}
-                  onPageChange={setPage}
-                />
-              </div>
-            </>
-          )}
-        </div>
+                        </tr>
+                      );
+                    }
+                  )}
+                </tbody>
+
+              </table>
+
+            </div>
+
+            <div className="employee-invoices-footer">
+
+              <span>
+                Showing{" "}
+                {filteredInvoices.length === 0
+                  ? 0
+                  : (page - 1) * limit + 1}{" "}
+                -{" "}
+                {Math.min(
+                  page * limit,
+                  filteredInvoices.length
+                )}{" "}
+                of {filteredInvoices.length} invoices
+              </span>
+
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+
+            </div>
+          </>
+        )}
+
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

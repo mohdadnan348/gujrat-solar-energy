@@ -1,18 +1,23 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
+import { useRouter } from "next/navigation";
+
 import Button from "@/components/common/Button";
 import SearchBox from "@/components/common/SearchBox";
 import Select from "@/components/common/Select";
 import Badge from "@/components/common/Badge";
 import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
-import { useAuth } from "@/hooks/useAuth";
-import systemConfigurationService from "@/services/systemConfiguration.service";
 
+import { useAuth } from "@/hooks/useAuth";
+import leadService from "@/services/lead.service";
+import systemConfigurationService from "@/services/systemConfiguration.service";
+import "./configurations.css";
 const EmployeeSystemConfigurationsPage = () => {
-  const { user, logout, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  const { user, loading: authLoading } = useAuth();
 
   const [configurations, setConfigurations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,43 +29,173 @@ const EmployeeSystemConfigurationsPage = () => {
 
   const limit = 10;
 
+  /**
+   * ---------------------------------------------------------
+   * Extract array from API response
+   * ---------------------------------------------------------
+   */
+  const extractArray = (response, keys = []) => {
+    for (const key of keys) {
+      if (Array.isArray(response?.data?.[key])) {
+        return response.data[key];
+      }
+
+      if (Array.isArray(response?.[key])) {
+        return response[key];
+      }
+    }
+
+    if (Array.isArray(response?.data)) {
+      return response.data;
+    }
+
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    return [];
+  };
+
+  /**
+   * ---------------------------------------------------------
+   * Load Employee System Configurations
+   * ---------------------------------------------------------
+   *
+   * Employee flow:
+   *
+   * Employee
+   *    ↓
+   * GET /api/v1/leads/my-leads
+   *    ↓
+   * Assigned Leads
+   *    ↓
+   * GET /api/v1/system-configurations/lead/:leadId
+   *    ↓
+   * System Configurations
+   *
+   * Company-wide endpoints are NOT used here.
+   */
   const loadConfigurations = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const response =
-        await systemConfigurationService.getSystemConfigurations();
+      /**
+       * -----------------------------------------------------
+       * STEP 1
+       * Get only logged-in employee's assigned leads.
+       * -----------------------------------------------------
+       */
+      const leadResponse = await leadService.getMyLeads({
+        page: 1,
+        limit: 100,
+      });
 
-      const items =
-        response?.data?.configurations ||
-        response?.data?.items ||
-        response?.configurations ||
-        response?.items ||
-        response?.data ||
-        [];
+      const leads = extractArray(leadResponse, [
+        "leads",
+        "items",
+      ]);
 
-      setConfigurations(Array.isArray(items) ? items : []);
+      /**
+       * No assigned leads.
+       */
+      if (leads.length === 0) {
+        setConfigurations([]);
+        return;
+      }
+
+      /**
+       * -----------------------------------------------------
+       * STEP 2
+       * Get configurations for every assigned lead.
+       * -----------------------------------------------------
+       */
+      const configurationRequests = leads
+        .map((lead) => lead?._id || lead?.id)
+        .filter(Boolean)
+        .map(async (leadId) => {
+          try {
+            const response =
+              await systemConfigurationService.getConfigurationsByLead(
+                leadId
+              );
+
+            return extractArray(response, [
+              "configurations",
+              "items",
+            ]);
+          } catch (leadError) {
+            console.warn(
+              `Failed to load configuration for lead ${leadId}:`,
+              leadError
+            );
+
+            return [];
+          }
+        });
+
+      const results = await Promise.all(
+        configurationRequests
+      );
+
+      /**
+       * Flatten all configuration arrays.
+       */
+      const allConfigurations = results.flat();
+
+      /**
+       * -----------------------------------------------------
+       * Remove duplicate configurations.
+       * -----------------------------------------------------
+       */
+      const uniqueConfigurations = Array.from(
+        new Map(
+          allConfigurations
+            .filter(Boolean)
+            .map((configuration, index) => [
+              configuration?._id ||
+                configuration?.id ||
+                `configuration-${index}`,
+              configuration,
+            ])
+        ).values()
+      );
+
+      setConfigurations(uniqueConfigurations);
     } catch (err) {
-      console.error("Failed to load system configurations:", err);
-
-      setError(
-        err?.message ||
-          "Unable to load system configurations. Please try again."
+      console.error(
+        "Failed to load employee system configurations:",
+        err
       );
 
       setConfigurations([]);
+
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Unable to load system configurations. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * ---------------------------------------------------------
+   * Initial Load
+   * ---------------------------------------------------------
+   */
   useEffect(() => {
     if (!authLoading && user) {
       loadConfigurations();
     }
   }, [authLoading, user]);
 
+  /**
+   * ---------------------------------------------------------
+   * Search + Status Filter
+   * ---------------------------------------------------------
+   */
   const filteredConfigurations = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -71,93 +206,192 @@ const EmployeeSystemConfigurationsPage = () => {
         "";
 
       const searchableText = [
+        configuration?.configurationNumber,
+
         configuration?.customerName,
+        configuration?.customer?.name,
+
         configuration?.leadName,
+        configuration?.lead?.name,
+        configuration?.lead?.customerName,
+        configuration?.lead?.leadId,
+
         configuration?.systemName,
         configuration?.systemType,
         configuration?.configurationName,
+
+        configuration?.systemCapacity,
         configuration?.capacity,
+
+        configuration?.city,
         configuration?.location,
       ]
-        .filter(Boolean)
+        .filter(
+          (value) =>
+            value !== undefined &&
+            value !== null &&
+            value !== ""
+        )
         .join(" ")
         .toLowerCase();
 
       const matchesSearch =
-        !query || searchableText.includes(query);
+        !query ||
+        searchableText.includes(query);
 
       const matchesStatus =
         !status ||
-        configurationStatus.toLowerCase() ===
-          status.toLowerCase();
+        String(configurationStatus).toLowerCase() ===
+          String(status).toLowerCase();
 
-      return matchesSearch && matchesStatus;
+      return (
+        matchesSearch &&
+        matchesStatus
+      );
     });
-  }, [configurations, search, status]);
+  }, [
+    configurations,
+    search,
+    status,
+  ]);
 
+  /**
+   * Reset pagination when filters change.
+   */
   useEffect(() => {
     setPage(1);
   }, [search, status]);
 
+  /**
+   * ---------------------------------------------------------
+   * Pagination
+   * ---------------------------------------------------------
+   */
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredConfigurations.length / limit)
+    Math.ceil(
+      filteredConfigurations.length / limit
+    )
   );
 
   const paginatedConfigurations = useMemo(() => {
-    const start = (page - 1) * limit;
+    const start =
+      (page - 1) * limit;
 
     return filteredConfigurations.slice(
       start,
       start + limit
     );
-  }, [filteredConfigurations, page]);
+  }, [
+    filteredConfigurations,
+    page,
+  ]);
 
-  const getCustomerName = (configuration) =>
-    configuration?.customerName ||
-    configuration?.leadName ||
-    configuration?.customer?.name ||
-    configuration?.lead?.name ||
-    "Unnamed Customer";
+  /**
+   * ---------------------------------------------------------
+   * Helpers
+   * ---------------------------------------------------------
+   */
 
-  const getSystemType = (configuration) =>
-    configuration?.systemType ||
-    configuration?.solarSystemType ||
-    "—";
+  const getCustomerName = (configuration) => {
+    return (
+      configuration?.customerName ||
+      configuration?.customer?.name ||
+      configuration?.leadName ||
+      configuration?.lead?.customerName ||
+      "Unnamed Customer"
+    );
+  };
+
+  const getSystemType = (configuration) => {
+    const value =
+      configuration?.systemType ||
+      configuration?.solarSystemType ||
+      "—";
+
+    const systemTypeMap = {
+      ON_GRID: "On-grid",
+      OFF_GRID: "Off-grid",
+      HYBRID: "Hybrid",
+
+      "On-grid": "On-grid",
+      "Off-grid": "Off-grid",
+      Hybrid: "Hybrid",
+    };
+
+    return (
+      systemTypeMap[value] ||
+      value
+    );
+  };
 
   const getCapacity = (configuration) => {
     const capacity =
-      configuration?.capacity ||
-      configuration?.systemCapacity ||
+      configuration?.systemCapacity ??
+      configuration?.capacity ??
       configuration?.requiredCapacity;
 
-    return capacity ? `${capacity} kW` : "—";
+    if (
+      capacity === undefined ||
+      capacity === null ||
+      capacity === ""
+    ) {
+      return "—";
+    }
+
+    const unit =
+      configuration?.capacityUnit || "KW";
+
+    return `${capacity} ${
+      String(unit).toUpperCase() === "KW"
+        ? "kW"
+        : unit
+    }`;
   };
 
-  const getStatus = (configuration) =>
-    configuration?.status ||
-    configuration?.configurationStatus ||
-    "DRAFT";
+  const getStatus = (configuration) => {
+    return (
+      configuration?.status ||
+      configuration?.configurationStatus ||
+      "DRAFT"
+    );
+  };
 
-  const getStatusVariant = (configurationStatus) => {
-    const value = configurationStatus.toLowerCase();
+  const getStatusVariant = (
+    configurationStatus
+  ) => {
+    const value =
+      String(configurationStatus)
+        .toLowerCase();
 
     if (
-      ["completed", "approved", "active", "finalized"].includes(
-        value
-      )
+      [
+        "completed",
+        "approved",
+        "active",
+        "finalized",
+        "configured",
+      ].includes(value)
     ) {
       return "success";
     }
 
     if (
-      ["rejected", "cancelled", "failed"].includes(value)
+      [
+        "rejected",
+        "cancelled",
+        "failed",
+      ].includes(value)
     ) {
       return "danger";
     }
 
     if (
-      ["in_progress", "under_review", "pending"].includes(value)
+      [
+        "in_progress",
+        "under_review",
+        "pending",
+      ].includes(value)
     ) {
       return "warning";
     }
@@ -166,36 +400,57 @@ const EmployeeSystemConfigurationsPage = () => {
   };
 
   const formatDate = (date) => {
-    if (!date) return "—";
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
+    if (!date) {
       return "—";
     }
 
-    return parsedDate.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    const parsedDate =
+      new Date(date);
+
+    if (
+      Number.isNaN(
+        parsedDate.getTime()
+      )
+    ) {
+      return "—";
+    }
+
+    return parsedDate.toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    );
   };
 
-  const handleLogout = async () => {
-    await logout();
-  };
-
-  const handleViewConfiguration = (configuration) => {
+  /**
+   * ---------------------------------------------------------
+   * View Configuration
+   * ---------------------------------------------------------
+   */
+  const handleViewConfiguration = (
+    configuration
+  ) => {
     const id =
       configuration?._id ||
       configuration?.id;
 
-    if (id) {
-      window.location.href =
-        `/employee/system-configurations/${id}`;
+    if (!id) {
+      return;
     }
+
+    router.push(
+      `/employee/system-configurations/${id}`
+    );
   };
 
+  /**
+   * ---------------------------------------------------------
+   * Auth Loading
+   * ---------------------------------------------------------
+   */
   if (authLoading) {
     return (
       <div className="employee-configurations-loading">
@@ -204,240 +459,303 @@ const EmployeeSystemConfigurationsPage = () => {
     );
   }
 
+  /**
+   * ---------------------------------------------------------
+   * UI
+   * ---------------------------------------------------------
+   */
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      onSearch={setSearch}
-      notificationCount={0}
-    >
-      <div className="employee-configurations-page">
-        <div className="employee-configurations-header">
-          <div>
-            <span className="employee-configurations-eyebrow">
-              Solar Management
-            </span>
+    <div className="employee-configurations-page">
+      {/* Header */}
+      <div className="employee-configurations-header">
+        <div>
+          <span className="employee-configurations-eyebrow">
+            Solar Management
+          </span>
 
-            <h1>System Configurations</h1>
+          <h1>
+            System Configurations
+          </h1>
 
-            <p>
-              View and manage solar system configurations for your
-              assigned work.
-            </p>
-          </div>
+          <p>
+            View solar system configurations
+            for your assigned leads.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={loadConfigurations}
+          disabled={loading}
+        >
+          Refresh
+        </Button>
+      </div>
+
+      {/* Toolbar */}
+      <div className="employee-configurations-toolbar">
+        <SearchBox
+          value={search}
+          onChange={setSearch}
+          placeholder="Search configurations..."
+        />
+
+        <Select
+          value={status}
+          onChange={(event) =>
+            setStatus(
+              event.target.value
+            )
+          }
+          options={[
+            {
+              value: "",
+              label: "All Statuses",
+            },
+            {
+              value: "DRAFT",
+              label: "Draft",
+            },
+            {
+              value: "CONFIGURED",
+              label: "Configured",
+            },
+            {
+              value: "APPROVED",
+              label: "Approved",
+            },
+            {
+              value: "REJECTED",
+              label: "Rejected",
+            },
+          ]}
+        />
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="employee-configurations-error">
+          <span>{error}</span>
 
           <Button
             type="button"
             variant="secondary"
             onClick={loadConfigurations}
           >
-            Refresh
+            Retry
           </Button>
         </div>
+      )}
 
-        <div className="employee-configurations-toolbar">
-          <SearchBox
-            value={search}
-            onChange={setSearch}
-            placeholder="Search configurations..."
-          />
-
-          <Select
-            value={status}
-            onChange={(event) =>
-              setStatus(event.target.value)
-            }
-            options={[
-              {
-                value: "",
-                label: "All Statuses",
-              },
-              {
-                value: "DRAFT",
-                label: "Draft",
-              },
-              {
-                value: "PENDING",
-                label: "Pending",
-              },
-              {
-                value: "IN_PROGRESS",
-                label: "In Progress",
-              },
-              {
-                value: "APPROVED",
-                label: "Approved",
-              },
-              {
-                value: "COMPLETED",
-                label: "Completed",
-              },
-              {
-                value: "CANCELLED",
-                label: "Cancelled",
-              },
-            ]}
-          />
-        </div>
-
-        {error && (
-          <div className="employee-configurations-error">
-            <span>{error}</span>
-
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={loadConfigurations}
-            >
-              Retry
-            </Button>
+      {/* Main Card */}
+      <div className="employee-configurations-card">
+        {loading ? (
+          <div className="employee-configurations-loader">
+            <Loader />
           </div>
-        )}
-
-        <div className="employee-configurations-card">
-          {loading ? (
-            <div className="employee-configurations-loader">
-              <Loader />
+        ) : paginatedConfigurations.length === 0 ? (
+          <div className="employee-configurations-empty">
+            <div className="employee-configurations-empty-icon">
+              ☀
             </div>
-          ) : paginatedConfigurations.length === 0 ? (
-            <div className="employee-configurations-empty">
-              <div className="employee-configurations-empty-icon">
-                ☀
-              </div>
 
-              <h3>No configurations found</h3>
+            <h3>
+              No configurations found
+            </h3>
 
-              <p>
-                {search || status
-                  ? "Try changing your search or filter."
-                  : "No system configurations are available yet."}
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="employee-configurations-table-wrapper">
-                <table className="employee-configurations-table">
-                  <thead>
-                    <tr>
-                      <th>Customer</th>
-                      <th>System Type</th>
-                      <th>Capacity</th>
-                      <th>Location</th>
-                      <th>Status</th>
-                      <th>Created</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
+            <p>
+              {search || status
+                ? "Try changing your search or filter."
+                : "No system configurations are available for your assigned leads yet."}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="employee-configurations-table-wrapper">
+              <table className="employee-configurations-table">
+                <thead>
+                  <tr>
+                    <th>
+                      Configuration
+                    </th>
 
-                  <tbody>
-                    {paginatedConfigurations.map(
-                      (configuration, index) => {
-                        const id =
-                          configuration?._id ||
-                          configuration?.id ||
-                          index;
+                    <th>
+                      Customer
+                    </th>
 
-                        const configurationStatus =
-                          getStatus(configuration);
+                    <th>
+                      System Type
+                    </th>
 
-                        return (
-                          <tr key={id}>
-                            <td>
-                              <div className="employee-configuration-name">
-                                {getCustomerName(
-                                  configuration
-                                )}
-                              </div>
+                    <th>
+                      Capacity
+                    </th>
 
-                              {(configuration?.phone ||
-                                configuration?.mobile) && (
-                                <div className="employee-configuration-subtext">
-                                  {configuration?.phone ||
-                                    configuration?.mobile}
-                                </div>
-                              )}
-                            </td>
+                    <th>
+                      Status
+                    </th>
 
-                            <td>
-                              {getSystemType(configuration)}
-                            </td>
+                    <th>
+                      Created
+                    </th>
 
-                            <td>
-                              {getCapacity(configuration)}
-                            </td>
+                    <th>
+                      Action
+                    </th>
+                  </tr>
+                </thead>
 
-                            <td>
-                              {configuration?.city ||
-                                configuration?.location ||
-                                "—"}
-                            </td>
+                <tbody>
+                  {paginatedConfigurations.map(
+                    (
+                      configuration,
+                      index
+                    ) => {
+                      const id =
+                        configuration?._id ||
+                        configuration?.id ||
+                        `configuration-${index}`;
 
-                            <td>
-                              <Badge
-                                variant={getStatusVariant(
-                                  configurationStatus
-                                )}
-                              >
-                                {configurationStatus.replaceAll(
-                                  "_",
-                                  " "
-                                )}
-                              </Badge>
-                            </td>
-
-                            <td>
-                              {formatDate(
-                                configuration?.createdAt ||
-                                  configuration?.createdDate
-                              )}
-                            </td>
-
-                            <td>
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={() =>
-                                  handleViewConfiguration(
-                                    configuration
-                                  )
-                                }
-                              >
-                                View
-                              </Button>
-                            </td>
-                          </tr>
+                      const configurationStatus =
+                        getStatus(
+                          configuration
                         );
-                      }
-                    )}
-                  </tbody>
-                </table>
-              </div>
 
-              <div className="employee-configurations-footer">
-                <span>
-                  Showing{" "}
-                  {filteredConfigurations.length === 0
-                    ? 0
-                    : (page - 1) * limit + 1}{" "}
-                  -{" "}
-                  {Math.min(
-                    page * limit,
-                    filteredConfigurations.length
-                  )}{" "}
-                  of {filteredConfigurations.length} configurations
-                </span>
+                      return (
+                        <tr key={id}>
+                          {/* Configuration */}
+                          <td>
+                            <div className="employee-configuration-name">
+                              {configuration?.configurationNumber ||
+                                configuration?.configurationName ||
+                                "System Configuration"}
+                            </div>
 
-                <Pagination
-                  currentPage={page}
-                  totalPages={totalPages}
-                  onPageChange={setPage}
-                />
-              </div>
-            </>
-          )}
-        </div>
+                            {configuration?.lead?.leadId && (
+                              <div className="employee-configuration-subtext">
+                                {
+                                  configuration
+                                    .lead
+                                    .leadId
+                                }
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Customer */}
+                          <td>
+                            <div className="employee-configuration-name">
+                              {getCustomerName(
+                                configuration
+                              )}
+                            </div>
+
+                            {(
+                              configuration?.customer?.mobile ||
+                              configuration?.lead?.mobile ||
+                              configuration?.mobile
+                            ) && (
+                              <div className="employee-configuration-subtext">
+                                {configuration?.customer?.mobile ||
+                                  configuration?.lead?.mobile ||
+                                  configuration?.mobile}
+                              </div>
+                            )}
+                          </td>
+
+                          {/* System Type */}
+                          <td>
+                            {getSystemType(
+                              configuration
+                            )}
+                          </td>
+
+                          {/* Capacity */}
+                          <td>
+                            {getCapacity(
+                              configuration
+                            )}
+                          </td>
+
+                          {/* Status */}
+                          <td>
+                            <Badge
+                              variant={getStatusVariant(
+                                configurationStatus
+                              )}
+                            >
+                              {String(
+                                configurationStatus
+                              ).replaceAll(
+                                "_",
+                                " "
+                              )}
+                            </Badge>
+                          </td>
+
+                          {/* Created */}
+                          <td>
+                            {formatDate(
+                              configuration?.createdAt ||
+                                configuration?.createdDate
+                            )}
+                          </td>
+
+                          {/* Action */}
+                          <td>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              onClick={() =>
+                                handleViewConfiguration(
+                                  configuration
+                                )
+                              }
+                            >
+                              View
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    }
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer */}
+            <div className="employee-configurations-footer">
+              <span>
+                Showing{" "}
+                {filteredConfigurations.length ===
+                0
+                  ? 0
+                  : (page - 1) *
+                      limit +
+                    1}{" "}
+                -{" "}
+                {Math.min(
+                  page * limit,
+                  filteredConfigurations.length
+                )}{" "}
+                of{" "}
+                {
+                  filteredConfigurations.length
+                }{" "}
+                configurations
+              </span>
+
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </div>
+          </>
+        )}
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

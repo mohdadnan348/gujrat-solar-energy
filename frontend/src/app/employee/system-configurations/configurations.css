@@ -1,15 +1,18 @@
-.employee-configurations-loading {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f8fafc;
-}
+/* =========================================================
+   EMPLOYEE SYSTEM CONFIGURATIONS
+   ========================================================= */
 
 .employee-configurations-page {
   width: 100%;
-  min-width: 0;
+  min-height: 100%;
+  padding: 24px;
+  background: #f6f8f7;
+  color: #17211c;
 }
+
+/* =========================================================
+   HEADER
+   ========================================================= */
 
 .employee-configurations-header {
   display: flex;
@@ -21,173 +24,278 @@
 
 .employee-configurations-eyebrow {
   display: inline-block;
-  margin-bottom: 6px;
-  color: #16a34a;
-  font-size: 13px;
-  font-weight: 600;
+  margin-bottom: 7px;
+  color: #16803c;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .employee-configurations-header h1 {
   margin: 0;
-  color: #0f172a;
+  color: #14201a;
   font-size: 28px;
-  line-height: 1.25;
-  font-weight: 700;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .employee-configurations-header p {
   margin: 8px 0 0;
-  color: #64748b;
+  color: #6b766f;
   font-size: 14px;
+  line-height: 1.6;
 }
+
+/* =========================================================
+   TOOLBAR
+   ========================================================= */
 
 .employee-configurations-toolbar {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e4ebe6;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(21, 54, 34, 0.04);
 }
 
 .employee-configurations-toolbar > *:first-child {
   flex: 1;
-  max-width: 420px;
+  min-width: 220px;
 }
 
 .employee-configurations-toolbar > *:last-child {
-  width: 200px;
+  width: 190px;
+  flex-shrink: 0;
 }
+
+/* =========================================================
+   ERROR
+   ========================================================= */
 
 .employee-configurations-error {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
-  padding: 14px 16px;
-  border: 1px solid #fecaca;
-  border-radius: 10px;
-  background: #fef2f2;
-  color: #b91c1c;
+  margin-bottom: 18px;
+  padding: 13px 16px;
+  background: #fff5f5;
+  border: 1px solid #ffd8d8;
+  border-radius: 12px;
+  color: #b42318;
   font-size: 14px;
+  line-height: 1.5;
 }
+
+.employee-configurations-error span {
+  flex: 1;
+}
+
+/* =========================================================
+   MAIN CARD
+   ========================================================= */
 
 .employee-configurations-card {
   overflow: hidden;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
   background: #ffffff;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  border: 1px solid #e3ebe5;
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgba(20, 52, 34, 0.05);
 }
 
-.employee-configurations-table-wrapper {
-  width: 100%;
-  overflow-x: auto;
-}
+/* =========================================================
+   LOADING
+   ========================================================= */
 
-.employee-configurations-table {
-  width: 100%;
-  min-width: 900px;
-  border-collapse: collapse;
-}
-
-.employee-configurations-table th {
-  padding: 14px 16px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #475569;
-  font-size: 12px;
-  font-weight: 700;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.employee-configurations-table td {
-  padding: 16px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #334155;
-  font-size: 13px;
-  vertical-align: middle;
-}
-
-.employee-configurations-table tbody tr {
-  transition: background 0.2s ease;
-}
-
-.employee-configurations-table tbody tr:hover {
-  background: #f8fafc;
-}
-
-.employee-configurations-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.employee-configuration-name {
-  color: #0f172a;
-  font-weight: 600;
-}
-
-.employee-configuration-subtext {
-  margin-top: 4px;
-  color: #64748b;
-  font-size: 12px;
-}
-
-.employee-configurations-loader {
-  min-height: 280px;
+.employee-configurations-loading {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 400px;
+  width: 100%;
 }
 
+.employee-configurations-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 360px;
+  padding: 40px;
+}
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
 .employee-configurations-empty {
-  min-height: 320px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  min-height: 360px;
+  padding: 50px 24px;
   text-align: center;
 }
 
 .employee-configurations-empty-icon {
-  width: 52px;
-  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 14px;
-  border-radius: 50%;
-  background: #f0fdf4;
-  color: #16a34a;
-  font-size: 24px;
+  width: 62px;
+  height: 62px;
+  margin-bottom: 16px;
+  border-radius: 18px;
+  background: #eaf8ef;
+  color: #16803c;
+  font-size: 28px;
+  box-shadow: inset 0 0 0 1px #d7efdf;
 }
 
 .employee-configurations-empty h3 {
   margin: 0;
-  color: #0f172a;
-  font-size: 17px;
+  color: #202b25;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .employee-configurations-empty p {
-  margin: 7px 0 0;
-  color: #64748b;
-  font-size: 13px;
+  max-width: 450px;
+  margin: 8px 0 0;
+  color: #77827b;
+  font-size: 14px;
+  line-height: 1.6;
 }
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.employee-configurations-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.employee-configurations-table {
+  width: 100%;
+  min-width: 850px;
+  border-collapse: collapse;
+}
+
+.employee-configurations-table thead {
+  background: #f7faf8;
+}
+
+.employee-configurations-table th {
+  padding: 14px 18px;
+  border-bottom: 1px solid #e5ebe7;
+  color: #68736c;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.employee-configurations-table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #edf1ee;
+  color: #3d4942;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.employee-configurations-table tbody tr {
+  transition:
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.employee-configurations-table tbody tr:hover {
+  background: #fbfdfb;
+}
+
+.employee-configurations-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* =========================================================
+   TABLE CONTENT
+   ========================================================= */
+
+.employee-configuration-name {
+  color: #1d2922;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.employee-configuration-subtext {
+  margin-top: 4px;
+  color: #89938d;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.employee-configurations-table td:nth-child(3) {
+  color: #445149;
+  font-weight: 550;
+}
+
+.employee-configurations-table td:nth-child(4) {
+  color: #1d2922;
+  font-weight: 650;
+}
+
+/* =========================================================
+   FOOTER / PAGINATION
+   ========================================================= */
 
 .employee-configurations-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 16px;
-  border-top: 1px solid #e2e8f0;
-  color: #64748b;
-  font-size: 12px;
+  padding: 16px 18px;
+  border-top: 1px solid #e8ede9;
+  background: #fbfcfb;
 }
 
-@media (max-width: 768px) {
+.employee-configurations-footer > span {
+  color: #78837c;
+  font-size: 13px;
+}
+
+/* =========================================================
+   BUTTON AREA
+   ========================================================= */
+
+.employee-configurations-table td:last-child {
+  white-space: nowrap;
+}
+
+.employee-configurations-table td:last-child button {
+  min-width: 64px;
+}
+
+/* =========================================================
+   RESPONSIVE - TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .employee-configurations-page {
+    padding: 20px;
+  }
+
   .employee-configurations-header {
-    flex-direction: column;
+    align-items: stretch;
   }
 
   .employee-configurations-header h1 {
@@ -195,23 +303,34 @@
   }
 
   .employee-configurations-toolbar {
-    flex-direction: column;
-    align-items: stretch;
+    flex-wrap: wrap;
   }
 
-  .employee-configurations-toolbar > *:first-child,
-  .employee-configurations-toolbar > *:last-child {
+  .employee-configurations-toolbar > *:first-child {
     width: 100%;
-    max-width: none;
+    flex-basis: 100%;
   }
 
-  .employee-configurations-footer {
-    flex-direction: column;
-    align-items: flex-start;
+  .employee-configurations-toolbar > *:last-child {
+    width: 220px;
   }
 }
 
-@media (max-width: 480px) {
+/* =========================================================
+   RESPONSIVE - MOBILE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .employee-configurations-page {
+    padding: 14px;
+  }
+
+  .employee-configurations-header {
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
   .employee-configurations-header h1 {
     font-size: 22px;
   }
@@ -220,8 +339,91 @@
     font-size: 13px;
   }
 
-  .employee-configurations-error {
+  .employee-configurations-header button {
+    width: 100%;
+  }
+
+  .employee-configurations-toolbar {
     flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .employee-configurations-toolbar > *:first-child {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .employee-configurations-toolbar > *:last-child {
+    width: 100%;
+  }
+
+  .employee-configurations-error {
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .employee-configurations-error button {
+    width: 100%;
+  }
+
+  .employee-configurations-card {
+    border-radius: 13px;
+  }
+
+  .employee-configurations-table {
+    min-width: 760px;
+  }
+
+  .employee-configurations-table th,
+  .employee-configurations-table td {
+    padding: 13px 14px;
+  }
+
+  .employee-configurations-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 14px;
+  }
+
+  .employee-configurations-footer > span {
+    font-size: 12px;
+  }
+
+  .employee-configurations-empty {
+    min-height: 320px;
+    padding: 40px 18px;
+  }
+
+  .employee-configurations-empty h3 {
+    font-size: 17px;
+  }
+
+  .employee-configurations-empty p {
+    font-size: 13px;
+  }
+}
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 400px) {
+  .employee-configurations-page {
+    padding: 10px;
+  }
+
+  .employee-configurations-header h1 {
+    font-size: 20px;
+  }
+
+  .employee-configurations-eyebrow {
+    font-size: 10px;
+  }
+
+  .employee-configurations-table {
+    min-width: 700px;
   }
 }

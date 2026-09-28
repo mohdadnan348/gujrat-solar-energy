@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "@/components/common/Button";
 import SearchBox from "@/components/common/SearchBox";
 import Select from "@/components/common/Select";
@@ -10,9 +9,11 @@ import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
 import { useAuth } from "@/hooks/useAuth";
 import customerService from "@/services/customer.service";
+import "./customers.css";
+const LIMIT = 10;
 
 const EmployeeCustomersPage = () => {
-  const { user, logout, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,29 +23,39 @@ const EmployeeCustomersPage = () => {
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
 
-  const limit = 10;
-
-  const loadCustomers = async () => {
+  const loadCustomers = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
 
       const response = await customerService.getCustomers();
 
-      const items =
-        response?.data?.customers ||
-        response?.data?.items ||
-        response?.customers ||
-        response?.items ||
-        response?.data ||
-        [];
+      /*
+       * Backend response:
+       *
+       * {
+       *   success: true,
+       *   message: "Customers fetched successfully",
+       *   data: [],
+       *   pagination: {...}
+       * }
+       */
 
-      setCustomers(Array.isArray(items) ? items : []);
+      const items = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.customers)
+        ? response.data.customers
+        : Array.isArray(response?.customers)
+        ? response.customers
+        : [];
+
+      setCustomers(items);
     } catch (err) {
       console.error("Failed to load customers:", err);
 
       setError(
-        err?.message ||
+        err?.response?.data?.message ||
+          err?.message ||
           "Unable to load customers. Please try again."
       );
 
@@ -52,34 +63,46 @@ const EmployeeCustomersPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!authLoading && user) {
       loadCustomers();
     }
-  }, [authLoading, user]);
+  }, [authLoading, user, loadCustomers]);
 
   const filteredCustomers = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     return customers.filter((customer) => {
-      const customerStatus =
+      const customerStatus = String(
         customer?.status ||
-        customer?.customerStatus ||
-        "";
+          customer?.customerStatus ||
+          "ACTIVE"
+      ).toLowerCase();
 
       const searchableText = [
         customer?.name,
         customer?.customerName,
         customer?.companyName,
+        customer?.customerId,
         customer?.phone,
         customer?.mobile,
+        customer?.contactNumber,
         customer?.email,
         customer?.city,
+        customer?.state,
         customer?.location,
+        customer?.systemType,
+        customer?.solarSystemType,
+        customer?.capacity,
       ]
-        .filter(Boolean)
+        .filter(
+          (value) =>
+            value !== undefined &&
+            value !== null &&
+            value !== ""
+        )
         .join(" ")
         .toLowerCase();
 
@@ -88,7 +111,7 @@ const EmployeeCustomersPage = () => {
 
       const matchesStatus =
         !status ||
-        customerStatus.toLowerCase() === status.toLowerCase();
+        customerStatus === status.toLowerCase();
 
       return matchesSearch && matchesStatus;
     });
@@ -100,13 +123,16 @@ const EmployeeCustomersPage = () => {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredCustomers.length / limit)
+    Math.ceil(filteredCustomers.length / LIMIT)
   );
 
   const paginatedCustomers = useMemo(() => {
-    const start = (page - 1) * limit;
+    const start = (page - 1) * LIMIT;
 
-    return filteredCustomers.slice(start, start + limit);
+    return filteredCustomers.slice(
+      start,
+      start + LIMIT
+    );
   }, [filteredCustomers, page]);
 
   const getCustomerName = (customer) =>
@@ -121,13 +147,50 @@ const EmployeeCustomersPage = () => {
     customer?.contactNumber ||
     "—";
 
+  const getLocation = (customer) => {
+    if (customer?.city && customer?.state) {
+      return `${customer.city}, ${customer.state}`;
+    }
+
+    return (
+      customer?.city ||
+      customer?.location ||
+      customer?.state ||
+      "—"
+    );
+  };
+
+  const getSystem = (customer) => {
+    const systemType =
+      customer?.systemType ||
+      customer?.solarSystemType;
+
+    const capacity = customer?.capacity;
+
+    if (!systemType && !capacity) {
+      return "—";
+    }
+
+    if (systemType && capacity) {
+      return `${systemType} • ${capacity} kW`;
+    }
+
+    if (capacity) {
+      return `${capacity} kW`;
+    }
+
+    return systemType;
+  };
+
   const getStatus = (customer) =>
     customer?.status ||
     customer?.customerStatus ||
     "ACTIVE";
 
   const getStatusVariant = (customerStatus) => {
-    const value = customerStatus.toLowerCase();
+    const value = String(customerStatus)
+      .toLowerCase()
+      .trim();
 
     if (
       ["active", "converted", "completed"].includes(value)
@@ -136,13 +199,21 @@ const EmployeeCustomersPage = () => {
     }
 
     if (
-      ["inactive", "cancelled", "closed"].includes(value)
+      [
+        "inactive",
+        "cancelled",
+        "closed",
+      ].includes(value)
     ) {
       return "danger";
     }
 
     if (
-      ["pending", "prospect", "follow_up"].includes(value)
+      [
+        "pending",
+        "prospect",
+        "follow_up",
+      ].includes(value)
     ) {
       return "warning";
     }
@@ -151,7 +222,9 @@ const EmployeeCustomersPage = () => {
   };
 
   const formatDate = (date) => {
-    if (!date) return "—";
+    if (!date) {
+      return "—";
+    }
 
     const parsedDate = new Date(date);
 
@@ -159,23 +232,27 @@ const EmployeeCustomersPage = () => {
       return "—";
     }
 
-    return parsedDate.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  const handleLogout = async () => {
-    await logout();
+    return parsedDate.toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    );
   };
 
   const handleViewCustomer = (customer) => {
-    const id = customer?._id || customer?.id;
+    const id =
+      customer?._id ||
+      customer?.id;
 
-    if (id) {
-      window.location.href = `/employee/customers/${id}`;
+    if (!id) {
+      return;
     }
+
+    window.location.href =
+      `/employee/customers/${id}`;
   };
 
   if (authLoading) {
@@ -187,230 +264,261 @@ const EmployeeCustomersPage = () => {
   }
 
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      onSearch={setSearch}
-      notificationCount={0}
-    >
-      <div className="employee-customers-page">
-        <div className="employee-customers-header">
-          <div>
-            <span className="employee-customers-eyebrow">
-              Customer Management
-            </span>
+    <div className="employee-customers-page">
 
-            <h1>Customers</h1>
+      {/* Header */}
+      <div className="employee-customers-header">
+        <div>
+          <span className="employee-customers-eyebrow">
+            Customer Management
+          </span>
 
-            <p>
-              View and manage customers converted from your leads.
-            </p>
-          </div>
+          <h1>Customers</h1>
+
+          <p>
+            View and manage customers converted
+            from your leads.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={loadCustomers}
+          disabled={loading}
+        >
+          {loading ? "Refreshing..." : "Refresh"}
+        </Button>
+      </div>
+
+      {/* Toolbar */}
+      <div className="employee-customers-toolbar">
+        <SearchBox
+          value={search}
+          onChange={setSearch}
+          placeholder="Search customers..."
+        />
+
+        <Select
+          value={status}
+          onChange={(event) =>
+            setStatus(event.target.value)
+          }
+          options={[
+            {
+              value: "",
+              label: "All Statuses",
+            },
+            {
+              value: "ACTIVE",
+              label: "Active",
+            },
+            {
+              value: "INACTIVE",
+              label: "Inactive",
+            },
+            {
+              value: "PENDING",
+              label: "Pending",
+            },
+            {
+              value: "CLOSED",
+              label: "Closed",
+            },
+          ]}
+        />
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="employee-customers-error">
+          <span>{error}</span>
 
           <Button
             type="button"
             variant="secondary"
             onClick={loadCustomers}
           >
-            Refresh
+            Retry
           </Button>
         </div>
+      )}
 
-        <div className="employee-customers-toolbar">
-          <SearchBox
-            value={search}
-            onChange={setSearch}
-            placeholder="Search customers..."
-          />
-
-          <Select
-            value={status}
-            onChange={(event) =>
-              setStatus(event.target.value)
-            }
-            options={[
-              {
-                value: "",
-                label: "All Statuses",
-              },
-              {
-                value: "ACTIVE",
-                label: "Active",
-              },
-              {
-                value: "INACTIVE",
-                label: "Inactive",
-              },
-              {
-                value: "PENDING",
-                label: "Pending",
-              },
-              {
-                value: "CLOSED",
-                label: "Closed",
-              },
-            ]}
-          />
-        </div>
-
-        {error && (
-          <div className="employee-customers-error">
-            <span>{error}</span>
-
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={loadCustomers}
-            >
-              Retry
-            </Button>
+      {/* Customer Card */}
+      <div className="employee-customers-card">
+        {loading ? (
+          <div className="employee-customers-loader">
+            <Loader />
           </div>
-        )}
-
-        <div className="employee-customers-card">
-          {loading ? (
-            <div className="employee-customers-loader">
-              <Loader />
+        ) : paginatedCustomers.length === 0 ? (
+          <div className="employee-customers-empty">
+            <div className="employee-customers-empty-icon">
+              👤
             </div>
-          ) : paginatedCustomers.length === 0 ? (
-            <div className="employee-customers-empty">
-              <div className="employee-customers-empty-icon">
-                👤
-              </div>
 
-              <h3>No customers found</h3>
+            <h3>
+              {search || status
+                ? "No matching customers"
+                : "No customers yet"}
+            </h3>
 
-              <p>
-                {search || status
-                  ? "Try changing your search or filter."
-                  : "No customers are available yet."}
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="employee-customers-table-wrapper">
-                <table className="employee-customers-table">
-                  <thead>
-                    <tr>
-                      <th>Customer</th>
-                      <th>Contact</th>
-                      <th>Location</th>
-                      <th>System</th>
-                      <th>Status</th>
-                      <th>Created</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
+            <p>
+              {search || status
+                ? "Try changing your search or status filter."
+                : "Customers assigned to you will appear here."}
+            </p>
 
-                  <tbody>
-                    {paginatedCustomers.map(
-                      (customer, index) => {
-                        const id =
-                          customer?._id ||
-                          customer?.id ||
-                          index;
+            {(search || status) && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setSearch("");
+                  setStatus("");
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="employee-customers-table-wrapper">
+              <table className="employee-customers-table">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Contact</th>
+                    <th>Location</th>
+                    <th>System</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
 
-                        const customerStatus =
-                          getStatus(customer);
+                <tbody>
+                  {paginatedCustomers.map(
+                    (customer, index) => {
+                      const id =
+                        customer?._id ||
+                        customer?.id ||
+                        `customer-${index}`;
 
-                        return (
-                          <tr key={id}>
-                            <td>
-                              <div className="employee-customer-name">
-                                {getCustomerName(customer)}
+                      const customerStatus =
+                        getStatus(customer);
+
+                      return (
+                        <tr key={id}>
+                          {/* Customer */}
+                          <td>
+                            <div className="employee-customer-name">
+                              {getCustomerName(
+                                customer
+                              )}
+                            </div>
+
+                            {customer?.customerId && (
+                              <div className="employee-customer-subtext">
+                                ID:{" "}
+                                {customer.customerId}
                               </div>
+                            )}
 
-                              {customer?.email && (
-                                <div className="employee-customer-subtext">
-                                  {customer.email}
-                                </div>
+                            {customer?.email && (
+                              <div className="employee-customer-subtext">
+                                {customer.email}
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Contact */}
+                          <td>
+                            <div>
+                              {getPhone(customer)}
+                            </div>
+                          </td>
+
+                          {/* Location */}
+                          <td>
+                            {getLocation(customer)}
+                          </td>
+
+                          {/* System */}
+                          <td>
+                            {getSystem(customer)}
+                          </td>
+
+                          {/* Status */}
+                          <td>
+                            <Badge
+                              variant={getStatusVariant(
+                                customerStatus
                               )}
-                            </td>
-
-                            <td>{getPhone(customer)}</td>
-
-                            <td>
-                              {customer?.city ||
-                                customer?.location ||
-                                "—"}
-                            </td>
-
-                            <td>
-                              {customer?.systemType ||
-                                customer?.solarSystemType ||
-                                customer?.capacity
-                                ? `${customer?.systemType || "Solar"}${
-                                    customer?.capacity
-                                      ? ` • ${customer.capacity} kW`
-                                      : ""
-                                  }`
-                                : "—"}
-                            </td>
-
-                            <td>
-                              <Badge
-                                variant={getStatusVariant(
-                                  customerStatus
-                                )}
-                              >
-                                {customerStatus.replaceAll(
-                                  "_",
-                                  " "
-                                )}
-                              </Badge>
-                            </td>
-
-                            <td>
-                              {formatDate(
-                                customer?.createdAt ||
-                                  customer?.createdDate
+                            >
+                              {String(
+                                customerStatus
+                              ).replaceAll(
+                                "_",
+                                " "
                               )}
-                            </td>
+                            </Badge>
+                          </td>
 
-                            <td>
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={() =>
-                                  handleViewCustomer(customer)
-                                }
-                              >
-                                View
-                              </Button>
-                            </td>
-                          </tr>
-                        );
-                      }
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                          {/* Created */}
+                          <td>
+                            {formatDate(
+                              customer?.createdAt ||
+                                customer?.createdDate
+                            )}
+                          </td>
 
-              <div className="employee-customers-footer">
-                <span>
-                  Showing{" "}
-                  {filteredCustomers.length === 0
-                    ? 0
-                    : (page - 1) * limit + 1}{" "}
-                  -{" "}
-                  {Math.min(
-                    page * limit,
-                    filteredCustomers.length
-                  )}{" "}
-                  of {filteredCustomers.length} customers
-                </span>
+                          {/* Action */}
+                          <td>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              onClick={() =>
+                                handleViewCustomer(
+                                  customer
+                                )
+                              }
+                            >
+                              View
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    }
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-                <Pagination
-                  currentPage={page}
-                  totalPages={totalPages}
-                  onPageChange={setPage}
-                />
-              </div>
-            </>
-          )}
-        </div>
+            {/* Footer */}
+            <div className="employee-customers-footer">
+              <span>
+                Showing{" "}
+                {(page - 1) * LIMIT + 1} -{" "}
+                {Math.min(
+                  page * LIMIT,
+                  filteredCustomers.length
+                )}{" "}
+                of{" "}
+                {filteredCustomers.length}{" "}
+                customers
+              </span>
+
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </div>
+          </>
+        )}
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

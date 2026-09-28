@@ -25,9 +25,20 @@ const { ROLES } = require("../config/constants");
 
 const router = express.Router();
 
+/*
+|--------------------------------------------------------------------------
+| Authentication
+|--------------------------------------------------------------------------
+*/
+
 router.use(protect);
 
-// Employee self attendance
+/*
+|--------------------------------------------------------------------------
+| Employee Self Attendance
+|--------------------------------------------------------------------------
+*/
+
 router.get(
   "/my",
   allowRoles(
@@ -39,7 +50,12 @@ router.get(
   getMyAttendance
 );
 
-// Check-in
+/*
+|--------------------------------------------------------------------------
+| Check-In
+|--------------------------------------------------------------------------
+*/
+
 router.post(
   "/check-in",
   allowRoles(
@@ -51,7 +67,12 @@ router.post(
   checkIn
 );
 
-// Check-out
+/*
+|--------------------------------------------------------------------------
+| Check-Out
+|--------------------------------------------------------------------------
+*/
+
 router.post(
   "/check-out",
   allowRoles(
@@ -63,18 +84,36 @@ router.post(
   checkOut
 );
 
-// Attendance summary
+/*
+|--------------------------------------------------------------------------
+| Attendance Summary
+|--------------------------------------------------------------------------
+|
+| Employee -> own summary
+| Manager  -> team/all allowed by service
+| HR       -> full attendance summary
+| Admin    -> full attendance summary
+|
+|--------------------------------------------------------------------------
+*/
+
 router.get(
   "/summary",
   allowRoles(
     ROLES.ADMIN,
     ROLES.MANAGER,
-    ROLES.HR
+    ROLES.HR,
+    ROLES.EMPLOYEE
   ),
   getAttendanceSummary
 );
 
-// Get attendance by employee
+/*
+|--------------------------------------------------------------------------
+| Get Attendance By Employee
+|--------------------------------------------------------------------------
+*/
+
 router.get(
   "/employee/:employeeId",
   allowRoles(
@@ -85,7 +124,12 @@ router.get(
   getEmployeeAttendance
 );
 
-// Get attendance for a specific employee/date
+/*
+|--------------------------------------------------------------------------
+| Get Attendance For Employee / Date
+|--------------------------------------------------------------------------
+*/
+
 router.get(
   "/employee/:employeeId/date/:date",
   allowRoles(
@@ -96,7 +140,12 @@ router.get(
   getAttendanceByDate
 );
 
-// Create attendance manually
+/*
+|--------------------------------------------------------------------------
+| Create Attendance Manually
+|--------------------------------------------------------------------------
+*/
+
 router.post(
   "/",
   allowRoles(
@@ -107,7 +156,12 @@ router.post(
   createAttendance
 );
 
-// Get all attendance records
+/*
+|--------------------------------------------------------------------------
+| Get All Attendance Records
+|--------------------------------------------------------------------------
+*/
+
 router.get(
   "/",
   allowRoles(
@@ -118,7 +172,12 @@ router.get(
   getAttendances
 );
 
-// Update attendance
+/*
+|--------------------------------------------------------------------------
+| Update Attendance
+|--------------------------------------------------------------------------
+*/
+
 router.put(
   "/:id",
   allowRoles(
@@ -129,7 +188,12 @@ router.put(
   updateAttendance
 );
 
-// Get single attendance
+/*
+|--------------------------------------------------------------------------
+| Get Single Attendance
+|--------------------------------------------------------------------------
+*/
+
 router.get(
   "/:id",
   allowRoles(

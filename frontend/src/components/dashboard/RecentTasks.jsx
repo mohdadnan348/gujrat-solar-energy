@@ -9,7 +9,7 @@ const RecentTasks = ({
   tasks = [],
   loading = false,
   title = "Recent Tasks",
-  viewAllHref = "/tasks",
+  viewAllHref = "/employee/tasks",
 }) => {
   const getTaskId = (task) =>
     task?._id ||
@@ -75,7 +75,10 @@ const RecentTasks = ({
   const getPriorityVariant = (priority) => {
     const normalized = String(priority || "").toLowerCase();
 
-    if (normalized === "high" || normalized === "urgent") {
+    if (
+      normalized === "high" ||
+      normalized === "urgent"
+    ) {
       return "danger";
     }
 
@@ -148,6 +151,7 @@ const RecentTasks = ({
 
   return (
     <div className="gse-recent-tasks">
+      {/* Header */}
       <div className="gse-recent-tasks-header">
         <div>
           <h3>{title}</h3>
@@ -163,6 +167,7 @@ const RecentTasks = ({
         </Link>
       </div>
 
+      {/* Empty State */}
       {tasks.length === 0 ? (
         <div className="gse-recent-tasks-empty">
           <div className="gse-recent-tasks-empty-icon">
@@ -175,6 +180,7 @@ const RecentTasks = ({
               strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
             >
               <rect
                 x="3"
@@ -203,6 +209,7 @@ const RecentTasks = ({
 
             const content = (
               <>
+                {/* Task Icon */}
                 <div className="gse-recent-task-icon">
                   <svg
                     width="18"
@@ -213,12 +220,14 @@ const RecentTasks = ({
                     strokeWidth="1.8"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    aria-hidden="true"
                   >
                     <path d="M9 11l3 3L22 4" />
                     <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                   </svg>
                 </div>
 
+                {/* Task Information */}
                 <div className="gse-recent-task-info">
                   <div className="gse-recent-task-title">
                     {getTaskTitle(task)}
@@ -234,12 +243,16 @@ const RecentTasks = ({
                         <span className="gse-recent-task-dot">
                           •
                         </span>
-                        <span>{taskDate}</span>
+
+                        <span>
+                          {taskDate}
+                        </span>
                       </>
                     )}
                   </div>
                 </div>
 
+                {/* Badges */}
                 <div className="gse-recent-task-badges">
                   <Badge
                     variant={getPriorityVariant(priority)}
@@ -261,7 +274,7 @@ const RecentTasks = ({
             if (taskId) {
               return (
                 <Link
-                  href={`/tasks/${taskId}`}
+                  href={`/employee/tasks/${taskId}`}
                   className="gse-recent-task"
                   key={taskId}
                 >

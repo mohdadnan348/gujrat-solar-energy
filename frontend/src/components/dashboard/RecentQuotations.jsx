@@ -9,7 +9,7 @@ const RecentQuotations = ({
   quotations = [],
   loading = false,
   title = "Recent Quotations",
-  viewAllHref = "/quotations",
+  viewAllHref = "/employee/quotations",
 }) => {
   const getQuotationId = (quotation) =>
     quotation?._id ||
@@ -112,6 +112,7 @@ const RecentQuotations = ({
               </div>
 
               <div className="gse-recent-quotation-amount-skeleton" />
+
               <div className="gse-recent-quotation-status-skeleton" />
             </div>
           ))}
@@ -122,6 +123,7 @@ const RecentQuotations = ({
 
   return (
     <div className="gse-recent-quotations">
+      {/* Header */}
       <div className="gse-recent-quotations-header">
         <div>
           <h3>{title}</h3>
@@ -137,6 +139,7 @@ const RecentQuotations = ({
         </Link>
       </div>
 
+      {/* Empty State */}
       {quotations.length === 0 ? (
         <div className="gse-recent-quotations-empty">
           <div className="gse-recent-quotations-empty-icon">
@@ -149,6 +152,7 @@ const RecentQuotations = ({
               strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
             >
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
@@ -194,7 +198,7 @@ const RecentQuotations = ({
             if (quotationId) {
               return (
                 <Link
-                  href={`/quotations/${quotationId}`}
+                  href={`/employee/quotations/${quotationId}`}
                   className="gse-recent-quotation"
                   key={quotationId}
                 >

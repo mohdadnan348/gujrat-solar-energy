@@ -576,6 +576,7 @@ const getLeadStats = async () => {
 };
 const getMyLeads = async ({
   employeeId,
+  userId,
   page = 1,
   limit = 10,
   search = "",
@@ -583,15 +584,54 @@ const getMyLeads = async ({
   priority,
   leadSource,
 }) => {
-  return getLeads({
-    page,
-    limit,
+  const filter = buildFilter({
     search,
     status,
     priority,
     leadSource,
-    assignedTo: employeeId,
   });
+
+  filter.$or = [
+    {
+      assignedTo: employeeId,
+    },
+    {
+      createdBy: userId,
+    },
+  ];
+
+  const pageNumber = Math.max(Number(page), 1);
+  const limitNumber = Math.max(Number(limit), 1);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const [leads, total] = await Promise.all([
+    Lead.find(filter)
+      .populate(
+        "assignedTo",
+        "employeeId name email department designation"
+      )
+      .populate(
+        "convertedCustomer",
+        "customerId name companyName mobile"
+      )
+      .populate("createdBy", "username email role")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNumber)
+      .lean(),
+
+    Lead.countDocuments(filter),
+  ]);
+
+  return {
+    leads,
+    pagination: {
+      page: pageNumber,
+      limit: limitNumber,
+      total,
+      totalPages: Math.ceil(total / limitNumber),
+    },
+  };
 };
 
 const transferLead = async (

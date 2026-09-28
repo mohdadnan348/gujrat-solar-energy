@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
 
 import EmployeeStats from "@/components/dashboard/EmployeeStats";
 import LeadChart from "@/components/dashboard/LeadChart";
@@ -14,25 +13,11 @@ import { useAuth } from "@/hooks/useAuth";
 import dashboardService from "@/services/dashboard.service";
 
 const EmployeeDashboardPage = () => {
-  const { user, logout, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const [dashboardData, setDashboardData] = useState({});
-  const [leadData, setLeadData] = useState([]);
-  const [quotationData, setQuotationData] = useState([]);
-  const [recentLeads, setRecentLeads] = useState([]);
-  const [recentQuotations, setRecentQuotations] = useState([]);
-  const [recentTasks, setRecentTasks] = useState([]);
-
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState("");
-
-  const handleLogout = async () => {
-    await logout();
-  };
-
-  const handleSearch = (value) => {
-    console.log("Global search:", value);
-  };
 
   useEffect(() => {
     if (authLoading || !user) {
@@ -46,64 +31,15 @@ const EmployeeDashboardPage = () => {
         setDashboardLoading(true);
         setDashboardError("");
 
-        const [
-          dashboardResponse,
-          leadResponse,
-          quotationResponse,
-          recentLeadsResponse,
-          recentQuotationsResponse,
-          recentTasksResponse,
-        ] = await Promise.all([
-          dashboardService.getDashboard(),
-          dashboardService.getLeads(),
-          dashboardService.getQuotations(),
-          dashboardService.getRecentLeads({ limit: 5 }),
-          dashboardService.getRecentQuotations({ limit: 5 }),
-          dashboardService.getUpcomingTasks({ limit: 5 }),
-        ]);
+        const response = await dashboardService.getDashboard();
 
         if (!mounted) return;
 
-        setDashboardData(
-          dashboardResponse?.data ||
-            dashboardResponse ||
-            {}
-        );
+        const data = response?.data ?? response ?? {};
 
-        setLeadData(
-          leadResponse?.data ||
-            leadResponse ||
-            []
-        );
-
-        setQuotationData(
-          quotationResponse?.data ||
-            quotationResponse ||
-            []
-        );
-
-        setRecentLeads(
-          recentLeadsResponse?.data ||
-            recentLeadsResponse ||
-            []
-        );
-
-        setRecentQuotations(
-          recentQuotationsResponse?.data ||
-            recentQuotationsResponse ||
-            []
-        );
-
-        setRecentTasks(
-          recentTasksResponse?.data ||
-            recentTasksResponse ||
-            []
-        );
+        setDashboardData(data);
       } catch (error) {
-        console.error(
-          "Employee dashboard error:",
-          error
-        );
+        console.error("Employee dashboard error:", error);
 
         if (!mounted) return;
 
@@ -112,6 +48,8 @@ const EmployeeDashboardPage = () => {
             error?.message ||
             "Unable to load dashboard data."
         );
+
+        setDashboardData({});
       } finally {
         if (mounted) {
           setDashboardLoading(false);
@@ -135,86 +73,84 @@ const EmployeeDashboardPage = () => {
   }
 
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      onSearch={handleSearch}
-      notificationCount={0}
-    >
-      <div className="employee-dashboard">
-        <div className="employee-dashboard-header">
-          <div>
-            <span className="employee-dashboard-eyebrow">
-              Employee Dashboard
-            </span>
+    <div className="employee-dashboard">
+      {/* Header */}
+      <div className="employee-dashboard-header">
+        <div>
+          <span className="employee-dashboard-eyebrow">
+            Employee Dashboard
+          </span>
 
-            <h1>
-              Welcome back
-              {user?.name ? `, ${user.name}` : ""}
-            </h1>
+          <h1>
+            Welcome back
+            {user?.name ? `, ${user.name}` : ""}
+          </h1>
 
-            <p>
-              Manage your leads, quotations, tasks and
-              daily activities from one place.
-            </p>
-          </div>
+          <p>
+            Manage your leads, quotations, tasks and daily activities
+            from one place.
+          </p>
         </div>
-
-        {dashboardError && (
-          <div
-            style={{
-              marginBottom: "20px",
-              padding: "12px 16px",
-              borderRadius: "10px",
-              background: "#fff1f2",
-              color: "#be123c",
-              border: "1px solid #fecdd3",
-            }}
-          >
-            {dashboardError}
-          </div>
-        )}
-
-        <section className="employee-dashboard-stats">
-          <EmployeeStats
-            stats={dashboardData}
-            loading={dashboardLoading}
-          />
-        </section>
-
-        <section className="employee-dashboard-charts">
-          <LeadChart
-            data={leadData}
-            loading={dashboardLoading}
-          />
-
-          <SalesChart
-            data={quotationData}
-            loading={dashboardLoading}
-          />
-        </section>
-
-        <section className="employee-dashboard-activity">
-          <RecentLeads
-            leads={recentLeads}
-            loading={dashboardLoading}
-            viewAllHref="/employee/leads"
-          />
-
-          <RecentQuotations
-            quotations={recentQuotations}
-            loading={dashboardLoading}
-            viewAllHref="/employee/quotations"
-          />
-
-          <RecentTasks
-            tasks={recentTasks}
-            loading={dashboardLoading}
-            viewAllHref="/employee/tasks"
-          />
-        </section>
       </div>
-    </MainLayout>
+
+      {/* Error */}
+      {dashboardError && (
+        <div
+          style={{
+            marginBottom: "20px",
+            padding: "12px 16px",
+            borderRadius: "10px",
+            background: "#fff1f2",
+            color: "#be123c",
+            border: "1px solid #fecdd3",
+          }}
+        >
+          {dashboardError}
+        </div>
+      )}
+
+      {/* Stats */}
+      <section className="employee-dashboard-stats">
+        <EmployeeStats
+          stats={dashboardData}
+          loading={dashboardLoading}
+        />
+      </section>
+
+      {/* Charts */}
+      <section className="employee-dashboard-charts">
+        <LeadChart
+          data={dashboardData?.analytics?.leads?.status || []}
+          loading={dashboardLoading}
+        />
+
+        <SalesChart
+          data={dashboardData?.analytics?.quotations || []}
+          loading={dashboardLoading}
+        />
+      </section>
+
+      {/* Recent Activity */}
+      <section className="employee-dashboard-activity">
+        <RecentLeads
+          leads={dashboardData?.recent?.leads || []}
+          loading={dashboardLoading}
+          viewAllHref="/employee/leads"
+        />
+
+        <RecentQuotations
+          quotations={dashboardData?.recent?.quotations || []}
+          loading={dashboardLoading}
+          viewAllHref="/employee/quotations"
+        />
+
+        <RecentTasks
+          tasks={dashboardData?.recent?.tasks || []}
+          loading={dashboardLoading}
+          viewAllHref="/employee/tasks"
+        />
+      </section>
+    </div>
   );
 };
 

@@ -1,15 +1,18 @@
-.employee-customers-loading {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f8fafc;
-}
+/* =========================================================
+   Employee Customers Page
+   ========================================================= */
 
 .employee-customers-page {
   width: 100%;
-  min-width: 0;
+  min-height: 100%;
+  padding: 24px;
+  box-sizing: border-box;
 }
+
+
+/* =========================================================
+   Header
+   ========================================================= */
 
 .employee-customers-header {
   display: flex;
@@ -19,51 +22,69 @@
   margin-bottom: 24px;
 }
 
+.employee-customers-header > div:first-child {
+  min-width: 0;
+}
+
 .employee-customers-eyebrow {
   display: inline-block;
   margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: #16a34a;
-  font-size: 13px;
-  font-weight: 600;
 }
 
 .employee-customers-header h1 {
   margin: 0;
-  color: #0f172a;
   font-size: 28px;
-  line-height: 1.25;
+  line-height: 1.2;
   font-weight: 700;
+  color: #111827;
 }
 
 .employee-customers-header p {
-  margin: 8px 0 0;
-  color: #64748b;
+  margin: 7px 0 0;
   font-size: 14px;
+  line-height: 1.5;
+  color: #6b7280;
 }
+
+
+/* =========================================================
+   Toolbar
+   ========================================================= */
 
 .employee-customers-toolbar {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .employee-customers-toolbar > *:first-child {
   flex: 1;
-  max-width: 420px;
+  min-width: 220px;
 }
 
 .employee-customers-toolbar > *:last-child {
-  width: 200px;
+  width: 180px;
+  flex-shrink: 0;
 }
+
+
+/* =========================================================
+   Error
+   ========================================================= */
 
 .employee-customers-error {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
-  padding: 14px 16px;
+  padding: 13px 16px;
+  margin-bottom: 18px;
   border: 1px solid #fecaca;
   border-radius: 10px;
   background: #fef2f2;
@@ -71,108 +92,164 @@
   font-size: 14px;
 }
 
+.employee-customers-error span {
+  min-width: 0;
+}
+
+
+/* =========================================================
+   Main Card
+   ========================================================= */
+
 .employee-customers-card {
+  width: 100%;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e5e7eb;
   border-radius: 14px;
   background: #ffffff;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
+
+/* =========================================================
+   Loader
+   ========================================================= */
+
+.employee-customers-loader {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* =========================================================
+   Empty State
+   ========================================================= */
+
+.employee-customers-empty {
+  min-height: 340px;
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.employee-customers-empty-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  font-size: 28px;
+}
+
+.employee-customers-empty h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.employee-customers-empty p {
+  max-width: 420px;
+  margin: 8px 0 18px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #6b7280;
+}
+
+
+/* =========================================================
+   Table
+   ========================================================= */
+
 .employee-customers-table-wrapper {
   width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .employee-customers-table {
   width: 100%;
-  min-width: 950px;
+  min-width: 900px;
   border-collapse: collapse;
+  text-align: left;
+}
+
+.employee-customers-table thead {
+  background: #f8fafc;
 }
 
 .employee-customers-table th {
-  padding: 14px 16px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #475569;
-  font-size: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 11px;
+  line-height: 1.3;
   font-weight: 700;
-  text-align: left;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6b7280;
   white-space: nowrap;
 }
 
 .employee-customers-table td {
-  padding: 16px;
+  padding: 15px 16px;
   border-bottom: 1px solid #f1f5f9;
-  color: #334155;
   font-size: 13px;
+  color: #374151;
   vertical-align: middle;
 }
 
 .employee-customers-table tbody tr {
-  transition: background 0.2s ease;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .employee-customers-table tbody tr:hover {
-  background: #f8fafc;
+  background: #f9fffb;
 }
 
 .employee-customers-table tbody tr:last-child td {
   border-bottom: none;
 }
 
+
+/* =========================================================
+   Customer Name
+   ========================================================= */
+
 .employee-customer-name {
-  color: #0f172a;
-  font-weight: 600;
+  max-width: 230px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 650;
+  color: #111827;
 }
 
 .employee-customer-subtext {
-  margin-top: 4px;
-  color: #64748b;
-  font-size: 12px;
+  max-width: 230px;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: #9ca3af;
 }
 
-.employee-customers-loader {
-  min-height: 280px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
-.employee-customers-empty {
-  min-height: 320px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  text-align: center;
-}
-
-.employee-customers-empty-icon {
-  width: 52px;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 14px;
-  border-radius: 50%;
-  background: #f0fdf4;
-  color: #16a34a;
-  font-size: 22px;
-}
-
-.employee-customers-empty h3 {
-  margin: 0;
-  color: #0f172a;
-  font-size: 17px;
-}
-
-.employee-customers-empty p {
-  margin: 7px 0 0;
-  color: #64748b;
-  font-size: 13px;
-}
+/* =========================================================
+   Footer
+   ========================================================= */
 
 .employee-customers-footer {
   display: flex;
@@ -180,18 +257,84 @@
   justify-content: space-between;
   gap: 16px;
   padding: 14px 16px;
-  border-top: 1px solid #e2e8f0;
-  color: #64748b;
-  font-size: 12px;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
 }
 
-@media (max-width: 768px) {
+.employee-customers-footer > span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+
+/* =========================================================
+   Auth Loading
+   ========================================================= */
+
+.employee-customers-loading {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* =========================================================
+   Tablet
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .employee-customers-page {
+    padding: 20px;
+  }
+
   .employee-customers-header {
-    flex-direction: column;
+    margin-bottom: 20px;
   }
 
   .employee-customers-header h1 {
-    font-size: 24px;
+    font-size: 25px;
+  }
+
+  .employee-customers-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .employee-customers-toolbar > *:first-child {
+    min-width: 100%;
+  }
+
+  .employee-customers-toolbar > *:last-child {
+    width: 200px;
+  }
+}
+
+
+/* =========================================================
+   Mobile
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .employee-customers-page {
+    padding: 16px;
+  }
+
+  .employee-customers-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .employee-customers-header h1 {
+    font-size: 23px;
+  }
+
+  .employee-customers-header p {
+    font-size: 13px;
+  }
+
+  .employee-customers-header > button {
+    align-self: flex-start;
   }
 
   .employee-customers-toolbar {
@@ -199,29 +342,64 @@
     align-items: stretch;
   }
 
-  .employee-customers-toolbar > *:first-child,
-  .employee-customers-toolbar > *:last-child {
-    width: 100%;
-    max-width: none;
-  }
-
-  .employee-customers-footer {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-@media (max-width: 480px) {
-  .employee-customers-header h1 {
-    font-size: 22px;
-  }
-
-  .employee-customers-header p {
-    font-size: 13px;
+  .employee-customers-toolbar > * {
+    width: 100% !important;
+    min-width: 100% !important;
   }
 
   .employee-customers-error {
-    flex-direction: column;
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .employee-customers-error button {
+    width: 100%;
+  }
+
+  .employee-customers-card {
+    border-radius: 12px;
+  }
+
+  .employee-customers-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .employee-customers-footer > span {
+    line-height: 1.5;
+  }
+}
+
+
+/* =========================================================
+   Small Mobile
+   ========================================================= */
+
+@media (max-width: 420px) {
+  .employee-customers-page {
+    padding: 12px;
+  }
+
+  .employee-customers-header h1 {
+    font-size: 21px;
+  }
+
+  .employee-customers-eyebrow {
+    font-size: 10px;
+  }
+
+  .employee-customers-empty {
+    min-height: 300px;
+    padding: 30px 16px;
+  }
+
+  .employee-customers-empty-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+  }
+
+  .employee-customers-empty h3 {
+    font-size: 16px;
   }
 }

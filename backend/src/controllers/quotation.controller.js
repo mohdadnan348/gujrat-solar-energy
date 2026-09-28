@@ -11,7 +11,7 @@ const createQuotation = async (req, res, next) => {
     const quotation =
       await quotationService.createQuotation(
         req.body,
-        req.user._id
+        req.user.userId
       );
 
     return res.status(201).json({
@@ -33,9 +33,13 @@ const createQuotation = async (req, res, next) => {
 const getQuotations = async (req, res, next) => {
   try {
     const result =
-      await quotationService.getQuotations(
-        req.query
-      );
+      await quotationService.getQuotations({
+        ...req.query,
+
+        // Employee scope ke liye required
+        userId: req.user.userId,
+        role: req.user.role,
+      });
 
     return res.status(200).json({
       success: true,
@@ -83,7 +87,7 @@ const updateQuotation = async (req, res, next) => {
       await quotationService.updateQuotation(
         req.params.id,
         req.body,
-        req.user._id
+        req.user.userId
       );
 
     return res.status(200).json({
@@ -107,7 +111,7 @@ const sendQuotation = async (req, res, next) => {
     const quotation =
       await quotationService.sendQuotation(
         req.params.id,
-        req.user._id
+        req.user.userId
       );
 
     return res.status(200).json({
@@ -131,7 +135,7 @@ const acceptQuotation = async (req, res, next) => {
     const quotation =
       await quotationService.acceptQuotation(
         req.params.id,
-        req.user._id
+        req.user.userId
       );
 
     return res.status(200).json({
@@ -156,7 +160,7 @@ const rejectQuotation = async (req, res, next) => {
       await quotationService.rejectQuotation(
         req.params.id,
         req.body.reason,
-        req.user._id
+        req.user.userId
       );
 
     return res.status(200).json({
@@ -235,14 +239,23 @@ const markExpiredQuotations = async (
       message:
         "Expired quotations updated successfully",
       data: {
-        matched: result.matchedCount,
-        modified: result.modifiedCount,
+        matched:
+          result.matchedCount || 0,
+
+        modified:
+          result.modifiedCount || 0,
       },
     });
   } catch (error) {
     next(error);
   }
 };
+
+/*
+|--------------------------------------------------------------------------
+| Exports
+|--------------------------------------------------------------------------
+*/
 
 module.exports = {
   createQuotation,

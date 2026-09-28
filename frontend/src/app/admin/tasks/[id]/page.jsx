@@ -9,8 +9,8 @@ import Badge from "@/components/common/Badge";
 import Loader from "@/components/common/Loader";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 
-import { taskService } from "@/services/task.service";
-import { employeeService } from "@/services/employee.service";
+import taskService from "@/services/task.service";
+import employeeService from "@/services/employee.service";
 
 import "./task-details.css";
 

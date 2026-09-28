@@ -189,4 +189,5 @@ const taskService = {
   searchTasks,
 };
 
+export { taskService };
 export default taskService;

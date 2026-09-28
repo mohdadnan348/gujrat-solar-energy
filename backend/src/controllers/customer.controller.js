@@ -2,11 +2,10 @@ const customerService = require("../services/customer.service");
 
 const createCustomer = async (req, res, next) => {
   try {
-    const customer =
-      await customerService.createCustomer(
-        req.body,
-        req.user.userId
-      );
+    const customer = await customerService.createCustomer(
+      req.body,
+      req.user.userId
+    );
 
     return res.status(201).json({
       success: true,
@@ -20,10 +19,11 @@ const createCustomer = async (req, res, next) => {
 
 const getCustomer = async (req, res, next) => {
   try {
-    const customer =
-      await customerService.getCustomerById(
-        req.params.id
-      );
+    const customer = await customerService.getCustomerById(
+      req.params.id,
+      req.user.userId,
+      req.user.role
+    );
 
     return res.status(200).json({
       success: true,
@@ -48,17 +48,18 @@ const getCustomers = async (req, res, next) => {
       state,
     } = req.query;
 
-    const result =
-      await customerService.getCustomers({
-        page,
-        limit,
-        search,
-        status,
-        customerType,
-        lead,
-        city,
-        state,
-      });
+    const result = await customerService.getCustomers({
+      page,
+      limit,
+      search,
+      status,
+      customerType,
+      lead,
+      city,
+      state,
+      userId: req.user.userId,
+      role: req.user.role,
+    });
 
     return res.status(200).json({
       success: true,
@@ -71,16 +72,11 @@ const getCustomers = async (req, res, next) => {
   }
 };
 
-const getCustomerByLead = async (
-  req,
-  res,
-  next
-) => {
+const getCustomerByLead = async (req, res, next) => {
   try {
-    const customer =
-      await customerService.getCustomerByLead(
-        req.params.leadId
-      );
+    const customer = await customerService.getCustomerByLead(
+      req.params.leadId
+    );
 
     return res.status(200).json({
       success: true,
@@ -93,18 +89,13 @@ const getCustomerByLead = async (
   }
 };
 
-const updateCustomer = async (
-  req,
-  res,
-  next
-) => {
+const updateCustomer = async (req, res, next) => {
   try {
-    const customer =
-      await customerService.updateCustomer(
-        req.params.id,
-        req.body,
-        req.user.userId
-      );
+    const customer = await customerService.updateCustomer(
+      req.params.id,
+      req.body,
+      req.user.userId
+    );
 
     return res.status(200).json({
       success: true,
@@ -116,20 +107,15 @@ const updateCustomer = async (
   }
 };
 
-const updateCustomerStatus = async (
-  req,
-  res,
-  next
-) => {
+const updateCustomerStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
 
-    const customer =
-      await customerService.updateCustomerStatus(
-        req.params.id,
-        status,
-        req.user.userId
-      );
+    const customer = await customerService.updateCustomerStatus(
+      req.params.id,
+      status,
+      req.user.userId
+    );
 
     return res.status(200).json({
       success: true,
@@ -141,17 +127,12 @@ const updateCustomerStatus = async (
   }
 };
 
-const deactivateCustomer = async (
-  req,
-  res,
-  next
-) => {
+const deactivateCustomer = async (req, res, next) => {
   try {
-    const customer =
-      await customerService.deactivateCustomer(
-        req.params.id,
-        req.user.userId
-      );
+    const customer = await customerService.deactivateCustomer(
+      req.params.id,
+      req.user.userId
+    );
 
     return res.status(200).json({
       success: true,

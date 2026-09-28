@@ -3,12 +3,17 @@ const QuotationItem = require("../models/QuotationItem");
 const QuotationBOM = require("../models/QuotationBOM");
 const Lead = require("../models/Lead");
 const Customer = require("../models/Customer");
+const Employee = require("../models/Employee");
 const SolarRequirement = require("../models/SolarRequirement");
 const SystemConfiguration = require("../models/SystemConfiguration");
 const ProposalContent = require("../models/ProposalContent");
 
 const generateNumber = require("../utils/generateNumber");
 const { QUOTATION_STATUS } = require("../config/constants");
+
+/* =========================================================
+   HELPERS
+========================================================= */
 
 const round = (value) =>
   Number(Number(value || 0).toFixed(2));
@@ -75,6 +80,133 @@ const calculateTotals = (items = []) => {
   };
 };
 
+/* =========================================================
+   EMPLOYEE BUSINESS SCOPE
+========================================================= */
+
+const getEmployeeScope = async (userId) => {
+  if (!userId) {
+    return {
+      leadIds: [],
+      customerIds: [],
+      quotationIds: [],
+    };
+  }
+
+  const employee = await Employee.findOne({
+    user: userId,
+  })
+    .select("_id")
+    .lean();
+
+  const employeeId = employee?._id;
+
+  /*
+   * Employee ke:
+   * 1. created leads
+   * 2. assigned leads
+   */
+  const leadOrConditions = [
+    {
+      createdBy: userId,
+    },
+  ];
+
+  if (employeeId) {
+    leadOrConditions.push({
+      assignedTo: employeeId,
+    });
+  }
+
+  const leads = await Lead.find({
+    $or: leadOrConditions,
+  })
+    .select("_id")
+    .lean();
+
+  const leadIds = leads.map(
+    (lead) => lead._id
+  );
+
+  /*
+   * Employee ke accessible customers:
+   * - createdBy employee
+   * - employee ke leads se linked customers
+   */
+  const customerOrConditions = [
+    {
+      createdBy: userId,
+    },
+  ];
+
+  if (leadIds.length) {
+    customerOrConditions.push({
+      lead: {
+        $in: leadIds,
+      },
+    });
+  }
+
+  const customers = await Customer.find({
+    $or: customerOrConditions,
+  })
+    .select("_id")
+    .lean();
+
+  const customerIds = customers.map(
+    (customer) => customer._id
+  );
+
+  /*
+   * Employee ki quotations:
+   * - createdBy employee
+   * - employee ke leads
+   * - employee ke customers
+   */
+  const quotationOrConditions = [
+    {
+      createdBy: userId,
+    },
+  ];
+
+  if (leadIds.length) {
+    quotationOrConditions.push({
+      lead: {
+        $in: leadIds,
+      },
+    });
+  }
+
+  if (customerIds.length) {
+    quotationOrConditions.push({
+      customer: {
+        $in: customerIds,
+      },
+    });
+  }
+
+  const quotations = await Quotation.find({
+    $or: quotationOrConditions,
+  })
+    .select("_id")
+    .lean();
+
+  const quotationIds = quotations.map(
+    (quotation) => quotation._id
+  );
+
+  return {
+    employeeId,
+    leadIds,
+    customerIds,
+    quotationIds,
+  };
+};
+
+/* =========================================================
+   REFERENCE VALIDATION
+========================================================= */
+
 const validateReferences = async (data = {}) => {
   if (data.lead) {
     const exists = await Lead.exists({
@@ -94,9 +226,7 @@ const validateReferences = async (data = {}) => {
     });
 
     if (!exists) {
-      const error = new Error(
-        "Customer not found"
-      );
+      const error = new Error("Customer not found");
       error.statusCode = 404;
       throw error;
     }
@@ -133,6 +263,10 @@ const validateReferences = async (data = {}) => {
   }
 };
 
+/* =========================================================
+   QUOTATION NUMBER
+========================================================= */
+
 const getNextQuotationNumber = async () => {
   return generateNumber({
     Model: Quotation,
@@ -142,6 +276,10 @@ const getNextQuotationNumber = async () => {
     start: 1,
   });
 };
+
+/* =========================================================
+   CUSTOMER SNAPSHOT
+========================================================= */
 
 const buildCustomerSnapshot = (
   customer,
@@ -201,14 +339,29 @@ const getActiveProposalContent =
     return ProposalContent.findOne({
       isActive: true,
     })
-      .sort({ createdAt: -1 })
+      .sort({
+        createdAt: -1,
+      })
       .lean();
   };
+
+/* =========================================================
+   CREATE QUOTATION
+========================================================= */
 
 const createQuotation = async (
   data,
   createdBy
 ) => {
+  if (!createdBy) {
+    const error = new Error(
+      "Authenticated user ID is required to create quotation"
+    );
+
+    error.statusCode = 401;
+    throw error;
+  }
+
   await validateReferences(data);
 
   let lead = null;
@@ -252,10 +405,13 @@ const createQuotation = async (
 
       return {
         ...item,
+
         taxableAmount:
           calculated.taxableAmount,
+
         taxAmount:
           calculated.taxAmount,
+
         amount:
           calculated.amount,
 
@@ -291,9 +447,12 @@ const createQuotation = async (
       quotationNumber,
 
       lead: data.lead,
+
       customer: data.customer,
+
       solarRequirement:
         data.solarRequirement,
+
       systemConfiguration:
         data.systemConfiguration,
 
@@ -434,6 +593,10 @@ const createQuotation = async (
   );
 };
 
+/* =========================================================
+   GET QUOTATIONS
+========================================================= */
+
 const getQuotations = async ({
   page = 1,
   limit = 10,
@@ -441,6 +604,8 @@ const getQuotations = async ({
   status,
   lead,
   customer,
+  userId,
+  role,
 } = {}) => {
   const filter = {};
 
@@ -483,6 +648,94 @@ const getQuotations = async ({
         },
       },
     ];
+  }
+
+  /*
+   * =======================================================
+   * EMPLOYEE SCOPE
+   * =======================================================
+   */
+  if (
+    String(role || "").toUpperCase() ===
+    "EMPLOYEE"
+  ) {
+    const scope =
+      await getEmployeeScope(userId);
+
+    const employeeConditions = [
+      {
+        createdBy: userId,
+      },
+    ];
+
+    if (scope.leadIds.length) {
+      employeeConditions.push({
+        lead: {
+          $in: scope.leadIds,
+        },
+      });
+    }
+
+    if (scope.customerIds.length) {
+      employeeConditions.push({
+        customer: {
+          $in: scope.customerIds,
+        },
+      });
+    }
+
+    /*
+     * Existing filters + employee scope
+     */
+    const normalFilter = {
+      ...filter,
+    };
+
+    delete normalFilter.$or;
+
+    const employeeScopeFilter = {
+      $or: employeeConditions,
+    };
+
+    if (search) {
+      filter.$and = [
+        normalFilter,
+        employeeScopeFilter,
+        {
+          $or: [
+            {
+              quotationNumber: {
+                $regex: search,
+                $options: "i",
+              },
+            },
+            {
+              "customerDetails.name": {
+                $regex: search,
+                $options: "i",
+              },
+            },
+            {
+              "customerDetails.company": {
+                $regex: search,
+                $options: "i",
+              },
+            },
+            {
+              "customerDetails.mobile": {
+                $regex: search,
+                $options: "i",
+              },
+            },
+          ],
+        },
+      ];
+    } else {
+      filter.$and = [
+        normalFilter,
+        employeeScopeFilter,
+      ];
+    }
   }
 
   const pageNumber = Math.max(
@@ -543,18 +796,25 @@ const getQuotations = async ({
       page: pageNumber,
       limit: limitNumber,
       total,
+
       totalPages:
         Math.ceil(
           total / limitNumber
         ),
+
       hasNextPage:
         pageNumber * limitNumber <
         total,
+
       hasPreviousPage:
         pageNumber > 1,
     },
   };
 };
+
+/* =========================================================
+   GET QUOTATION BY ID
+========================================================= */
 
 const getQuotationById = async (
   quotationId
@@ -629,11 +889,24 @@ const getQuotationById = async (
   };
 };
 
+/* =========================================================
+   UPDATE QUOTATION
+========================================================= */
+
 const updateQuotation = async (
   quotationId,
   data,
   updatedBy
 ) => {
+  if (!updatedBy) {
+    const error = new Error(
+      "Authenticated user ID is required to update quotation"
+    );
+
+    error.statusCode = 401;
+    throw error;
+  }
+
   const quotation =
     await Quotation.findById(
       quotationId
@@ -815,6 +1088,10 @@ const updateQuotation = async (
   );
 };
 
+/* =========================================================
+   UPDATE STATUS
+========================================================= */
+
 const updateQuotationStatus =
   async (
     quotationId,
@@ -822,6 +1099,15 @@ const updateQuotationStatus =
     updatedBy,
     extraData = {}
   ) => {
+    if (!updatedBy) {
+      const error = new Error(
+        "Authenticated user ID is required"
+      );
+
+      error.statusCode = 401;
+      throw error;
+    }
+
     if (
       !Object.values(
         QUOTATION_STATUS
@@ -897,6 +1183,10 @@ const updateQuotationStatus =
     );
   };
 
+/* =========================================================
+   STATUS HELPERS
+========================================================= */
+
 const sendQuotation = async (
   quotationId,
   updatedBy
@@ -945,6 +1235,10 @@ const expireQuotation = async (
   );
 };
 
+/* =========================================================
+   ITEMS / BOM
+========================================================= */
+
 const getQuotationItems = async (
   quotationId
 ) => {
@@ -969,6 +1263,10 @@ const getQuotationBOM = async (
     })
     .lean();
 };
+
+/* =========================================================
+   LEAD / CUSTOMER
+========================================================= */
 
 const getQuotationsByLead =
   async (leadId) => {
@@ -998,10 +1296,23 @@ const getQuotationsByCustomer =
       .lean();
   };
 
+/* =========================================================
+   DELETE / DEACTIVATE
+========================================================= */
+
 const deleteQuotation = async (
   quotationId,
   updatedBy
 ) => {
+  if (!updatedBy) {
+    const error = new Error(
+      "Authenticated user ID is required"
+    );
+
+    error.statusCode = 401;
+    throw error;
+  }
+
   const quotation =
     await Quotation.findById(
       quotationId
@@ -1048,6 +1359,10 @@ const deleteQuotation = async (
   };
 };
 
+/* =========================================================
+   EXPORTS
+========================================================= */
+
 module.exports = {
   createQuotation,
   getQuotations,
@@ -1062,8 +1377,10 @@ module.exports = {
   getQuotationBOM,
   getQuotationsByLead,
   getQuotationsByCustomer,
-  markExpiredQuotations: expireQuotation,
+  markExpiredQuotations:
+    expireQuotation,
   deleteQuotation,
   calculateItem,
   calculateTotals,
+  getEmployeeScope,
 };

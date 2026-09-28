@@ -146,4 +146,5 @@ const employeeService = {
   searchEmployees,
 };
 
+export { employeeService };
 export default employeeService;

@@ -332,3 +332,90 @@
     width: 100%;
   }
 }
+
+
+
+.employee-attendance-today {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  background: linear-gradient(
+    135deg,
+    #f0fdf4,
+    #ffffff
+  );
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+}
+
+.attendance-today-icon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #16a34a;
+  background: #dcfce7;
+  border-radius: 12px;
+}
+
+.attendance-today-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.attendance-today-content strong {
+  color: #166534;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.attendance-today-content span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.attendance-today-time {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+@media (max-width: 768px) {
+  .employee-attendance-today {
+    align-items: flex-start;
+  }
+
+  .attendance-today-time {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .employee-attendance-today {
+    flex-wrap: wrap;
+  }
+
+  .attendance-today-content {
+    flex: 1;
+  }
+
+  .attendance-today-time {
+    width: 100%;
+    margin-left: 58px;
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}

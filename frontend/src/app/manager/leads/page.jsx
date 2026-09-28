@@ -11,7 +11,7 @@ import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
 import { useAuth } from "@/hooks/useAuth";
 import leadService from "@/services/lead.service";
-import "./leads(1).css";
+import "./leads.css";
 
 const ITEMS_PER_PAGE = 10;
 

@@ -21,12 +21,15 @@ const SalesChart = ({
         item?.label ??
         item?.name ??
         item?.date ??
+        item?._id ??
         `Item ${index + 1}`,
+
       value: Number(
         item?.value ??
           item?.amount ??
           item?.sales ??
           item?.total ??
+          item?.totalAmount ??
           0
       ),
     }));
@@ -61,7 +64,7 @@ const SalesChart = ({
       return `${currency}${(value / 1000).toFixed(1)}K`;
     }
 
-    return `${currency}${value.toLocaleString("en-IN")}`;
+    return `${currency}${Number(value).toLocaleString("en-IN")}`;
   };
 
   if (loading) {
@@ -69,8 +72,8 @@ const SalesChart = ({
       <div className="gse-sales-chart">
         <div className="gse-sales-chart-header">
           <div>
-            <h3>Sales Overview</h3>
-            <p>Sales performance over time</p>
+            <h3>{title}</h3>
+            <p>{subtitle}</p>
           </div>
         </div>
 
@@ -94,9 +97,7 @@ const SalesChart = ({
         <div>
           <h3>{title}</h3>
 
-          {subtitle && (
-            <p>{subtitle}</p>
-          )}
+          {subtitle && <p>{subtitle}</p>}
         </div>
 
         <div className="gse-sales-chart-total">
@@ -123,6 +124,7 @@ const SalesChart = ({
               strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
             >
               <path d="M3 3v18h18" />
               <path d="m7 16 4-5 3 3 5-7" />

@@ -1,6 +1,7 @@
 import api from "@/services/api";
 
 const BASE_URL = "/quotations";
+const PDF_BASE_URL = "/pdf";
 
 export const getQuotations = async (params = {}) => {
   const response = await api.get(BASE_URL, { params });
@@ -154,6 +155,22 @@ export const getQuotationsByStatus = async (
   return response.data;
 };
 
+// Generate quotation PDF
+export const getQuotationPdf = async (quotationId) => {
+  if (!quotationId) {
+    throw new Error("Quotation ID is required.");
+  }
+
+  const response = await api.get(
+    `${PDF_BASE_URL}/quotation/${quotationId}`,
+    {
+      responseType: "blob",
+    }
+  );
+
+  return response.data;
+};
+
 const quotationService = {
   getQuotations,
   getQuotationById,
@@ -167,6 +184,7 @@ const quotationService = {
   markQuotationsExpired,
   searchQuotations,
   getQuotationsByStatus,
+  getQuotationPdf,
 };
 
 export { quotationService };

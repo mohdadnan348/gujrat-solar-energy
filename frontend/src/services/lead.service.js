@@ -267,6 +267,20 @@ export const getLeadStats = async (params = {}) => {
   return response.data;
 };
 
+/**
+ * Get leads assigned to the currently logged-in employee.
+ */
+export const getMyLeads = async (params = {}) => {
+  const response = await api.get(
+    `${BASE_URL}/my-leads`,
+    {
+      params,
+    }
+  );
+
+  return response.data;
+};
+
 const leadService = {
   getLeads,
   getLeadById,
@@ -281,6 +295,7 @@ const leadService = {
   searchLeads,
   getFollowUpLeads,
   getLeadStats,
+   getMyLeads,
 };
 
 export default leadService;

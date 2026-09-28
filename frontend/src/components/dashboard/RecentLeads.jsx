@@ -10,7 +10,7 @@ const RecentLeads = ({
   leads = [],
   loading = false,
   title = "Recent Leads",
-  viewAllHref = "/leads",
+  viewAllHref = "/employee/leads",
 }) => {
   const getLeadName = (lead) =>
     lead?.name ||
@@ -36,7 +36,8 @@ const RecentLeads = ({
     if (
       normalized.includes("converted") ||
       normalized.includes("won") ||
-      normalized.includes("qualified")
+      normalized.includes("qualified") ||
+      normalized.includes("success")
     ) {
       return "success";
     }
@@ -44,7 +45,9 @@ const RecentLeads = ({
     if (
       normalized.includes("lost") ||
       normalized.includes("closed") ||
-      normalized.includes("rejected")
+      normalized.includes("rejected") ||
+      normalized.includes("not_interested") ||
+      normalized.includes("not interested")
     ) {
       return "danger";
     }
@@ -85,10 +88,12 @@ const RecentLeads = ({
               key={item}
             >
               <span className="gse-recent-lead-avatar-skeleton" />
+
               <div className="gse-recent-lead-content-skeleton">
                 <span />
                 <span />
               </div>
+
               <span className="gse-recent-lead-status-skeleton" />
             </div>
           ))}
@@ -99,6 +104,7 @@ const RecentLeads = ({
 
   return (
     <div className="gse-recent-leads">
+      {/* Header */}
       <div className="gse-recent-leads-header">
         <div>
           <h3>{title}</h3>
@@ -114,6 +120,7 @@ const RecentLeads = ({
         </Link>
       </div>
 
+      {/* Empty State */}
       {leads.length === 0 ? (
         <div className="gse-recent-leads-empty">
           <div className="gse-recent-leads-empty-icon">
@@ -126,6 +133,7 @@ const RecentLeads = ({
               strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
             >
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
@@ -141,6 +149,7 @@ const RecentLeads = ({
         <div className="gse-recent-leads-list">
           {leads.map((lead, index) => {
             const leadId = getLeadId(lead);
+
             const status =
               lead?.status ||
               lead?.leadStatus ||
@@ -179,7 +188,7 @@ const RecentLeads = ({
             if (leadId) {
               return (
                 <Link
-                  href={`/leads/${leadId}`}
+                  href={`/employee/leads/${leadId}`}
                   className="gse-recent-lead"
                   key={leadId}
                 >

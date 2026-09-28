@@ -1,6 +1,16 @@
 const attendanceService = require("../services/attendance.service");
 
-const createAttendance = async (req, res, next) => {
+/*
+|--------------------------------------------------------------------------
+| Create Attendance
+|--------------------------------------------------------------------------
+*/
+
+const createAttendance = async (
+  req,
+  res,
+  next
+) => {
   try {
     const attendance =
       await attendanceService.createAttendance(
@@ -10,7 +20,8 @@ const createAttendance = async (req, res, next) => {
 
     return res.status(201).json({
       success: true,
-      message: "Attendance created successfully",
+      message:
+        "Attendance created successfully",
       data: attendance,
     });
   } catch (error) {
@@ -18,7 +29,17 @@ const createAttendance = async (req, res, next) => {
   }
 };
 
-const getAttendance = async (req, res, next) => {
+/*
+|--------------------------------------------------------------------------
+| Get Single Attendance
+|--------------------------------------------------------------------------
+*/
+
+const getAttendance = async (
+  req,
+  res,
+  next
+) => {
   try {
     const attendance =
       await attendanceService.getAttendanceById(
@@ -27,7 +48,8 @@ const getAttendance = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Attendance fetched successfully",
+      message:
+        "Attendance fetched successfully",
       data: attendance,
     });
   } catch (error) {
@@ -35,7 +57,17 @@ const getAttendance = async (req, res, next) => {
   }
 };
 
-const getAttendances = async (req, res, next) => {
+/*
+|--------------------------------------------------------------------------
+| Get All Attendance
+|--------------------------------------------------------------------------
+*/
+
+const getAttendances = async (
+  req,
+  res,
+  next
+) => {
   try {
     const {
       page = 1,
@@ -44,6 +76,9 @@ const getAttendances = async (req, res, next) => {
       status,
       startDate,
       endDate,
+      dateFrom,
+      dateTo,
+      search = "",
     } = req.query;
 
     const result =
@@ -54,11 +89,15 @@ const getAttendances = async (req, res, next) => {
         status,
         startDate,
         endDate,
+        dateFrom,
+        dateTo,
+        search,
       });
 
     return res.status(200).json({
       success: true,
-      message: "Attendance records fetched successfully",
+      message:
+        "Attendance records fetched successfully",
       data: result.attendances,
       pagination: result.pagination,
     });
@@ -66,6 +105,12 @@ const getAttendances = async (req, res, next) => {
     next(error);
   }
 };
+
+/*
+|--------------------------------------------------------------------------
+| Get Employee Attendance
+|--------------------------------------------------------------------------
+*/
 
 const getEmployeeAttendance = async (
   req,
@@ -75,10 +120,12 @@ const getEmployeeAttendance = async (
   try {
     const {
       page = 1,
-      limit = 10,
+      limit = 31,
       status,
       startDate,
       endDate,
+      dateFrom,
+      dateTo,
     } = req.query;
 
     const result =
@@ -90,6 +137,8 @@ const getEmployeeAttendance = async (
           status,
           startDate,
           endDate,
+          dateFrom,
+          dateTo,
         }
       );
 
@@ -105,6 +154,17 @@ const getEmployeeAttendance = async (
   }
 };
 
+/*
+|--------------------------------------------------------------------------
+| Get My Attendance
+|--------------------------------------------------------------------------
+|
+| Employee uses User._id.
+| Service converts User._id -> Employee._id.
+|
+|--------------------------------------------------------------------------
+*/
+
 const getMyAttendance = async (
   req,
   res,
@@ -113,10 +173,12 @@ const getMyAttendance = async (
   try {
     const {
       page = 1,
-      limit = 10,
+      limit = 31,
       status,
       startDate,
       endDate,
+      dateFrom,
+      dateTo,
     } = req.query;
 
     const result =
@@ -128,12 +190,15 @@ const getMyAttendance = async (
           status,
           startDate,
           endDate,
+          dateFrom,
+          dateTo,
         }
       );
 
     return res.status(200).json({
       success: true,
-      message: "My attendance fetched successfully",
+      message:
+        "My attendance fetched successfully",
       data: result.attendances,
       pagination: result.pagination,
     });
@@ -141,6 +206,12 @@ const getMyAttendance = async (
     next(error);
   }
 };
+
+/*
+|--------------------------------------------------------------------------
+| Get Attendance By Employee / Date
+|--------------------------------------------------------------------------
+*/
 
 const getAttendanceByDate = async (
   req,
@@ -165,6 +236,12 @@ const getAttendanceByDate = async (
   }
 };
 
+/*
+|--------------------------------------------------------------------------
+| Update Attendance
+|--------------------------------------------------------------------------
+*/
+
 const updateAttendance = async (
   req,
   res,
@@ -180,7 +257,8 @@ const updateAttendance = async (
 
     return res.status(200).json({
       success: true,
-      message: "Attendance updated successfully",
+      message:
+        "Attendance updated successfully",
       data: attendance,
     });
   } catch (error) {
@@ -188,26 +266,65 @@ const updateAttendance = async (
   }
 };
 
-const checkIn = async (req, res, next) => {
+/*
+|--------------------------------------------------------------------------
+| Check-In
+|--------------------------------------------------------------------------
+|
+| Employee:
+|   employeeId = logged-in User._id
+|
+| Admin / Manager / HR:
+|   employee can be passed explicitly.
+|
+|--------------------------------------------------------------------------
+*/
+
+const checkIn = async (
+  req,
+  res,
+  next
+) => {
   try {
     const {
       employee,
       attendanceDate,
+      checkIn,
+      lateMinutes,
+      remarks,
+      status,
     } = req.body;
 
+    /*
+     * Never allow an Employee to check-in
+     * another employee.
+     */
+    const isEmployee =
+      String(req.user?.role || "").toUpperCase() ===
+      "EMPLOYEE";
+
     const employeeId =
-      employee || req.user.userId;
+      isEmployee
+        ? req.user.userId
+        : employee || req.user.userId;
 
     const attendance =
       await attendanceService.checkInEmployee(
         employeeId,
-        req.user.userId,
-        attendanceDate
+        {
+          attendanceDate,
+          checkIn,
+          lateMinutes,
+          remarks,
+          status,
+        },
+        req.user.userId
       );
 
     return res.status(200).json({
       success: true,
-      message: "Employee checked in successfully",
+      message:
+        "Employee checked in successfully",
       data: attendance,
     });
   } catch (error) {
@@ -215,32 +332,75 @@ const checkIn = async (req, res, next) => {
   }
 };
 
-const checkOut = async (req, res, next) => {
+/*
+|--------------------------------------------------------------------------
+| Check-Out
+|--------------------------------------------------------------------------
+*/
+
+const checkOut = async (
+  req,
+  res,
+  next
+) => {
   try {
     const {
       employee,
       attendanceDate,
+      checkOut,
+      overtimeHours,
+      remarks,
     } = req.body;
 
+    /*
+     * Never allow an Employee to check-out
+     * another employee.
+     */
+    const isEmployee =
+      String(req.user?.role || "").toUpperCase() ===
+      "EMPLOYEE";
+
     const employeeId =
-      employee || req.user.userId;
+      isEmployee
+        ? req.user.userId
+        : employee || req.user.userId;
 
     const attendance =
       await attendanceService.checkOutEmployee(
         employeeId,
-        req.user.userId,
-        attendanceDate
+        {
+          attendanceDate,
+          checkOut,
+          overtimeHours,
+          remarks,
+        },
+        req.user.userId
       );
 
     return res.status(200).json({
       success: true,
-      message: "Employee checked out successfully",
+      message:
+        "Employee checked out successfully",
       data: attendance,
     });
   } catch (error) {
     next(error);
   }
 };
+
+/*
+|--------------------------------------------------------------------------
+| Attendance Summary
+|--------------------------------------------------------------------------
+|
+| Employee:
+|   Only own attendance summary.
+|
+| Admin / Manager / HR:
+|   Can request a specific employee summary.
+|
+|--------------------------------------------------------------------------
+*/
 
 const getAttendanceSummary = async (
   req,
@@ -252,16 +412,26 @@ const getAttendanceSummary = async (
       employee,
       startDate,
       endDate,
+      dateFrom,
+      dateTo,
     } = req.query;
 
-    const employeeId =
-      employee || undefined;
+    const isEmployee =
+      String(req.user?.role || "").toUpperCase() ===
+      "EMPLOYEE";
+
+    /*
+     * Employee can only see own summary.
+     */
+    const employeeId = isEmployee
+      ? req.user.userId
+      : employee || undefined;
 
     const summary =
       await attendanceService.getAttendanceSummary({
         employee: employeeId,
-        startDate,
-        endDate,
+        startDate: startDate || dateFrom,
+        endDate: endDate || dateTo,
       });
 
     return res.status(200).json({
@@ -274,6 +444,12 @@ const getAttendanceSummary = async (
     next(error);
   }
 };
+
+/*
+|--------------------------------------------------------------------------
+| Exports
+|--------------------------------------------------------------------------
+*/
 
 module.exports = {
   createAttendance,

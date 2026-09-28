@@ -38,20 +38,21 @@ router.post(
   createCustomer
 );
 
-// Get all customers
-// Admin / Manager / HR
+// Get customers
+// Admin / Manager / HR / Employee
 router.get(
   "/",
   allowRoles(
     ROLES.ADMIN,
     ROLES.MANAGER,
-    ROLES.HR
+    ROLES.HR,
+    ROLES.EMPLOYEE
   ),
   getCustomers
 );
 
 // Get customer by lead
-// Keep this route before /:id
+// Admin / Manager / HR / Employee
 router.get(
   "/lead/:leadId",
   allowRoles(

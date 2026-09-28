@@ -2,34 +2,37 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import MainLayout from "@/components/layout/MainLayout";
+
 import Button from "@/components/common/Button";
 import SearchBox from "@/components/common/SearchBox";
 import Select from "@/components/common/Select";
 import Badge from "@/components/common/Badge";
 import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
+
 import { useAuth } from "@/hooks/useAuth";
 import leadService from "@/services/lead.service";
-import "./leads(2).css";
+
+import "./leads.css";
 
 const ITEMS_PER_PAGE = 10;
 
 const STATUS_OPTIONS = [
   { value: "", label: "All Statuses" },
-  { value: "NEW", label: "New" },
-  { value: "ASSIGNED", label: "Assigned" },
-  { value: "CONTACTED", label: "Contacted" },
-  { value: "QUALIFIED", label: "Qualified" },
-  { value: "SITE_VISIT", label: "Site Visit" },
-  { value: "QUOTATION", label: "Quotation" },
-  { value: "WON", label: "Won" },
-  { value: "LOST", label: "Lost" },
+  { value: "New", label: "New" },
+  { value: "Assigned", label: "Assigned" },
+  { value: "Contacted", label: "Contacted" },
+  { value: "Qualified", label: "Qualified" },
+  { value: "Site Visit", label: "Site Visit" },
+  { value: "Quotation", label: "Quotation" },
+  { value: "Won", label: "Won" },
+  { value: "Lost", label: "Lost" },
 ];
 
 const EmployeeLeadsPage = () => {
   const router = useRouter();
-  const { user, logout, loading: authLoading } = useAuth();
+
+  const { user, loading: authLoading } = useAuth();
 
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,25 +47,19 @@ const EmployeeLeadsPage = () => {
       setLoading(true);
       setError("");
 
-      const response =
-        await leadService.getAssignedLeads(
-          user?._id || user?.id
-        );
+      const response = await leadService.getMyLeads({
+        page: 1,
+        limit: 100,
+      });
 
       const items =
-        response?.data?.leads ||
-        response?.data?.items ||
-        response?.leads ||
-        response?.items ||
         response?.data ||
+        response?.leads ||
         [];
 
       setLeads(Array.isArray(items) ? items : []);
     } catch (err) {
-      console.error(
-        "Failed to load employee leads:",
-        err
-      );
+      console.error("Failed to load employee leads:", err);
 
       setError(
         err?.response?.data?.message ||
@@ -93,10 +90,9 @@ const EmployeeLeadsPage = () => {
     "Unnamed Lead";
 
   const getLeadNumber = (lead) =>
+    lead?.leadId ||
     lead?.leadNumber ||
     lead?.leadNo ||
-    lead?.referenceNumber ||
-    lead?.leadId ||
     lead?._id ||
     "—";
 
@@ -107,59 +103,45 @@ const EmployeeLeadsPage = () => {
     "—";
 
   const getStatus = (lead) =>
-    String(
-      lead?.status ||
-        lead?.leadStatus ||
-        "NEW"
-    ).toUpperCase();
+    lead?.status ||
+    lead?.leadStatus ||
+    "New";
 
   const getSource = (lead) =>
-    String(
-      lead?.leadSource ||
-        lead?.source ||
-        "OTHER"
-    ).toUpperCase();
+    lead?.leadSource ||
+    lead?.source ||
+    "Other";
 
   const getStatusVariant = (leadStatus) => {
-    switch (
-      String(leadStatus).toUpperCase()
-    ) {
-      case "NEW":
+    switch (String(leadStatus).toLowerCase()) {
+      case "new":
         return "info";
 
-      case "ASSIGNED":
+      case "assigned":
         return "info";
 
-      case "CONTACTED":
+      case "contacted":
         return "warning";
 
-      case "QUALIFIED":
+      case "qualified":
         return "success";
 
-      case "SITE_VISIT":
+      case "site visit":
         return "warning";
 
-      case "QUOTATION":
+      case "quotation":
         return "info";
 
-      case "WON":
+      case "won":
         return "success";
 
-      case "LOST":
+      case "lost":
         return "danger";
 
       default:
         return "secondary";
     }
   };
-
-  const formatLabel = (value) =>
-    String(value || "")
-      .replace(/_/g, " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (letter) =>
-        letter.toUpperCase()
-      );
 
   const formatDate = (date) => {
     if (!date) {
@@ -172,20 +154,15 @@ const EmployeeLeadsPage = () => {
       return "—";
     }
 
-    return parsedDate.toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }
-    );
+    return parsedDate.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   const filteredLeads = useMemo(() => {
-    const query = search
-      .trim()
-      .toLowerCase();
+    const query = search.trim().toLowerCase();
 
     return leads.filter((lead) => {
       const leadStatus = getStatus(lead);
@@ -207,37 +184,25 @@ const EmployeeLeadsPage = () => {
         .toLowerCase();
 
       const matchesSearch =
-        !query ||
-        searchableText.includes(query);
+        !query || searchableText.includes(query);
 
       const matchesStatus =
-        !status ||
-        leadStatus === status;
+        !status || leadStatus === status;
 
-      return (
-        matchesStatus &&
-        matchesSearch
-      );
+      return matchesSearch && matchesStatus;
     });
   }, [leads, search, status]);
 
   const totalPages = Math.max(
     1,
-    Math.ceil(
-      filteredLeads.length /
-        ITEMS_PER_PAGE
-    )
+    Math.ceil(filteredLeads.length / ITEMS_PER_PAGE)
   );
 
-  const currentPage = Math.min(
-    page,
-    totalPages
-  );
+  const currentPage = Math.min(page, totalPages);
 
   const paginatedLeads = useMemo(() => {
     const start =
-      (currentPage - 1) *
-      ITEMS_PER_PAGE;
+      (currentPage - 1) * ITEMS_PER_PAGE;
 
     return filteredLeads.slice(
       start,
@@ -251,249 +216,219 @@ const EmployeeLeadsPage = () => {
     }
   }, [page, totalPages]);
 
-  const handleLogout = async () => {
-    await logout();
-  };
-
-  const handleSearch = (value) => {
-    setSearch(value);
-  };
-
   const handleViewLead = (lead) => {
-    const id =
-      lead?._id ||
-      lead?.id;
+    const id = lead?._id || lead?.id;
 
     if (id) {
-      router.push(
-        `/employee/leads/${id}`
-      );
+      router.push(`/employee/leads/${id}`);
     }
   };
 
   if (authLoading || loading) {
     return (
-      <MainLayout
-        user={user}
-        onLogout={handleLogout}
-        notificationCount={0}
-      >
-        <div className="employee-leads-loading">
-          <Loader />
-        </div>
-      </MainLayout>
+      <div className="employee-leads-loading">
+        <Loader />
+      </div>
     );
   }
 
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      onSearch={handleSearch}
-      notificationCount={0}
-    >
-      <div className="employee-leads-page">
-        {/* Header */}
-        <div className="employee-leads-header">
-          <div>
-            <span className="employee-leads-eyebrow">
-              Sales Management
-            </span>
+    <div className="employee-leads-page">
+      {/* Header */}
+      <div className="employee-leads-header">
+        <div>
+          <span className="employee-leads-eyebrow">
+            Sales Management
+          </span>
 
-            <h1>My Leads</h1>
+          <h1>My Leads</h1>
 
-            <p>
-              View and manage the leads assigned
-              to you.
-            </p>
-          </div>
+          <p>
+            View and manage the leads assigned to you.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          onClick={loadLeads}
+          variant="secondary"
+          disabled={loading}
+        >
+          Refresh
+        </Button>
+      </div>
+
+      {/* Toolbar */}
+      <div className="employee-leads-toolbar">
+        <SearchBox
+          value={search}
+          onChange={setSearch}
+          placeholder="Search leads..."
+        />
+
+        <Select
+          value={status}
+          onChange={(event) =>
+            setStatus(event.target.value)
+          }
+          options={STATUS_OPTIONS}
+        />
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="employee-leads-error">
+          <span>{error}</span>
 
           <Button
             type="button"
-            onClick={loadLeads}
             variant="secondary"
-            disabled={loading}
+            onClick={loadLeads}
           >
-            Refresh
+            Retry
           </Button>
         </div>
+      )}
 
-        {/* Toolbar */}
-        <div className="employee-leads-toolbar">
-          <SearchBox
-            value={search}
-            onChange={handleSearch}
-            placeholder="Search leads..."
-          />
-
-          <Select
-            value={status}
-            onChange={(event) =>
-              setStatus(event.target.value)
-            }
-            options={STATUS_OPTIONS}
-          />
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div className="employee-leads-error">
-            <span>{error}</span>
-
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={loadLeads}
-            >
-              Retry
-            </Button>
-          </div>
-        )}
-
-        {/* Leads */}
-        <div className="employee-leads-card">
-          {paginatedLeads.length === 0 ? (
-            <div className="employee-leads-empty">
-              <div className="employee-leads-empty-icon">
-                ☀
-              </div>
-
-              <h3>No leads found</h3>
-
-              <p>
-                {search || status
-                  ? "Try changing your search or filters."
-                  : "You don't have any assigned leads yet."}
-              </p>
+      {/* Leads */}
+      <div className="employee-leads-card">
+        {paginatedLeads.length === 0 ? (
+          <div className="employee-leads-empty">
+            <div className="employee-leads-empty-icon">
+              ☀
             </div>
-          ) : (
-            <>
-              <div className="employee-leads-table-wrapper">
-                <table className="employee-leads-table">
-                  <thead>
-                    <tr>
-                      <th>Lead</th>
-                      <th>Contact</th>
-                      <th>Location</th>
-                      <th>Source</th>
-                      <th>Status</th>
-                      <th>Created</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
 
-                  <tbody>
-                    {paginatedLeads.map(
-                      (lead, index) => {
-                        const id =
-                          lead?._id ||
-                          lead?.id ||
-                          index;
+            <h3>
+              {error ? "Unable to load leads" : "No leads found"}
+            </h3>
 
-                        const leadStatus =
-                          getStatus(lead);
+            <p>
+              {error
+                ? "Please retry after checking the connection."
+                : search || status
+                ? "Try changing your search or filters."
+                : "You don't have any assigned leads yet."}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="employee-leads-table-wrapper">
+              <table className="employee-leads-table">
+                <thead>
+                  <tr>
+                    <th>Lead</th>
+                    <th>Contact</th>
+                    <th>Location</th>
+                    <th>Source</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
 
-                        return (
-                          <tr key={id}>
-                            <td>
-                              <div className="employee-lead-name">
-                                {getLeadName(lead)}
-                              </div>
+                <tbody>
+                  {paginatedLeads.map((lead, index) => {
+                    const id =
+                      lead?._id ||
+                      lead?.id ||
+                      index;
 
-                              {lead?.email && (
-                                <div className="employee-lead-email">
-                                  {lead.email}
-                                </div>
-                              )}
-                            </td>
+                    const leadStatus = getStatus(lead);
 
-                            <td>
-                              {getLeadPhone(lead)}
-                            </td>
+                    return (
+                      <tr key={id}>
+                        <td>
+                          <div className="employee-lead-name">
+                            {getLeadName(lead)}
+                          </div>
 
-                            <td>
-                              {[
-                                lead?.city,
-                                lead?.state,
-                              ]
-                                .filter(Boolean)
-                                .join(", ") ||
-                                "—"}
-                            </td>
+                          <div className="employee-lead-email">
+                            {getLeadNumber(lead)}
+                          </div>
 
-                            <td>
-                              {formatLabel(
-                                getSource(lead)
-                              )}
-                            </td>
+                          {lead?.email && (
+                            <div className="employee-lead-email">
+                              {lead.email}
+                            </div>
+                          )}
+                        </td>
 
-                            <td>
-                              <Badge
-                                variant={getStatusVariant(
-                                  leadStatus
-                                )}
-                              >
-                                {formatLabel(
-                                  leadStatus
-                                )}
-                              </Badge>
-                            </td>
+                        <td>
+                          {getLeadPhone(lead)}
+                        </td>
 
-                            <td>
-                              {formatDate(
-                                lead?.createdAt
-                              )}
-                            </td>
+                        <td>
+                          {[
+                            lead?.city,
+                            lead?.state,
+                          ]
+                            .filter(Boolean)
+                            .join(", ") || "—"}
+                        </td>
 
-                            <td>
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={() =>
-                                  handleViewLead(
-                                    lead
-                                  )
-                                }
-                              >
-                                View
-                              </Button>
-                            </td>
-                          </tr>
-                        );
-                      }
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                        <td>
+                          {getSource(lead)}
+                        </td>
 
-              <div className="employee-leads-footer">
-                <span>
-                  Showing{" "}
-                  {filteredLeads.length === 0
-                    ? 0
-                    : (currentPage - 1) *
-                        ITEMS_PER_PAGE +
-                      1}{" "}
-                  -{" "}
-                  {Math.min(
-                    currentPage *
-                      ITEMS_PER_PAGE,
-                    filteredLeads.length
-                  )}{" "}
-                  of {filteredLeads.length} leads
-                </span>
+                        <td>
+                          <Badge
+                            variant={getStatusVariant(
+                              leadStatus
+                            )}
+                          >
+                            {leadStatus}
+                          </Badge>
+                        </td>
 
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setPage}
-                />
-              </div>
-            </>
-          )}
-        </div>
+                        <td>
+                          {formatDate(
+                            lead?.createdAt
+                          )}
+                        </td>
+
+                        <td>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() =>
+                              handleViewLead(lead)
+                            }
+                          >
+                            View
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="employee-leads-footer">
+              <span>
+                Showing{" "}
+                {(currentPage - 1) *
+                  ITEMS_PER_PAGE +
+                  1}{" "}
+                -{" "}
+                {Math.min(
+                  currentPage *
+                    ITEMS_PER_PAGE,
+                  filteredLeads.length
+                )}{" "}
+                of {filteredLeads.length} leads
+              </span>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </div>
+          </>
+        )}
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

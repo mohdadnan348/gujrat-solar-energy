@@ -3,6 +3,12 @@ const Employee = require("../models/Employee");
 const User = require("../models/User");
 const { ATTENDANCE_STATUS } = require("../config/constants");
 
+/*
+|--------------------------------------------------------------------------
+| Date Helpers
+|--------------------------------------------------------------------------
+*/
+
 const getDateOnly = (date = new Date()) => {
   const value = new Date(date);
 
@@ -30,11 +36,52 @@ const calculateTotalHours = (checkIn, checkOut) => {
   );
 };
 
-const validateEmployee = async (employeeId) => {
-  const employee = await Employee.findById(employeeId);
+/*
+|--------------------------------------------------------------------------
+| Employee Helpers
+|--------------------------------------------------------------------------
+*/
+
+/*
+ * Accepts either:
+ *
+ * 1. Employee._id
+ * 2. User._id
+ *
+ * This is important because:
+ * - Admin/HR manual operations may send Employee._id
+ * - Employee self actions send req.user.userId
+ */
+const findEmployee = async (employeeId) => {
+  if (!employeeId) {
+    const error = new Error("Employee ID is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  let employee = null;
+
+  // First try Employee._id
+  try {
+    employee = await Employee.findById(employeeId);
+  } catch (error) {
+    // Ignore invalid Employee ObjectId and try User mapping below.
+    employee = null;
+  }
+
+  // If not found, try User._id -> Employee.user
+  if (!employee) {
+    try {
+      employee = await Employee.findOne({
+        user: employeeId,
+      });
+    } catch (error) {
+      employee = null;
+    }
+  }
 
   if (!employee) {
-    const error = new Error("Employee not found");
+    const error = new Error("Employee profile not found");
     error.statusCode = 404;
     throw error;
   }
@@ -42,15 +89,25 @@ const validateEmployee = async (employeeId) => {
   return employee;
 };
 
+const validateEmployee = async (employeeId) => {
+  return findEmployee(employeeId);
+};
+
+/*
+|--------------------------------------------------------------------------
+| Create Attendance
+|--------------------------------------------------------------------------
+*/
+
 const createAttendance = async (data, createdBy) => {
-  await validateEmployee(data.employee);
+  const employee = await validateEmployee(data.employee);
 
   const attendanceDate = getDateOnly(
     data.attendanceDate || new Date()
   );
 
   const existing = await Attendance.findOne({
-    employee: data.employee,
+    employee: employee._id,
     attendanceDate,
   });
 
@@ -63,7 +120,7 @@ const createAttendance = async (data, createdBy) => {
   }
 
   const attendance = await Attendance.create({
-    employee: data.employee,
+    employee: employee._id,
     attendanceDate,
     status:
       data.status || ATTENDANCE_STATUS.PRESENT,
@@ -82,19 +139,25 @@ const createAttendance = async (data, createdBy) => {
   return getAttendanceById(attendance._id);
 };
 
+/*
+|--------------------------------------------------------------------------
+| Check-In
+|--------------------------------------------------------------------------
+*/
+
 const checkIn = async (
   employeeId,
   data = {},
   createdBy
 ) => {
-  await validateEmployee(employeeId);
+  const employee = await validateEmployee(employeeId);
 
   const attendanceDate = getDateOnly(
     data.attendanceDate || new Date()
   );
 
   let attendance = await Attendance.findOne({
-    employee: employeeId,
+    employee: employee._id,
     attendanceDate,
   });
 
@@ -108,7 +171,7 @@ const checkIn = async (
 
   if (!attendance) {
     attendance = new Attendance({
-      employee: employeeId,
+      employee: employee._id,
       attendanceDate,
       status:
         data.status ||
@@ -133,19 +196,25 @@ const checkIn = async (
   return getAttendanceById(attendance._id);
 };
 
+/*
+|--------------------------------------------------------------------------
+| Check-Out
+|--------------------------------------------------------------------------
+*/
+
 const checkOut = async (
   employeeId,
   data = {},
   updatedBy
 ) => {
-  await validateEmployee(employeeId);
+  const employee = await validateEmployee(employeeId);
 
   const attendanceDate = getDateOnly(
     data.attendanceDate || new Date()
   );
 
   const attendance = await Attendance.findOne({
-    employee: employeeId,
+    employee: employee._id,
     attendanceDate,
   });
 
@@ -198,6 +267,12 @@ const checkOut = async (
   return getAttendanceById(attendance._id);
 };
 
+/*
+|--------------------------------------------------------------------------
+| Get All Attendance
+|--------------------------------------------------------------------------
+*/
+
 const getAttendances = async ({
   page = 1,
   limit = 10,
@@ -205,29 +280,43 @@ const getAttendances = async ({
   status,
   dateFrom,
   dateTo,
+  startDate,
+  endDate,
   search = "",
-}) => {
+} = {}) => {
   const filter = {};
 
-  if (employee) {
-    filter.employee = employee;
+  const employeeFilter =
+    employee || undefined;
+
+  if (employeeFilter) {
+    const employeeRecord =
+      await validateEmployee(employeeFilter);
+
+    filter.employee = employeeRecord._id;
   }
 
   if (status) {
     filter.status = status;
   }
 
-  if (dateFrom || dateTo) {
+  const fromDate =
+    dateFrom || startDate;
+
+  const toDate =
+    dateTo || endDate;
+
+  if (fromDate || toDate) {
     filter.attendanceDate = {};
 
-    if (dateFrom) {
+    if (fromDate) {
       filter.attendanceDate.$gte =
-        getDateOnly(dateFrom);
+        getDateOnly(fromDate);
     }
 
-    if (dateTo) {
+    if (toDate) {
       filter.attendanceDate.$lte =
-        getDateOnly(dateTo);
+        getDateOnly(toDate);
     }
   }
 
@@ -256,15 +345,29 @@ const getAttendances = async ({
     }).select("_id");
 
     filter.employee = {
-      $in: employees.map((item) => item._id),
+      $in: employees.map(
+        (item) => item._id
+      ),
     };
   }
 
-  const pageNumber = Math.max(Number(page), 1);
-  const limitNumber = Math.max(Number(limit), 1);
-  const skip = (pageNumber - 1) * limitNumber;
+  const pageNumber = Math.max(
+    Number(page),
+    1
+  );
 
-  const [attendances, total] = await Promise.all([
+  const limitNumber = Math.max(
+    Number(limit),
+    1
+  );
+
+  const skip =
+    (pageNumber - 1) * limitNumber;
+
+  const [
+    attendances,
+    total,
+  ] = await Promise.all([
     Attendance.find(filter)
       .populate(
         "employee",
@@ -294,30 +397,43 @@ const getAttendances = async ({
       page: pageNumber,
       limit: limitNumber,
       total,
-      totalPages: Math.ceil(total / limitNumber),
+      totalPages: Math.ceil(
+        total / limitNumber
+      ),
     },
   };
 };
 
-const getAttendanceById = async (attendanceId) => {
-  const attendance = await Attendance.findById(
-    attendanceId
-  )
-    .populate(
-      "employee",
-      "employeeId name email mobile department designation status"
+/*
+|--------------------------------------------------------------------------
+| Get Attendance By ID
+|--------------------------------------------------------------------------
+*/
+
+const getAttendanceById = async (
+  attendanceId
+) => {
+  const attendance =
+    await Attendance.findById(
+      attendanceId
     )
-    .populate(
-      "createdBy",
-      "username email role"
-    )
-    .populate(
-      "updatedBy",
-      "username email role"
-    );
+      .populate(
+        "employee",
+        "employeeId name email mobile department designation status"
+      )
+      .populate(
+        "createdBy",
+        "username email role"
+      )
+      .populate(
+        "updatedBy",
+        "username email role"
+      );
 
   if (!attendance) {
-    const error = new Error("Attendance not found");
+    const error = new Error(
+      "Attendance not found"
+    );
     error.statusCode = 404;
     throw error;
   }
@@ -325,40 +441,67 @@ const getAttendanceById = async (attendanceId) => {
   return attendance;
 };
 
+/*
+|--------------------------------------------------------------------------
+| Get Employee Attendance
+|--------------------------------------------------------------------------
+*/
+
 const getEmployeeAttendance = async (
   employeeId,
   {
     dateFrom,
     dateTo,
+    startDate,
+    endDate,
     page = 1,
     limit = 31,
   } = {}
 ) => {
-  await validateEmployee(employeeId);
+  const employee =
+    await validateEmployee(employeeId);
 
   const filter = {
-    employee: employeeId,
+    employee: employee._id,
   };
 
-  if (dateFrom || dateTo) {
+  const fromDate =
+    dateFrom || startDate;
+
+  const toDate =
+    dateTo || endDate;
+
+  if (fromDate || toDate) {
     filter.attendanceDate = {};
 
-    if (dateFrom) {
+    if (fromDate) {
       filter.attendanceDate.$gte =
-        getDateOnly(dateFrom);
+        getDateOnly(fromDate);
     }
 
-    if (dateTo) {
+    if (toDate) {
       filter.attendanceDate.$lte =
-        getDateOnly(dateTo);
+        getDateOnly(toDate);
     }
   }
 
-  const pageNumber = Math.max(Number(page), 1);
-  const limitNumber = Math.max(Number(limit), 1);
-  const skip = (pageNumber - 1) * limitNumber;
+  const pageNumber = Math.max(
+    Number(page),
+    1
+  );
 
-  const [attendances, total] = await Promise.all([
+  const limitNumber = Math.max(
+    Number(limit),
+    1
+  );
+
+  const skip =
+    (pageNumber - 1) * limitNumber;
+
+  const [
+    attendances,
+    total,
+  ] = await Promise.all([
     Attendance.find(filter)
       .sort({
         attendanceDate: -1,
@@ -376,10 +519,42 @@ const getEmployeeAttendance = async (
       page: pageNumber,
       limit: limitNumber,
       total,
-      totalPages: Math.ceil(total / limitNumber),
+      totalPages: Math.ceil(
+        total / limitNumber
+      ),
     },
   };
 };
+
+/*
+|--------------------------------------------------------------------------
+| Get My Attendance
+|--------------------------------------------------------------------------
+|
+| Employee dashboard sends User._id.
+| Resolve User._id -> Employee._id first.
+|
+|--------------------------------------------------------------------------
+*/
+
+const getMyAttendance = async (
+  userId,
+  options = {}
+) => {
+  const employee =
+    await validateEmployee(userId);
+
+  return getEmployeeAttendance(
+    employee._id,
+    options
+  );
+};
+
+/*
+|--------------------------------------------------------------------------
+| Update Attendance
+|--------------------------------------------------------------------------
+*/
 
 const updateAttendance = async (
   attendanceId,
@@ -387,22 +562,33 @@ const updateAttendance = async (
   updatedBy
 ) => {
   const attendance =
-    await Attendance.findById(attendanceId);
+    await Attendance.findById(
+      attendanceId
+    );
 
   if (!attendance) {
-    const error = new Error("Attendance not found");
+    const error = new Error(
+      "Attendance not found"
+    );
     error.statusCode = 404;
     throw error;
   }
 
   if (data.employee) {
-    await validateEmployee(data.employee);
-    attendance.employee = data.employee;
+    const employee =
+      await validateEmployee(
+        data.employee
+      );
+
+    attendance.employee =
+      employee._id;
   }
 
   if (data.attendanceDate) {
     attendance.attendanceDate =
-      getDateOnly(data.attendanceDate);
+      getDateOnly(
+        data.attendanceDate
+      );
   }
 
   if (data.status !== undefined) {
@@ -418,15 +604,18 @@ const updateAttendance = async (
       throw error;
     }
 
-    attendance.status = data.status;
+    attendance.status =
+      data.status;
   }
 
   if (data.checkIn !== undefined) {
-    attendance.checkIn = data.checkIn;
+    attendance.checkIn =
+      data.checkIn;
   }
 
   if (data.checkOut !== undefined) {
-    attendance.checkOut = data.checkOut;
+    attendance.checkOut =
+      data.checkOut;
   }
 
   if (
@@ -451,25 +640,39 @@ const updateAttendance = async (
   }
 
   if (data.remarks !== undefined) {
-    attendance.remarks = data.remarks;
+    attendance.remarks =
+      data.remarks;
   }
 
-  attendance.updatedBy = updatedBy;
+  attendance.updatedBy =
+    updatedBy;
 
   await attendance.save();
 
-  return getAttendanceById(attendance._id);
+  return getAttendanceById(
+    attendance._id
+  );
 };
+
+/*
+|--------------------------------------------------------------------------
+| Get Today Attendance
+|--------------------------------------------------------------------------
+*/
 
 const getTodayAttendance = async (
   employeeId
 ) => {
-  await validateEmployee(employeeId);
+  const employee =
+    await validateEmployee(
+      employeeId
+    );
 
-  const today = getDateOnly();
+  const today =
+    getDateOnly();
 
   return Attendance.findOne({
-    employee: employeeId,
+    employee: employee._id,
     attendanceDate: today,
   })
     .populate(
@@ -479,72 +682,94 @@ const getTodayAttendance = async (
     .lean();
 };
 
+/*
+|--------------------------------------------------------------------------
+| Attendance Stats
+|--------------------------------------------------------------------------
+*/
+
 const getAttendanceStats = async ({
   employee,
   dateFrom,
   dateTo,
+  startDate,
+  endDate,
 } = {}) => {
   const match = {};
 
   if (employee) {
-    match.employee = employee;
+    const employeeRecord =
+      await validateEmployee(
+        employee
+      );
+
+    match.employee =
+      employeeRecord._id;
   }
 
-  if (dateFrom || dateTo) {
+  const fromDate =
+    dateFrom || startDate;
+
+  const toDate =
+    dateTo || endDate;
+
+  if (fromDate || toDate) {
     match.attendanceDate = {};
 
-    if (dateFrom) {
+    if (fromDate) {
       match.attendanceDate.$gte =
-        getDateOnly(dateFrom);
+        getDateOnly(fromDate);
     }
 
-    if (dateTo) {
+    if (toDate) {
       match.attendanceDate.$lte =
-        getDateOnly(dateTo);
+        getDateOnly(toDate);
     }
   }
 
-  const [statusStats, hoursStats] =
-    await Promise.all([
-      Attendance.aggregate([
-        {
-          $match: match,
-        },
-        {
-          $group: {
-            _id: "$status",
-            count: {
-              $sum: 1,
-            },
+  const [
+    statusStats,
+    hoursStats,
+  ] = await Promise.all([
+    Attendance.aggregate([
+      {
+        $match: match,
+      },
+      {
+        $group: {
+          _id: "$status",
+          count: {
+            $sum: 1,
           },
         },
-        {
-          $sort: {
-            count: -1,
-          },
+      },
+      {
+        $sort: {
+          count: -1,
         },
-      ]),
+      },
+    ]),
 
-      Attendance.aggregate([
-        {
-          $match: match,
-        },
-        {
-          $group: {
-            _id: null,
-            totalHours: {
-              $sum: "$totalHours",
-            },
-            overtimeHours: {
-              $sum: "$overtimeHours",
-            },
-            lateMinutes: {
-              $sum: "$lateMinutes",
-            },
+    Attendance.aggregate([
+      {
+        $match: match,
+      },
+      {
+        $group: {
+          _id: null,
+          totalHours: {
+            $sum: "$totalHours",
+          },
+          overtimeHours: {
+            $sum: "$overtimeHours",
+          },
+          lateMinutes: {
+            $sum: "$lateMinutes",
           },
         },
-      ]),
-    ]);
+      },
+    ]),
+  ]);
 
   return {
     byStatus: statusStats,
@@ -556,20 +781,31 @@ const getAttendanceStats = async ({
   };
 };
 
+/*
+|--------------------------------------------------------------------------
+| Mark Absent
+|--------------------------------------------------------------------------
+*/
+
 const markAbsent = async (
   employeeId,
   attendanceDate,
   createdBy,
   remarks
 ) => {
-  await validateEmployee(employeeId);
+  const employee =
+    await validateEmployee(
+      employeeId
+    );
 
-  const date = getDateOnly(attendanceDate);
+  const date =
+    getDateOnly(attendanceDate);
 
-  const existing = await Attendance.findOne({
-    employee: employeeId,
-    attendanceDate: date,
-  });
+  const existing =
+    await Attendance.findOne({
+      employee: employee._id,
+      attendanceDate: date,
+    });
 
   if (existing) {
     const error = new Error(
@@ -579,25 +815,39 @@ const markAbsent = async (
     throw error;
   }
 
-  const attendance = await Attendance.create({
-    employee: employeeId,
-    attendanceDate: date,
-    status: ATTENDANCE_STATUS.ABSENT,
-    remarks,
-    createdBy,
-  });
+  const attendance =
+    await Attendance.create({
+      employee: employee._id,
+      attendanceDate: date,
+      status:
+        ATTENDANCE_STATUS.ABSENT,
+      remarks,
+      createdBy,
+    });
 
-  return getAttendanceById(attendance._id);
+  return getAttendanceById(
+    attendance._id
+  );
 };
+
+/*
+|--------------------------------------------------------------------------
+| Delete Attendance
+|--------------------------------------------------------------------------
+*/
 
 const deleteAttendance = async (
   attendanceId
 ) => {
   const attendance =
-    await Attendance.findById(attendanceId);
+    await Attendance.findById(
+      attendanceId
+    );
 
   if (!attendance) {
-    const error = new Error("Attendance not found");
+    const error = new Error(
+      "Attendance not found"
+    );
     error.statusCode = 404;
     throw error;
   }
@@ -610,6 +860,12 @@ const deleteAttendance = async (
   };
 };
 
+/*
+|--------------------------------------------------------------------------
+| Exports
+|--------------------------------------------------------------------------
+*/
+
 module.exports = {
   createAttendance,
 
@@ -620,18 +876,21 @@ module.exports = {
   getAttendanceById,
   getEmployeeAttendance,
 
-  getMyAttendance: getEmployeeAttendance,
+  getMyAttendance,
 
   updateAttendance,
 
   getTodayAttendance,
 
-  // Controller compatibility
-  getAttendanceByDate: getTodayAttendance,
-  getAttendanceSummary: getAttendanceStats,
+  getAttendanceByDate:
+    getTodayAttendance,
+
+  getAttendanceSummary:
+    getAttendanceStats,
 
   getAttendanceStats,
   markAbsent,
   deleteAttendance,
+
   calculateTotalHours,
 };

@@ -51,29 +51,14 @@ const getDateRange = (from, to) => {
 | Employee Scope
 |--------------------------------------------------------------------------
 |
-| User._id:
-|   req.user.userId
+| User._id
+|    ↓
+| Employee.user
+|    ↓
+| Employee._id
 |
-| Lead:
-|   assignedTo -> Employee._id
-|
-| Task:
-|   assignedTo -> User._id
-|
-| Customer:
-|   createdBy -> User._id
-|
-| Quotation:
-|   createdBy -> User._id
-|
-| Invoice:
-|   createdBy -> User._id
-|
-| Attendance:
-|   employee -> User._id
-|
-| Leave:
-|   employee -> User._id
+| Lead.assignedTo -> Employee._id
+| Task.assignedTo -> Employee._id
 |
 |--------------------------------------------------------------------------
 */
@@ -88,7 +73,9 @@ const getEmployeeScope = async (userId) => {
   const employee = await Employee.findOne({
     user: userId,
   })
-    .select("_id employeeId name email status")
+    .select(
+      "_id employeeId name email department designation status user"
+    )
     .lean();
 
   if (!employee) {
@@ -106,6 +93,291 @@ const getEmployeeScope = async (userId) => {
 
 /*
 |--------------------------------------------------------------------------
+| Employee Business Scope
+|--------------------------------------------------------------------------
+|
+| Employee can work with:
+|
+| 1. Leads created by employee
+| 2. Leads assigned to employee
+|
+| From those leads:
+| 3. Customers
+| 4. Quotations
+| 5. Invoices
+|
+|--------------------------------------------------------------------------
+*/
+
+const getEmployeeBusinessScope = async (
+  userId,
+  employeeId
+) => {
+  const leadConditions = [
+    {
+      createdBy: userId,
+    },
+    {
+      assignedTo: employeeId,
+    },
+  ];
+
+  const leads = await Lead.find({
+    $or: leadConditions,
+  })
+    .select("_id")
+    .lean();
+
+  const leadIds = leads.map((lead) => lead._id);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Customers
+  |--------------------------------------------------------------------------
+  */
+
+  const customerConditions = [
+    {
+      createdBy: userId,
+    },
+  ];
+
+  if (leadIds.length > 0) {
+    customerConditions.push({
+      lead: {
+        $in: leadIds,
+      },
+    });
+  }
+
+  const customers = await Customer.find({
+    $or: customerConditions,
+  })
+    .select("_id")
+    .lean();
+
+  const customerIds = customers.map(
+    (customer) => customer._id
+  );
+
+  /*
+  |--------------------------------------------------------------------------
+  | Quotations
+  |--------------------------------------------------------------------------
+  */
+
+  const quotationConditions = [
+    {
+      createdBy: userId,
+    },
+  ];
+
+  if (leadIds.length > 0) {
+    quotationConditions.push({
+      lead: {
+        $in: leadIds,
+      },
+    });
+  }
+
+  if (customerIds.length > 0) {
+    quotationConditions.push({
+      customer: {
+        $in: customerIds,
+      },
+    });
+  }
+
+  const quotations = await Quotation.find({
+    $or: quotationConditions,
+  })
+    .select("_id")
+    .lean();
+
+  const quotationIds = quotations.map(
+    (quotation) => quotation._id
+  );
+
+  return {
+    leadIds,
+    customerIds,
+    quotationIds,
+  };
+};
+
+/*
+|--------------------------------------------------------------------------
+| Employee Lead Filter
+|--------------------------------------------------------------------------
+*/
+
+const getEmployeeLeadFilter = (
+  userId,
+  employeeId
+) => {
+  return {
+    $or: [
+      {
+        createdBy: userId,
+      },
+      {
+        assignedTo: employeeId,
+      },
+    ],
+  };
+};
+
+/*
+|--------------------------------------------------------------------------
+| Employee Customer Filter
+|--------------------------------------------------------------------------
+*/
+
+const getEmployeeCustomerFilter = async (
+  userId,
+  employeeId
+) => {
+  const { leadIds } =
+    await getEmployeeBusinessScope(
+      userId,
+      employeeId
+    );
+
+  const conditions = [
+    {
+      createdBy: userId,
+    },
+  ];
+
+  if (leadIds.length > 0) {
+    conditions.push({
+      lead: {
+        $in: leadIds,
+      },
+    });
+  }
+
+  return {
+    $or: conditions,
+  };
+};
+
+/*
+|--------------------------------------------------------------------------
+| Employee Quotation Filter
+|--------------------------------------------------------------------------
+*/
+
+const getEmployeeQuotationFilter = async (
+  userId,
+  employeeId
+) => {
+  const {
+    leadIds,
+    customerIds,
+  } = await getEmployeeBusinessScope(
+    userId,
+    employeeId
+  );
+
+  const conditions = [
+    {
+      createdBy: userId,
+    },
+  ];
+
+  /*
+  |--------------------------------------------------------------------------
+  | Employee's own/assigned leads
+  |--------------------------------------------------------------------------
+  */
+
+  if (leadIds.length > 0) {
+    conditions.push({
+      lead: {
+        $in: leadIds,
+      },
+    });
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Employee's customers
+  |--------------------------------------------------------------------------
+  */
+
+  if (customerIds.length > 0) {
+    conditions.push({
+      customer: {
+        $in: customerIds,
+      },
+    });
+  }
+
+  return {
+    $or: conditions,
+  };
+};
+
+/*
+|--------------------------------------------------------------------------
+| Employee Invoice Filter
+|--------------------------------------------------------------------------
+*/
+
+const getEmployeeInvoiceFilter = async (
+  userId,
+  employeeId
+) => {
+  const {
+    quotationIds,
+    customerIds,
+  } = await getEmployeeBusinessScope(
+    userId,
+    employeeId
+  );
+
+  const conditions = [
+    {
+      createdBy: userId,
+    },
+  ];
+
+  /*
+  |--------------------------------------------------------------------------
+  | Invoice linked with employee quotations
+  |--------------------------------------------------------------------------
+  */
+
+  if (quotationIds.length > 0) {
+    conditions.push({
+      quotation: {
+        $in: quotationIds,
+      },
+    });
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Invoice linked with employee customers
+  |--------------------------------------------------------------------------
+  */
+
+  if (customerIds.length > 0) {
+    conditions.push({
+      customer: {
+        $in: customerIds,
+      },
+    });
+  }
+
+  return {
+    $or: conditions,
+  };
+};
+
+/*
+|--------------------------------------------------------------------------
 | Dashboard Stats
 |--------------------------------------------------------------------------
 */
@@ -116,7 +388,8 @@ const getDashboardStats = async ({
   userId = null,
   role = null,
 } = {}) => {
-  const { start, end } = getDateRange(from, to);
+  const { start, end } =
+    getDateRange(from, to);
 
   const dateFilter = {
     createdAt: {
@@ -125,76 +398,143 @@ const getDashboardStats = async ({
     },
   };
 
-  const isEmployee = role === "EMPLOYEE";
+  const isEmployee =
+    role === "EMPLOYEE";
 
   let employeeScope = null;
 
   if (isEmployee) {
-    employeeScope = await getEmployeeScope(userId);
+    employeeScope =
+      await getEmployeeScope(userId);
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | Lead
+  |--------------------------------------------------------------------------
+  */
+
   const leadFilter = isEmployee
-    ? {
-        assignedTo: employeeScope.employeeId,
-      }
+    ? getEmployeeLeadFilter(
+        employeeScope.userId,
+        employeeScope.employeeId
+      )
     : {};
+
+  /*
+  |--------------------------------------------------------------------------
+  | Customer
+  |--------------------------------------------------------------------------
+  */
 
   const customerFilter = isEmployee
-    ? {
-        createdBy: employeeScope.userId,
-      }
+    ? await getEmployeeCustomerFilter(
+        employeeScope.userId,
+        employeeScope.employeeId
+      )
     : {};
+
+  /*
+  |--------------------------------------------------------------------------
+  | Quotation
+  |--------------------------------------------------------------------------
+  */
 
   const quotationFilter = isEmployee
-    ? {
-        createdBy: employeeScope.userId,
-      }
+    ? await getEmployeeQuotationFilter(
+        employeeScope.userId,
+        employeeScope.employeeId
+      )
     : {};
 
+  /*
+  |--------------------------------------------------------------------------
+  | Invoice
+  |--------------------------------------------------------------------------
+  */
+
   const invoiceFilter = isEmployee
+    ? await getEmployeeInvoiceFilter(
+        employeeScope.userId,
+        employeeScope.employeeId
+      )
+    : {};
+
+  /*
+  |--------------------------------------------------------------------------
+  | Task
+  |--------------------------------------------------------------------------
+  */
+
+  const taskFilter = isEmployee
     ? {
-        createdBy: employeeScope.userId,
+        assignedTo:
+          employeeScope.employeeId,
       }
     : {};
 
   /*
-   * IMPORTANT:
-   * Task.assignedTo references User, not Employee.
-   */
-  const taskFilter = isEmployee
-    ? {
-        assignedTo: employeeScope.userId,
-      }
-    : {};
+  |--------------------------------------------------------------------------
+  | Attendance
+  |--------------------------------------------------------------------------
+  */
 
   const attendanceFilter = isEmployee
     ? {
-        employee: employeeScope.userId,
+        employee:
+          employeeScope.userId,
       }
     : {};
 
+  /*
+  |--------------------------------------------------------------------------
+  | Leave
+  |--------------------------------------------------------------------------
+  */
+
   const leaveFilter = isEmployee
     ? {
-        employee: employeeScope.userId,
+        employee:
+          employeeScope.userId,
       }
     : {};
+
+  /*
+  |--------------------------------------------------------------------------
+  | Counts
+  |--------------------------------------------------------------------------
+  */
 
   const [
     totalUsers,
     activeEmployees,
+
     totalLeads,
     newLeads,
+
     totalCustomers,
     newCustomers,
+
     totalQuotations,
     quotationsInPeriod,
+
     totalInvoices,
     invoicesInPeriod,
+
+    totalTasks,
+    completedTasks,
     pendingTasks,
     overdueTasks,
+
     pendingLeaves,
     todayAttendance,
   ] = await Promise.all([
+    /*
+    |--------------------------------------------------------------------------
+    | Users
+    |--------------------------------------------------------------------------
+    */
+
     isEmployee
       ? User.countDocuments({
           _id: employeeScope.userId,
@@ -203,6 +543,12 @@ const getDashboardStats = async ({
       : User.countDocuments({
           status: "Active",
         }),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Employees
+    |--------------------------------------------------------------------------
+    */
 
     isEmployee
       ? Employee.countDocuments({
@@ -213,32 +559,80 @@ const getDashboardStats = async ({
           status: "Active",
         }),
 
-    Lead.countDocuments(leadFilter),
+    /*
+    |--------------------------------------------------------------------------
+    | Leads
+    |--------------------------------------------------------------------------
+    */
+
+    Lead.countDocuments(
+      leadFilter
+    ),
 
     Lead.countDocuments({
       ...leadFilter,
       ...dateFilter,
     }),
 
-    Customer.countDocuments(customerFilter),
+    /*
+    |--------------------------------------------------------------------------
+    | Customers
+    |--------------------------------------------------------------------------
+    */
+
+    Customer.countDocuments(
+      customerFilter
+    ),
 
     Customer.countDocuments({
       ...customerFilter,
       ...dateFilter,
     }),
 
-    Quotation.countDocuments(quotationFilter),
+    /*
+    |--------------------------------------------------------------------------
+    | Quotations
+    |--------------------------------------------------------------------------
+    */
+
+    Quotation.countDocuments(
+      quotationFilter
+    ),
 
     Quotation.countDocuments({
       ...quotationFilter,
       ...dateFilter,
     }),
 
-    Invoice.countDocuments(invoiceFilter),
+    /*
+    |--------------------------------------------------------------------------
+    | Invoices
+    |--------------------------------------------------------------------------
+    */
+
+    Invoice.countDocuments(
+      invoiceFilter
+    ),
 
     Invoice.countDocuments({
       ...invoiceFilter,
       ...dateFilter,
+    }),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tasks
+    |--------------------------------------------------------------------------
+    */
+
+    Task.countDocuments(
+      taskFilter
+    ),
+
+    Task.countDocuments({
+      ...taskFilter,
+      status:
+        TASK_STATUS.COMPLETED,
     }),
 
     Task.countDocuments({
@@ -264,16 +658,34 @@ const getDashboardStats = async ({
       },
     }),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Leaves
+    |--------------------------------------------------------------------------
+    */
+
     LeaveRequest.countDocuments({
       ...leaveFilter,
-      status: LEAVE_STATUS.PENDING,
+      status:
+        LEAVE_STATUS.PENDING,
     }),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Attendance
+    |--------------------------------------------------------------------------
+    */
 
     Attendance.countDocuments({
       ...attendanceFilter,
       attendanceDate: {
         $gte: new Date(
-          new Date().setHours(0, 0, 0, 0)
+          new Date().setHours(
+            0,
+            0,
+            0,
+            0
+          )
         ),
         $lte: new Date(
           new Date().setHours(
@@ -300,6 +712,7 @@ const getDashboardStats = async ({
 
     leads: {
       total: totalLeads,
+      my: totalLeads,
       new: newLeads,
     },
 
@@ -310,25 +723,33 @@ const getDashboardStats = async ({
 
     quotations: {
       total: totalQuotations,
-      inPeriod: quotationsInPeriod,
+      inPeriod:
+        quotationsInPeriod,
     },
 
     invoices: {
       total: totalInvoices,
-      inPeriod: invoicesInPeriod,
+      inPeriod:
+        invoicesInPeriod,
     },
 
     tasks: {
+      total: totalTasks,
+      my: totalTasks,
       pending: pendingTasks,
+      completed:
+        completedTasks,
       overdue: overdueTasks,
     },
 
     leaves: {
-      pending: pendingLeaves,
+      pending:
+        pendingLeaves,
     },
 
     attendance: {
-      today: todayAttendance,
+      today:
+        todayAttendance,
     },
   };
 };
@@ -365,9 +786,8 @@ const getLeadStats = async ({
   userId = null,
   role = null,
 } = {}) => {
-  const { start, end } = getDateRange(from, to);
-
-  const isEmployee = role === "EMPLOYEE";
+  const { start, end } =
+    getDateRange(from, to);
 
   const leadFilter = {
     createdAt: {
@@ -376,12 +796,15 @@ const getLeadStats = async ({
     },
   };
 
-  if (isEmployee) {
+  if (role === "EMPLOYEE") {
     const employeeScope =
       await getEmployeeScope(userId);
 
-    leadFilter.assignedTo =
-      employeeScope.employeeId;
+    leadFilter.$or =
+      getEmployeeLeadFilter(
+        employeeScope.userId,
+        employeeScope.employeeId
+      ).$or;
   }
 
   const [
@@ -391,7 +814,8 @@ const getLeadStats = async ({
   ] = await Promise.all([
     Lead.aggregate([
       {
-        $match: leadFilter,
+        $match:
+          leadFilter,
       },
       {
         $group: {
@@ -410,7 +834,8 @@ const getLeadStats = async ({
 
     Lead.aggregate([
       {
-        $match: leadFilter,
+        $match:
+          leadFilter,
       },
       {
         $group: {
@@ -429,7 +854,8 @@ const getLeadStats = async ({
 
     Lead.aggregate([
       {
-        $match: leadFilter,
+        $match:
+          leadFilter,
       },
       {
         $group: {
@@ -460,12 +886,13 @@ const getLeadStatusSummary = async ({
   userId = null,
   role = null,
 } = {}) => {
-  const stats = await getLeadStats({
-    from: startDate,
-    to: endDate,
-    userId,
-    role,
-  });
+  const stats =
+    await getLeadStats({
+      from: startDate,
+      to: endDate,
+      userId,
+      role,
+    });
 
   return stats.status;
 };
@@ -482,7 +909,8 @@ const getQuotationStats = async ({
   userId = null,
   role = null,
 } = {}) => {
-  const { start, end } = getDateRange(from, to);
+  const { start, end } =
+    getDateRange(from, to);
 
   const match = {
     createdAt: {
@@ -492,7 +920,19 @@ const getQuotationStats = async ({
   };
 
   if (role === "EMPLOYEE") {
-    match.createdBy = userId;
+    const employeeScope =
+      await getEmployeeScope(userId);
+
+    const quotationFilter =
+      await getEmployeeQuotationFilter(
+        employeeScope.userId,
+        employeeScope.employeeId
+      );
+
+    Object.assign(
+      match,
+      quotationFilter
+    );
   }
 
   return Quotation.aggregate([
@@ -544,7 +984,8 @@ const getInvoiceStats = async ({
   userId = null,
   role = null,
 } = {}) => {
-  const { start, end } = getDateRange(from, to);
+  const { start, end } =
+    getDateRange(from, to);
 
   const match = {
     createdAt: {
@@ -554,7 +995,19 @@ const getInvoiceStats = async ({
   };
 
   if (role === "EMPLOYEE") {
-    match.createdBy = userId;
+    const employeeScope =
+      await getEmployeeScope(userId);
+
+    const invoiceFilter =
+      await getEmployeeInvoiceFilter(
+        employeeScope.userId,
+        employeeScope.employeeId
+      );
+
+    Object.assign(
+      match,
+      invoiceFilter
+    );
   }
 
   return Invoice.aggregate([
@@ -571,10 +1024,12 @@ const getInvoiceStats = async ({
           $sum: "$grandTotal",
         },
         taxableAmount: {
-          $sum: "$taxableAmount",
+          $sum:
+            "$taxableAmount",
         },
         taxAmount: {
-          $sum: "$totalTax",
+          $sum:
+            "$totalTax",
         },
       },
     },
@@ -612,19 +1067,17 @@ const getTaskStats = async ({
   userId = null,
   role = null,
 } = {}) => {
-  const { start, end } = getDateRange(from, to);
+  const { start, end } =
+    getDateRange(from, to);
 
   const taskScope = {};
 
-  /*
-   * Task.assignedTo -> User._id
-   */
   if (role === "EMPLOYEE") {
     const employeeScope =
       await getEmployeeScope(userId);
 
     taskScope.assignedTo =
-      employeeScope.userId;
+      employeeScope.employeeId;
   }
 
   const [
@@ -721,85 +1174,87 @@ const getTaskSummary = async ({
 |--------------------------------------------------------------------------
 | Employee Performance
 |--------------------------------------------------------------------------
-|
-| Employee performance is intentionally restricted at route level.
-| This method remains available for Admin / Manager / HR.
-|
-| Lead:
-|   Employee._id
-|
-| Task:
-|   User._id
-|
-|--------------------------------------------------------------------------
 */
 
 const getEmployeePerformance = async ({
   startDate,
   endDate,
 } = {}) => {
-  const { start, end } = getDateRange(
-    startDate,
-    endDate
-  );
+  const { start, end } =
+    getDateRange(
+      startDate,
+      endDate
+    );
 
-  const employees = await Employee.find({
-    status: "Active",
-  })
-    .select(
-      "_id employeeId name email user"
-    )
-    .lean();
-
-  const performance = await Promise.all(
-    employees.map(async (employee) => {
-      const [
-        assignedLeads,
-        completedTasks,
-        pendingTasks,
-      ] = await Promise.all([
-        Lead.countDocuments({
-          assignedTo: employee._id,
-          createdAt: {
-            $gte: start,
-            $lte: end,
-          },
-        }),
-
-        Task.countDocuments({
-          assignedTo: employee.user,
-          status: TASK_STATUS.COMPLETED,
-          createdAt: {
-            $gte: start,
-            $lte: end,
-          },
-        }),
-
-        Task.countDocuments({
-          assignedTo: employee.user,
-          status: {
-            $nin: [
-              TASK_STATUS.COMPLETED,
-              TASK_STATUS.CANCELLED,
-            ],
-          },
-          createdAt: {
-            $gte: start,
-            $lte: end,
-          },
-        }),
-      ]);
-
-      return {
-        employeeId: employee.employeeId,
-        name: employee.name,
-        email: employee.email,
-        leads: assignedLeads,
-        completedTasks,
-        pendingTasks,
-      };
+  const employees =
+    await Employee.find({
+      status: "Active",
     })
-  );
+      .select(
+        "_id employeeId name email user"
+      )
+      .lean();
+
+  const performance =
+    await Promise.all(
+      employees.map(
+        async (employee) => {
+          const [
+            assignedLeads,
+            completedTasks,
+            pendingTasks,
+          ] = await Promise.all([
+            Lead.countDocuments({
+              assignedTo:
+                employee._id,
+              createdAt: {
+                $gte: start,
+                $lte: end,
+              },
+            }),
+
+            Task.countDocuments({
+              assignedTo:
+                employee._id,
+              status:
+                TASK_STATUS.COMPLETED,
+              createdAt: {
+                $gte: start,
+                $lte: end,
+              },
+            }),
+
+            Task.countDocuments({
+              assignedTo:
+                employee._id,
+              status: {
+                $nin: [
+                  TASK_STATUS.COMPLETED,
+                  TASK_STATUS.CANCELLED,
+                ],
+              },
+              createdAt: {
+                $gte: start,
+                $lte: end,
+              },
+            }),
+          ]);
+
+          return {
+            employeeId:
+              employee.employeeId,
+            name:
+              employee.name,
+            email:
+              employee.email,
+            leads:
+              assignedLeads,
+            completedTasks,
+            pendingTasks,
+          };
+        }
+      )
+    );
 
   return performance;
 };
@@ -816,7 +1271,11 @@ const getAttendanceStats = async ({
   userId = null,
   role = null,
 } = {}) => {
-  const { start, end } = getDateRange(from, to);
+  const { start, end } =
+    getDateRange(
+      from,
+      to
+    );
 
   const match = {
     attendanceDate: {
@@ -869,7 +1328,11 @@ const getLeaveStats = async ({
   userId = null,
   role = null,
 } = {}) => {
-  const { start, end } = getDateRange(from, to);
+  const { start, end } =
+    getDateRange(
+      from,
+      to
+    );
 
   const match = {
     createdAt: {
@@ -916,14 +1379,17 @@ const getRecentLeads = async (
   userId = null,
   role = null
 ) => {
-  const filter = {};
+  let filter = {};
 
   if (role === "EMPLOYEE") {
     const employeeScope =
       await getEmployeeScope(userId);
 
-    filter.assignedTo =
-      employeeScope.employeeId;
+    filter =
+      getEmployeeLeadFilter(
+        employeeScope.userId,
+        employeeScope.employeeId
+      );
   }
 
   return Lead.find(filter)
@@ -953,10 +1419,17 @@ const getRecentQuotations = async (
   userId = null,
   role = null
 ) => {
-  const filter = {};
+  let filter = {};
 
   if (role === "EMPLOYEE") {
-    filter.createdBy = userId;
+    const employeeScope =
+      await getEmployeeScope(userId);
+
+    filter =
+      await getEmployeeQuotationFilter(
+        employeeScope.userId,
+        employeeScope.employeeId
+      );
   }
 
   return Quotation.find(filter)
@@ -967,6 +1440,10 @@ const getRecentQuotations = async (
     .populate(
       "customer",
       "customerId name companyName mobile"
+    )
+    .populate(
+      "systemConfiguration",
+      "configurationNumber systemCapacity capacityUnit systemType status"
     )
     .sort({
       createdAt: -1,
@@ -986,10 +1463,17 @@ const getRecentInvoices = async (
   userId = null,
   role = null
 ) => {
-  const filter = {};
+  let filter = {};
 
   if (role === "EMPLOYEE") {
-    filter.createdBy = userId;
+    const employeeScope =
+      await getEmployeeScope(userId);
+
+    filter =
+      await getEmployeeInvoiceFilter(
+        employeeScope.userId,
+        employeeScope.employeeId
+      );
   }
 
   return Invoice.find(filter)
@@ -1010,7 +1494,74 @@ const getRecentInvoices = async (
 
 /*
 |--------------------------------------------------------------------------
+| Recent Tasks
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| Dashboard section is "Recent Tasks", not "Upcoming Tasks".
+|
+| Therefore:
+| - Pending tasks included
+| - In Progress tasks included
+| - Completed tasks included
+| - Cancelled tasks excluded
+|
+|--------------------------------------------------------------------------
+*/
+
+const getRecentTasks = async (
+  limit = 10,
+  userId = null,
+  role = null
+) => {
+  const filter = {
+    status: {
+      $ne:
+        TASK_STATUS.CANCELLED,
+    },
+  };
+
+  if (role === "EMPLOYEE") {
+    const employeeScope =
+      await getEmployeeScope(userId);
+
+    filter.assignedTo =
+      employeeScope.employeeId;
+  }
+
+  return Task.find(filter)
+    .populate(
+      "assignedTo",
+      "employeeId name email department designation status user"
+    )
+    .populate(
+      "lead",
+      "leadId customerName mobile"
+    )
+    .populate(
+      "customer",
+      "customerId name companyName mobile"
+    )
+    .populate(
+      "quotation",
+      "quotationNumber status grandTotal"
+    )
+    .sort({
+      createdAt: -1,
+    })
+    .limit(Number(limit))
+    .lean();
+};
+
+/*
+|--------------------------------------------------------------------------
 | Upcoming Tasks
+|--------------------------------------------------------------------------
+|
+| This method is kept separately because other parts of the system
+| may use it for actual upcoming work.
+|
 |--------------------------------------------------------------------------
 */
 
@@ -1028,21 +1579,18 @@ const getUpcomingTasks = async (
     },
   };
 
-  /*
-   * Task.assignedTo -> User._id
-   */
   if (role === "EMPLOYEE") {
     const employeeScope =
       await getEmployeeScope(userId);
 
     filter.assignedTo =
-      employeeScope.userId;
+      employeeScope.employeeId;
   }
 
   return Task.find(filter)
     .populate(
       "assignedTo",
-      "username email role"
+      "employeeId name email department designation status user"
     )
     .populate(
       "lead",
@@ -1051,6 +1599,10 @@ const getUpcomingTasks = async (
     .populate(
       "customer",
       "customerId name companyName mobile"
+    )
+    .populate(
+      "quotation",
+      "quotationNumber status grandTotal"
     )
     .sort({
       dueDate: 1,
@@ -1089,21 +1641,36 @@ const getDashboard = async ({
     recentLeads,
     recentQuotations,
     recentInvoices,
+    recentTasks,
     upcomingTasks,
   ] = await Promise.all([
-    getDashboardStats(options),
+    getDashboardStats(
+      options
+    ),
 
-    getLeadStats(options),
+    getLeadStats(
+      options
+    ),
 
-    getQuotationStats(options),
+    getQuotationStats(
+      options
+    ),
 
-    getInvoiceStats(options),
+    getInvoiceStats(
+      options
+    ),
 
-    getTaskStats(options),
+    getTaskStats(
+      options
+    ),
 
-    getAttendanceStats(options),
+    getAttendanceStats(
+      options
+    ),
 
-    getLeaveStats(options),
+    getLeaveStats(
+      options
+    ),
 
     getRecentLeads(
       10,
@@ -1123,6 +1690,12 @@ const getDashboard = async ({
       role
     ),
 
+    getRecentTasks(
+      10,
+      userId,
+      role
+    ),
+
     getUpcomingTasks(
       10,
       userId,
@@ -1134,27 +1707,40 @@ const getDashboard = async ({
     stats,
 
     analytics: {
-      leads: leadStats,
+      leads:
+        leadStats,
 
-      quotations: quotationStats,
+      quotations:
+        quotationStats,
 
-      invoices: invoiceStats,
+      invoices:
+        invoiceStats,
 
-      tasks: taskStats,
+      tasks:
+        taskStats,
 
-      attendance: attendanceStats,
+      attendance:
+        attendanceStats,
 
-      leaves: leaveStats,
+      leaves:
+        leaveStats,
     },
 
     recent: {
-      leads: recentLeads,
+      leads:
+        recentLeads,
 
-      quotations: recentQuotations,
+      quotations:
+        recentQuotations,
 
-      invoices: recentInvoices,
+      invoices:
+        recentInvoices,
 
-      tasks: upcomingTasks,
+      tasks:
+        recentTasks,
+
+      upcomingTasks:
+        upcomingTasks,
     },
   };
 };
@@ -1189,6 +1775,7 @@ module.exports = {
   getRecentLeads,
   getRecentQuotations,
   getRecentInvoices,
+  getRecentTasks,
   getUpcomingTasks,
 
   getDashboard,

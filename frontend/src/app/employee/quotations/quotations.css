@@ -1,15 +1,18 @@
-.employee-quotations-loading {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f8fafc;
-}
+/* =========================================================
+   Employee Quotations Page
+   ========================================================= */
 
 .employee-quotations-page {
   width: 100%;
-  min-width: 0;
+  min-height: 100%;
+  padding: 24px;
+  box-sizing: border-box;
 }
+
+
+/* =========================================================
+   Header
+   ========================================================= */
 
 .employee-quotations-header {
   display: flex;
@@ -19,51 +22,70 @@
   margin-bottom: 24px;
 }
 
+.employee-quotations-header > div:first-child {
+  min-width: 0;
+}
+
 .employee-quotations-eyebrow {
   display: inline-block;
   margin-bottom: 6px;
   color: #16a34a;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .employee-quotations-header h1 {
   margin: 0;
-  color: #0f172a;
+  color: #111827;
   font-size: 28px;
   line-height: 1.25;
   font-weight: 700;
 }
 
 .employee-quotations-header p {
-  margin: 8px 0 0;
-  color: #64748b;
+  margin: 7px 0 0;
+  color: #6b7280;
   font-size: 14px;
+  line-height: 1.5;
 }
+
+
+/* =========================================================
+   Toolbar
+   ========================================================= */
 
 .employee-quotations-toolbar {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .employee-quotations-toolbar > *:first-child {
   flex: 1;
-  max-width: 420px;
+  min-width: 220px;
 }
 
 .employee-quotations-toolbar > *:last-child {
-  width: 200px;
+  width: 180px;
+  flex-shrink: 0;
 }
+
+
+/* =========================================================
+   Error
+   ========================================================= */
 
 .employee-quotations-error {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
-  padding: 14px 16px;
+  padding: 13px 16px;
+  margin-bottom: 18px;
   border: 1px solid #fecaca;
   border-radius: 10px;
   background: #fef2f2;
@@ -71,122 +93,208 @@
   font-size: 14px;
 }
 
+.employee-quotations-error span {
+  min-width: 0;
+}
+
+
+/* =========================================================
+   Main Card
+   ========================================================= */
+
 .employee-quotations-card {
+  width: 100%;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e5e7eb;
   border-radius: 14px;
   background: #ffffff;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
+
+/* =========================================================
+   Loader
+   ========================================================= */
+
+.employee-quotations-loader {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* =========================================================
+   Empty State
+   ========================================================= */
+
+.employee-quotations-empty {
+  min-height: 340px;
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.employee-quotations-empty-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dcfce7;
+  border-radius: 50%;
+  background: #f0fdf4;
+  color: #16a34a;
+  font-size: 27px;
+  font-weight: 700;
+}
+
+.employee-quotations-empty h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.employee-quotations-empty p {
+  max-width: 430px;
+  margin: 8px 0 18px;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   Table
+   ========================================================= */
+
 .employee-quotations-table-wrapper {
   width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .employee-quotations-table {
   width: 100%;
   min-width: 1000px;
   border-collapse: collapse;
+  text-align: left;
+}
+
+.employee-quotations-table thead {
+  background: #f8fafc;
 }
 
 .employee-quotations-table th {
-  padding: 14px 16px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #475569;
-  font-size: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #6b7280;
+  font-size: 11px;
+  line-height: 1.3;
   font-weight: 700;
-  text-align: left;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .employee-quotations-table td {
-  padding: 16px;
+  padding: 15px 16px;
   border-bottom: 1px solid #f1f5f9;
-  color: #334155;
+  color: #374151;
   font-size: 13px;
   vertical-align: middle;
 }
 
 .employee-quotations-table tbody tr {
-  transition: background 0.2s ease;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .employee-quotations-table tbody tr:hover {
-  background: #f8fafc;
+  background: #f9fffb;
 }
 
 .employee-quotations-table tbody tr:last-child td {
   border-bottom: none;
 }
 
-.employee-quotation-number,
+
+/* =========================================================
+   Quotation Number
+   ========================================================= */
+
+.employee-quotation-number {
+  max-width: 190px;
+  overflow: hidden;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .employee-quotation-customer {
-  color: #0f172a;
+  max-width: 210px;
+  overflow: hidden;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.4;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .employee-quotation-subtext {
+  max-width: 210px;
   margin-top: 4px;
-  color: #64748b;
-  font-size: 12px;
+  overflow: hidden;
+  color: #9ca3af;
+  font-size: 11px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+
+/* =========================================================
+   Amount
+   ========================================================= */
+
 .employee-quotation-amount {
-  color: #0f172a !important;
+  color: #15803d !important;
+  font-size: 14px !important;
   font-weight: 700;
   white-space: nowrap;
 }
 
+
+/* =========================================================
+   Actions
+   ========================================================= */
+
 .employee-quotation-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
+  white-space: nowrap;
 }
 
-.employee-quotations-loader {
-  min-height: 280px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.employee-quotation-actions button {
+  min-width: 58px;
 }
 
-.employee-quotations-empty {
-  min-height: 320px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  text-align: center;
-}
 
-.employee-quotations-empty-icon {
-  width: 52px;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 14px;
-  border-radius: 50%;
-  background: #f0fdf4;
-  color: #16a34a;
-  font-size: 22px;
-  font-weight: 700;
-}
-
-.employee-quotations-empty h3 {
-  margin: 0;
-  color: #0f172a;
-  font-size: 17px;
-}
-
-.employee-quotations-empty p {
-  margin: 7px 0 0;
-  color: #64748b;
-  font-size: 13px;
-}
+/* =========================================================
+   Footer
+   ========================================================= */
 
 .employee-quotations-footer {
   display: flex;
@@ -194,18 +302,85 @@
   justify-content: space-between;
   gap: 16px;
   padding: 14px 16px;
-  border-top: 1px solid #e2e8f0;
-  color: #64748b;
-  font-size: 12px;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
 }
 
-@media (max-width: 768px) {
+.employee-quotations-footer > span {
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   Auth Loading
+   ========================================================= */
+
+.employee-quotations-loading {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* =========================================================
+   Tablet
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .employee-quotations-page {
+    padding: 20px;
+  }
+
   .employee-quotations-header {
-    flex-direction: column;
+    margin-bottom: 20px;
   }
 
   .employee-quotations-header h1 {
-    font-size: 24px;
+    font-size: 25px;
+  }
+
+  .employee-quotations-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .employee-quotations-toolbar > *:first-child {
+    min-width: 100%;
+  }
+
+  .employee-quotations-toolbar > *:last-child {
+    width: 200px;
+  }
+}
+
+
+/* =========================================================
+   Mobile
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .employee-quotations-page {
+    padding: 16px;
+  }
+
+  .employee-quotations-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .employee-quotations-header h1 {
+    font-size: 23px;
+  }
+
+  .employee-quotations-header p {
+    font-size: 13px;
+  }
+
+  .employee-quotations-header > button {
+    align-self: flex-start;
   }
 
   .employee-quotations-toolbar {
@@ -213,34 +388,69 @@
     align-items: stretch;
   }
 
-  .employee-quotations-toolbar > *:first-child,
-  .employee-quotations-toolbar > *:last-child {
-    width: 100%;
-    max-width: none;
-  }
-
-  .employee-quotations-footer {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-@media (max-width: 480px) {
-  .employee-quotations-header h1 {
-    font-size: 22px;
-  }
-
-  .employee-quotations-header p {
-    font-size: 13px;
+  .employee-quotations-toolbar > * {
+    width: 100% !important;
+    min-width: 100% !important;
   }
 
   .employee-quotations-error {
-    flex-direction: column;
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .employee-quotations-error button {
+    width: 100%;
+  }
+
+  .employee-quotations-card {
+    border-radius: 12px;
+  }
+
+  .employee-quotations-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+
+/* =========================================================
+   Small Mobile
+   ========================================================= */
+
+@media (max-width: 420px) {
+  .employee-quotations-page {
+    padding: 12px;
+  }
+
+  .employee-quotations-header h1 {
+    font-size: 21px;
+  }
+
+  .employee-quotations-eyebrow {
+    font-size: 10px;
+  }
+
+  .employee-quotations-empty {
+    min-height: 300px;
+    padding: 30px 16px;
+  }
+
+  .employee-quotations-empty-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+  }
+
+  .employee-quotations-empty h3 {
+    font-size: 16px;
   }
 
   .employee-quotation-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .employee-quotation-actions button {
+    width: 100%;
   }
 }
