@@ -31,7 +31,13 @@ const calculateTotalHours = (checkIn, checkOut) => {
 };
 
 const validateEmployee = async (employeeId) => {
-  const employee = await Employee.findById(employeeId);
+  let employee = await Employee.findById(employeeId);
+
+  if (!employee) {
+    employee = await Employee.findOne({
+      user: employeeId,
+    });
+  }
 
   if (!employee) {
     const error = new Error("Employee not found");
@@ -41,7 +47,6 @@ const validateEmployee = async (employeeId) => {
 
   return employee;
 };
-
 const createAttendance = async (data, createdBy) => {
   await validateEmployee(data.employee);
 
@@ -203,8 +208,8 @@ const getAttendances = async ({
   limit = 10,
   employee,
   status,
-  dateFrom,
-  dateTo,
+  startDate,
+  endDate,
   search = "",
 }) => {
   const filter = {};
@@ -217,20 +222,19 @@ const getAttendances = async ({
     filter.status = status;
   }
 
-  if (dateFrom || dateTo) {
-    filter.attendanceDate = {};
+  if (startDate || endDate) {
+  filter.attendanceDate = {};
 
-    if (dateFrom) {
-      filter.attendanceDate.$gte =
-        getDateOnly(dateFrom);
-    }
-
-    if (dateTo) {
-      filter.attendanceDate.$lte =
-        getDateOnly(dateTo);
-    }
+  if (startDate) {
+    filter.attendanceDate.$gte =
+      getDateOnly(startDate);
   }
 
+  if (endDate) {
+    filter.attendanceDate.$lte =
+      getDateOnly(endDate);
+  }
+}
   if (search) {
     const employees = await Employee.find({
       $or: [
@@ -328,8 +332,8 @@ const getAttendanceById = async (attendanceId) => {
 const getEmployeeAttendance = async (
   employeeId,
   {
-    dateFrom,
-    dateTo,
+    startDate,
+    endDate,
     page = 1,
     limit = 31,
   } = {}
@@ -340,19 +344,19 @@ const getEmployeeAttendance = async (
     employee: employeeId,
   };
 
-  if (dateFrom || dateTo) {
-    filter.attendanceDate = {};
+  if (startDate || endDate) {
+  filter.attendanceDate = {};
 
-    if (dateFrom) {
-      filter.attendanceDate.$gte =
-        getDateOnly(dateFrom);
-    }
-
-    if (dateTo) {
-      filter.attendanceDate.$lte =
-        getDateOnly(dateTo);
-    }
+  if (startDate) {
+    filter.attendanceDate.$gte =
+      getDateOnly(startDate);
   }
+
+  if (endDate) {
+    filter.attendanceDate.$lte =
+      getDateOnly(endDate);
+  }
+}
 
   const pageNumber = Math.max(Number(page), 1);
   const limitNumber = Math.max(Number(limit), 1);
@@ -477,6 +481,41 @@ const getTodayAttendance = async (
       "employeeId name email department designation status"
     )
     .lean();
+};
+const getAttendanceByDate = async (
+  employeeId,
+  attendanceDate
+) => {
+  await validateEmployee(employeeId);
+
+  const date = getDateOnly(attendanceDate);
+
+  const attendance = await Attendance.findOne({
+    employee: employeeId,
+    attendanceDate: date,
+  })
+    .populate(
+      "employee",
+      "employeeId name email mobile department designation status"
+    )
+    .populate(
+      "createdBy",
+      "username email role"
+    )
+    .populate(
+      "updatedBy",
+      "username email role"
+    );
+
+  if (!attendance) {
+    const error = new Error(
+      "Attendance not found for this date"
+    );
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return attendance;
 };
 
 const getAttendanceStats = async ({
@@ -627,7 +666,7 @@ module.exports = {
   getTodayAttendance,
 
   // Controller compatibility
-  getAttendanceByDate: getTodayAttendance,
+  getAttendanceByDate,
   getAttendanceSummary: getAttendanceStats,
 
   getAttendanceStats,

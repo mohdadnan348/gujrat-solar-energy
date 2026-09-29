@@ -97,26 +97,6 @@ const validateLeave = (req, res, next) => {
     });
   }
 
-  if (
-    totalDays === undefined ||
-    totalDays === null
-  ) {
-    return res.status(400).json({
-      success: false,
-      message: "Total leave days are required",
-    });
-  }
-
-  if (
-    typeof totalDays !== "number" ||
-    totalDays < 0.5
-  ) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "Total leave days must be at least 0.5",
-    });
-  }
 
   if (!reason || !reason.trim()) {
     return res.status(400).json({

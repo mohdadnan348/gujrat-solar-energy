@@ -39,16 +39,17 @@ const calculateTotalDays = (
   );
 };
 
-const validateEmployee = async (
-  employeeId
-) => {
-  const employee =
-    await Employee.findById(employeeId);
+const validateEmployee = async (employeeId) => {
+  let employee = await Employee.findById(employeeId);
 
   if (!employee) {
-    const error = new Error(
-      "Employee not found"
-    );
+    employee = await Employee.findOne({
+      user: employeeId,
+    });
+  }
+
+  if (!employee) {
+    const error = new Error("Employee not found");
     error.statusCode = 404;
     throw error;
   }
@@ -183,7 +184,11 @@ const createLeaveRequest = async (
     startDate,
     endDate
   );
-
+console.log("LEAVE DEBUG:", {
+  startDate,
+  endDate,
+  totalDays,
+});
   const leaveRequest =
     await LeaveRequest.create({
       employee: data.employee,
@@ -940,14 +945,11 @@ module.exports = {
   getLeaveRequests,
   getLeaveRequestById,
   updateLeaveRequest,
-
-  // Controller compatibility
   approveLeaveRequest: approveLeave,
   rejectLeaveRequest: rejectLeave,
   cancelLeaveRequest: cancelLeave,
   getMyLeaveRequests: getEmployeeLeaveRequests,
   getLeaveBalanceForEmployee: getLeaveStats,
-
   approveLeave,
   rejectLeave,
   cancelLeave,

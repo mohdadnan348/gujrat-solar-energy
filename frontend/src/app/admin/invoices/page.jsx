@@ -12,7 +12,10 @@ import Loader from "@/components/common/Loader";
 import Select from "@/components/common/Select";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 
-import { invoiceService } from "@/services/invoice.service";
+import {
+  getInvoices,
+  
+} from "@/services/invoice.service";
 
 import "./invoices.css";
 
@@ -97,7 +100,7 @@ const AdminInvoicesPage = () => {
       setError("");
 
       const response =
-        await invoiceService.getInvoices();
+        await getInvoices();
 
       setInvoices(normalizeList(response));
     } catch (err) {

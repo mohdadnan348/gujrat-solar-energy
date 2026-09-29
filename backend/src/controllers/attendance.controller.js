@@ -197,14 +197,14 @@ const checkIn = async (req, res, next) => {
 
     const employeeId =
       employee || req.user.userId;
-
-    const attendance =
-      await attendanceService.checkInEmployee(
-        employeeId,
-        req.user.userId,
-        attendanceDate
-      );
-
+const attendance =
+  await attendanceService.checkInEmployee(
+    employeeId,
+    {
+      attendanceDate,
+    },
+    req.user.userId
+  );
     return res.status(200).json({
       success: true,
       message: "Employee checked in successfully",
@@ -225,12 +225,14 @@ const checkOut = async (req, res, next) => {
     const employeeId =
       employee || req.user.userId;
 
-    const attendance =
-      await attendanceService.checkOutEmployee(
-        employeeId,
-        req.user.userId,
-        attendanceDate
-      );
+   const attendance =
+  await attendanceService.checkOutEmployee(
+    employeeId,
+    {
+      attendanceDate,
+    },
+    req.user.userId
+  );
 
     return res.status(200).json({
       success: true,

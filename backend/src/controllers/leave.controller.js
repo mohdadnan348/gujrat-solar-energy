@@ -1,5 +1,6 @@
 const leaveService = require("../services/leave.service");
 
+
 const createLeaveRequest = async (
   req,
   res,
@@ -127,12 +128,10 @@ const updateLeaveRequest = async (
 ) => {
   try {
     const leaveRequest =
-      await leaveService.updateLeaveRequest(
-        req.params.id,
-        req.body,
-        req.user.userId
-      );
-
+  await leaveService.approveLeaveRequest(
+    req.params.id,
+    req.user.userId
+  );
     return res.status(200).json({
       success: true,
       message: "Leave request updated successfully",
@@ -143,11 +142,7 @@ const updateLeaveRequest = async (
   }
 };
 
-const approveLeaveRequest = async (
-  req,
-  res,
-  next
-) => {
+const approveLeaveRequest = async (req, res, next) => {
   try {
     const leaveRequest =
       await leaveService.approveLeaveRequest(
@@ -165,19 +160,15 @@ const approveLeaveRequest = async (
   }
 };
 
-const rejectLeaveRequest = async (
-  req,
-  res,
-  next
-) => {
+const rejectLeaveRequest = async (req, res, next) => {
   try {
     const { reason } = req.body;
 
     const leaveRequest =
       await leaveService.rejectLeaveRequest(
         req.params.id,
-        reason,
-        req.user.userId
+        req.user.userId,
+        reason
       );
 
     return res.status(200).json({
@@ -198,11 +189,16 @@ const cancelLeaveRequest = async (
   try {
     const { reason } = req.body;
 
+    console.log("===== CANCEL DEBUG =====");
+    console.log("LEAVE ID:", req.params.id);
+    console.log("USER ID:", req.user.userId);
+    console.log("REASON:", reason);
+
     const leaveRequest =
       await leaveService.cancelLeaveRequest(
         req.params.id,
-        reason,
-        req.user.userId
+        req.user.userId,
+        reason
       );
 
     return res.status(200).json({
@@ -211,10 +207,10 @@ const cancelLeaveRequest = async (
       data: leaveRequest,
     });
   } catch (error) {
+    console.error("CANCEL ERROR:", error);
     next(error);
   }
 };
-
 const getLeaveBalance = async (
   req,
   res,

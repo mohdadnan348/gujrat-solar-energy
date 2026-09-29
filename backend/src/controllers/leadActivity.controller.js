@@ -3,8 +3,10 @@ const leadActivityService = require("../services/leadActivity.service");
 const createActivity = async (req, res, next) => {
   try {
     const activity = await leadActivityService.createActivity(
-      req.params.leadId,
-      req.body,
+      {
+        ...req.body,
+        lead: req.params.leadId,
+      },
       req.user.userId
     );
 

@@ -10,7 +10,7 @@ import Select from "@/components/common/Select";
 import Textarea from "@/components/common/Textarea";
 import Loader from "@/components/common/Loader";
 
-import { invoiceService } from "@/services/invoice.service";
+import { createInvoice } from "@/services/invoice.service";
 import { customerService } from "@/services/customer.service";
 
 import "./create-invoice.css";
@@ -39,15 +39,16 @@ const CreateInvoicePage = () => {
     dueDate: "",
     title: "Solar System Invoice",
     notes: "",
+   
     items: [
-      {
-        description: "",
-        quantity: 1,
-        unit: "Unit",
-        rate: 0,
-        taxRate: 0,
-      },
-    ],
+  {
+    itemName: "",
+    quantity: 1,
+    unit: "Unit",
+    rate: 0,
+    taxRate: 0,
+  },
+],
     discount: 0,
     additionalCharges: 0,
   });
@@ -222,15 +223,17 @@ const CreateInvoicePage = () => {
         invoiceItems.length > 0
           ? invoiceItems.map(
               (item) => ({
-                description:
-                  getValue(
-                    item,
-                    [
-                      "description",
-                      "name",
-                    ],
-                    ""
-                  ),
+               itemName:
+  getValue(
+    item,
+    [
+      "itemName",
+      "description",
+      "name",
+    ],
+    ""
+  ),
+                  
                 quantity:
                   Number(
                     getValue(
@@ -271,12 +274,12 @@ const CreateInvoicePage = () => {
             )
           : [
               {
-                description: "",
-                quantity: 1,
-                unit: "Unit",
-                rate: 0,
-                taxRate: 0,
-              },
+  itemName: "",
+  quantity: 1,
+  unit: "Unit",
+  rate: 0,
+  taxRate: 0,
+}
             ],
       discount:
         Number(
@@ -364,12 +367,12 @@ const CreateInvoicePage = () => {
       items: [
         ...previous.items,
         {
-          description: "",
-          quantity: 1,
-          unit: "Unit",
-          rate: 0,
-          taxRate: 0,
-        },
+  itemName: "",
+  quantity: 1,
+  unit: "Unit",
+  rate: 0,
+  taxRate: 0,
+}
       ],
     }));
   };
@@ -537,8 +540,8 @@ const CreateInvoicePage = () => {
       form.items.find(
         (item) =>
           !String(
-            item.description || ""
-          ).trim() ||
+  item.itemName || ""
+).trim() ||
           Number(item.quantity) <=
             0 ||
           Number(item.rate) < 0
@@ -561,9 +564,38 @@ const CreateInvoicePage = () => {
   };
 
   const buildPayload = () => {
-    return {
-      customerId: form.customerId,
-      invoiceDate: form.invoiceDate,
+   return {
+  customerId: form.customerId,
+
+  customerDetails: {
+    name: getValue(
+      selectedCustomer,
+      [
+        "name",
+        "fullName",
+        "customerName",
+        "companyName",
+      ],
+      ""
+    ),
+    companyName: getValue(
+      selectedCustomer,
+      ["companyName"],
+      ""
+    ),
+    phone: getValue(
+      selectedCustomer,
+      ["phone", "mobile"],
+      ""
+    ),
+    email: getValue(
+      selectedCustomer,
+      ["email"],
+      ""
+    ),
+  },
+
+  invoiceDate: form.invoiceDate,
       ...(form.dueDate
         ? {
             dueDate: form.dueDate,
@@ -571,26 +603,28 @@ const CreateInvoicePage = () => {
         : {}),
       title: form.title,
       items: form.items.map(
-        (item) => ({
-          description:
-            item.description.trim(),
-          quantity:
-            Number(
-              item.quantity
-            ),
-          unit:
-            item.unit ||
-            "Unit",
-          rate:
-            Number(
-              item.rate
-            ),
-          taxRate:
-            Number(
-              item.taxRate
-            ) || 0,
-        })
+  (item) => ({
+    itemName:
+      String(
+        item.itemName || ""
+      ).trim(),
+    quantity:
+      Number(
+        item.quantity
       ),
+    unit:
+      item.unit ||
+      "Unit",
+    rate:
+      Number(
+        item.rate
+      ),
+    taxRate:
+      Number(
+        item.taxRate
+      ) || 0,
+  })
+),
       discount:
         Number(
           form.discount
@@ -647,9 +681,7 @@ const CreateInvoicePage = () => {
           "Invoice updated successfully."
         );
       } else {
-        await invoiceService.createInvoice(
-          payload
-        );
+        await createInvoice(payload);
 
         setSuccess(
           "Invoice created successfully."
@@ -942,21 +974,19 @@ const CreateInvoicePage = () => {
 
                         <div className="admin-create-invoice-item-fields">
                           <div className="admin-create-invoice-item-description">
-                            <Input
-                              label="Description"
-                              value={
-                                item.description
-                              }
+                           <Input
+  label="Description"
+  value={
+    item.itemName
+  }
                               onChange={(
                                 event
                               ) =>
-                                updateItem(
-                                  index,
-                                  "description",
-                                  event
-                                    .target
-                                    .value
-                                )
+                               updateItem(
+  index,
+  "itemName",
+  event.target.value
+)
                               }
                               placeholder="Solar panel installation"
                               required

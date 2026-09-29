@@ -112,18 +112,53 @@ const EmployeeSystemConfigurationsPage = () => {
       start + limit
     );
   }, [filteredConfigurations, page]);
+const safeDisplay = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
 
-  const getCustomerName = (configuration) =>
+  if (typeof value === "object") {
+    return (
+      value.customerName ||
+      value.companyName ||
+      value.leadId ||
+      value.name ||
+      value.email ||
+      "—"
+    );
+  }
+
+  return String(value);
+};
+
+const getCustomerName = (configuration) =>
+  safeDisplay(
     configuration?.customerName ||
     configuration?.leadName ||
     configuration?.customer?.name ||
-    configuration?.lead?.name ||
-    "Unnamed Customer";
+    configuration?.lead?.name
+  );
+
+  if (!value) return "Unnamed Customer";
+
+  if (typeof value === "object") {
+    return (
+      value.customerName ||
+      value.companyName ||
+      value.leadId ||
+      value.name ||
+      "Unnamed Customer"
+    );
+  }
+
+  return String(value);
+};
 
   const getSystemType = (configuration) =>
+  safeDisplay(
     configuration?.systemType ||
-    configuration?.solarSystemType ||
-    "—";
+    configuration?.solarSystemType
+  );
 
   const getCapacity = (configuration) => {
     const capacity =
@@ -367,9 +402,10 @@ const EmployeeSystemConfigurationsPage = () => {
                             </td>
 
                             <td>
-                              {configuration?.city ||
-                                configuration?.location ||
-                                "—"}
+                              {safeDisplay(
+  configuration?.city ||
+  configuration?.location
+)}
                             </td>
 
                             <td>

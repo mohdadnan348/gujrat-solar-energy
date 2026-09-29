@@ -144,7 +144,8 @@ const createConfiguration = async (data, createdBy) => {
     solarRequirement: data.solarRequirement,
     customer: data.customer,
     version,
-
+   systemType: data.systemType,
+systemCapacity: data.systemCapacity,
     panels: data.panels || [],
     inverter: data.inverter || [],
     battery: data.battery || [],
@@ -354,50 +355,53 @@ const createNewVersion = async (
   return getConfigurationById(configuration._id);
 };
 
-const getLatestConfiguration = async ({
-  lead,
-  solarRequirement,
-  customer,
-}) => {
+const getLatestConfiguration = async (lead) => {
   const filter = {};
 
-  if (lead) filter.lead = lead;
-  if (solarRequirement) filter.solarRequirement = solarRequirement;
-  if (customer) filter.customer = customer;
+  if (lead) {
+    filter.lead = lead;
+  }
 
   if (Object.keys(filter).length === 0) {
     const error = new Error(
-      "Lead, solar requirement or customer is required"
+      "Lead is required"
     );
     error.statusCode = 400;
     throw error;
   }
 
-  const configuration = await SystemConfiguration.findOne(filter)
-    .sort({ version: -1 })
-    .populate(
-      "lead",
-      "leadId customerName companyName mobile email status"
-    )
-    .populate(
-      "solarRequirement",
-      "requiredKw monthlyBill systemType siteAddress"
-    )
-    .populate(
-      "customer",
-      "customerId name companyName mobile email status"
-    )
-    .populate("createdBy", "username email role")
-    .lean();
+  const configuration =
+    await SystemConfiguration.findOne(filter)
+      .sort({ version: -1 })
+      .populate(
+        "lead",
+        "leadId customerName companyName mobile email status"
+      )
+      .populate(
+        "solarRequirement",
+        "requiredKw monthlyBill systemType siteAddress"
+      )
+      .populate(
+        "customer",
+        "customerId name companyName mobile email status"
+      )
+      .populate(
+        "createdBy",
+        "username email role"
+      )
+      .lean();
 
   if (!configuration) {
-    const error = new Error("System configuration not found");
+    const error = new Error(
+      "System configuration not found"
+    );
     error.statusCode = 404;
     throw error;
   }
 
   return configuration;
 };
+ 
 
 const getConfigurationsByLead = async (leadId) => {
   return SystemConfiguration.find({ lead: leadId })

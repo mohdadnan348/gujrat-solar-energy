@@ -355,6 +355,7 @@ const createInvoice = async (
     quotation: data.quotation,
     lead: data.lead,
     customer: data.customer,
+    createdBy: createdBy,
     invoiceDate:
       data.invoiceDate || new Date(),
     dueDate: data.dueDate,
@@ -363,8 +364,10 @@ const createInvoice = async (
       data.status || INVOICE_STATUS.DRAFT,
 
     customerDetails:
-      data.customerDetails ||
-      buildCustomerSnapshot(
+  data.customerDetails &&
+  data.customerDetails.name
+    ? data.customerDetails
+    : buildCustomerSnapshot(
         customer,
         lead
       ),

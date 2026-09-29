@@ -63,6 +63,8 @@ export const createLeaveRequest = async (leaveData) => {
   return response.data;
 };
 
+export const createLeave = createLeaveRequest;
+
 export const updateLeaveRequest = async (
   leaveId,
   leaveData
@@ -174,6 +176,7 @@ const leaveService = {
   approveLeave,
   rejectLeave,
   cancelLeave,
+  createLeave,
   getLeavesByStatus,
   searchLeaves,
 };

@@ -95,12 +95,24 @@ const Select = forwardRef(
         : option;
 
       const optionLabel = isObject
-        ? option.label
-        : option;
+  ? option.label
+  : option;
 
-      const optionDisabled = isObject
-        ? Boolean(option.disabled)
-        : false;
+const safeOptionLabel =
+  typeof optionLabel === "object" && optionLabel !== null
+    ? (
+        optionLabel?.customerName ||
+        optionLabel?.companyName ||
+        optionLabel?.name ||
+        optionLabel?.leadId ||
+        optionLabel?._id ||
+        ""
+      )
+    : String(optionLabel ?? "");
+
+const optionDisabled = isObject
+  ? Boolean(option.disabled)
+  : false;
 
       return (
         <option
@@ -108,7 +120,7 @@ const Select = forwardRef(
           value={optionValue}
           disabled={optionDisabled}
         >
-          {optionLabel}
+          {safeOptionLabel}
         </option>
       );
     })}

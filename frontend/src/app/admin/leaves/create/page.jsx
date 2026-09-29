@@ -1,5 +1,6 @@
 "use client";
 
+
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,7 +10,7 @@ import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
 import Textarea from "@/components/common/Textarea";
 import Loader from "@/components/common/Loader";
-import leaveService from "@/services/leave.service";
+import { createLeave } from "@/services/leave.service";
 import employeeService from "@/services/employee.service";
 import "./create-leave.css";
 
@@ -21,12 +22,6 @@ const LEAVE_TYPES = [
   { value: "OTHER", label: "Other" },
 ];
 
-const STATUS_OPTIONS = [
-  { value: "PENDING", label: "Pending" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "REJECTED", label: "Rejected" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
 
 const extractEmployees = (response) => {
   if (Array.isArray(response)) return response;
@@ -101,6 +96,8 @@ const AdminCreateLeavePage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [leaveTypes, setLeaveTypes] = useState([]);
+const [loadingLeaveTypes, setLoadingLeaveTypes] = useState(true);
 
   const [form, setForm] = useState({
     employee: "",
@@ -267,6 +264,30 @@ const AdminCreateLeavePage = () => {
   }, []);
 
   useEffect(() => {
+  const loadLeaveTypes = async () => {
+    try {
+      setLoadingLeaveTypes(true);
+
+      const response = await api.get("/leave-types");
+
+      setLeaveTypes(response.data?.data || []);
+    } catch (err) {
+      console.error("Failed to load leave types:", err);
+
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Unable to load leave types."
+      );
+    } finally {
+      setLoadingLeaveTypes(false);
+    }
+  };
+
+  loadLeaveTypes();
+}, []);
+
+  useEffect(() => {
     if (isEditMode) {
       loadLeave();
     }
@@ -324,7 +345,7 @@ const AdminCreateLeavePage = () => {
           router.push(`/admin/leaves/${leaveId}`);
         }, 700);
       } else {
-        const response = await leaveService.createLeave(payload);
+        const response = await createLeave(payload);
         const createdLeave = extractLeave(response);
 
         setSuccess("Leave request created successfully.");
@@ -459,7 +480,10 @@ const AdminCreateLeavePage = () => {
                       )
                     }
                     onBlur={() => markTouched("leaveType")}
-                    options={LEAVE_TYPES}
+                    options={leaveTypes.map((type) => ({
+  value: type._id,
+  label: type.name,
+}))}
                     disabled={saving}
                     required
                     error={

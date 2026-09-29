@@ -255,6 +255,7 @@ const validateSystemConfiguration = (
   }
 
   if (errors.length > 0) {
+    console.log("SYSTEM CONFIG VALIDATION ERRORS:", errors);
     return res.status(400).json({
       success: false,
       message:

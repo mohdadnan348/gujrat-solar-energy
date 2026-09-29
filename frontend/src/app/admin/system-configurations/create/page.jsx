@@ -22,7 +22,9 @@ const CreateSystemConfigurationPage = () => {
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
+    
     solarRequirementId: "",
+    leadId: "",
     customerName: "",
     systemType: "ON_GRID",
     systemSizeKW: "",
@@ -60,7 +62,7 @@ const CreateSystemConfigurationPage = () => {
         : Array.isArray(response?.requirements)
         ? response.requirements
         : [];
-
+        console.log("SOLAR REQUIREMENTS DATA:", list);
       setRequirements(list);
     } catch (err) {
       console.error(
@@ -88,26 +90,49 @@ const CreateSystemConfigurationPage = () => {
     item?.id ||
     item?.requirementId;
 
-  const getRequirementValue = (
-    item,
-    keys,
-    fallback = ""
-  ) => {
-    for (const key of keys) {
-      const value = item?.[key];
+ const getRequirementValue = (
+  item,
+  keys,
+  fallback = ""
+) => {
+  for (const key of keys) {
+    const value = item?.[key];
 
-      if (
-        value !== undefined &&
-        value !== null &&
-        value !== ""
-      ) {
-        return value;
-      }
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== ""
+    ) {
+      return value;
     }
+  }
 
+  return fallback;
+};
+
+const getSafeText = (value, fallback = "") => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
     return fallback;
-  };
+  }
 
+  if (typeof value === "object") {
+    return String(
+      value?.customerName ||
+      value?.companyName ||
+      value?.name ||
+      value?.leadId ||
+      value?._id ||
+      value?.id ||
+      fallback
+    );
+  }
+
+  return String(value);
+};
   const requirementOptions = useMemo(() => {
     return [
       {
@@ -116,17 +141,20 @@ const CreateSystemConfigurationPage = () => {
       },
       ...requirements.map((requirement) => {
         const id = getId(requirement);
+const customerValue = getRequirementValue(
+  requirement,
+  [
+    "customerName",
+    "customer",
+    "name",
+  ],
+  "Customer"
+);
 
-        const customerName = getRequirementValue(
-          requirement,
-          [
-            "customerName",
-            "customer.name",
-            "name",
-          ],
-          "Customer"
-        );
-
+const customerName = getSafeText(
+  customerValue,
+  "Customer"
+);
         const requiredKW = getRequirementValue(
           requirement,
           [
@@ -175,61 +203,84 @@ const CreateSystemConfigurationPage = () => {
     }
   };
 
-  const handleRequirementChange = (value) => {
-    const selected = requirements.find(
-      (requirement) =>
-        String(getId(requirement)) === String(value)
-    );
+ const handleRequirementChange = (value) => {
+  const selected = requirements.find(
+    (requirement) =>
+      String(getId(requirement)) === String(value)
+  );
 
-    if (!selected) {
-      updateField("solarRequirementId", value);
-      return;
-    }
-
-    const customerName =
-      getRequirementValue(
-        selected,
-        [
-          "customerName",
-          "customer.name",
-          "name",
-        ],
-        ""
-      );
-
-    const requiredKW =
-      getRequirementValue(
-        selected,
-        [
-          "requiredKW",
-          "systemSizeKW",
-          "capacityKW",
-        ],
-        ""
-      );
-
-    const systemType =
-      getRequirementValue(
-        selected,
-        ["systemType", "system_type"],
-        "ON_GRID"
-      );
-
+  if (!selected) {
     updateField("solarRequirementId", value);
+    return;
+  }
 
-    setForm((prev) => ({
-      ...prev,
-      solarRequirementId: value,
-      customerName:
-        customerName || prev.customerName,
-      systemSizeKW:
-        requiredKW !== ""
-          ? requiredKW
-          : prev.systemSizeKW,
-      systemType:
-        systemType || prev.systemType,
-    }));
-  };
+ const selectedLeadId =
+  typeof selected?.lead === "object"
+    ? (
+        selected.lead?._id ||
+        selected.lead?.id ||
+        selected.lead?.leadId ||
+        ""
+      )
+    : String(selected?.lead || "");
+  const customerValue = getRequirementValue(
+    selected,
+    [
+      "customerName",
+      "customer",
+      "name",
+    ],
+    ""
+  );
+
+  const customerName = getSafeText(
+  customerValue,
+  ""
+);
+  const requiredKW = getRequirementValue(
+    selected,
+    [
+      "requiredKW",
+      "systemSizeKW",
+      "capacityKW",
+    ],
+    ""
+  );
+
+  const systemType = getRequirementValue(
+    selected,
+    [
+      "systemType",
+      "system_type",
+    ],
+    "ON_GRID"
+  );
+
+  const normalizedSystemType = {
+    "On-grid": "ON_GRID",
+    "Off-grid": "OFF_GRID",
+    "Hybrid": "HYBRID",
+  }[systemType] || systemType;
+
+  console.log("SELECTED REQUIREMENT:", selected);
+console.log("SELECTED LEAD:", selected?.lead);
+console.log("SELECTED LEAD TYPE:", typeof selected?.lead);
+console.log("CUSTOMER VALUE:", customerValue);
+console.log("CUSTOMER VALUE TYPE:", typeof customerValue);
+
+ setForm((prev) => ({
+  ...prev,
+  solarRequirementId: String(value || ""),
+  leadId: getSafeText(selectedLeadId, ""),
+  customerName: getSafeText(customerName, ""),
+    systemSizeKW:
+      requiredKW !== ""
+        ? String(requiredKW)
+        : prev.systemSizeKW,
+    systemType:
+      normalizedSystemType || prev.systemType,
+  }));
+};
 
   const calculatePanelCount = () => {
     const size = Number(form.systemSizeKW);
@@ -315,15 +366,18 @@ const CreateSystemConfigurationPage = () => {
     try {
       setSaving(true);
       setError("");
-
+console.log("SYSTEM CONFIG FORM LEAD ID:", form.leadId);
       const payload = {
   lead: form.leadId,
 
   solarRequirement: form.solarRequirementId,
+  
 
   customer: undefined,
 
   version: 1,
+  systemType: form.systemType,
+systemCapacity: Number(form.systemSizeKW),
 
   panels: form.panelMake
     ? [
@@ -375,6 +429,9 @@ const CreateSystemConfigurationPage = () => {
 
   notes: form.notes || undefined,
 };
+console.log("SYSTEM CONFIG PAYLOAD:", payload);
+console.log("SYSTEM TYPE FINAL:", payload.systemType);
+console.log("SYSTEM CAPACITY FINAL:", payload.systemCapacity);
 
       await systemConfigurationService.createSystemConfiguration(
         payload
