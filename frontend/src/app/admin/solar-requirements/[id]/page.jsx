@@ -3,19 +3,16 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-import MainLayout from "@/components/layout/MainLayout";
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import Loader from "@/components/common/Loader";
 
-import { useAuth } from "@/hooks/useAuth";
 import solarRequirementService from "@/services/solarRequirement.service";
+import "./requirement-details.css";
 
 const SolarRequirementDetailsPage = () => {
   const params = useParams();
   const router = useRouter();
-
-  const { user, logout, loading: authLoading } = useAuth();
 
   const requirementId = params?.id;
 
@@ -64,14 +61,6 @@ const SolarRequirementDetailsPage = () => {
   useEffect(() => {
     loadRequirement();
   }, [requirementId]);
-
-  const handleLogout = async () => {
-    await logout();
-  };
-
-  const handleSearch = (value) => {
-    console.log("Admin global search:", value);
-  };
 
   const handleBack = () => {
     router.push("/admin/solar-requirements");
@@ -197,24 +186,48 @@ const SolarRequirementDetailsPage = () => {
       );
   };
 
-  const getSystemType = () => {
-    return (
-      requirement?.systemType ||
-      requirement?.requirementType ||
-      requirement?.solarType ||
-      requirement?.type ||
-      "—"
-    );
+  const getSystemType = () =>
+    requirement?.systemType ||
+    requirement?.requirementType ||
+    requirement?.solarType ||
+    requirement?.type ||
+    "—";
+
+  const getCapacity = () =>
+    requirement?.requiredKw ??
+    requirement?.requiredKW ??
+    requirement?.capacity ??
+    requirement?.systemSize ??
+    null;
+
+  const getMonthlyUnits = () =>
+    requirement?.monthlyUnits ??
+    requirement?.units ??
+    null;
+
+  const getConnectionType = () =>
+    requirement?.connectionType ??
+    requirement?.connectionLoad ??
+    requirement?.connection ??
+    requirement?.load ??
+    null;
+
+  const getBatteryRequirement = () => {
+    if (typeof requirement?.batteryRequired === "boolean") {
+      return requirement.batteryRequired ? "Required" : "Not Required";
+    }
+    return requirement?.batteryRequirement ?? "—";
   };
 
-  const getCapacity = () => {
-    return (
-      requirement?.requiredKW ??
-      requirement?.requiredKw ??
-      requirement?.capacity ??
-      requirement?.systemSize ??
-      null
-    );
+  const getSiteSurvey = () => {
+    if (typeof requirement?.siteSurveyCompleted === "boolean") {
+      return requirement.siteSurveyCompleted
+        ? "Completed"
+        : requirement?.siteSurveyRequired
+          ? "Required"
+          : "Not Required";
+    }
+    return requirement?.siteSurvey ?? "—";
   };
 
   const customer =
@@ -232,30 +245,17 @@ const SolarRequirementDetailsPage = () => {
 
   const capacity = getCapacity();
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
-      <MainLayout
-        user={user}
-        onLogout={handleLogout}
-        onSearch={handleSearch}
-        notificationCount={0}
-      >
-        <div className="admin-requirement-details-loading">
-          <Loader />
-        </div>
-      </MainLayout>
+      <div className="admin-requirement-details-loading">
+        <Loader />
+      </div>
     );
   }
 
   if (error || !requirement) {
     return (
-      <MainLayout
-        user={user}
-        onLogout={handleLogout}
-        onSearch={handleSearch}
-        notificationCount={0}
-      >
-        <div className="admin-requirement-details-page">
+      <div className="admin-requirement-details-page">
           <div className="admin-requirement-details-header">
             <div>
               <button
@@ -304,18 +304,11 @@ const SolarRequirementDetailsPage = () => {
             </div>
           </div>
         </div>
-      </MainLayout>
     );
   }
 
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      onSearch={handleSearch}
-      notificationCount={0}
-    >
-      <div className="admin-requirement-details-page">
+    <div className="admin-requirement-details-page">
         {/* Header */}
         <div className="admin-requirement-details-header">
           <div>
@@ -405,12 +398,8 @@ const SolarRequirementDetailsPage = () => {
             <span>Monthly Units</span>
 
             <strong>
-              {requirement?.units !==
-                undefined &&
-              requirement?.units !== null
-                ? `${formatNumber(
-                    requirement.units
-                  )} Units`
+              {getMonthlyUnits() !== null
+                ? `${formatNumber(getMonthlyUnits())} Units`
                 : "—"}
             </strong>
           </div>
@@ -453,7 +442,9 @@ const SolarRequirementDetailsPage = () => {
                       requirement?.phone ||
                         requirement?.mobile ||
                         customer?.phone ||
-                        customer?.mobile
+                        customer?.mobile ||
+                        requirement?.lead?.phone ||
+                        requirement?.lead?.mobile
                     )}
                   </strong>
                 </div>
@@ -463,7 +454,8 @@ const SolarRequirementDetailsPage = () => {
                   <strong>
                     {getValue(
                       requirement?.email ||
-                        customer?.email
+                        customer?.email ||
+                        requirement?.lead?.email
                     )}
                   </strong>
                 </div>
@@ -537,9 +529,7 @@ const SolarRequirementDetailsPage = () => {
                   <span>Connection / Load</span>
                   <strong>
                     {getValue(
-                      requirement?.connectionLoad ||
-                        requirement?.connection ||
-                        requirement?.load
+                      getConnectionType()
                     )}
                   </strong>
                 </div>
@@ -555,7 +545,7 @@ const SolarRequirementDetailsPage = () => {
                   <span>Battery Requirement</span>
                   <strong>
                     {getValue(
-                      requirement?.batteryRequirement
+                      getBatteryRequirement()
                     )}
                   </strong>
                 </div>
@@ -611,7 +601,7 @@ const SolarRequirementDetailsPage = () => {
                   <span>Site Survey</span>
                   <strong>
                     {getValue(
-                      requirement?.siteSurvey
+                      getSiteSurvey()
                     )}
                   </strong>
                 </div>
@@ -708,7 +698,7 @@ const SolarRequirementDetailsPage = () => {
                   <span>Site Survey</span>
                   <strong>
                     {getValue(
-                      requirement?.siteSurvey
+                      getSiteSurvey()
                     )}
                   </strong>
                 </div>
@@ -808,7 +798,6 @@ const SolarRequirementDetailsPage = () => {
           </Button>
         </div>
       </div>
-    </MainLayout>
   );
 };
 

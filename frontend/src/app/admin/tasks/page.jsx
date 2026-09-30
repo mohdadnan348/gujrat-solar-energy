@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import AdminLayout from "../layout";
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import SearchBox from "@/components/common/SearchBox";
@@ -12,9 +11,9 @@ import Loader from "@/components/common/Loader";
 import Select from "@/components/common/Select";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 
-import  taskService  from "@/services/task.service";
-
+import taskService from "@/services/task.service";
 import { getEmployees } from "@/services/employee.service";
+
 import "./tasks.css";
 
 const AdminTasksPage = () => {
@@ -29,10 +28,8 @@ const AdminTasksPage = () => {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [priorityFilter, setPriorityFilter] =
-    useState("ALL");
-  const [assigneeFilter, setAssigneeFilter] =
-    useState("ALL");
+  const [priorityFilter, setPriorityFilter] = useState("ALL");
+  const [assigneeFilter, setAssigneeFilter] = useState("ALL");
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -40,11 +37,7 @@ const AdminTasksPage = () => {
   const [deleteId, setDeleteId] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const getValue = (
-    object,
-    keys,
-    fallback = ""
-  ) => {
+  const getValue = (object, keys, fallback = "") => {
     if (!object) return fallback;
 
     for (const key of keys) {
@@ -78,10 +71,7 @@ const AdminTasksPage = () => {
     );
   };
 
-  const normalizeList = (
-    response,
-    key
-  ) => {
+  const normalizeList = (response, key) => {
     if (Array.isArray(response)) {
       return response;
     }
@@ -111,9 +101,7 @@ const AdminTasksPage = () => {
     return [];
   };
 
-  const loadData = async (
-    showRefresh = false
-  ) => {
+  const loadData = async (showRefresh = false) => {
     try {
       if (showRefresh) {
         setRefreshing(true);
@@ -128,7 +116,7 @@ const AdminTasksPage = () => {
         employeesResponse,
       ] = await Promise.all([
         taskService.getTasks(),
-       getEmployees(),
+        getEmployees(),
       ]);
 
       setTasks(
@@ -228,7 +216,10 @@ const AdminTasksPage = () => {
   const getCreatedDate = (task) =>
     getValue(
       task,
-      ["createdAt", "createdDate"],
+      [
+        "createdAt",
+        "createdDate",
+      ],
       ""
     );
 
@@ -319,7 +310,8 @@ const AdminTasksPage = () => {
   };
 
   const isOverdue = (task) => {
-    const dueDate = getDueDate(task);
+    const dueDate =
+      getDueDate(task);
 
     if (!dueDate) return false;
 
@@ -333,7 +325,8 @@ const AdminTasksPage = () => {
       return false;
     }
 
-    const status = getStatus(task);
+    const status =
+      getStatus(task);
 
     if (
       [
@@ -390,9 +383,10 @@ const AdminTasksPage = () => {
   };
 
   const filteredTasks = useMemo(() => {
-    const query = search
-      .trim()
-      .toLowerCase();
+    const query =
+      search
+        .trim()
+        .toLowerCase();
 
     return tasks.filter((task) => {
       const status =
@@ -446,10 +440,14 @@ const AdminTasksPage = () => {
         getAssigneeName(task),
         status,
         priority,
-        getValue(task, [
-          "taskNumber",
-          "taskId",
-        ]),
+        getValue(
+          task,
+          [
+            "taskNumber",
+            "taskId",
+          ],
+          ""
+        ),
       ]
         .join(" ")
         .toLowerCase();
@@ -495,31 +493,40 @@ const AdminTasksPage = () => {
 
     const pending = tasks.filter(
       (task) =>
-        ["PENDING", "TODO"].includes(
-          getStatus(task)
-        )
-    ).length;
-
-    const inProgress = tasks.filter(
-      (task) =>
         [
-          "IN_PROGRESS",
-          "IN PROGRESS",
+          "PENDING",
+          "TODO",
         ].includes(
           getStatus(task)
         )
     ).length;
 
-    const completed = tasks.filter(
-      (task) =>
-        ["COMPLETED", "DONE"].includes(
-          getStatus(task)
-        )
-    ).length;
+    const inProgress =
+      tasks.filter(
+        (task) =>
+          [
+            "IN_PROGRESS",
+            "IN PROGRESS",
+          ].includes(
+            getStatus(task)
+          )
+      ).length;
 
-    const overdue = tasks.filter(
-      (task) => isOverdue(task)
-    ).length;
+    const completed =
+      tasks.filter(
+        (task) =>
+          [
+            "COMPLETED",
+            "DONE",
+          ].includes(
+            getStatus(task)
+          )
+      ).length;
+
+    const overdue =
+      tasks.filter((task) =>
+        isOverdue(task)
+      ).length;
 
     return {
       total,
@@ -595,621 +602,696 @@ const AdminTasksPage = () => {
     }
   };
 
+  /*
+   * IMPORTANT:
+   * AdminLayout removed from this page.
+   * Parent admin layout will handle the
+   * sidebar/header.
+   */
+
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="admin-tasks-loading">
-          <Loader />
-          <p>
-            Loading tasks...
-          </p>
-        </div>
-      </AdminLayout>
+      <div className="admin-tasks-loading">
+        <Loader />
+
+        <p>
+          Loading tasks...
+        </p>
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div className="admin-tasks-page">
-        {/* Header */}
-        <div className="admin-tasks-page-header">
+    <div className="admin-tasks-page">
+
+      {/* Header */}
+
+      <div className="admin-tasks-page-header">
+
+        <div>
+          <h1>
+            Tasks
+          </h1>
+
+          <p>
+            Manage assignments,
+            deadlines and
+            operational tasks.
+          </p>
+        </div>
+
+        <div className="admin-tasks-header-actions">
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() =>
+              loadData(true)
+            }
+            disabled={refreshing}
+          >
+            {refreshing
+              ? "Refreshing..."
+              : "↻ Refresh"}
+          </Button>
+
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() =>
+              router.push(
+                "/admin/tasks/create"
+              )
+            }
+          >
+            + Create Task
+          </Button>
+
+        </div>
+      </div>
+
+      {/* Error */}
+
+      {error && (
+        <div className="admin-tasks-error">
+          {error}
+        </div>
+      )}
+
+      {/* Stats */}
+
+      <div className="admin-tasks-stats">
+
+        <div className="admin-task-stat-card">
+          <div className="admin-task-stat-icon">
+            TS
+          </div>
+
           <div>
-            <h1>
-              Tasks
-            </h1>
+            <span>
+              Total Tasks
+            </span>
+
+            <strong>
+              {stats.total}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-task-stat-card">
+          <div className="admin-task-stat-icon pending">
+            P
+          </div>
+
+          <div>
+            <span>
+              Pending
+            </span>
+
+            <strong>
+              {stats.pending}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-task-stat-card">
+          <div className="admin-task-stat-icon progress">
+            IP
+          </div>
+
+          <div>
+            <span>
+              In Progress
+            </span>
+
+            <strong>
+              {stats.inProgress}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-task-stat-card">
+          <div className="admin-task-stat-icon completed">
+            ✓
+          </div>
+
+          <div>
+            <span>
+              Completed
+            </span>
+
+            <strong>
+              {stats.completed}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-task-stat-card">
+          <div className="admin-task-stat-icon overdue">
+            !
+          </div>
+
+          <div>
+            <span>
+              Overdue
+            </span>
+
+            <strong>
+              {stats.overdue}
+            </strong>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Filters */}
+
+      <div className="admin-tasks-toolbar">
+
+        <div className="admin-tasks-search">
+
+          <SearchBox
+            value={search}
+            onChange={setSearch}
+            placeholder="Search tasks..."
+          />
+
+        </div>
+
+        <div className="admin-tasks-filters">
+
+          <Select
+            value={statusFilter}
+            onChange={(event) =>
+              setStatusFilter(
+                event?.target
+                  ? event.target.value
+                  : event
+              )
+            }
+            options={[
+              {
+                label: "All Status",
+                value: "ALL",
+              },
+              {
+                label: "Pending",
+                value: "PENDING",
+              },
+              {
+                label: "In Progress",
+                value: "IN_PROGRESS",
+              },
+              {
+                label: "Completed",
+                value: "COMPLETED",
+              },
+              {
+                label: "Cancelled",
+                value: "CANCELLED",
+              },
+            ]}
+          />
+
+          <Select
+            value={priorityFilter}
+            onChange={(event) =>
+              setPriorityFilter(
+                event?.target
+                  ? event.target.value
+                  : event
+              )
+            }
+            options={[
+              {
+                label: "All Priorities",
+                value: "ALL",
+              },
+              {
+                label: "Urgent",
+                value: "URGENT",
+              },
+              {
+                label: "High",
+                value: "HIGH",
+              },
+              {
+                label: "Medium",
+                value: "MEDIUM",
+              },
+              {
+                label: "Low",
+                value: "LOW",
+              },
+            ]}
+          />
+
+          <Select
+            value={assigneeFilter}
+            onChange={(event) =>
+              setAssigneeFilter(
+                event?.target
+                  ? event.target.value
+                  : event
+              )
+            }
+            options={
+              employeeOptions
+            }
+          />
+
+          <Select
+            value={String(
+              itemsPerPage
+            )}
+            onChange={(event) =>
+              setItemsPerPage(
+                Number(
+                  event?.target
+                    ? event.target.value
+                    : event
+                )
+              )
+            }
+            options={[
+              {
+                label: "10 / page",
+                value: "10",
+              },
+              {
+                label: "25 / page",
+                value: "25",
+              },
+              {
+                label: "50 / page",
+                value: "50",
+              },
+            ]}
+          />
+
+        </div>
+      </div>
+
+      {/* Task Table */}
+
+      <div className="admin-tasks-card">
+
+        <div className="admin-tasks-card-header">
+
+          <div>
+            <h2>
+              Task Records
+            </h2>
 
             <p>
-              Manage assignments, deadlines and
-              operational tasks.
+              {filteredTasks.length}{" "}
+              task
+              {filteredTasks.length !==
+              1
+                ? "s"
+                : ""}{" "}
+              found
             </p>
           </div>
 
-          <div className="admin-tasks-header-actions">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() =>
-                loadData(true)
-              }
-              disabled={refreshing}
-            >
-              {refreshing
-                ? "Refreshing..."
-                : "↻ Refresh"}
-            </Button>
-
-            <Button
-              type="button"
-              variant="primary"
-              onClick={() =>
-                router.push(
-                  "/admin/tasks/create"
-                )
-              }
-            >
-              + Create Task
-            </Button>
-          </div>
         </div>
 
-        {error && (
-          <div className="admin-tasks-error">
-            {error}
-          </div>
-        )}
+        {paginatedTasks.length ===
+        0 ? (
 
-        {/* Stats */}
-        <div className="admin-tasks-stats">
-          <div className="admin-task-stat-card">
-            <div className="admin-task-stat-icon">
+          <div className="admin-tasks-empty">
+
+            <div className="admin-tasks-empty-icon">
               TS
             </div>
 
-            <div>
-              <span>
-                Total Tasks
-              </span>
+            <h3>
+              No tasks found
+            </h3>
 
-              <strong>
-                {stats.total}
-              </strong>
-            </div>
-          </div>
+            <p>
+              {search ||
+              statusFilter !==
+                "ALL" ||
+              priorityFilter !==
+                "ALL" ||
+              assigneeFilter !==
+                "ALL"
+                ? "Try changing your filters or search."
+                : "Create your first task to get started."}
+            </p>
 
-          <div className="admin-task-stat-card">
-            <div className="admin-task-stat-icon pending">
-              P
-            </div>
-
-            <div>
-              <span>
-                Pending
-              </span>
-
-              <strong>
-                {stats.pending}
-              </strong>
-            </div>
-          </div>
-
-          <div className="admin-task-stat-card">
-            <div className="admin-task-stat-icon progress">
-              IP
-            </div>
-
-            <div>
-              <span>
-                In Progress
-              </span>
-
-              <strong>
-                {stats.inProgress}
-              </strong>
-            </div>
-          </div>
-
-          <div className="admin-task-stat-card">
-            <div className="admin-task-stat-icon completed">
-              ✓
-            </div>
-
-            <div>
-              <span>
-                Completed
-              </span>
-
-              <strong>
-                {stats.completed}
-              </strong>
-            </div>
-          </div>
-
-          <div className="admin-task-stat-card">
-            <div className="admin-task-stat-icon overdue">
-              !
-            </div>
-
-            <div>
-              <span>
-                Overdue
-              </span>
-
-              <strong>
-                {stats.overdue}
-              </strong>
-            </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="admin-tasks-toolbar">
-          <div className="admin-tasks-search">
-            <SearchBox
-              value={search}
-              onChange={setSearch}
-              placeholder="Search tasks..."
-            />
-          </div>
-
-          <div className="admin-tasks-filters">
-            <Select
-              value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(
-                  event?.target
-                    ? event.target.value
-                    : event
-                )
-              }
-              options={[
-                {
-                  label: "All Status",
-                  value: "ALL",
-                },
-                {
-                  label: "Pending",
-                  value: "PENDING",
-                },
-                {
-                  label: "In Progress",
-                  value: "IN_PROGRESS",
-                },
-                {
-                  label: "Completed",
-                  value: "COMPLETED",
-                },
-                {
-                  label: "Cancelled",
-                  value: "CANCELLED",
-                },
-              ]}
-            />
-
-            <Select
-              value={priorityFilter}
-              onChange={(event) =>
-                setPriorityFilter(
-                  event?.target
-                    ? event.target.value
-                    : event
-                )
-              }
-              options={[
-                {
-                  label: "All Priorities",
-                  value: "ALL",
-                },
-                {
-                  label: "Urgent",
-                  value: "URGENT",
-                },
-                {
-                  label: "High",
-                  value: "HIGH",
-                },
-                {
-                  label: "Medium",
-                  value: "MEDIUM",
-                },
-                {
-                  label: "Low",
-                  value: "LOW",
-                },
-              ]}
-            />
-
-            <Select
-              value={assigneeFilter}
-              onChange={(event) =>
-                setAssigneeFilter(
-                  event?.target
-                    ? event.target.value
-                    : event
-                )
-              }
-              options={
-                employeeOptions
-              }
-            />
-
-            <Select
-              value={String(
-                itemsPerPage
+            {!search &&
+              statusFilter ===
+                "ALL" &&
+              priorityFilter ===
+                "ALL" &&
+              assigneeFilter ===
+                "ALL" && (
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() =>
+                    router.push(
+                      "/admin/tasks/create"
+                    )
+                  }
+                >
+                  + Create Task
+                </Button>
               )}
-              onChange={(event) =>
-                setItemsPerPage(
-                  Number(
-                    event?.target
-                      ? event.target.value
-                      : event
-                  )
-                )
-              }
-              options={[
-                {
-                  label: "10 / page",
-                  value: "10",
-                },
-                {
-                  label: "25 / page",
-                  value: "25",
-                },
-                {
-                  label: "50 / page",
-                  value: "50",
-                },
-              ]}
-            />
-          </div>
-        </div>
 
-        {/* Task Table */}
-        <div className="admin-tasks-card">
-          <div className="admin-tasks-card-header">
-            <div>
-              <h2>
-                Task Records
-              </h2>
-
-              <p>
-                {filteredTasks.length}{" "}
-                task
-                {filteredTasks.length !==
-                1
-                  ? "s"
-                  : ""}{" "}
-                found
-              </p>
-            </div>
           </div>
 
-          {paginatedTasks.length ===
-          0 ? (
-            <div className="admin-tasks-empty">
-              <div className="admin-tasks-empty-icon">
-                TS
-              </div>
+        ) : (
 
-              <h3>
-                No tasks found
-              </h3>
+          <>
+            <div className="admin-tasks-table-wrapper">
 
-              <p>
-                {search ||
-                statusFilter !==
-                  "ALL" ||
-                priorityFilter !==
-                  "ALL" ||
-                assigneeFilter !==
-                  "ALL"
-                  ? "Try changing your filters or search."
-                  : "Create your first task to get started."}
-              </p>
+              <table className="admin-tasks-table">
 
-              {!search &&
-                statusFilter ===
-                  "ALL" &&
-                priorityFilter ===
-                  "ALL" &&
-                assigneeFilter ===
-                  "ALL" && (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    onClick={() =>
-                      router.push(
-                        "/admin/tasks/create"
-                      )
-                    }
-                  >
-                    + Create Task
-                  </Button>
-                )}
-            </div>
-          ) : (
-            <>
-              <div className="admin-tasks-table-wrapper">
-                <table className="admin-tasks-table">
-                  <thead>
-                    <tr>
-                      <th>
-                        Task
-                      </th>
+                <thead>
 
-                      <th>
-                        Assigned To
-                      </th>
+                  <tr>
 
-                      <th>
-                        Priority
-                      </th>
+                    <th>
+                      Task
+                    </th>
 
-                      <th>
-                        Due Date
-                      </th>
+                    <th>
+                      Assigned To
+                    </th>
 
-                      <th>
-                        Status
-                      </th>
+                    <th>
+                      Priority
+                    </th>
 
-                      <th>
-                        Created
-                      </th>
+                    <th>
+                      Due Date
+                    </th>
 
-                      <th>
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
+                    <th>
+                      Status
+                    </th>
 
-                  <tbody>
-                    {paginatedTasks.map(
-                      (
-                        task,
-                        index
-                      ) => {
-                        const id =
-                          getId(task);
+                    <th>
+                      Created
+                    </th>
 
-                        const status =
-                          getStatus(
-                            task
-                          );
+                    <th>
+                      Actions
+                    </th>
 
-                        const priority =
-                          getPriority(
-                            task
-                          );
+                  </tr>
 
-                        const overdue =
-                          isOverdue(
-                            task
-                          );
+                </thead>
 
-                        return (
-                          <tr
-                            key={
-                              id ||
-                              index
-                            }
-                            className={
-                              overdue
-                                ? "is-overdue"
-                                : ""
-                            }
-                          >
-                            <td>
-                              <div className="admin-task-title-cell">
-                                <strong>
-                                  {getTaskTitle(
-                                    task
-                                  )}
-                                </strong>
+                <tbody>
 
-                                {getTaskDescription(
+                  {paginatedTasks.map(
+                    (
+                      task,
+                      index
+                    ) => {
+
+                      const id =
+                        getId(task);
+
+                      const status =
+                        getStatus(
+                          task
+                        );
+
+                      const priority =
+                        getPriority(
+                          task
+                        );
+
+                      const overdue =
+                        isOverdue(
+                          task
+                        );
+
+                      return (
+                        <tr
+                          key={
+                            id ||
+                            index
+                          }
+                          className={
+                            overdue
+                              ? "is-overdue"
+                              : ""
+                          }
+                        >
+
+                          <td>
+
+                            <div className="admin-task-title-cell">
+
+                              <strong>
+                                {getTaskTitle(
                                   task
-                                ) && (
-                                  <span>
-                                    {getTaskDescription(
-                                      task
-                                    )}
-                                  </span>
                                 )}
+                              </strong>
 
-                                {getValue(
-                                  task,
-                                  [
-                                    "taskNumber",
-                                  ],
-                                  ""
-                                ) && (
-                                  <small>
-                                    {getValue(
-                                      task,
-                                      [
-                                        "taskNumber",
-                                      ]
-                                    )}
-                                  </small>
-                                )}
-                              </div>
-                            </td>
-
-                            <td>
-                              <div className="admin-task-assignee">
-                                <div className="admin-task-avatar">
-                                  {String(
-                                    getAssigneeName(
-                                      task
-                                    )
-                                  )
-                                    .charAt(
-                                      0
-                                    )
-                                    .toUpperCase()}
-                                </div>
-
+                              {getTaskDescription(
+                                task
+                              ) && (
                                 <span>
-                                  {getAssigneeName(
+                                  {getTaskDescription(
                                     task
                                   )}
                                 </span>
-                              </div>
-                            </td>
+                              )}
 
-                            <td>
-                              <Badge
-                                variant={getPriorityVariant(
-                                  priority
-                                )}
-                              >
-                                {priority.replaceAll(
-                                  "_",
-                                  " "
-                                )}
-                              </Badge>
-                            </td>
-
-                            <td>
-                              <div
-                                className={`admin-task-due-date ${
-                                  overdue
-                                    ? "overdue"
-                                    : ""
-                                }`}
-                              >
-                                <span>
-                                  {formatDate(
-                                    getDueDate(
-                                      task
-                                    )
+                              {getValue(
+                                task,
+                                [
+                                  "taskNumber",
+                                  "taskId",
+                                ],
+                                ""
+                              ) && (
+                                <small>
+                                  {getValue(
+                                    task,
+                                    [
+                                      "taskNumber",
+                                      "taskId",
+                                    ]
                                   )}
-                                </span>
+                                </small>
+                              )}
 
-                                {overdue && (
-                                  <small>
-                                    Overdue
-                                  </small>
-                                )}
+                            </div>
+
+                          </td>
+
+                          <td>
+
+                            <div className="admin-task-assignee">
+
+                              <div className="admin-task-avatar">
+
+                                {String(
+                                  getAssigneeName(
+                                    task
+                                  )
+                                )
+                                  .charAt(
+                                    0
+                                  )
+                                  .toUpperCase()}
+
                               </div>
-                            </td>
 
-                            <td>
-                              <Badge
-                                variant={getStatusVariant(
-                                  status
+                              <span>
+                                {getAssigneeName(
+                                  task
                                 )}
-                              >
-                                {status.replaceAll(
-                                  "_",
-                                  " "
-                                )}
-                              </Badge>
-                            </td>
+                              </span>
 
-                            <td>
-                              <span className="admin-task-created-date">
+                            </div>
+
+                          </td>
+
+                          <td>
+
+                            <Badge
+                              variant={getPriorityVariant(
+                                priority
+                              )}
+                            >
+                              {priority.replaceAll(
+                                "_",
+                                " "
+                              )}
+                            </Badge>
+
+                          </td>
+
+                          <td>
+
+                            <div
+                              className={`admin-task-due-date ${
+                                overdue
+                                  ? "overdue"
+                                  : ""
+                              }`}
+                            >
+
+                              <span>
                                 {formatDate(
-                                  getCreatedDate(
+                                  getDueDate(
                                     task
                                   )
                                 )}
                               </span>
-                            </td>
 
-                            <td>
-                              <div className="admin-task-actions">
-                                <button
-                                  type="button"
-                                  className="admin-task-action-button view"
-                                  onClick={() =>
-                                    router.push(
-                                      `/admin/tasks/${id}`
-                                    )
-                                  }
-                                  disabled={!id}
-                                >
-                                  View
-                                </button>
+                              {overdue && (
+                                <small>
+                                  Overdue
+                                </small>
+                              )}
 
-                                <button
-                                  type="button"
-                                  className="admin-task-action-button edit"
-                                  onClick={() =>
-                                    router.push(
-                                      `/admin/tasks/create?edit=${id}`
-                                    )
-                                  }
-                                  disabled={!id}
-                                >
-                                  Edit
-                                </button>
+                            </div>
 
-                                <button
-                                  type="button"
-                                  className="admin-task-action-button delete"
-                                  onClick={() =>
-                                    setDeleteId(
-                                      id
-                                    )
-                                  }
-                                  disabled={!id}
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      }
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                          </td>
 
-              <div className="admin-tasks-pagination">
-                <Pagination
-                  currentPage={
-                    currentPage
-                  }
-                  totalPages={
-                    totalPages
-                  }
-                  onPageChange={(page) =>
-                    setCurrentPage(
-                      page
-                    )
-                  }
-                />
-              </div>
-            </>
-          )}
-        </div>
+                          <td>
 
-        <ConfirmDialog
-          isOpen={Boolean(
-            deleteId
-          )}
-          onClose={() =>
-            !deleting &&
-            setDeleteId(null)
-          }
-          onConfirm={
-            handleDelete
-          }
-          title="Delete Task"
-          message="Are you sure you want to delete this task? This action cannot be undone."
-          confirmText={
-            deleting
-              ? "Deleting..."
-              : "Delete Task"
-          }
-          cancelText="Cancel"
-          loading={deleting}
-          danger
-        />
+                            <Badge
+                              variant={getStatusVariant(
+                                status
+                              )}
+                            >
+                              {status.replaceAll(
+                                "_",
+                                " "
+                              )}
+                            </Badge>
+
+                          </td>
+
+                          <td>
+
+                            <span className="admin-task-created-date">
+                              {formatDate(
+                                getCreatedDate(
+                                  task
+                                )
+                              )}
+                            </span>
+
+                          </td>
+
+                          <td>
+
+                            <div className="admin-task-actions">
+
+                              <button
+                                type="button"
+                                className="admin-task-action-button view"
+                                onClick={() =>
+                                  router.push(
+                                    `/admin/tasks/${id}`
+                                  )
+                                }
+                                disabled={!id}
+                              >
+                                View
+                              </button>
+
+                              <button
+                                type="button"
+                                className="admin-task-action-button edit"
+                                onClick={() =>
+                                  router.push(
+                                    `/admin/tasks/create?edit=${id}`
+                                  )
+                                }
+                                disabled={!id}
+                              >
+                                Edit
+                              </button>
+
+                              <button
+                                type="button"
+                                className="admin-task-action-button delete"
+                                onClick={() =>
+                                  setDeleteId(
+                                    id
+                                  )
+                                }
+                                disabled={!id}
+                              >
+                                Delete
+                              </button>
+
+                            </div>
+
+                          </td>
+
+                        </tr>
+                      );
+                    }
+                  )}
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+            <div className="admin-tasks-pagination">
+
+              <Pagination
+                currentPage={
+                  currentPage
+                }
+                totalPages={
+                  totalPages
+                }
+                onPageChange={(page) =>
+                  setCurrentPage(
+                    page
+                  )
+                }
+              />
+
+            </div>
+
+          </>
+
+        )}
+
       </div>
-    </AdminLayout>
+
+      <ConfirmDialog
+        isOpen={Boolean(
+          deleteId
+        )}
+        onClose={() =>
+          !deleting &&
+          setDeleteId(null)
+        }
+        onConfirm={
+          handleDelete
+        }
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        confirmText={
+          deleting
+            ? "Deleting..."
+            : "Delete Task"
+        }
+        cancelText="Cancel"
+        loading={deleting}
+        danger
+      />
+
+    </div>
   );
 };
 

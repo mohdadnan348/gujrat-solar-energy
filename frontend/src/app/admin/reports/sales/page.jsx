@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import AdminLayout from "@/app/admin/layout";
 import Select from "@/components/common/Select";
 import DatePicker from "@/components/common/DatePicker";
 import Button from "@/components/common/Button";
@@ -363,472 +362,468 @@ const SalesReportPage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="admin-sales-report-loading">
-          <Loader />
-          <p>Loading sales report...</p>
-        </div>
-      </AdminLayout>
+      <div className="admin-sales-report-loading">
+        <Loader />
+        <p>Loading sales report...</p>
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <main className="admin-sales-report-page">
-        <div className="admin-sales-report-header">
-          <div>
-            <div className="admin-sales-report-breadcrumb">
-              <Link href="/admin/reports">Reports</Link>
-              <span>/</span>
-              <span>Sales Report</span>
-            </div>
-
-            <h1>Sales Report</h1>
-
-            <p>
-              Analyze quotation, invoice, revenue, and sales performance.
-            </p>
+    <main className="admin-sales-report-page">
+      <div className="admin-sales-report-header">
+        <div>
+          <div className="admin-sales-report-breadcrumb">
+            <Link href="/admin/reports">Reports</Link>
+            <span>/</span>
+            <span>Sales Report</span>
           </div>
 
-          <div className="admin-sales-report-header-actions">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleExport}
-              disabled={exporting}
-            >
-              {exporting ? "Exporting..." : "Export Report"}
-            </Button>
+          <h1>Sales Report</h1>
+
+          <p>
+            Analyze quotation, invoice, revenue, and sales performance.
+          </p>
+        </div>
+
+        <div className="admin-sales-report-header-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleExport}
+            disabled={exporting}
+          >
+            {exporting ? "Exporting..." : "Export Report"}
+          </Button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="admin-sales-report-error" role="alert">
+          {error}
+        </div>
+      )}
+
+      <section className="admin-sales-report-filters">
+        <div className="admin-sales-report-filter">
+          <DatePicker
+            label="Start Date"
+            value={filters.startDate}
+            onChange={(value) =>
+              handleFilterChange("startDate", value)
+            }
+          />
+        </div>
+
+        <div className="admin-sales-report-filter">
+          <DatePicker
+            label="End Date"
+            value={filters.endDate}
+            onChange={(value) =>
+              handleFilterChange("endDate", value)
+            }
+          />
+        </div>
+
+        <div className="admin-sales-report-filter">
+          <Select
+            label="Status"
+            value={filters.status}
+            onChange={(event) =>
+              handleFilterChange("status", event.target.value)
+            }
+            options={[
+              { value: "", label: "All Statuses" },
+              { value: "DRAFT", label: "Draft" },
+              { value: "SENT", label: "Sent" },
+              { value: "ACCEPTED", label: "Accepted" },
+              { value: "REJECTED", label: "Rejected" },
+              { value: "EXPIRED", label: "Expired" },
+              { value: "ISSUED", label: "Issued" },
+              { value: "CANCELLED", label: "Cancelled" },
+            ]}
+          />
+        </div>
+
+        <div className="admin-sales-report-filter">
+          <Select
+            label="Document Type"
+            value={filters.type}
+            onChange={(event) =>
+              handleFilterChange("type", event.target.value)
+            }
+            options={[
+              { value: "", label: "All Documents" },
+              { value: "QUOTATION", label: "Quotations" },
+              { value: "INVOICE", label: "Invoices" },
+            ]}
+          />
+        </div>
+
+        <div className="admin-sales-report-filter-actions">
+          <Button type="button" onClick={loadReport}>
+            Apply Filters
+          </Button>
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleReset}
+          >
+            Reset
+          </Button>
+        </div>
+      </section>
+
+      <section className="admin-sales-report-stats">
+        <div className="admin-sales-report-stat">
+          <div className="admin-sales-report-stat-icon revenue">
+            ₹
+          </div>
+
+          <div>
+            <span>Total Sales</span>
+            <strong>
+              {formatCurrency(summary.totalSales)}
+            </strong>
           </div>
         </div>
 
-        {error && (
-          <div className="admin-sales-report-error" role="alert">
-            {error}
-          </div>
-        )}
-
-        <section className="admin-sales-report-filters">
-          <div className="admin-sales-report-filter">
-            <DatePicker
-              label="Start Date"
-              value={filters.startDate}
-              onChange={(value) =>
-                handleFilterChange("startDate", value)
-              }
-            />
+        <div className="admin-sales-report-stat">
+          <div className="admin-sales-report-stat-icon quotation">
+            Q
           </div>
 
-          <div className="admin-sales-report-filter">
-            <DatePicker
-              label="End Date"
-              value={filters.endDate}
-              onChange={(value) =>
-                handleFilterChange("endDate", value)
-              }
-            />
+          <div>
+            <span>Total Quotations</span>
+            <strong>
+              {formatNumber(summary.totalQuotations)}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-sales-report-stat">
+          <div className="admin-sales-report-stat-icon invoice">
+            I
           </div>
 
-          <div className="admin-sales-report-filter">
-            <Select
-              label="Status"
-              value={filters.status}
-              onChange={(event) =>
-                handleFilterChange("status", event.target.value)
-              }
-              options={[
-                { value: "", label: "All Statuses" },
-                { value: "DRAFT", label: "Draft" },
-                { value: "SENT", label: "Sent" },
-                { value: "ACCEPTED", label: "Accepted" },
-                { value: "REJECTED", label: "Rejected" },
-                { value: "EXPIRED", label: "Expired" },
-                { value: "ISSUED", label: "Issued" },
-                { value: "CANCELLED", label: "Cancelled" },
-              ]}
-            />
+          <div>
+            <span>Total Invoices</span>
+            <strong>
+              {formatNumber(summary.totalInvoices)}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-sales-report-stat">
+          <div className="admin-sales-report-stat-icon average">
+            A
           </div>
 
-          <div className="admin-sales-report-filter">
-            <Select
-              label="Document Type"
-              value={filters.type}
-              onChange={(event) =>
-                handleFilterChange("type", event.target.value)
-              }
-              options={[
-                { value: "", label: "All Documents" },
-                { value: "QUOTATION", label: "Quotations" },
-                { value: "INVOICE", label: "Invoices" },
-              ]}
-            />
+          <div>
+            <span>Average Sale</span>
+            <strong>
+              {formatCurrency(summary.averageSale)}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-sales-report-stat">
+          <div className="admin-sales-report-stat-icon conversion">
+            %
           </div>
 
-          <div className="admin-sales-report-filter-actions">
-            <Button type="button" onClick={loadReport}>
-              Apply Filters
-            </Button>
-
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleReset}
-            >
-              Reset
-            </Button>
+          <div>
+            <span>Conversion Rate</span>
+            <strong>
+              {Number.isFinite(summary.conversionRate)
+                ? `${summary.conversionRate.toFixed(1)}%`
+                : "0%"}
+            </strong>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="admin-sales-report-stats">
-          <div className="admin-sales-report-stat">
-            <div className="admin-sales-report-stat-icon revenue">
-              ₹
-            </div>
-
-            <div>
-              <span>Total Sales</span>
-              <strong>
-                {formatCurrency(summary.totalSales)}
-              </strong>
-            </div>
-          </div>
-
-          <div className="admin-sales-report-stat">
-            <div className="admin-sales-report-stat-icon quotation">
-              Q
-            </div>
-
-            <div>
-              <span>Total Quotations</span>
-              <strong>
-                {formatNumber(summary.totalQuotations)}
-              </strong>
-            </div>
-          </div>
-
-          <div className="admin-sales-report-stat">
-            <div className="admin-sales-report-stat-icon invoice">
-              I
-            </div>
-
-            <div>
-              <span>Total Invoices</span>
-              <strong>
-                {formatNumber(summary.totalInvoices)}
-              </strong>
-            </div>
-          </div>
-
-          <div className="admin-sales-report-stat">
-            <div className="admin-sales-report-stat-icon average">
-              A
-            </div>
-
-            <div>
-              <span>Average Sale</span>
-              <strong>
-                {formatCurrency(summary.averageSale)}
-              </strong>
-            </div>
-          </div>
-
-          <div className="admin-sales-report-stat">
-            <div className="admin-sales-report-stat-icon conversion">
-              %
-            </div>
-
-            <div>
-              <span>Conversion Rate</span>
-              <strong>
-                {Number.isFinite(summary.conversionRate)
-                  ? `${summary.conversionRate.toFixed(1)}%`
-                  : "0%"}
-              </strong>
-            </div>
-          </div>
-        </section>
-
-        <section className="admin-sales-report-grid">
-          <div className="admin-sales-report-card">
-            <div className="admin-sales-report-card-header">
-              <div>
-                <h2>Monthly Sales</h2>
-                <p>
-                  Sales performance over the selected period.
-                </p>
-              </div>
-            </div>
-
-            <div className="admin-sales-report-card-body">
-              {salesByMonth.length > 0 ? (
-                <div className="admin-sales-report-monthly">
-                  {salesByMonth.map((item, index) => {
-                    const label =
-                      item?.month ||
-                      item?.label ||
-                      item?.name ||
-                      `Month ${index + 1}`;
-
-                    const amount = Number(
-                      getValue(item, [
-                        "amount",
-                        "sales",
-                        "totalSales",
-                        "revenue",
-                        "totalAmount",
-                      ])
-                    );
-
-                    const percentage =
-                      (amount / maxMonthlySales) * 100;
-
-                    return (
-                      <div
-                        className="admin-sales-report-month"
-                        key={`${label}-${index}`}
-                      >
-                        <div className="admin-sales-report-month-top">
-                          <span>{label}</span>
-                          <strong>
-                            {formatCurrency(amount)}
-                          </strong>
-                        </div>
-
-                        <div className="admin-sales-report-month-bar">
-                          <div
-                            style={{
-                              width: `${Math.max(
-                                Math.min(percentage, 100),
-                                2
-                              )}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="admin-sales-report-empty">
-                  <div className="admin-sales-report-empty-icon">
-                    —
-                  </div>
-
-                  <h3>No monthly sales data</h3>
-
-                  <p>
-                    No monthly sales records are available for the
-                    selected filters.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="admin-sales-report-card">
-            <div className="admin-sales-report-card-header">
-              <div>
-                <h2>Sales by Status</h2>
-                <p>
-                  Sales distribution across document statuses.
-                </p>
-              </div>
-            </div>
-
-            <div className="admin-sales-report-card-body">
-              {salesByStatus.length > 0 ? (
-                <div className="admin-sales-report-status-list">
-                  {salesByStatus.map((item, index) => {
-                    const status =
-                      item?.status ||
-                      item?.label ||
-                      item?.name ||
-                      "Unknown";
-
-                    const amount = Number(
-                      getValue(item, [
-                        "amount",
-                        "sales",
-                        "totalSales",
-                        "revenue",
-                        "totalAmount",
-                      ])
-                    );
-
-                    const count = Number(
-                      getValue(item, [
-                        "count",
-                        "total",
-                        "quantity",
-                        "records",
-                      ])
-                    );
-
-                    const percentage =
-                      (amount / maxStatusSales) * 100;
-
-                    return (
-                      <div
-                        className="admin-sales-report-status-item"
-                        key={`${status}-${index}`}
-                      >
-                        <div className="admin-sales-report-status-top">
-                          <span>{status}</span>
-
-                          <strong>
-                            {formatCurrency(amount)}
-                          </strong>
-                        </div>
-
-                        <div className="admin-sales-report-status-bar">
-                          <div
-                            style={{
-                              width: `${Math.max(
-                                Math.min(percentage, 100),
-                                2
-                              )}%`,
-                            }}
-                          />
-                        </div>
-
-                        <div className="admin-sales-report-status-meta">
-                          <span>
-                            {formatNumber(count)} records
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="admin-sales-report-empty">
-                  <div className="admin-sales-report-empty-icon">
-                    —
-                  </div>
-
-                  <h3>No status data</h3>
-
-                  <p>
-                    No sales status records are available for the
-                    selected filters.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="admin-sales-report-card admin-sales-report-recent-card">
+      <section className="admin-sales-report-grid">
+        <div className="admin-sales-report-card">
           <div className="admin-sales-report-card-header">
             <div>
-              <h2>Recent Sales</h2>
-
+              <h2>Monthly Sales</h2>
               <p>
-                Latest quotations and invoices included in the report.
+                Sales performance over the selected period.
               </p>
             </div>
           </div>
 
-          {recentSales.length > 0 ? (
-            <div className="admin-sales-report-table-wrapper">
-              <table className="admin-sales-report-table">
-                <thead>
-                  <tr>
-                    <th>Customer</th>
-                    <th>Quotation</th>
-                    <th>Invoice</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
+          <div className="admin-sales-report-card-body">
+            {salesByMonth.length > 0 ? (
+              <div className="admin-sales-report-monthly">
+                {salesByMonth.map((item, index) => {
+                  const label =
+                    item?.month ||
+                    item?.label ||
+                    item?.name ||
+                    `Month ${index + 1}`;
 
-                <tbody>
-                  {recentSales.map((item, index) => {
-                    const amount = Number(
-                      getValue(item, [
-                        "amount",
-                        "total",
-                        "totalAmount",
-                        "grandTotal",
-                        "netAmount",
-                      ])
-                    );
+                  const amount = Number(
+                    getValue(item, [
+                      "amount",
+                      "sales",
+                      "totalSales",
+                      "revenue",
+                      "totalAmount",
+                    ])
+                  );
 
-                    const status = getStatus(item);
+                  const percentage =
+                    (amount / maxMonthlySales) * 100;
 
-                    return (
-                      <tr
-                        key={
-                          item?._id ||
-                          item?.id ||
-                          `${getCustomerName(item)}-${index}`
-                        }
-                      >
-                        <td>
-                          <strong>
-                            {getCustomerName(item)}
-                          </strong>
+                  return (
+                    <div
+                      className="admin-sales-report-month"
+                      key={`${label}-${index}`}
+                    >
+                      <div className="admin-sales-report-month-top">
+                        <span>{label}</span>
+                        <strong>
+                          {formatCurrency(amount)}
+                        </strong>
+                      </div>
 
-                          {item?.customer?.phone && (
-                            <span className="admin-sales-report-subtext">
-                              {item.customer.phone}
-                            </span>
-                          )}
-                        </td>
-
-                        <td>
-                          {getQuotationNumber(item)}
-                        </td>
-
-                        <td>
-                          {getInvoiceNumber(item)}
-                        </td>
-
-                        <td>
-                          <strong>
-                            {formatCurrency(amount)}
-                          </strong>
-                        </td>
-
-                        <td>
-                          <Badge
-                            variant={getStatusVariant(status)}
-                          >
-                            {status}
-                          </Badge>
-                        </td>
-
-                        <td>
-                          {formatDate(
-                            item?.date ||
-                              item?.createdAt ||
-                              item?.invoiceDate ||
-                              item?.quotationDate
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="admin-sales-report-empty large">
-              <div className="admin-sales-report-empty-icon">
-                —
+                      <div className="admin-sales-report-month-bar">
+                        <div
+                          style={{
+                            width: `${Math.max(
+                              Math.min(percentage, 100),
+                              2
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+            ) : (
+              <div className="admin-sales-report-empty">
+                <div className="admin-sales-report-empty-icon">
+                  —
+                </div>
 
-              <h3>No recent sales</h3>
+                <h3>No monthly sales data</h3>
 
+                <p>
+                  No monthly sales records are available for the
+                  selected filters.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="admin-sales-report-card">
+          <div className="admin-sales-report-card-header">
+            <div>
+              <h2>Sales by Status</h2>
               <p>
-                No sales records are available for the selected filters.
+                Sales distribution across document statuses.
               </p>
             </div>
-          )}
-        </section>
-      </main>
-    </AdminLayout>
+          </div>
+
+          <div className="admin-sales-report-card-body">
+            {salesByStatus.length > 0 ? (
+              <div className="admin-sales-report-status-list">
+                {salesByStatus.map((item, index) => {
+                  const status =
+                    item?.status ||
+                    item?.label ||
+                    item?.name ||
+                    "Unknown";
+
+                  const amount = Number(
+                    getValue(item, [
+                      "amount",
+                      "sales",
+                      "totalSales",
+                      "revenue",
+                      "totalAmount",
+                    ])
+                  );
+
+                  const count = Number(
+                    getValue(item, [
+                      "count",
+                      "total",
+                      "quantity",
+                      "records",
+                    ])
+                  );
+
+                  const percentage =
+                    (amount / maxStatusSales) * 100;
+
+                  return (
+                    <div
+                      className="admin-sales-report-status-item"
+                      key={`${status}-${index}`}
+                    >
+                      <div className="admin-sales-report-status-top">
+                        <span>{status}</span>
+
+                        <strong>
+                          {formatCurrency(amount)}
+                        </strong>
+                      </div>
+
+                      <div className="admin-sales-report-status-bar">
+                        <div
+                          style={{
+                            width: `${Math.max(
+                              Math.min(percentage, 100),
+                              2
+                            )}%`,
+                          }}
+                        />
+                      </div>
+
+                      <div className="admin-sales-report-status-meta">
+                        <span>
+                          {formatNumber(count)} records
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="admin-sales-report-empty">
+                <div className="admin-sales-report-empty-icon">
+                  —
+                </div>
+
+                <h3>No status data</h3>
+
+                <p>
+                  No sales status records are available for the
+                  selected filters.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="admin-sales-report-card admin-sales-report-recent-card">
+        <div className="admin-sales-report-card-header">
+          <div>
+            <h2>Recent Sales</h2>
+
+            <p>
+              Latest quotations and invoices included in the report.
+            </p>
+          </div>
+        </div>
+
+        {recentSales.length > 0 ? (
+          <div className="admin-sales-report-table-wrapper">
+            <table className="admin-sales-report-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Quotation</th>
+                  <th>Invoice</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {recentSales.map((item, index) => {
+                  const amount = Number(
+                    getValue(item, [
+                      "amount",
+                      "total",
+                      "totalAmount",
+                      "grandTotal",
+                      "netAmount",
+                    ])
+                  );
+
+                  const status = getStatus(item);
+
+                  return (
+                    <tr
+                      key={
+                        item?._id ||
+                        item?.id ||
+                        `${getCustomerName(item)}-${index}`
+                      }
+                    >
+                      <td>
+                        <strong>
+                          {getCustomerName(item)}
+                        </strong>
+
+                        {item?.customer?.phone && (
+                          <span className="admin-sales-report-subtext">
+                            {item.customer.phone}
+                          </span>
+                        )}
+                      </td>
+
+                      <td>
+                        {getQuotationNumber(item)}
+                      </td>
+
+                      <td>
+                        {getInvoiceNumber(item)}
+                      </td>
+
+                      <td>
+                        <strong>
+                          {formatCurrency(amount)}
+                        </strong>
+                      </td>
+
+                      <td>
+                        <Badge
+                          variant={getStatusVariant(status)}
+                        >
+                          {status}
+                        </Badge>
+                      </td>
+
+                      <td>
+                        {formatDate(
+                          item?.date ||
+                            item?.createdAt ||
+                            item?.invoiceDate ||
+                            item?.quotationDate
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="admin-sales-report-empty large">
+            <div className="admin-sales-report-empty-icon">
+              —
+            </div>
+
+            <h3>No recent sales</h3>
+
+            <p>
+              No sales records are available for the selected filters.
+            </p>
+          </div>
+        )}
+      </section>
+    </main>
   );
 };
 

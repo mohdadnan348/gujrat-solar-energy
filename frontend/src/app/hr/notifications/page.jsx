@@ -1,23 +1,25 @@
-// frontend/src/app/hr/notifications/page.jsx
-
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import SearchBox from "@/components/common/SearchBox";
 import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
 import Modal from "@/components/common/Modal";
-import { useAuth } from "@/hooks/useAuth";
+
 import notificationService from "@/services/notification.service";
+
+import "./notifications.css";
 
 const ITEMS_PER_PAGE = 10;
 
 const HrNotificationsPage = () => {
-  const { user, logout, loading: authLoading } = useAuth();
-
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -29,20 +31,30 @@ const HrNotificationsPage = () => {
 
   const [page, setPage] = useState(1);
 
-  const [selectedNotification, setSelectedNotification] =
-    useState(null);
-  const [showDetails, setShowDetails] = useState(false);
+  const [
+    selectedNotification,
+    setSelectedNotification,
+  ] = useState(null);
 
-  const handleLogout = async () => {
-    await logout();
-  };
+  const [showDetails, setShowDetails] =
+    useState(false);
+
+  /* ---------------------------------
+     Search
+  --------------------------------- */
 
   const handleSearch = (value) => {
     setSearch(value);
     setPage(1);
   };
 
-  const loadNotifications = async (isRefresh = false) => {
+  /* ---------------------------------
+     Load Notifications
+  --------------------------------- */
+
+  const loadNotifications = async (
+    isRefresh = false
+  ) => {
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -62,13 +74,18 @@ const HrNotificationsPage = () => {
         response?.data ||
         [];
 
-      setNotifications(Array.isArray(data) ? data : []);
+      setNotifications(
+        Array.isArray(data) ? data : []
+      );
     } catch (err) {
-      console.error("HR notifications loading error:", err);
+      console.error(
+        "HR notifications loading error:",
+        err
+      );
 
       setError(
-        err?.message ||
-          err?.response?.data?.message ||
+        err?.response?.data?.message ||
+          err?.message ||
           "Unable to load notifications."
       );
 
@@ -82,6 +99,10 @@ const HrNotificationsPage = () => {
   useEffect(() => {
     loadNotifications();
   }, []);
+
+  /* ---------------------------------
+     Helpers
+  --------------------------------- */
 
   const getTitle = (notification) =>
     notification?.title ||
@@ -106,11 +127,15 @@ const HrNotificationsPage = () => {
     null;
 
   const isRead = (notification) => {
-    if (typeof notification?.read === "boolean") {
+    if (
+      typeof notification?.read === "boolean"
+    ) {
       return notification.read;
     }
 
-    if (typeof notification?.isRead === "boolean") {
+    if (
+      typeof notification?.isRead === "boolean"
+    ) {
       return notification.isRead;
     }
 
@@ -125,21 +150,9 @@ const HrNotificationsPage = () => {
     return String(value || "GENERAL")
       .replace(/_/g, " ")
       .toLowerCase()
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
-  };
-
-  const formatDate = (value) => {
-    if (!value) return "—";
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) return "—";
-
-    return date.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+      .replace(/\b\w/g, (letter) =>
+        letter.toUpperCase()
+      );
   };
 
   const formatDateTime = (value) => {
@@ -147,7 +160,9 @@ const HrNotificationsPage = () => {
 
     const date = new Date(value);
 
-    if (Number.isNaN(date.getTime())) return "—";
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
 
     return date.toLocaleString("en-IN", {
       day: "2-digit",
@@ -160,7 +175,8 @@ const HrNotificationsPage = () => {
   };
 
   const getTypeVariant = (type) => {
-    const normalized = String(type).toUpperCase();
+    const normalized =
+      String(type || "").toUpperCase();
 
     if (
       normalized.includes("LEAVE") ||
@@ -186,46 +202,101 @@ const HrNotificationsPage = () => {
     return "secondary";
   };
 
+  /* ---------------------------------
+     Normalize
+  --------------------------------- */
+
   const normalizedNotifications = useMemo(() => {
-    return notifications.map((notification) => ({
-      ...notification,
-      displayTitle: getTitle(notification),
-      displayMessage: getMessage(notification),
-      displayType: getType(notification),
-      displayDate: getDate(notification),
-      displayRead: isRead(notification),
-    }));
+    return notifications.map(
+      (notification) => ({
+        ...notification,
+
+        displayTitle:
+          getTitle(notification),
+
+        displayMessage:
+          getMessage(notification),
+
+        displayType:
+          getType(notification),
+
+        displayDate:
+          getDate(notification),
+
+        displayRead:
+          isRead(notification),
+      })
+    );
   }, [notifications]);
 
+  /* ---------------------------------
+     Notification Types
+  --------------------------------- */
+
+  const notificationTypes = useMemo(() => {
+    return [
+      ...new Set(
+        normalizedNotifications.map(
+          (notification) =>
+            String(
+              notification.displayType
+            ).toUpperCase()
+        )
+      ),
+    ].filter(Boolean);
+  }, [normalizedNotifications]);
+
+  /* ---------------------------------
+     Filter
+  --------------------------------- */
+
   const filteredNotifications = useMemo(() => {
-    const searchValue = search.trim().toLowerCase();
+    const searchValue =
+      search.trim().toLowerCase();
 
-    return normalizedNotifications.filter((notification) => {
-      const matchesSearch =
-        !searchValue ||
-        notification.displayTitle
-          .toLowerCase()
-          .includes(searchValue) ||
-        notification.displayMessage
-          .toLowerCase()
-          .includes(searchValue) ||
-        notification.displayType
-          .toLowerCase()
-          .includes(searchValue);
+    return normalizedNotifications.filter(
+      (notification) => {
+        const title =
+          String(
+            notification.displayTitle || ""
+          ).toLowerCase();
 
-      const matchesRead =
-        readFilter === "ALL" ||
-        (readFilter === "READ" && notification.displayRead) ||
-        (readFilter === "UNREAD" &&
-          !notification.displayRead);
+        const message =
+          String(
+            notification.displayMessage || ""
+          ).toLowerCase();
 
-      const matchesType =
-        typeFilter === "ALL" ||
-        notification.displayType.toUpperCase() ===
-          typeFilter;
+        const type =
+          String(
+            notification.displayType || ""
+          ).toLowerCase();
 
-      return matchesSearch && matchesRead && matchesType;
-    });
+        const matchesSearch =
+          !searchValue ||
+          title.includes(searchValue) ||
+          message.includes(searchValue) ||
+          type.includes(searchValue);
+
+        const matchesRead =
+          readFilter === "ALL" ||
+          (readFilter === "READ" &&
+            notification.displayRead) ||
+          (readFilter === "UNREAD" &&
+            !notification.displayRead);
+
+        const matchesType =
+          typeFilter === "ALL" ||
+          String(
+            notification.displayType
+          ).toUpperCase() === typeFilter;
+
+        return (
+          matchesSearch &&
+          matchesRead &&
+          matchesType
+        );
+      }
+    );
   }, [
     normalizedNotifications,
     search,
@@ -233,23 +304,36 @@ const HrNotificationsPage = () => {
     typeFilter,
   ]);
 
+  /* ---------------------------------
+     Pagination
+  --------------------------------- */
+
   const totalPages = Math.max(
     1,
     Math.ceil(
-      filteredNotifications.length / ITEMS_PER_PAGE
+      filteredNotifications.length /
+        ITEMS_PER_PAGE
     )
   );
 
-  const currentPage = Math.min(page, totalPages);
+  const currentPage = Math.min(
+    page,
+    totalPages
+  );
 
   const paginatedNotifications = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const start =
+      (currentPage - 1) *
+      ITEMS_PER_PAGE;
 
     return filteredNotifications.slice(
       start,
       start + ITEMS_PER_PAGE
     );
-  }, [filteredNotifications, currentPage]);
+  }, [
+    filteredNotifications,
+    currentPage,
+  ]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -257,33 +341,35 @@ const HrNotificationsPage = () => {
     }
   }, [page, totalPages]);
 
-  const notificationTypes = useMemo(() => {
-    return [
-      ...new Set(
-        normalizedNotifications.map((notification) =>
-          String(notification.displayType).toUpperCase()
-        )
-      ),
-    ].filter(Boolean);
-  }, [normalizedNotifications]);
+  /* ---------------------------------
+     Stats
+  --------------------------------- */
 
   const stats = useMemo(() => {
-    const total = normalizedNotifications.length;
+    const total =
+      normalizedNotifications.length;
 
-    const unread = normalizedNotifications.filter(
-      (notification) => !notification.displayRead
-    ).length;
+    const unread =
+      normalizedNotifications.filter(
+        (notification) =>
+          !notification.displayRead
+      ).length;
 
-    const read = normalizedNotifications.filter(
-      (notification) => notification.displayRead
-    ).length;
+    const read =
+      normalizedNotifications.filter(
+        (notification) =>
+          notification.displayRead
+      ).length;
 
-    const leaveRelated = normalizedNotifications.filter(
-      (notification) =>
-        String(notification.displayType)
-          .toUpperCase()
-          .includes("LEAVE")
-    ).length;
+    const leaveRelated =
+      normalizedNotifications.filter(
+        (notification) =>
+          String(
+            notification.displayType
+          )
+            .toUpperCase()
+            .includes("LEAVE")
+      ).length;
 
     return {
       total,
@@ -293,8 +379,15 @@ const HrNotificationsPage = () => {
     };
   }, [normalizedNotifications]);
 
+  /* ---------------------------------
+     Modal
+  --------------------------------- */
+
   const openDetails = (notification) => {
-    setSelectedNotification(notification);
+    setSelectedNotification(
+      notification
+    );
+
     setShowDetails(true);
   };
 
@@ -303,190 +396,224 @@ const HrNotificationsPage = () => {
     setShowDetails(false);
   };
 
-  if (authLoading || loading) {
+  /* ---------------------------------
+     Loading
+  --------------------------------- */
+
+  if (loading) {
     return (
-      <MainLayout
-        user={user}
-        onLogout={handleLogout}
-        onSearch={handleSearch}
-        notificationCount={0}
-      >
-        <div className="hr-notifications-loading">
-          <Loader />
-        </div>
-      </MainLayout>
+      <div className="hr-notifications-loading">
+        <Loader />
+      </div>
     );
   }
 
+  /* ---------------------------------
+     UI
+  --------------------------------- */
+
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      onSearch={handleSearch}
-      notificationCount={stats.unread}
-    >
-      <div className="hr-notifications-page">
-        {/* Header */}
-        <div className="hr-notifications-header">
-          <div>
-            <div className="hr-notifications-breadcrumb">
-              HR <span>/</span> Notifications
-            </div>
+    <div className="hr-notifications-page">
+      {/* Header */}
 
-            <h1>Notifications</h1>
-
-            <p>
-              Stay updated with important HR and system
-              notifications.
-            </p>
+      <div className="hr-notifications-header">
+        <div>
+          <div className="hr-notifications-breadcrumb">
+            HR <span>/</span> Notifications
           </div>
 
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => loadNotifications(true)}
-            disabled={refreshing}
-          >
-            {refreshing ? "Refreshing..." : "↻ Refresh"}
-          </Button>
+          <h1>Notifications</h1>
+
+          <p>
+            Stay updated with important HR
+            and system notifications.
+          </p>
         </div>
 
-        {/* Stats */}
-        <div className="hr-notifications-stats">
-          <div className="hr-notification-stat-card">
-            <div className="hr-notification-stat-icon">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() =>
+            loadNotifications(true)
+          }
+          disabled={refreshing}
+        >
+          {refreshing
+            ? "Refreshing..."
+            : "↻ Refresh"}
+        </Button>
+      </div>
+
+      {/* Stats */}
+
+      <div className="hr-notifications-stats">
+        <div className="hr-notification-stat-card">
+          <div className="hr-notification-stat-icon">
+            🔔
+          </div>
+
+          <div>
+            <span>Total Notifications</span>
+            <strong>{stats.total}</strong>
+          </div>
+        </div>
+
+        <div className="hr-notification-stat-card">
+          <div className="hr-notification-stat-icon">
+            ●
+          </div>
+
+          <div>
+            <span>Unread</span>
+            <strong>{stats.unread}</strong>
+          </div>
+        </div>
+
+        <div className="hr-notification-stat-card">
+          <div className="hr-notification-stat-icon">
+            ✓
+          </div>
+
+          <div>
+            <span>Read</span>
+            <strong>{stats.read}</strong>
+          </div>
+        </div>
+
+        <div className="hr-notification-stat-card">
+          <div className="hr-notification-stat-icon">
+            📅
+          </div>
+
+          <div>
+            <span>Leave Related</span>
+            <strong>
+              {stats.leaveRelated}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+
+      <div className="hr-notifications-toolbar">
+        <div className="hr-notifications-search">
+          <SearchBox
+            value={search}
+            onChange={handleSearch}
+            placeholder="Search notifications..."
+          />
+        </div>
+
+        <div className="hr-notifications-filters">
+          <select
+            className="hr-notifications-filter-select"
+            value={readFilter}
+            onChange={(event) => {
+              setReadFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
+          >
+            <option value="ALL">
+              All Notifications
+            </option>
+
+            <option value="UNREAD">
+              Unread
+            </option>
+
+            <option value="READ">
+              Read
+            </option>
+          </select>
+
+          <select
+            className="hr-notifications-filter-select"
+            value={typeFilter}
+            onChange={(event) => {
+              setTypeFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
+          >
+            <option value="ALL">
+              All Types
+            </option>
+
+            {notificationTypes.map(
+              (type) => (
+                <option
+                  key={type}
+                  value={type}
+                >
+                  {formatType(type)}
+                </option>
+              )
+            )}
+          </select>
+        </div>
+      </div>
+
+      {/* Error */}
+
+      {error && (
+        <div className="hr-notifications-error">
+          <span>{error}</span>
+
+          <button
+            type="button"
+            onClick={() =>
+              loadNotifications()
+            }
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {/* Notifications */}
+
+      <div className="hr-notifications-card">
+        <div className="hr-notifications-card-header">
+          <div>
+            <h2>All Notifications</h2>
+
+            <p>
+              {filteredNotifications.length}{" "}
+              notification
+              {filteredNotifications.length !==
+              1
+                ? "s"
+                : ""}{" "}
+              found
+            </p>
+          </div>
+        </div>
+
+        {paginatedNotifications.length ===
+        0 ? (
+          <div className="hr-notifications-empty">
+            <div className="hr-notifications-empty-icon">
               🔔
             </div>
 
-            <div>
-              <span>Total Notifications</span>
-              <strong>{stats.total}</strong>
-            </div>
+            <h3>
+              No notifications found
+            </h3>
+
+            <p>
+              Try changing your search or
+              filter criteria.
+            </p>
           </div>
-
-          <div className="hr-notification-stat-card">
-            <div className="hr-notification-stat-icon">
-              ●
-            </div>
-
-            <div>
-              <span>Unread</span>
-              <strong>{stats.unread}</strong>
-            </div>
-          </div>
-
-          <div className="hr-notification-stat-card">
-            <div className="hr-notification-stat-icon">
-              ✓
-            </div>
-
-            <div>
-              <span>Read</span>
-              <strong>{stats.read}</strong>
-            </div>
-          </div>
-
-          <div className="hr-notification-stat-card">
-            <div className="hr-notification-stat-icon">
-              📅
-            </div>
-
-            <div>
-              <span>Leave Related</span>
-              <strong>{stats.leaveRelated}</strong>
-            </div>
-          </div>
-        </div>
-
-        {/* Toolbar */}
-        <div className="hr-notifications-toolbar">
-          <div className="hr-notifications-search">
-            <SearchBox
-              value={search}
-              onChange={handleSearch}
-              placeholder="Search notifications..."
-            />
-          </div>
-
-          <div className="hr-notifications-filters">
-            <select
-              className="hr-notifications-filter-select"
-              value={readFilter}
-              onChange={(event) => {
-                setReadFilter(event.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="ALL">All Notifications</option>
-              <option value="UNREAD">Unread</option>
-              <option value="READ">Read</option>
-            </select>
-
-            <select
-              className="hr-notifications-filter-select"
-              value={typeFilter}
-              onChange={(event) => {
-                setTypeFilter(event.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="ALL">All Types</option>
-
-              {notificationTypes.map((type) => (
-                <option key={type} value={type}>
-                  {formatType(type)}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div className="hr-notifications-error">
-            <span>{error}</span>
-
-            <button
-              type="button"
-              onClick={() => loadNotifications()}
-            >
-              Try Again
-            </button>
-          </div>
-        )}
-
-        {/* Notifications List */}
-        <div className="hr-notifications-card">
-          <div className="hr-notifications-card-header">
-            <div>
-              <h2>All Notifications</h2>
-
-              <p>
-                {filteredNotifications.length} notification
-                {filteredNotifications.length !== 1
-                  ? "s"
-                  : ""}{" "}
-                found
-              </p>
-            </div>
-          </div>
-
-          {paginatedNotifications.length === 0 ? (
-            <div className="hr-notifications-empty">
-              <div className="hr-notifications-empty-icon">
-                🔔
-              </div>
-
-              <h3>No notifications found</h3>
-
-              <p>
-                Try changing your search or filter criteria.
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="hr-notifications-list">
-                {paginatedNotifications.map((notification) => (
+        ) : (
+          <>
+            <div className="hr-notifications-list">
+              {paginatedNotifications.map(
+                (notification) => (
                   <div
                     key={
                       notification._id ||
@@ -508,7 +635,9 @@ const HrNotificationsPage = () => {
                     <div className="hr-notification-content">
                       <div className="hr-notification-top">
                         <h3>
-                          {notification.displayTitle}
+                          {
+                            notification.displayTitle
+                          }
                         </h3>
 
                         <Badge
@@ -522,7 +651,11 @@ const HrNotificationsPage = () => {
                         </Badge>
                       </div>
 
-                      <p>{notification.displayMessage}</p>
+                      <p>
+                        {
+                          notification.displayMessage
+                        }
+                      </p>
 
                       <div className="hr-notification-meta">
                         <span>
@@ -543,30 +676,35 @@ const HrNotificationsPage = () => {
                       type="button"
                       className="hr-notification-view-btn"
                       onClick={() =>
-                        openDetails(notification)
+                        openDetails(
+                          notification
+                        )
                       }
                     >
                       View
                     </button>
                   </div>
-                ))}
-              </div>
-
-              {totalPages > 1 && (
-                <div className="hr-notifications-pagination">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setPage}
-                  />
-                </div>
+                )
               )}
-            </>
-          )}
-        </div>
+            </div>
 
-        {/* Details Modal */}
-        {showDetails && selectedNotification && (
+            {totalPages > 1 && (
+              <div className="hr-notifications-pagination">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Details Modal */}
+
+      {showDetails &&
+        selectedNotification && (
           <Modal
             isOpen={showDetails}
             onClose={closeDetails}
@@ -580,28 +718,38 @@ const HrNotificationsPage = () => {
 
                 <div>
                   <h3>
-                    {getTitle(selectedNotification)}
+                    {getTitle(
+                      selectedNotification
+                    )}
                   </h3>
 
                   <div className="hr-notification-details-badges">
                     <Badge
                       variant={getTypeVariant(
-                        getType(selectedNotification)
+                        getType(
+                          selectedNotification
+                        )
                       )}
                     >
                       {formatType(
-                        getType(selectedNotification)
+                        getType(
+                          selectedNotification
+                        )
                       )}
                     </Badge>
 
                     <Badge
                       variant={
-                        isRead(selectedNotification)
+                        isRead(
+                          selectedNotification
+                        )
                           ? "secondary"
                           : "warning"
                       }
                     >
-                      {isRead(selectedNotification)
+                      {isRead(
+                        selectedNotification
+                      )
                         ? "Read"
                         : "Unread"}
                     </Badge>
@@ -613,7 +761,9 @@ const HrNotificationsPage = () => {
                 <span>Message</span>
 
                 <p>
-                  {getMessage(selectedNotification) ||
+                  {getMessage(
+                    selectedNotification
+                  ) ||
                     "No message available."}
                 </p>
               </div>
@@ -621,33 +771,45 @@ const HrNotificationsPage = () => {
               <div className="hr-notification-detail-grid">
                 <div>
                   <span>Type</span>
+
                   <strong>
                     {formatType(
-                      getType(selectedNotification)
+                      getType(
+                        selectedNotification
+                      )
                     )}
                   </strong>
                 </div>
 
                 <div>
                   <span>Date</span>
+
                   <strong>
                     {formatDateTime(
-                      getDate(selectedNotification)
+                      getDate(
+                        selectedNotification
+                      )
                     )}
                   </strong>
                 </div>
 
                 <div>
                   <span>Status</span>
+
                   <strong>
-                    {isRead(selectedNotification)
+                    {isRead(
+                      selectedNotification
+                    )
                       ? "Read"
                       : "Unread"}
                   </strong>
                 </div>
 
                 <div>
-                  <span>Notification ID</span>
+                  <span>
+                    Notification ID
+                  </span>
+
                   <strong>
                     {selectedNotification._id ||
                       selectedNotification.id ||
@@ -668,8 +830,7 @@ const HrNotificationsPage = () => {
             </div>
           </Modal>
         )}
-      </div>
-    </MainLayout>
+    </div>
   );
 };
 

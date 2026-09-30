@@ -1,17 +1,23 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import { useRouter } from "next/navigation";
-import MainLayout from "@/components/layout/MainLayout";
+
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import SearchBox from "@/components/common/SearchBox";
 import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
 import Modal from "@/components/common/Modal";
-import { useAuth } from "@/hooks/useAuth";
+
 import leadService from "@/services/lead.service";
 import employeeService from "@/services/employee.service";
+
 import "./leads.css";
 
 const ITEMS_PER_PAGE = 10;
@@ -36,33 +42,37 @@ const PRIORITY_OPTIONS = [
 
 const AdminLeadsPage = () => {
   const router = useRouter();
-  const { user, logout, loading: authLoading } = useAuth();
 
   const [leads, setLeads] = useState([]);
   const [employees, setEmployees] = useState([]);
 
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] =
+    useState(false);
+
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [priorityFilter, setPriorityFilter] = useState("ALL");
-  const [sourceFilter, setSourceFilter] = useState("ALL");
-  const [employeeFilter, setEmployeeFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] =
+    useState("ALL");
+  const [priorityFilter, setPriorityFilter] =
+    useState("ALL");
+  const [sourceFilter, setSourceFilter] =
+    useState("ALL");
+  const [employeeFilter, setEmployeeFilter] =
+    useState("ALL");
 
   const [page, setPage] = useState(1);
-  const [selectedLead, setSelectedLead] = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
 
-  const handleLogout = async () => {
-    await logout();
-  };
+  const [selectedLead, setSelectedLead] =
+    useState(null);
 
-  const handleSearch = (value) => {
-    setSearch(value);
-    setPage(1);
-  };
+  const [showDetails, setShowDetails] =
+    useState(false);
+
+  /* ----------------------------------
+     Load Data
+  ---------------------------------- */
 
   const loadData = async (isRefresh = false) => {
     try {
@@ -74,17 +84,20 @@ const AdminLeadsPage = () => {
 
       setError("");
 
-      const [leadResponse, employeeResponse] =
-        await Promise.all([
-          leadService.getLeads({
-            page: 1,
-            limit: 1000,
-          }),
-          employeeService.getEmployees({
-            page: 1,
-            limit: 1000,
-          }),
-        ]);
+      const [
+        leadResponse,
+        employeeResponse,
+      ] = await Promise.all([
+        leadService.getLeads({
+          page: 1,
+          limit: 1000,
+        }),
+
+        employeeService.getEmployees({
+          page: 1,
+          limit: 1000,
+        }),
+      ]);
 
       const leadData =
         leadResponse?.data?.leads ||
@@ -100,12 +113,22 @@ const AdminLeadsPage = () => {
         employeeResponse?.data ||
         [];
 
-      setLeads(Array.isArray(leadData) ? leadData : []);
+      setLeads(
+        Array.isArray(leadData)
+          ? leadData
+          : []
+      );
+
       setEmployees(
-        Array.isArray(employeeData) ? employeeData : []
+        Array.isArray(employeeData)
+          ? employeeData
+          : []
       );
     } catch (err) {
-      console.error("Admin leads loading error:", err);
+      console.error(
+        "Admin leads loading error:",
+        err
+      );
 
       setError(
         err?.response?.data?.message ||
@@ -123,6 +146,10 @@ const AdminLeadsPage = () => {
     loadData();
   }, []);
 
+  /* ----------------------------------
+     Helpers
+  ---------------------------------- */
+
   const getLeadId = (lead) =>
     lead?.leadId ||
     lead?._id ||
@@ -136,7 +163,8 @@ const AdminLeadsPage = () => {
     "Unnamed Lead";
 
   const getCompanyName = (lead) =>
-    lead?.companyName || "Individual Customer";
+    lead?.companyName ||
+    "Individual Customer";
 
   const getPhone = (lead) =>
     lead?.mobile ||
@@ -148,23 +176,35 @@ const AdminLeadsPage = () => {
     lead?.email || "—";
 
   const getStatus = (lead) =>
-    String(lead?.status || "NEW").toUpperCase();
+    String(
+      lead?.status || "NEW"
+    ).toUpperCase();
 
   const getPriority = (lead) =>
-    String(lead?.priority || "MEDIUM").toUpperCase();
+    String(
+      lead?.priority || "MEDIUM"
+    ).toUpperCase();
 
   const getSource = (lead) =>
-    String(lead?.leadSource || lead?.source || "OTHER").toUpperCase();
+    String(
+      lead?.leadSource ||
+        lead?.source ||
+        "OTHER"
+    ).toUpperCase();
 
-  const getAssignedEmployeeId = (lead) => {
+  const getAssignedEmployee = (lead) =>
+    lead?.assignedTo ||
+    lead?.assignedEmployee ||
+    lead?.employee ||
+    null;
+
+  const getAssignedEmployeeId = (
+    lead
+  ) => {
     const assigned =
-      lead?.assignedTo ||
-      lead?.assignedEmployee ||
-      lead?.employee;
+      getAssignedEmployee(lead);
 
-    if (!assigned) {
-      return "";
-    }
+    if (!assigned) return "";
 
     if (typeof assigned === "string") {
       return assigned;
@@ -178,25 +218,26 @@ const AdminLeadsPage = () => {
     );
   };
 
-  const getAssignedEmployeeName = (lead) => {
+  const getAssignedEmployeeName = (
+    lead
+  ) => {
     const assigned =
-      lead?.assignedTo ||
-      lead?.assignedEmployee ||
-      lead?.employee;
+      getAssignedEmployee(lead);
 
     if (!assigned) {
       return "Unassigned";
     }
 
     if (typeof assigned === "string") {
-      const employee = employees.find(
-        (item) =>
-          String(
-            item?._id ||
-              item?.id ||
-              item?.employeeId
-          ) === String(assigned)
-      );
+      const employee =
+        employees.find(
+          (item) =>
+            String(
+              item?._id ||
+                item?.id ||
+                item?.employeeId
+            ) === String(assigned)
+        );
 
       return (
         employee?.name ||
@@ -213,9 +254,7 @@ const AdminLeadsPage = () => {
   };
 
   const formatDate = (value) => {
-    if (!value) {
-      return "—";
-    }
+    if (!value) return "—";
 
     const date = new Date(value);
 
@@ -223,22 +262,29 @@ const AdminLeadsPage = () => {
       return "—";
     }
 
-    return date.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    return date.toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    );
   };
 
   const formatLabel = (value) =>
     String(value || "")
       .replace(/_/g, " ")
       .toLowerCase()
-      .replace(/\b\w/g, (letter) =>
-        letter.toUpperCase()
+      .replace(
+        /\b\w/g,
+        (letter) =>
+          letter.toUpperCase()
       );
 
-  const getStatusVariant = (status) => {
+  const getStatusVariant = (
+    status
+  ) => {
     switch (status) {
       case "NEW":
         return "info";
@@ -269,10 +315,12 @@ const AdminLeadsPage = () => {
     }
   };
 
-  const getPriorityVariant = (priority) => {
+  const getPriorityVariant = (
+    priority
+  ) => {
     switch (priority) {
-      case "HIGH":
       case "URGENT":
+      case "HIGH":
         return "danger";
 
       case "MEDIUM":
@@ -286,44 +334,79 @@ const AdminLeadsPage = () => {
     }
   };
 
+  /* ----------------------------------
+     Source Options
+  ---------------------------------- */
+
   const sourceOptions = useMemo(() => {
     return [
       ...new Set(
         leads
-          .map((lead) => getSource(lead))
+          .map((lead) =>
+            getSource(lead)
+          )
           .filter(Boolean)
       ),
     ];
   }, [leads]);
 
+  /* ----------------------------------
+     Filter Leads
+  ---------------------------------- */
+
   const filteredLeads = useMemo(() => {
-    const searchValue = search.trim().toLowerCase();
+    const searchValue =
+      search.trim().toLowerCase();
 
     return leads.filter((lead) => {
       const leadName =
-        getLeadName(lead).toLowerCase();
+        getLeadName(
+          lead
+        ).toLowerCase();
 
       const company =
-        getCompanyName(lead).toLowerCase();
+        getCompanyName(
+          lead
+        ).toLowerCase();
 
       const phone =
-        getPhone(lead).toLowerCase();
+        String(
+          getPhone(lead)
+        ).toLowerCase();
 
       const email =
-        getEmail(lead).toLowerCase();
+        getEmail(
+          lead
+        ).toLowerCase();
 
-      const status = getStatus(lead);
-      const priority = getPriority(lead);
-      const source = getSource(lead);
+      const status =
+        getStatus(lead);
+
+      const priority =
+        getPriority(lead);
+
+      const source =
+        getSource(lead);
+
       const employeeId =
-        getAssignedEmployeeId(lead);
+        getAssignedEmployeeId(
+          lead
+        );
 
       const matchesSearch =
         !searchValue ||
-        leadName.includes(searchValue) ||
-        company.includes(searchValue) ||
-        phone.includes(searchValue) ||
-        email.includes(searchValue);
+        leadName.includes(
+          searchValue
+        ) ||
+        company.includes(
+          searchValue
+        ) ||
+        phone.includes(
+          searchValue
+        ) ||
+        email.includes(
+          searchValue
+        );
 
       const matchesStatus =
         statusFilter === "ALL" ||
@@ -359,10 +442,15 @@ const AdminLeadsPage = () => {
     employeeFilter,
   ]);
 
+  /* ----------------------------------
+     Pagination
+  ---------------------------------- */
+
   const totalPages = Math.max(
     1,
     Math.ceil(
-      filteredLeads.length / ITEMS_PER_PAGE
+      filteredLeads.length /
+        ITEMS_PER_PAGE
     )
   );
 
@@ -371,15 +459,20 @@ const AdminLeadsPage = () => {
     totalPages
   );
 
-  const paginatedLeads = useMemo(() => {
-    const start =
-      (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedLeads =
+    useMemo(() => {
+      const start =
+        (currentPage - 1) *
+        ITEMS_PER_PAGE;
 
-    return filteredLeads.slice(
-      start,
-      start + ITEMS_PER_PAGE
-    );
-  }, [filteredLeads, currentPage]);
+      return filteredLeads.slice(
+        start,
+        start + ITEMS_PER_PAGE
+      );
+    }, [
+      filteredLeads,
+      currentPage,
+    ]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -387,26 +480,38 @@ const AdminLeadsPage = () => {
     }
   }, [page, totalPages]);
 
+  /* ----------------------------------
+     Stats
+  ---------------------------------- */
+
   const stats = useMemo(() => {
     const total = leads.length;
 
-    const newLeads = leads.filter(
-      (lead) => getStatus(lead) === "NEW"
-    ).length;
+    const newLeads =
+      leads.filter(
+        (lead) =>
+          getStatus(lead) === "NEW"
+      ).length;
 
-    const qualified = leads.filter(
-      (lead) => getStatus(lead) === "QUALIFIED"
-    ).length;
+    const qualified =
+      leads.filter(
+        (lead) =>
+          getStatus(lead) ===
+          "QUALIFIED"
+      ).length;
 
-    const won = leads.filter(
-      (lead) => getStatus(lead) === "WON"
-    ).length;
+    const won =
+      leads.filter(
+        (lead) =>
+          getStatus(lead) === "WON"
+      ).length;
 
-    const highPriority = leads.filter((lead) =>
-      ["HIGH", "URGENT"].includes(
-        getPriority(lead)
-      )
-    ).length;
+    const highPriority =
+      leads.filter((lead) =>
+        ["HIGH", "URGENT"].includes(
+          getPriority(lead)
+        )
+      ).length;
 
     return {
       total,
@@ -416,6 +521,19 @@ const AdminLeadsPage = () => {
       highPriority,
     };
   }, [leads]);
+
+  /* ----------------------------------
+     Search
+  ---------------------------------- */
+
+  const handleSearch = (value) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  /* ----------------------------------
+     Details
+  ---------------------------------- */
 
   const openDetails = (lead) => {
     setSelectedLead(lead);
@@ -427,6 +545,10 @@ const AdminLeadsPage = () => {
     setShowDetails(false);
   };
 
+  /* ----------------------------------
+     Reset
+  ---------------------------------- */
+
   const resetFilters = () => {
     setSearch("");
     setStatusFilter("ALL");
@@ -436,229 +558,264 @@ const AdminLeadsPage = () => {
     setPage(1);
   };
 
-  if (authLoading || loading) {
+  /* ----------------------------------
+     Loading
+  ---------------------------------- */
+
+  if (loading) {
     return (
-      <MainLayout
-        user={user}
-        onLogout={handleLogout}
-        onSearch={handleSearch}
-        notificationCount={0}
-      >
-        <div className="admin-leads-loading">
-          <Loader />
-        </div>
-      </MainLayout>
+      <div className="admin-leads-loading">
+        <Loader />
+      </div>
     );
   }
 
+  /* ----------------------------------
+     UI
+  ---------------------------------- */
+
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      onSearch={handleSearch}
-      notificationCount={0}
-    >
-      <div className="admin-leads-page">
-        {/* Header */}
-        <div className="admin-leads-header">
+    <div className="admin-leads-page">
+      {/* Header */}
+
+      <div className="admin-leads-header">
+        <div>
+          <div className="admin-leads-breadcrumb">
+            Admin{" "}
+            <span>/</span>{" "}
+            Leads
+          </div>
+
+          <h1>
+            Lead Management
+          </h1>
+
+          <p>
+            Manage, assign and monitor
+            all solar leads.
+          </p>
+        </div>
+
+        <div className="admin-leads-header-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() =>
+              loadData(true)
+            }
+            disabled={refreshing}
+          >
+            {refreshing
+              ? "Refreshing..."
+              : "↻ Refresh"}
+          </Button>
+
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() =>
+              router.push(
+                "/admin/leads/create"
+              )
+            }
+          >
+            + Create Lead
+          </Button>
+        </div>
+      </div>
+
+      {/* Error */}
+
+      {error && (
+        <div className="admin-leads-error">
+          <span>{error}</span>
+
+          <button
+            type="button"
+            onClick={() =>
+              loadData()
+            }
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {/* Stats */}
+
+      <div className="admin-leads-stats">
+        <div className="admin-lead-stat-card">
+          <div className="admin-lead-stat-icon">
+            👥
+          </div>
+
           <div>
-            <div className="admin-leads-breadcrumb">
-              Admin <span>/</span> Leads
-            </div>
-
-            <h1>Lead Management</h1>
-
-            <p>
-              Manage, assign and monitor all solar leads.
-            </p>
-          </div>
-
-          <div className="admin-leads-header-actions">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => loadData(true)}
-              disabled={refreshing}
-            >
-              {refreshing
-                ? "Refreshing..."
-                : "↻ Refresh"}
-            </Button>
-
-            <Button
-              type="button"
-              variant="primary"
-              onClick={() =>
-                router.push("/admin/leads/create")
-              }
-            >
-              + Create Lead
-            </Button>
+            <span>Total Leads</span>
+            <strong>
+              {stats.total}
+            </strong>
           </div>
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="admin-leads-error">
-            <span>{error}</span>
-
-            <button
-              type="button"
-              onClick={() => loadData()}
-            >
-              Try Again
-            </button>
-          </div>
-        )}
-
-        {/* Stats */}
-        <div className="admin-leads-stats">
-          <div className="admin-lead-stat-card">
-            <div className="admin-lead-stat-icon">
-              👥
-            </div>
-
-            <div>
-              <span>Total Leads</span>
-              <strong>{stats.total}</strong>
-            </div>
+        <div className="admin-lead-stat-card">
+          <div className="admin-lead-stat-icon">
+            🆕
           </div>
 
-          <div className="admin-lead-stat-card">
-            <div className="admin-lead-stat-icon">
-              🆕
-            </div>
-
-            <div>
-              <span>New Leads</span>
-              <strong>{stats.newLeads}</strong>
-            </div>
-          </div>
-
-          <div className="admin-lead-stat-card">
-            <div className="admin-lead-stat-icon">
-              ✓
-            </div>
-
-            <div>
-              <span>Qualified</span>
-              <strong>{stats.qualified}</strong>
-            </div>
-          </div>
-
-          <div className="admin-lead-stat-card">
-            <div className="admin-lead-stat-icon">
-              🏆
-            </div>
-
-            <div>
-              <span>Won</span>
-              <strong>{stats.won}</strong>
-            </div>
-          </div>
-
-          <div className="admin-lead-stat-card">
-            <div className="admin-lead-stat-icon">
-              ⚠
-            </div>
-
-            <div>
-              <span>High Priority</span>
-              <strong>{stats.highPriority}</strong>
-            </div>
+          <div>
+            <span>New Leads</span>
+            <strong>
+              {stats.newLeads}
+            </strong>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="admin-leads-filter-card">
-          <div className="admin-leads-search">
-            <SearchBox
-              value={search}
-              onChange={handleSearch}
-              placeholder="Search name, company, phone..."
-            />
+        <div className="admin-lead-stat-card">
+          <div className="admin-lead-stat-icon">
+            ✓
           </div>
 
-          <div className="admin-leads-filter-group">
-            <select
-              value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(event.target.value);
-                setPage(1);
-              }}
-              className="admin-leads-filter-select"
-            >
-              <option value="ALL">
-                All Status
-              </option>
+          <div>
+            <span>Qualified</span>
+            <strong>
+              {stats.qualified}
+            </strong>
+          </div>
+        </div>
 
-              {STATUS_OPTIONS.map((option) => (
+        <div className="admin-lead-stat-card">
+          <div className="admin-lead-stat-icon">
+            🏆
+          </div>
+
+          <div>
+            <span>Won</span>
+            <strong>
+              {stats.won}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-lead-stat-card">
+          <div className="admin-lead-stat-icon">
+            ⚠
+          </div>
+
+          <div>
+            <span>High Priority</span>
+            <strong>
+              {stats.highPriority}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+
+      <div className="admin-leads-filter-card">
+        <div className="admin-leads-search">
+          <SearchBox
+            value={search}
+            onChange={handleSearch}
+            placeholder="Search name, company, phone..."
+          />
+        </div>
+
+        <div className="admin-leads-filter-group">
+          <select
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
+            className="admin-leads-filter-select"
+          >
+            <option value="ALL">
+              All Status
+            </option>
+
+            {STATUS_OPTIONS.map(
+              (option) => (
                 <option
                   key={option.value}
                   value={option.value}
                 >
                   {option.label}
                 </option>
-              ))}
-            </select>
+              )
+            )}
+          </select>
 
-            <select
-              value={priorityFilter}
-              onChange={(event) => {
-                setPriorityFilter(event.target.value);
-                setPage(1);
-              }}
-              className="admin-leads-filter-select"
-            >
-              <option value="ALL">
-                All Priority
-              </option>
+          <select
+            value={priorityFilter}
+            onChange={(event) => {
+              setPriorityFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
+            className="admin-leads-filter-select"
+          >
+            <option value="ALL">
+              All Priority
+            </option>
 
-              {PRIORITY_OPTIONS.map((option) => (
+            {PRIORITY_OPTIONS.map(
+              (option) => (
                 <option
                   key={option.value}
                   value={option.value}
                 >
                   {option.label}
                 </option>
-              ))}
-            </select>
+              )
+            )}
+          </select>
 
-            <select
-              value={sourceFilter}
-              onChange={(event) => {
-                setSourceFilter(event.target.value);
-                setPage(1);
-              }}
-              className="admin-leads-filter-select"
-            >
-              <option value="ALL">
-                All Sources
-              </option>
+          <select
+            value={sourceFilter}
+            onChange={(event) => {
+              setSourceFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
+            className="admin-leads-filter-select"
+          >
+            <option value="ALL">
+              All Sources
+            </option>
 
-              {sourceOptions.map((source) => (
+            {sourceOptions.map(
+              (source) => (
                 <option
                   key={source}
                   value={source}
                 >
                   {formatLabel(source)}
                 </option>
-              ))}
-            </select>
+              )
+            )}
+          </select>
 
-            <select
-              value={employeeFilter}
-              onChange={(event) => {
-                setEmployeeFilter(event.target.value);
-                setPage(1);
-              }}
-              className="admin-leads-filter-select"
-            >
-              <option value="ALL">
-                All Employees
-              </option>
+          <select
+            value={employeeFilter}
+            onChange={(event) => {
+              setEmployeeFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
+            className="admin-leads-filter-select"
+          >
+            <option value="ALL">
+              All Employees
+            </option>
 
-              {employees.map((employee) => {
+            {employees.map(
+              (employee) => {
                 const id =
                   employee?._id ||
                   employee?.id ||
@@ -677,78 +834,90 @@ const AdminLeadsPage = () => {
                     {name}
                   </option>
                 );
-              })}
-            </select>
+              }
+            )}
+          </select>
 
-            <button
-              type="button"
-              className="admin-leads-reset-btn"
-              onClick={resetFilters}
-            >
-              Reset
-            </button>
+          <button
+            type="button"
+            className="admin-leads-reset-btn"
+            onClick={resetFilters}
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+
+      <div className="admin-leads-table-card">
+        <div className="admin-leads-table-header">
+          <div>
+            <h2>
+              All Leads
+            </h2>
+
+            <p>
+              {filteredLeads.length}{" "}
+              lead
+              {filteredLeads.length !==
+              1
+                ? "s"
+                : ""}{" "}
+              found
+            </p>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="admin-leads-table-card">
-          <div className="admin-leads-table-header">
-            <div>
-              <h2>All Leads</h2>
-
-              <p>
-                {filteredLeads.length} lead
-                {filteredLeads.length !== 1
-                  ? "s"
-                  : ""}{" "}
-                found
-              </p>
+        {paginatedLeads.length ===
+        0 ? (
+          <div className="admin-leads-empty">
+            <div className="admin-leads-empty-icon">
+              👥
             </div>
+
+            <h3>
+              No leads found
+            </h3>
+
+            <p>
+              Try changing the filters
+              or create a new lead.
+            </p>
+
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() =>
+                router.push(
+                  "/admin/leads/create"
+                )
+              }
+            >
+              + Create Lead
+            </Button>
           </div>
+        ) : (
+          <>
+            <div className="admin-leads-table-wrapper">
+              <table className="admin-leads-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Lead</th>
+                    <th>Contact</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Source</th>
+                    <th>Assigned To</th>
+                    <th>Created</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
 
-          {paginatedLeads.length === 0 ? (
-            <div className="admin-leads-empty">
-              <div className="admin-leads-empty-icon">
-                👥
-              </div>
-
-              <h3>No leads found</h3>
-
-              <p>
-                Try changing the filters or create a new
-                lead.
-              </p>
-
-              <Button
-                type="button"
-                variant="primary"
-                onClick={() =>
-                  router.push("/admin/leads/create")
-                }
-              >
-                + Create Lead
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="admin-leads-table-wrapper">
-                <table className="admin-leads-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Lead</th>
-                      <th>Contact</th>
-                      <th>Status</th>
-                      <th>Priority</th>
-                      <th>Source</th>
-                      <th>Assigned To</th>
-                      <th>Created</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {paginatedLeads.map((lead) => (
+                <tbody>
+                  {paginatedLeads.map(
+                    (lead) => (
                       <tr
                         key={
                           lead?._id ||
@@ -758,18 +927,24 @@ const AdminLeadsPage = () => {
                       >
                         <td>
                           <span className="admin-lead-id">
-                            {getLeadId(lead)}
+                            {getLeadId(
+                              lead
+                            )}
                           </span>
                         </td>
 
                         <td>
                           <div className="admin-lead-name-cell">
                             <strong>
-                              {getLeadName(lead)}
+                              {getLeadName(
+                                lead
+                              )}
                             </strong>
 
                             <span>
-                              {getCompanyName(lead)}
+                              {getCompanyName(
+                                lead
+                              )}
                             </span>
                           </div>
                         </td>
@@ -777,11 +952,15 @@ const AdminLeadsPage = () => {
                         <td>
                           <div className="admin-lead-contact-cell">
                             <span>
-                              {getPhone(lead)}
+                              {getPhone(
+                                lead
+                              )}
                             </span>
 
                             <small>
-                              {getEmail(lead)}
+                              {getEmail(
+                                lead
+                              )}
                             </small>
                           </div>
                         </td>
@@ -789,11 +968,15 @@ const AdminLeadsPage = () => {
                         <td>
                           <Badge
                             variant={getStatusVariant(
-                              getStatus(lead)
+                              getStatus(
+                                lead
+                              )
                             )}
                           >
                             {formatLabel(
-                              getStatus(lead)
+                              getStatus(
+                                lead
+                              )
                             )}
                           </Badge>
                         </td>
@@ -801,11 +984,15 @@ const AdminLeadsPage = () => {
                         <td>
                           <Badge
                             variant={getPriorityVariant(
-                              getPriority(lead)
+                              getPriority(
+                                lead
+                              )
                             )}
                           >
                             {formatLabel(
-                              getPriority(lead)
+                              getPriority(
+                                lead
+                              )
                             )}
                           </Badge>
                         </td>
@@ -813,7 +1000,9 @@ const AdminLeadsPage = () => {
                         <td>
                           <span className="admin-lead-source">
                             {formatLabel(
-                              getSource(lead)
+                              getSource(
+                                lead
+                              )
                             )}
                           </span>
                         </td>
@@ -839,33 +1028,44 @@ const AdminLeadsPage = () => {
                             type="button"
                             className="admin-lead-view-btn"
                             onClick={() =>
-                              openDetails(lead)
+                              openDetails(
+                                lead
+                              )
                             }
                           >
                             View
                           </button>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {totalPages > 1 && (
+              <div className="admin-leads-pagination">
+                <Pagination
+                  currentPage={
+                    currentPage
+                  }
+                  totalPages={
+                    totalPages
+                  }
+                  onPageChange={
+                    setPage
+                  }
+                />
               </div>
+            )}
+          </>
+        )}
+      </div>
 
-              {totalPages > 1 && (
-                <div className="admin-leads-pagination">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setPage}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
+      {/* Details Modal */}
 
-        {/* Details Modal */}
-        {showDetails && selectedLead && (
+      {showDetails &&
+        selectedLead && (
           <Modal
             isOpen={showDetails}
             onClose={closeDetails}
@@ -874,38 +1074,52 @@ const AdminLeadsPage = () => {
             <div className="admin-lead-details">
               <div className="admin-lead-details-header">
                 <div className="admin-lead-avatar">
-                  {getLeadName(selectedLead)
+                  {getLeadName(
+                    selectedLead
+                  )
                     .charAt(0)
                     .toUpperCase()}
                 </div>
 
                 <div>
                   <h3>
-                    {getLeadName(selectedLead)}
+                    {getLeadName(
+                      selectedLead
+                    )}
                   </h3>
 
                   <p>
-                    {getCompanyName(selectedLead)}
+                    {getCompanyName(
+                      selectedLead
+                    )}
                   </p>
 
                   <div className="admin-lead-details-badges">
                     <Badge
                       variant={getStatusVariant(
-                        getStatus(selectedLead)
+                        getStatus(
+                          selectedLead
+                        )
                       )}
                     >
                       {formatLabel(
-                        getStatus(selectedLead)
+                        getStatus(
+                          selectedLead
+                        )
                       )}
                     </Badge>
 
                     <Badge
                       variant={getPriorityVariant(
-                        getPriority(selectedLead)
+                        getPriority(
+                          selectedLead
+                        )
                       )}
                     >
                       {formatLabel(
-                        getPriority(selectedLead)
+                        getPriority(
+                          selectedLead
+                        )
                       )}
                     </Badge>
                   </div>
@@ -914,37 +1128,60 @@ const AdminLeadsPage = () => {
 
               <div className="admin-lead-details-grid">
                 <div>
-                  <span>Lead ID</span>
-                  <strong>
-                    {getLeadId(selectedLead)}
-                  </strong>
-                </div>
+                  <span>
+                    Lead ID
+                  </span>
 
-                <div>
-                  <span>Mobile</span>
                   <strong>
-                    {getPhone(selectedLead)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Email</span>
-                  <strong>
-                    {getEmail(selectedLead)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Source</span>
-                  <strong>
-                    {formatLabel(
-                      getSource(selectedLead)
+                    {getLeadId(
+                      selectedLead
                     )}
                   </strong>
                 </div>
 
                 <div>
-                  <span>Assigned To</span>
+                  <span>
+                    Mobile
+                  </span>
+
+                  <strong>
+                    {getPhone(
+                      selectedLead
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Email
+                  </span>
+
+                  <strong>
+                    {getEmail(
+                      selectedLead
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Source
+                  </span>
+
+                  <strong>
+                    {formatLabel(
+                      getSource(
+                        selectedLead
+                      )
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Assigned To
+                  </span>
+
                   <strong>
                     {getAssignedEmployeeName(
                       selectedLead
@@ -953,7 +1190,10 @@ const AdminLeadsPage = () => {
                 </div>
 
                 <div>
-                  <span>Follow-up Date</span>
+                  <span>
+                    Follow-up Date
+                  </span>
+
                   <strong>
                     {formatDate(
                       selectedLead?.followUpDate
@@ -962,7 +1202,10 @@ const AdminLeadsPage = () => {
                 </div>
 
                 <div>
-                  <span>Created Date</span>
+                  <span>
+                    Created Date
+                  </span>
+
                   <strong>
                     {formatDate(
                       selectedLead?.createdAt
@@ -971,15 +1214,21 @@ const AdminLeadsPage = () => {
                 </div>
 
                 <div>
-                  <span>City</span>
+                  <span>
+                    City
+                  </span>
+
                   <strong>
-                    {selectedLead?.city || "—"}
+                    {selectedLead?.city ||
+                      "—"}
                   </strong>
                 </div>
               </div>
 
               <div className="admin-lead-detail-block">
-                <span>Requirement</span>
+                <span>
+                  Requirement
+                </span>
 
                 <p>
                   {selectedLead?.requirement ||
@@ -988,7 +1237,9 @@ const AdminLeadsPage = () => {
               </div>
 
               <div className="admin-lead-detail-block">
-                <span>Address</span>
+                <span>
+                  Address
+                </span>
 
                 <p>
                   {[
@@ -1004,7 +1255,9 @@ const AdminLeadsPage = () => {
               </div>
 
               <div className="admin-lead-detail-block">
-                <span>Notes</span>
+                <span>
+                  Notes
+                </span>
 
                 <p>
                   {selectedLead?.notes ||
@@ -1016,7 +1269,9 @@ const AdminLeadsPage = () => {
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={closeDetails}
+                  onClick={
+                    closeDetails
+                  }
                 >
                   Close
                 </Button>
@@ -1036,8 +1291,7 @@ const AdminLeadsPage = () => {
             </div>
           </Modal>
         )}
-      </div>
-    </MainLayout>
+    </div>
   );
 };
 

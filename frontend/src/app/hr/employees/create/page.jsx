@@ -2,9 +2,8 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import MainLayout from "@/components/layout/MainLayout";
 import employeeService from "@/services/employee.service";
-import { useAuth } from "@/hooks/useAuth";
+
 import "./create-employee.css";
 
 const initialForm = {
@@ -14,7 +13,6 @@ const initialForm = {
   email: "",
   mobile: "",
   alternateMobile: "",
-  role: "EMPLOYEE",
   department: "",
   designation: "",
   joiningDate: "",
@@ -23,22 +21,20 @@ const initialForm = {
 };
 
 const generateEmployeeId = () => {
-  const randomNumber = Math.floor(100000 + Math.random() * 900000);
+  const randomNumber = Math.floor(
+    100000 + Math.random() * 900000
+  );
+
   return `EMP-${randomNumber}`;
 };
 
 const CreateEmployeePage = () => {
   const router = useRouter();
-  const { user, logout, loading: authLoading } = useAuth();
 
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState("");
   const [saving, setSaving] = useState(false);
-
-  const handleLogout = async () => {
-    await logout();
-  };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -66,21 +62,22 @@ const CreateEmployeePage = () => {
     if (!form.email.trim()) {
       nextErrors.email = "Email is required.";
     } else if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        form.email.trim()
+      )
     ) {
-      nextErrors.email = "Enter a valid email address.";
+      nextErrors.email =
+        "Enter a valid email address.";
     }
 
     if (!form.mobile.trim()) {
-      nextErrors.mobile = "Mobile number is required.";
-    }
-
-    if (!form.role) {
-      nextErrors.role = "Role is required.";
+      nextErrors.mobile =
+        "Mobile number is required.";
     }
 
     if (!form.joiningDate) {
-      nextErrors.joiningDate = "Joining date is required.";
+      nextErrors.joiningDate =
+        "Joining date is required.";
     }
 
     setErrors(nextErrors);
@@ -89,12 +86,17 @@ const CreateEmployeePage = () => {
   };
 
   const buildPayload = () => {
-    const fullName = [form.firstName.trim(), form.lastName.trim()]
+    const fullName = [
+      form.firstName.trim(),
+      form.lastName.trim(),
+    ]
       .filter(Boolean)
       .join(" ");
 
     return {
-      employeeId: form.employeeId.trim() || generateEmployeeId(),
+      employeeId:
+        form.employeeId.trim() ||
+        generateEmployeeId(),
 
       name: fullName,
 
@@ -102,13 +104,20 @@ const CreateEmployeePage = () => {
 
       mobile: form.mobile.trim(),
 
-      department: form.department.trim() || undefined,
+      alternateMobile:
+        form.alternateMobile.trim() || undefined,
 
-      designation: form.designation.trim() || undefined,
+      department:
+        form.department.trim() || undefined,
 
-      joiningDate: form.joiningDate || undefined,
+      designation:
+        form.designation.trim() || undefined,
 
-      role: form.role.toUpperCase(),
+      joiningDate:
+        form.joiningDate || undefined,
+
+      // HR panel se ONLY EMPLOYEE create hoga
+      role: "EMPLOYEE",
 
       address: form.address.trim(),
 
@@ -127,11 +136,16 @@ const CreateEmployeePage = () => {
       setSaving(true);
       setSubmitError("");
 
-      await employeeService.createEmployee(buildPayload());
+      await employeeService.createEmployee(
+        buildPayload()
+      );
 
       router.push("/hr/employees");
     } catch (error) {
-      console.error("Failed to create employee:", error);
+      console.error(
+        "Failed to create employee:",
+        error
+      );
 
       const backendMessage =
         error?.response?.data?.message ||
@@ -152,21 +166,10 @@ const CreateEmployeePage = () => {
     router.push("/hr/employees");
   };
 
-  if (authLoading) {
-    return (
-      <div className="hr-create-employee-loading">
-        Loading...
-      </div>
-    );
-  }
-
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      notificationCount={0}
-    >
-      <div className="hr-create-employee-page">
+    <div className="hr-create-employee-page">
+
+        {/* Header */}
         <div className="hr-create-employee-header">
           <div>
             <button
@@ -174,7 +177,10 @@ const CreateEmployeePage = () => {
               className="hr-back-button"
               onClick={handleCancel}
             >
-              <span aria-hidden="true">←</span>
+              <span aria-hidden="true">
+                ←
+              </span>
+
               Back to Employees
             </button>
 
@@ -185,11 +191,13 @@ const CreateEmployeePage = () => {
             <h1>Create Employee</h1>
 
             <p>
-              Add a new employee profile to the organization.
+              Add a new employee profile to the
+              organization.
             </p>
           </div>
         </div>
 
+        {/* Error */}
         {submitError && (
           <div className="hr-create-error">
             <span>{submitError}</span>
@@ -201,7 +209,10 @@ const CreateEmployeePage = () => {
           onSubmit={handleSubmit}
           noValidate
         >
-          {/* Personal Information */}
+
+          {/* =========================
+              PERSONAL INFORMATION
+          ========================== */}
           <section className="hr-create-section">
             <div className="hr-create-section-header">
               <div className="hr-create-section-number">
@@ -210,13 +221,17 @@ const CreateEmployeePage = () => {
 
               <div>
                 <h2>Personal Information</h2>
+
                 <p>
-                  Enter the employee&apos;s basic personal details.
+                  Enter the employee&apos;s basic
+                  personal details.
                 </p>
               </div>
             </div>
 
             <div className="hr-create-fields">
+
+              {/* First Name */}
               <div className="hr-field">
                 <label htmlFor="firstName">
                   First Name <span>*</span>
@@ -230,15 +245,20 @@ const CreateEmployeePage = () => {
                   onChange={handleChange}
                   placeholder="Enter first name"
                   className={
-                    errors.firstName ? "has-error" : ""
+                    errors.firstName
+                      ? "has-error"
+                      : ""
                   }
                 />
 
                 {errors.firstName && (
-                  <small>{errors.firstName}</small>
+                  <small>
+                    {errors.firstName}
+                  </small>
                 )}
               </div>
 
+              {/* Last Name */}
               <div className="hr-field">
                 <label htmlFor="lastName">
                   Last Name
@@ -254,6 +274,7 @@ const CreateEmployeePage = () => {
                 />
               </div>
 
+              {/* Email */}
               <div className="hr-field">
                 <label htmlFor="email">
                   Email Address <span>*</span>
@@ -267,15 +288,20 @@ const CreateEmployeePage = () => {
                   onChange={handleChange}
                   placeholder="employee@example.com"
                   className={
-                    errors.email ? "has-error" : ""
+                    errors.email
+                      ? "has-error"
+                      : ""
                   }
                 />
 
                 {errors.email && (
-                  <small>{errors.email}</small>
+                  <small>
+                    {errors.email}
+                  </small>
                 )}
               </div>
 
+              {/* Mobile */}
               <div className="hr-field">
                 <label htmlFor="mobile">
                   Mobile Number <span>*</span>
@@ -289,15 +315,20 @@ const CreateEmployeePage = () => {
                   onChange={handleChange}
                   placeholder="Enter mobile number"
                   className={
-                    errors.mobile ? "has-error" : ""
+                    errors.mobile
+                      ? "has-error"
+                      : ""
                   }
                 />
 
                 {errors.mobile && (
-                  <small>{errors.mobile}</small>
+                  <small>
+                    {errors.mobile}
+                  </small>
                 )}
               </div>
 
+              {/* Alternate Mobile */}
               <div className="hr-field">
                 <label htmlFor="alternateMobile">
                   Alternate Mobile
@@ -313,6 +344,7 @@ const CreateEmployeePage = () => {
                 />
               </div>
 
+              {/* Joining Date */}
               <div className="hr-field">
                 <label htmlFor="joiningDate">
                   Joining Date <span>*</span>
@@ -325,18 +357,24 @@ const CreateEmployeePage = () => {
                   value={form.joiningDate}
                   onChange={handleChange}
                   className={
-                    errors.joiningDate ? "has-error" : ""
+                    errors.joiningDate
+                      ? "has-error"
+                      : ""
                   }
                 />
 
                 {errors.joiningDate && (
-                  <small>{errors.joiningDate}</small>
+                  <small>
+                    {errors.joiningDate}
+                  </small>
                 )}
               </div>
             </div>
           </section>
 
-          {/* Employment Information */}
+          {/* =========================
+              EMPLOYMENT INFORMATION
+          ========================== */}
           <section className="hr-create-section">
             <div className="hr-create-section-header">
               <div className="hr-create-section-number">
@@ -344,15 +382,20 @@ const CreateEmployeePage = () => {
               </div>
 
               <div>
-                <h2>Employment Information</h2>
+                <h2>
+                  Employment Information
+                </h2>
+
                 <p>
-                  Configure the employee&apos;s role and organization
-                  details.
+                  Configure the employee&apos;s
+                  organization details.
                 </p>
               </div>
             </div>
 
             <div className="hr-create-fields">
+
+              {/* Employee ID */}
               <div className="hr-field">
                 <label htmlFor="employeeId">
                   Employee ID
@@ -373,42 +416,36 @@ const CreateEmployeePage = () => {
                     fontWeight: 500,
                   }}
                 >
-                  Leave empty to generate automatically.
+                  Leave empty to generate
+                  automatically.
                 </small>
               </div>
 
+              {/* Fixed Role */}
               <div className="hr-field">
-                <label htmlFor="role">
-                  Role <span>*</span>
+                <label>
+                  Role
                 </label>
 
-                <select
-                  id="role"
-                  name="role"
-                  value={form.role}
-                  onChange={handleChange}
-                  className={
-                    errors.role ? "has-error" : ""
-                  }
+                <input
+                  type="text"
+                  value="Employee"
+                  disabled
+                  readOnly
+                />
+
+                <small
+                  style={{
+                    color: "#16834b",
+                    fontWeight: 600,
+                  }}
                 >
-                  <option value="EMPLOYEE">
-                    Employee
-                  </option>
-
-                  <option value="MANAGER">
-                    Manager
-                  </option>
-
-                  <option value="HR">
-                    HR
-                  </option>
-                </select>
-
-                {errors.role && (
-                  <small>{errors.role}</small>
-                )}
+                  HR panel can create only
+                  Employee accounts.
+                </small>
               </div>
 
+              {/* Department */}
               <div className="hr-field">
                 <label htmlFor="department">
                   Department
@@ -424,6 +461,7 @@ const CreateEmployeePage = () => {
                 />
               </div>
 
+              {/* Designation */}
               <div className="hr-field">
                 <label htmlFor="designation">
                   Designation
@@ -441,7 +479,9 @@ const CreateEmployeePage = () => {
             </div>
           </section>
 
-          {/* Address Information */}
+          {/* =========================
+              ADDRESS INFORMATION
+          ========================== */}
           <section className="hr-create-section">
             <div className="hr-create-section-header">
               <div className="hr-create-section-number">
@@ -449,9 +489,13 @@ const CreateEmployeePage = () => {
               </div>
 
               <div>
-                <h2>Address Information</h2>
+                <h2>
+                  Address Information
+                </h2>
+
                 <p>
-                  Add the employee&apos;s current contact address.
+                  Add the employee&apos;s current
+                  contact address.
                 </p>
               </div>
             </div>
@@ -474,7 +518,9 @@ const CreateEmployeePage = () => {
             </div>
           </section>
 
-          {/* Additional Information */}
+          {/* =========================
+              ADDITIONAL INFORMATION
+          ========================== */}
           <section className="hr-create-section">
             <div className="hr-create-section-header">
               <div className="hr-create-section-number">
@@ -482,9 +528,13 @@ const CreateEmployeePage = () => {
               </div>
 
               <div>
-                <h2>Additional Information</h2>
+                <h2>
+                  Additional Information
+                </h2>
+
                 <p>
-                  Add optional notes related to the employee.
+                  Add optional notes related to
+                  the employee.
                 </p>
               </div>
             </div>
@@ -507,6 +557,7 @@ const CreateEmployeePage = () => {
             </div>
           </section>
 
+          {/* Actions */}
           <div className="hr-create-actions">
             <button
               type="button"
@@ -527,9 +578,9 @@ const CreateEmployeePage = () => {
                 : "Create Employee"}
             </button>
           </div>
+
         </form>
-      </div>
-    </MainLayout>
+    </div>
   );
 };
 

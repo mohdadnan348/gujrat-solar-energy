@@ -1,15 +1,14 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import SearchBox from "@/components/common/SearchBox";
 import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
 import Modal from "@/components/common/Modal";
-import { useAuth } from "@/hooks/useAuth";
 import leaveService from "@/services/leave.service";
+import "./leaves.css";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -22,9 +21,7 @@ const STATUS_OPTIONS = [
 ];
 
 const normalizeResponse = (response) => {
-  if (Array.isArray(response)) {
-    return response;
-  }
+  if (Array.isArray(response)) return response;
 
   if (Array.isArray(response?.data)) {
     return response.data;
@@ -54,8 +51,6 @@ const normalizeResponse = (response) => {
 };
 
 const HrLeavesPage = () => {
-  const { user, logout, loading: authLoading } = useAuth();
-
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -63,18 +58,13 @@ const HrLeavesPage = () => {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [leaveTypeFilter, setLeaveTypeFilter] =
-    useState("ALL");
+  const [leaveTypeFilter, setLeaveTypeFilter] = useState("ALL");
   const [dateFilter, setDateFilter] = useState("");
 
   const [page, setPage] = useState(1);
 
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
-
-  const handleLogout = async () => {
-    await logout();
-  };
 
   const handleSearch = (value) => {
     setSearch(value);
@@ -101,15 +91,11 @@ const HrLeavesPage = () => {
         params.date = dateFilter;
       }
 
-      const response =
-        await leaveService.getLeaves(params);
+      const response = await leaveService.getLeaves(params);
 
       setLeaves(normalizeResponse(response));
     } catch (err) {
-      console.error(
-        "HR leaves loading error:",
-        err
-      );
+      console.error("HR leaves loading error:", err);
 
       setError(
         err?.response?.data?.message ||
@@ -191,11 +177,7 @@ const HrLeavesPage = () => {
       return leave?.email || "—";
     }
 
-    return (
-      employee?.email ||
-      leave?.email ||
-      "—"
-    );
+    return employee?.email || leave?.email || "—";
   };
 
   const getLeaveType = (leave) => {
@@ -262,15 +244,12 @@ const HrLeavesPage = () => {
       return "—";
     }
 
-    const startDay = new Date(startDate);
-    const endDay = new Date(endDate);
-
-    startDay.setHours(0, 0, 0, 0);
-    endDay.setHours(0, 0, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
 
     const difference =
       Math.floor(
-        (endDay.getTime() - startDay.getTime()) /
+        (endDate.getTime() - startDate.getTime()) /
           86400000
       ) + 1;
 
@@ -278,9 +257,7 @@ const HrLeavesPage = () => {
   };
 
   const formatDate = (value) => {
-    if (!value) {
-      return "—";
-    }
+    if (!value) return "—";
 
     const date = new Date(value);
 
@@ -296,9 +273,7 @@ const HrLeavesPage = () => {
   };
 
   const formatText = (value) => {
-    if (!value) {
-      return "—";
-    }
+    if (!value) return "—";
 
     return String(value)
       .replace(/_/g, " ")
@@ -309,15 +284,14 @@ const HrLeavesPage = () => {
   };
 
   const normalizeStatus = (status) => {
-    return String(status)
+    return String(status || "")
       .replace(/_/g, " ")
       .trim()
       .toLowerCase();
   };
 
   const getStatusVariant = (status) => {
-    const normalized =
-      normalizeStatus(status);
+    const normalized = normalizeStatus(status);
 
     if (normalized === "approved") {
       return "success";
@@ -365,8 +339,7 @@ const HrLeavesPage = () => {
   }, [normalizedLeaves]);
 
   const filteredLeaves = useMemo(() => {
-    const searchValue =
-      search.trim().toLowerCase();
+    const searchValue = search.trim().toLowerCase();
 
     return normalizedLeaves.filter((leave) => {
       const name = String(
@@ -400,9 +373,8 @@ const HrLeavesPage = () => {
 
       const matchesType =
         leaveTypeFilter === "ALL" ||
-        String(
-          leave.displayType || ""
-        ).toUpperCase() === leaveTypeFilter;
+        String(leave.displayType || "")
+          .toUpperCase() === leaveTypeFilter;
 
       return (
         matchesSearch &&
@@ -420,8 +392,7 @@ const HrLeavesPage = () => {
   const totalPages = Math.max(
     1,
     Math.ceil(
-      filteredLeaves.length /
-        ITEMS_PER_PAGE
+      filteredLeaves.length / ITEMS_PER_PAGE
     )
   );
 
@@ -518,166 +489,222 @@ const HrLeavesPage = () => {
     setPage(1);
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
-      <MainLayout
-        user={user}
-        onLogout={handleLogout}
-        onSearch={handleSearch}
-        notificationCount={0}
-      >
-        <div className="hr-leaves-loading">
-          <Loader />
-        </div>
-      </MainLayout>
+      <div className="hr-leaves-loading">
+        <Loader />
+      </div>
     );
   }
 
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      onSearch={handleSearch}
-      notificationCount={0}
-    >
-      <div className="hr-leaves-page">
-        <div className="hr-leaves-header">
-          <div>
-            <div className="hr-leaves-breadcrumb">
-              HR <span>/</span> Leaves
-            </div>
+    <div className="hr-leaves-page">
+      {/* Header */}
+      <div className="hr-leaves-header">
+        <div>
+          <div className="hr-leaves-breadcrumb">
+            HR <span>/</span> Leaves
+          </div>
 
-            <h1>Leave Management</h1>
+          <h1>Leave Management</h1>
+
+          <p>
+            Review employee leave requests and
+            monitor leave records.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => loadLeaves(true)}
+          disabled={refreshing}
+        >
+          {refreshing
+            ? "Refreshing..."
+            : "↻ Refresh"}
+        </Button>
+      </div>
+
+      {/* Statistics */}
+      <div className="hr-leaves-stats">
+        <div className="hr-leaves-stat-card">
+          <div className="hr-leaves-stat-icon">
+            📋
+          </div>
+
+          <div>
+            <span>Total Requests</span>
+            <strong>{stats.total}</strong>
+          </div>
+        </div>
+
+        <div className="hr-leaves-stat-card">
+          <div className="hr-leaves-stat-icon">
+            ◷
+          </div>
+
+          <div>
+            <span>Pending</span>
+            <strong>{stats.pending}</strong>
+          </div>
+        </div>
+
+        <div className="hr-leaves-stat-card">
+          <div className="hr-leaves-stat-icon">
+            ✓
+          </div>
+
+          <div>
+            <span>Approved</span>
+            <strong>{stats.approved}</strong>
+          </div>
+        </div>
+
+        <div className="hr-leaves-stat-card">
+          <div className="hr-leaves-stat-icon">
+            ✕
+          </div>
+
+          <div>
+            <span>Rejected</span>
+            <strong>{stats.rejected}</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className="hr-leaves-toolbar">
+        <div className="hr-leaves-search">
+          <SearchBox
+            value={search}
+            onChange={handleSearch}
+            placeholder="Search employee, ID or email..."
+          />
+        </div>
+
+        <div className="hr-leaves-filters">
+          <select
+            className="hr-leaves-filter-select"
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
+          >
+            {STATUS_OPTIONS.map((option) => (
+              <option
+                key={option.value}
+                value={option.value}
+              >
+                {option.label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="hr-leaves-filter-select"
+            value={leaveTypeFilter}
+            onChange={(event) => {
+              setLeaveTypeFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
+          >
+            <option value="ALL">
+              All Leave Types
+            </option>
+
+            {leaveTypes.map((type) => (
+              <option
+                key={type}
+                value={type}
+              >
+                {formatText(type)}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="date"
+            className="hr-leaves-date-input"
+            value={dateFilter}
+            onChange={(event) => {
+              setDateFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
+          />
+
+          {(search ||
+            statusFilter !== "ALL" ||
+            leaveTypeFilter !== "ALL" ||
+            dateFilter) && (
+            <button
+              type="button"
+              className="hr-leaves-clear-btn"
+              onClick={clearFilters}
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="hr-leaves-error">
+          <span>{error}</span>
+
+          <button
+            type="button"
+            onClick={() => loadLeaves()}
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {/* Main Card */}
+      <div className="hr-leaves-card">
+        <div className="hr-leaves-card-header">
+          <div>
+            <h2>Leave Requests</h2>
 
             <p>
-              Review employee leave requests and
-              monitor leave records.
+              {filteredLeaves.length} request
+              {filteredLeaves.length !== 1
+                ? "s"
+                : ""}{" "}
+              found
             </p>
           </div>
 
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => loadLeaves(true)}
-            disabled={refreshing}
-          >
-            {refreshing
-              ? "Refreshing..."
-              : "↻ Refresh"}
-          </Button>
+          {dateFilter && (
+            <div className="hr-leaves-selected-date">
+              {formatDate(dateFilter)}
+            </div>
+          )}
         </div>
 
-        <div className="hr-leaves-stats">
-          <div className="hr-leaves-stat-card">
-            <div className="hr-leaves-stat-icon">
-              📋
+        {paginatedLeaves.length === 0 ? (
+          <div className="hr-leaves-empty">
+            <div className="hr-leaves-empty-icon">
+              🌴
             </div>
 
-            <div>
-              <span>Total Requests</span>
-              <strong>{stats.total}</strong>
-            </div>
-          </div>
+            <h3>
+              No leave requests found
+            </h3>
 
-          <div className="hr-leaves-stat-card">
-            <div className="hr-leaves-stat-icon">
-              ◷
-            </div>
-
-            <div>
-              <span>Pending</span>
-              <strong>{stats.pending}</strong>
-            </div>
-          </div>
-
-          <div className="hr-leaves-stat-card">
-            <div className="hr-leaves-stat-icon">
-              ✓
-            </div>
-
-            <div>
-              <span>Approved</span>
-              <strong>{stats.approved}</strong>
-            </div>
-          </div>
-
-          <div className="hr-leaves-stat-card">
-            <div className="hr-leaves-stat-icon">
-              ✕
-            </div>
-
-            <div>
-              <span>Rejected</span>
-              <strong>{stats.rejected}</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className="hr-leaves-toolbar">
-          <div className="hr-leaves-search">
-            <SearchBox
-              value={search}
-              onChange={handleSearch}
-              placeholder="Search employee, ID or email..."
-            />
-          </div>
-
-          <div className="hr-leaves-filters">
-            <select
-              className="hr-leaves-filter-select"
-              value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(
-                  event.target.value
-                );
-                setPage(1);
-              }}
-            >
-              {STATUS_OPTIONS.map((option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                >
-                  {option.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="hr-leaves-filter-select"
-              value={leaveTypeFilter}
-              onChange={(event) => {
-                setLeaveTypeFilter(
-                  event.target.value
-                );
-                setPage(1);
-              }}
-            >
-              <option value="ALL">
-                All Leave Types
-              </option>
-
-              {leaveTypes.map((type) => (
-                <option
-                  key={type}
-                  value={type}
-                >
-                  {formatText(type)}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="date"
-              className="hr-leaves-date-input"
-              value={dateFilter}
-              onChange={(event) => {
-                setDateFilter(
-                  event.target.value
-                );
-                setPage(1);
-              }}
-            />
+            <p>
+              Try changing your search or
+              filter criteria.
+            </p>
 
             {(search ||
               statusFilter !== "ALL" ||
@@ -685,407 +712,357 @@ const HrLeavesPage = () => {
               dateFilter) && (
               <button
                 type="button"
-                className="hr-leaves-clear-btn"
+                className="hr-leaves-empty-clear"
                 onClick={clearFilters}
               >
                 Clear Filters
               </button>
             )}
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="hr-leaves-table-wrapper">
+              <table className="hr-leaves-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Leave Type</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
 
-        {error && (
-          <div className="hr-leaves-error">
-            <span>{error}</span>
+                <tbody>
+                  {paginatedLeaves.map(
+                    (leave, index) => {
+                      const key =
+                        leave._id ||
+                        leave.id ||
+                        `${leave.displayEmployeeId}-${leave.displayStartDate}-${index}`;
 
-            <button
-              type="button"
-              onClick={() => loadLeaves()}
-            >
-              Try Again
-            </button>
-          </div>
-        )}
+                      return (
+                        <tr key={key}>
+                          <td>
+                            <div className="hr-leave-employee">
+                              <div className="hr-leave-avatar">
+                                {getInitials(
+                                  leave.displayName
+                                )}
+                              </div>
 
-        <div className="hr-leaves-card">
-          <div className="hr-leaves-card-header">
-            <div>
-              <h2>Leave Requests</h2>
+                              <div>
+                                <strong>
+                                  {
+                                    leave.displayName
+                                  }
+                                </strong>
 
-              <p>
-                {filteredLeaves.length} request
-                {filteredLeaves.length !== 1
-                  ? "s"
-                  : ""}{" "}
-                found
-              </p>
+                                <span>
+                                  {
+                                    leave.displayEmployeeId
+                                  }
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td>
+                            <span className="hr-leave-type">
+                              {formatText(
+                                leave.displayType
+                              )}
+                            </span>
+                          </td>
+
+                          <td>
+                            {formatDate(
+                              leave.displayStartDate
+                            )}
+                          </td>
+
+                          <td>
+                            {formatDate(
+                              leave.displayEndDate
+                            )}
+                          </td>
+
+                          <td>
+                            <span className="hr-leave-duration">
+                              {leave.displayDuration}
+
+                              {typeof leave.displayDuration ===
+                                "number" &&
+                                ` day${
+                                  leave.displayDuration !==
+                                  1
+                                    ? "s"
+                                    : ""
+                                }`}
+                            </span>
+                          </td>
+
+                          <td>
+                            <Badge
+                              variant={getStatusVariant(
+                                leave.displayStatus
+                              )}
+                            >
+                              {formatText(
+                                leave.displayStatus
+                              )}
+                            </Badge>
+                          </td>
+
+                          <td>
+                            <button
+                              type="button"
+                              className="hr-leave-view-btn"
+                              onClick={() =>
+                                openDetails(
+                                  leave
+                                )
+                              }
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    }
+                  )}
+                </tbody>
+              </table>
             </div>
 
-            {dateFilter && (
-              <div className="hr-leaves-selected-date">
-                {formatDate(dateFilter)}
+            {totalPages > 1 && (
+              <div className="hr-leaves-pagination">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                />
               </div>
             )}
-          </div>
+          </>
+        )}
+      </div>
 
-          {paginatedLeaves.length === 0 ? (
-            <div className="hr-leaves-empty">
-              <div className="hr-leaves-empty-icon">
-                🌴
+      {/* Leave Details Modal */}
+      {showDetails && selectedLeave && (
+        <Modal
+          isOpen={showDetails}
+          onClose={closeDetails}
+          title="Leave Request Details"
+        >
+          <div className="hr-leave-details">
+            <div className="hr-leave-details-profile">
+              <div className="hr-leave-details-avatar">
+                {getInitials(
+                  getEmployeeName(
+                    selectedLeave
+                  )
+                )}
               </div>
 
-              <h3>
-                No leave requests found
-              </h3>
+              <div>
+                <h3>
+                  {getEmployeeName(
+                    selectedLeave
+                  )}
+                </h3>
 
-              <p>
-                Try changing your search or
-                filter criteria.
-              </p>
+                <p>
+                  {getEmployeeId(
+                    selectedLeave
+                  )}
+                </p>
 
-              {(search ||
-                statusFilter !== "ALL" ||
-                leaveTypeFilter !== "ALL" ||
-                dateFilter) && (
-                <button
-                  type="button"
-                  className="hr-leaves-empty-clear"
-                  onClick={clearFilters}
+                <Badge
+                  variant={getStatusVariant(
+                    getStatus(selectedLeave)
+                  )}
                 >
-                  Clear Filters
-                </button>
-              )}
+                  {formatText(
+                    getStatus(selectedLeave)
+                  )}
+                </Badge>
+              </div>
             </div>
-          ) : (
-            <>
-              <div className="hr-leaves-table-wrapper">
-                <table className="hr-leaves-table">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Leave Type</th>
-                      <th>From</th>
-                      <th>To</th>
-                      <th>Duration</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
 
-                  <tbody>
-                    {paginatedLeaves.map(
-                      (leave, index) => {
-                        const key =
-                          leave._id ||
-                          leave.id ||
-                          `${leave.displayEmployeeId}-${leave.displayStartDate}-${index}`;
+            <div className="hr-leave-details-grid">
+              <div>
+                <span>Employee ID</span>
 
-                        return (
-                          <tr key={key}>
-                            <td>
-                              <div className="hr-leave-employee">
-                                <div className="hr-leave-avatar">
-                                  {getInitials(
-                                    leave.displayName
-                                  )}
-                                </div>
-
-                                <div>
-                                  <strong>
-                                    {
-                                      leave.displayName
-                                    }
-                                  </strong>
-
-                                  <span>
-                                    {
-                                      leave.displayEmployeeId
-                                    }
-                                  </span>
-                                </div>
-                              </div>
-                            </td>
-
-                            <td>
-                              <span className="hr-leave-type">
-                                {formatText(
-                                  leave.displayType
-                                )}
-                              </span>
-                            </td>
-
-                            <td>
-                              {formatDate(
-                                leave.displayStartDate
-                              )}
-                            </td>
-
-                            <td>
-                              {formatDate(
-                                leave.displayEndDate
-                              )}
-                            </td>
-
-                            <td>
-                              <span className="hr-leave-duration">
-                                {leave.displayDuration}
-
-                                {typeof leave.displayDuration ===
-                                  "number" &&
-                                  ` day${
-                                    leave.displayDuration !==
-                                    1
-                                      ? "s"
-                                      : ""
-                                  }`}
-                              </span>
-                            </td>
-
-                            <td>
-                              <Badge
-                                variant={getStatusVariant(
-                                  leave.displayStatus
-                                )}
-                              >
-                                {formatText(
-                                  leave.displayStatus
-                                )}
-                              </Badge>
-                            </td>
-
-                            <td>
-                              <button
-                                type="button"
-                                className="hr-leave-view-btn"
-                                onClick={() =>
-                                  openDetails(
-                                    leave
-                                  )
-                                }
-                              >
-                                View
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      }
-                    )}
-                  </tbody>
-                </table>
+                <strong>
+                  {getEmployeeId(
+                    selectedLeave
+                  )}
+                </strong>
               </div>
 
-              {totalPages > 1 && (
-                <div className="hr-leaves-pagination">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setPage}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
+              <div>
+                <span>Email</span>
 
-        {showDetails && selectedLeave && (
-          <Modal
-            isOpen={showDetails}
-            onClose={closeDetails}
-            title="Leave Request Details"
-          >
-            <div className="hr-leave-details">
-              <div className="hr-leave-details-profile">
-                <div className="hr-leave-details-avatar">
-                  {getInitials(
-                    getEmployeeName(
+                <strong>
+                  {getEmployeeEmail(
+                    selectedLeave
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>Leave Type</span>
+
+                <strong>
+                  {formatText(
+                    getLeaveType(
                       selectedLeave
                     )
                   )}
-                </div>
-
-                <div>
-                  <h3>
-                    {getEmployeeName(
-                      selectedLeave
-                    )}
-                  </h3>
-
-                  <p>
-                    {getEmployeeId(
-                      selectedLeave
-                    )}
-                  </p>
-
-                  <Badge
-                    variant={getStatusVariant(
-                      getStatus(selectedLeave)
-                    )}
-                  >
-                    {formatText(
-                      getStatus(selectedLeave)
-                    )}
-                  </Badge>
-                </div>
+                </strong>
               </div>
 
-              <div className="hr-leave-details-grid">
-                <div>
-                  <span>Employee ID</span>
-                  <strong>
-                    {getEmployeeId(
-                      selectedLeave
-                    )}
-                  </strong>
-                </div>
+              <div>
+                <span>Status</span>
 
-                <div>
-                  <span>Email</span>
-                  <strong>
-                    {getEmployeeEmail(
-                      selectedLeave
-                    )}
-                  </strong>
-                </div>
+                <strong>
+                  {formatText(
+                    getStatus(selectedLeave)
+                  )}
+                </strong>
+              </div>
 
-                <div>
-                  <span>Leave Type</span>
-                  <strong>
-                    {formatText(
-                      getLeaveType(
+              <div>
+                <span>Start Date</span>
+
+                <strong>
+                  {formatDate(
+                    getStartDate(
+                      selectedLeave
+                    )
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>End Date</span>
+
+                <strong>
+                  {formatDate(
+                    getEndDate(
+                      selectedLeave
+                    )
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>Duration</span>
+
+                <strong>
+                  {getDuration(
+                    selectedLeave
+                  )}
+
+                  {typeof getDuration(
+                    selectedLeave
+                  ) === "number" &&
+                    ` day${
+                      getDuration(
                         selectedLeave
-                      )
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Status</span>
-                  <strong>
-                    {formatText(
-                      getStatus(selectedLeave)
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Start Date</span>
-                  <strong>
-                    {formatDate(
-                      getStartDate(
-                        selectedLeave
-                      )
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>End Date</span>
-                  <strong>
-                    {formatDate(
-                      getEndDate(selectedLeave)
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Duration</span>
-                  <strong>
-                    {getDuration(
-                      selectedLeave
-                    )}
-
-                    {typeof getDuration(
-                      selectedLeave
-                    ) === "number" &&
-                      ` day${
-                        getDuration(
-                          selectedLeave
-                        ) !== 1
-                          ? "s"
-                          : ""
-                      }`}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Applied On</span>
-                  <strong>
-                    {formatDate(
-                      selectedLeave.createdAt ||
-                        selectedLeave.appliedAt
-                    )}
-                  </strong>
-                </div>
-
-                {selectedLeave.approvedAt && (
-                  <div>
-                    <span>Approved On</span>
-                    <strong>
-                      {formatDate(
-                        selectedLeave.approvedAt
-                      )}
-                    </strong>
-                  </div>
-                )}
-
-                {selectedLeave.rejectedAt && (
-                  <div>
-                    <span>Rejected On</span>
-                    <strong>
-                      {formatDate(
-                        selectedLeave.rejectedAt
-                      )}
-                    </strong>
-                  </div>
-                )}
+                      ) !== 1
+                        ? "s"
+                        : ""
+                    }`}
+                </strong>
               </div>
 
-              {selectedLeave.reason && (
-                <div className="hr-leave-details-reason">
-                  <span>Reason</span>
-                  <p>
-                    {selectedLeave.reason}
-                  </p>
-                </div>
-              )}
+              <div>
+                <span>Applied On</span>
 
-              {selectedLeave.notes && (
-                <div className="hr-leave-details-reason">
-                  <span>Notes</span>
-                  <p>
-                    {selectedLeave.notes}
-                  </p>
-                </div>
-              )}
-
-              {selectedLeave.rejectionReason && (
-                <div className="hr-leave-details-reason hr-leave-rejection">
-                  <span>
-                    Rejection Reason
-                  </span>
-
-                  <p>
-                    {
-                      selectedLeave.rejectionReason
-                    }
-                  </p>
-                </div>
-              )}
-
-              <div className="hr-leave-details-footer">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={closeDetails}
-                >
-                  Close
-                </Button>
+                <strong>
+                  {formatDate(
+                    selectedLeave.createdAt ||
+                      selectedLeave.appliedAt
+                  )}
+                </strong>
               </div>
+
+              {selectedLeave.approvedAt && (
+                <div>
+                  <span>Approved On</span>
+
+                  <strong>
+                    {formatDate(
+                      selectedLeave.approvedAt
+                    )}
+                  </strong>
+                </div>
+              )}
+
+              {selectedLeave.rejectedAt && (
+                <div>
+                  <span>Rejected On</span>
+
+                  <strong>
+                    {formatDate(
+                      selectedLeave.rejectedAt
+                    )}
+                  </strong>
+                </div>
+              )}
             </div>
-          </Modal>
-        )}
-      </div>
-    </MainLayout>
+
+            {selectedLeave.reason && (
+              <div className="hr-leave-details-reason">
+                <span>Reason</span>
+
+                <p>
+                  {selectedLeave.reason}
+                </p>
+              </div>
+            )}
+
+            {selectedLeave.notes && (
+              <div className="hr-leave-details-reason">
+                <span>Notes</span>
+
+                <p>
+                  {selectedLeave.notes}
+                </p>
+              </div>
+            )}
+
+            {selectedLeave.rejectionReason && (
+              <div className="hr-leave-details-reason hr-leave-rejection">
+                <span>
+                  Rejection Reason
+                </span>
+
+                <p>
+                  {
+                    selectedLeave.rejectionReason
+                  }
+                </p>
+              </div>
+            )}
+
+            <div className="hr-leave-details-footer">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={closeDetails}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
   );
 };
 

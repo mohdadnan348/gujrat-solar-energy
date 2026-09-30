@@ -3,13 +3,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-import AdminLayout from "../../layout";
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import Loader from "@/components/common/Loader";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 
-import employeeService  from "@/services/employee.service";
+import employeeService from "@/services/employee.service";
 
 import "./employee-details.css";
 
@@ -70,9 +69,19 @@ const EmployeeDetailsPage = () => {
       setLoading(true);
       setError("");
 
-      
+      if (
+        typeof employeeService.getEmployeeById !==
+        "function"
+      ) {
+        throw new Error(
+          "Employee details service is not available."
+        );
+      }
 
-     const response = await getEmployeeById(id);
+      const response =
+        await employeeService.getEmployeeById(
+          employeeId
+        );
 
       const data =
         response?.data ||
@@ -142,6 +151,7 @@ const EmployeeDetailsPage = () => {
     [
       "employeeCode",
       "employeeNumber",
+      "employeeId",
     ],
     "—"
   );
@@ -249,9 +259,23 @@ const EmployeeDetailsPage = () => {
     ""
   );
 
-  const getInitials = (
-    value
-  ) => {
+  const fullAddress = useMemo(() => {
+    return [
+      address,
+      city,
+      state,
+      pincode,
+    ]
+      .filter(Boolean)
+      .join(", ");
+  }, [
+    address,
+    city,
+    state,
+    pincode,
+  ]);
+
+  const getInitials = (value) => {
     if (!value) return "U";
 
     const parts = String(value)
@@ -294,9 +318,7 @@ const EmployeeDetailsPage = () => {
     );
   };
 
-  const formatDateTime = (
-    value
-  ) => {
+  const formatDateTime = (value) => {
     if (!value) return "—";
 
     const date = new Date(value);
@@ -321,25 +343,7 @@ const EmployeeDetailsPage = () => {
     );
   };
 
-  const fullAddress = useMemo(() => {
-    return [
-      address,
-      city,
-      state,
-      pincode,
-    ]
-      .filter(Boolean)
-      .join(", ");
-  }, [
-    address,
-    city,
-    state,
-    pincode,
-  ]);
-
-  const getStatusVariant = (
-    value
-  ) => {
+  const getStatusVariant = (value) => {
     switch (value) {
       case "ACTIVE":
         return "success";
@@ -357,9 +361,7 @@ const EmployeeDetailsPage = () => {
     }
   };
 
-  const getRoleVariant = (
-    value
-  ) => {
+  const getRoleVariant = (value) => {
     switch (value) {
       case "ADMIN":
         return "danger";
@@ -379,6 +381,8 @@ const EmployeeDetailsPage = () => {
   };
 
   const handleDelete = async () => {
+    if (!employeeId) return;
+
     try {
       setDeleting(true);
       setError("");
@@ -418,429 +422,276 @@ const EmployeeDetailsPage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="admin-employee-details-loading">
-          <Loader />
-          <p>
-            Loading employee details...
-          </p>
-        </div>
-      </AdminLayout>
+      <div className="admin-employee-details-loading">
+        <Loader />
+        <p>
+          Loading employee details...
+        </p>
+      </div>
     );
   }
 
   if (!employee) {
     return (
-      <AdminLayout>
-        <div className="admin-employee-details-page">
-          <div className="admin-employee-details-empty">
-            <div className="admin-employee-details-empty-icon">
-              EM
-            </div>
-
-            <h2>
-              Employee Not Found
-            </h2>
-
-            <p>
-              The requested employee record
-              could not be found.
-            </p>
-
-            <Button
-              type="button"
-              variant="primary"
-              onClick={() =>
-                router.push(
-                  "/admin/employees"
-                )
-              }
-            >
-              Back to Employees
-            </Button>
+      <div className="admin-employee-details-page">
+        <div className="admin-employee-details-empty">
+          <div className="admin-employee-details-empty-icon">
+            EM
           </div>
+
+          <h2>
+            Employee Not Found
+          </h2>
+
+          <p>
+            {error ||
+              "The requested employee record could not be found."}
+          </p>
+
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() =>
+              router.push(
+                "/admin/employees"
+              )
+            }
+          >
+            Back to Employees
+          </Button>
         </div>
-      </AdminLayout>
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div className="admin-employee-details-page">
-        <div className="admin-employee-details-header">
-          <div>
-            <button
-              type="button"
-              className="admin-employee-details-back"
-              onClick={() =>
-                router.push(
-                  "/admin/employees"
-                )
-              }
-            >
-              ← Back to Employees
-            </button>
+    <div className="admin-employee-details-page">
+      <div className="admin-employee-details-header">
+        <div>
+          <button
+            type="button"
+            className="admin-employee-details-back"
+            onClick={() =>
+              router.push(
+                "/admin/employees"
+              )
+            }
+          >
+            ← Back to Employees
+          </button>
 
-            <div className="admin-employee-details-heading">
-              <div className="admin-employee-details-avatar">
-                {getInitials(name)}
+          <div className="admin-employee-details-heading">
+            <div className="admin-employee-details-avatar">
+              {getInitials(name)}
+            </div>
+
+            <div>
+              <div className="admin-employee-details-name-row">
+                <h1>
+                  {name}
+                </h1>
+
+                <Badge
+                  variant={getStatusVariant(
+                    status
+                  )}
+                >
+                  {status.replaceAll(
+                    "_",
+                    " "
+                  )}
+                </Badge>
               </div>
 
-              <div>
-                <div className="admin-employee-details-name-row">
-                  <h1>
-                    {name}
-                  </h1>
+              <div className="admin-employee-details-meta">
+                <span>
+                  {designation}
+                </span>
 
-                  <Badge
-                    variant={getStatusVariant(
-                      status
-                    )}
-                  >
-                    {status.replaceAll(
-                      "_",
-                      " "
-                    )}
-                  </Badge>
+                <span>
+                  •
+                </span>
+
+                <span>
+                  {department}
+                </span>
+
+                {employeeCode !==
+                  "—" && (
+                  <>
+                    <span>
+                      •
+                    </span>
+
+                    <span>
+                      {employeeCode}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="admin-employee-details-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() =>
+              router.push(
+                `/admin/employees/create?edit=${employeeId}`
+              )
+            }
+          >
+            Edit Employee
+          </Button>
+
+          <Button
+            type="button"
+            variant="danger"
+            onClick={() =>
+              setDeleteOpen(true)
+            }
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="admin-employee-details-error">
+          {error}
+        </div>
+      )}
+
+      <div className="admin-employee-details-grid">
+        <main className="admin-employee-details-main">
+          <section className="admin-employee-details-card">
+            <div className="admin-employee-details-card-header">
+              <div>
+                <h2>
+                  Personal Information
+                </h2>
+
+                <p>
+                  Primary contact information
+                  for the employee.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-employee-details-card-body">
+              <div className="admin-employee-info-grid">
+                <div className="admin-employee-info-item">
+                  <span>
+                    Full Name
+                  </span>
+
+                  <strong>
+                    {name}
+                  </strong>
                 </div>
 
-                <div className="admin-employee-details-meta">
+                <div className="admin-employee-info-item">
                   <span>
-                    {designation}
+                    Email Address
                   </span>
 
+                  {email !== "—" ? (
+                    <a
+                      href={`mailto:${email}`}
+                    >
+                      {email}
+                    </a>
+                  ) : (
+                    <strong>
+                      —
+                    </strong>
+                  )}
+                </div>
+
+                <div className="admin-employee-info-item">
                   <span>
-                    •
+                    Phone Number
                   </span>
 
+                  {phone !== "—" ? (
+                    <a
+                      href={`tel:${phone}`}
+                    >
+                      {phone}
+                    </a>
+                  ) : (
+                    <strong>
+                      —
+                    </strong>
+                  )}
+                </div>
+
+                <div className="admin-employee-info-item">
                   <span>
-                    {department}
+                    Alternate Phone
                   </span>
 
-                  {employeeCode !==
-                    "—" && (
-                    <>
-                      <span>
-                        •
-                      </span>
-
-                      <span>
-                        {employeeCode}
-                      </span>
-                    </>
+                  {alternatePhone !==
+                  "—" ? (
+                    <a
+                      href={`tel:${alternatePhone}`}
+                    >
+                      {alternatePhone}
+                    </a>
+                  ) : (
+                    <strong>
+                      —
+                    </strong>
                   )}
                 </div>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div className="admin-employee-details-actions">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() =>
-                router.push(
-                  `/admin/employees/create?edit=${employeeId}`
-                )
-              }
-            >
-              Edit Employee
-            </Button>
+          <section className="admin-employee-details-card">
+            <div className="admin-employee-details-card-header">
+              <div>
+                <h2>
+                  Employment Information
+                </h2>
 
-            <Button
-              type="button"
-              variant="danger"
-              onClick={() =>
-                setDeleteOpen(true)
-              }
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
+                <p>
+                  Role and employment details.
+                </p>
+              </div>
+            </div>
 
-        {error && (
-          <div className="admin-employee-details-error">
-            {error}
-          </div>
-        )}
+            <div className="admin-employee-details-card-body">
+              <div className="admin-employee-info-grid">
+                <div className="admin-employee-info-item">
+                  <span>
+                    Employee Code
+                  </span>
 
-        <div className="admin-employee-details-grid">
-          <main className="admin-employee-details-main">
-            <section className="admin-employee-details-card">
-              <div className="admin-employee-details-card-header">
-                <div>
-                  <h2>
-                    Personal Information
-                  </h2>
-
-                  <p>
-                    Primary contact information
-                    for the employee.
-                  </p>
+                  <strong>
+                    {employeeCode}
+                  </strong>
                 </div>
-              </div>
 
-              <div className="admin-employee-details-card-body">
-                <div className="admin-employee-info-grid">
-                  <div className="admin-employee-info-item">
-                    <span>
-                      Full Name
-                    </span>
-
-                    <strong>
-                      {name}
-                    </strong>
-                  </div>
-
-                  <div className="admin-employee-info-item">
-                    <span>
-                      Email Address
-                    </span>
-
-                    {email !==
-                    "—" ? (
-                      <a
-                        href={`mailto:${email}`}
-                      >
-                        {email}
-                      </a>
-                    ) : (
-                      <strong>
-                        —
-                      </strong>
-                    )}
-                  </div>
-
-                  <div className="admin-employee-info-item">
-                    <span>
-                      Phone Number
-                    </span>
-
-                    {phone !==
-                    "—" ? (
-                      <a
-                        href={`tel:${phone}`}
-                      >
-                        {phone}
-                      </a>
-                    ) : (
-                      <strong>
-                        —
-                      </strong>
-                    )}
-                  </div>
-
-                  <div className="admin-employee-info-item">
-                    <span>
-                      Alternate Phone
-                    </span>
-
-                    {alternatePhone !==
-                    "—" ? (
-                      <a
-                        href={`tel:${alternatePhone}`}
-                      >
-                        {
-                          alternatePhone
-                        }
-                      </a>
-                    ) : (
-                      <strong>
-                        —
-                      </strong>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="admin-employee-details-card">
-              <div className="admin-employee-details-card-header">
-                <div>
-                  <h2>
-                    Employment Information
-                  </h2>
-
-                  <p>
-                    Role and employment details.
-                  </p>
-                </div>
-              </div>
-
-              <div className="admin-employee-details-card-body">
-                <div className="admin-employee-info-grid">
-                  <div className="admin-employee-info-item">
-                    <span>
-                      Employee Code
-                    </span>
-
-                    <strong>
-                      {employeeCode}
-                    </strong>
-                  </div>
-
-                  <div className="admin-employee-info-item">
-                    <span>
-                      Role
-                    </span>
-
-                    <div>
-                      <Badge
-                        variant={getRoleVariant(
-                          role
-                        )}
-                      >
-                        {role}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <div className="admin-employee-info-item">
-                    <span>
-                      Department
-                    </span>
-
-                    <strong>
-                      {department}
-                    </strong>
-                  </div>
-
-                  <div className="admin-employee-info-item">
-                    <span>
-                      Designation
-                    </span>
-
-                    <strong>
-                      {designation}
-                    </strong>
-                  </div>
-
-                  <div className="admin-employee-info-item">
-                    <span>
-                      Joining Date
-                    </span>
-
-                    <strong>
-                      {formatDate(
-                        joiningDate
-                      )}
-                    </strong>
-                  </div>
-
-                  <div className="admin-employee-info-item">
-                    <span>
-                      Employment Status
-                    </span>
-
-                    <div>
-                      <Badge
-                        variant={getStatusVariant(
-                          status
-                        )}
-                      >
-                        {status.replaceAll(
-                          "_",
-                          " "
-                        )}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="admin-employee-details-card">
-              <div className="admin-employee-details-card-header">
-                <div>
-                  <h2>
-                    Address Information
-                  </h2>
-
-                  <p>
-                    Employee residential
-                    address.
-                  </p>
-                </div>
-              </div>
-
-              <div className="admin-employee-details-card-body">
-                {fullAddress ? (
-                  <div className="admin-employee-address">
-                    <span>
-                      Address
-                    </span>
-
-                    <p>
-                      {fullAddress}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="admin-employee-no-data">
-                    No address information
-                    available.
-                  </div>
-                )}
-              </div>
-            </section>
-
-            <section className="admin-employee-details-card">
-              <div className="admin-employee-details-card-header">
-                <div>
-                  <h2>
-                    Notes
-                  </h2>
-
-                  <p>
-                    Additional employee
-                    information.
-                  </p>
-                </div>
-              </div>
-
-              <div className="admin-employee-details-card-body">
-                {notes ? (
-                  <div className="admin-employee-notes">
-                    <p>
-                      {notes}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="admin-employee-no-data">
-                    No additional notes
-                    available.
-                  </div>
-                )}
-              </div>
-            </section>
-          </main>
-
-          <aside className="admin-employee-details-sidebar">
-            <section className="admin-employee-details-card">
-              <div className="admin-employee-details-card-header">
-                <div>
-                  <h2>
-                    Employee Summary
-                  </h2>
-
-                  <p>
-                    Quick overview.
-                  </p>
-                </div>
-              </div>
-
-              <div className="admin-employee-summary">
-                <div>
+                <div className="admin-employee-info-item">
                   <span>
                     Role
                   </span>
 
-                  <strong>
-                    {role}
-                  </strong>
+                  <div>
+                    <Badge
+                      variant={getRoleVariant(
+                        role
+                      )}
+                    >
+                      {role}
+                    </Badge>
+                  </div>
                 </div>
 
-                <div>
+                <div className="admin-employee-info-item">
                   <span>
                     Department
                   </span>
@@ -850,7 +701,7 @@ const EmployeeDetailsPage = () => {
                   </strong>
                 </div>
 
-                <div>
+                <div className="admin-employee-info-item">
                   <span>
                     Designation
                   </span>
@@ -860,24 +711,7 @@ const EmployeeDetailsPage = () => {
                   </strong>
                 </div>
 
-                <div>
-                  <span>
-                    Status
-                  </span>
-
-                  <Badge
-                    variant={getStatusVariant(
-                      status
-                    )}
-                  >
-                    {status.replaceAll(
-                      "_",
-                      " "
-                    )}
-                  </Badge>
-                </div>
-
-                <div>
+                <div className="admin-employee-info-item">
                   <span>
                     Joining Date
                   </span>
@@ -888,73 +722,233 @@ const EmployeeDetailsPage = () => {
                     )}
                   </strong>
                 </div>
-              </div>
-            </section>
 
-            <section className="admin-employee-details-card">
-              <div className="admin-employee-details-card-header">
-                <div>
-                  <h2>
-                    Record Information
-                  </h2>
+                <div className="admin-employee-info-item">
+                  <span>
+                    Employment Status
+                  </span>
+
+                  <div>
+                    <Badge
+                      variant={getStatusVariant(
+                        status
+                      )}
+                    >
+                      {status.replaceAll(
+                        "_",
+                        " "
+                      )}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="admin-employee-details-card">
+            <div className="admin-employee-details-card-header">
+              <div>
+                <h2>
+                  Address Information
+                </h2>
+
+                <p>
+                  Employee residential
+                  address.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-employee-details-card-body">
+              {fullAddress ? (
+                <div className="admin-employee-address">
+                  <span>
+                    Address
+                  </span>
 
                   <p>
-                    Record timestamps.
+                    {fullAddress}
                   </p>
                 </div>
+              ) : (
+                <div className="admin-employee-no-data">
+                  No address information
+                  available.
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="admin-employee-details-card">
+            <div className="admin-employee-details-card-header">
+              <div>
+                <h2>
+                  Notes
+                </h2>
+
+                <p>
+                  Additional employee
+                  information.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-employee-details-card-body">
+              {notes ? (
+                <div className="admin-employee-notes">
+                  <p>
+                    {notes}
+                  </p>
+                </div>
+              ) : (
+                <div className="admin-employee-no-data">
+                  No additional notes
+                  available.
+                </div>
+              )}
+            </div>
+          </section>
+        </main>
+
+        <aside className="admin-employee-details-sidebar">
+          <section className="admin-employee-details-card">
+            <div className="admin-employee-details-card-header">
+              <div>
+                <h2>
+                  Employee Summary
+                </h2>
+
+                <p>
+                  Quick overview.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-employee-summary">
+              <div>
+                <span>
+                  Role
+                </span>
+
+                <strong>
+                  {role}
+                </strong>
               </div>
 
-              <div className="admin-employee-record-info">
-                <div>
-                  <span>
-                    Created
-                  </span>
+              <div>
+                <span>
+                  Department
+                </span>
 
-                  <strong>
-                    {formatDateTime(
-                      createdAt
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>
-                    Last Updated
-                  </span>
-
-                  <strong>
-                    {formatDateTime(
-                      updatedAt
-                    )}
-                  </strong>
-                </div>
+                <strong>
+                  {department}
+                </strong>
               </div>
-            </section>
-          </aside>
-        </div>
 
-        <ConfirmDialog
-          isOpen={deleteOpen}
-          onClose={() =>
-            !deleting &&
-            setDeleteOpen(false)
-          }
-          onConfirm={
-            handleDelete
-          }
-          title="Delete Employee"
-          message="Are you sure you want to delete this employee? This action cannot be undone."
-          confirmText={
-            deleting
-              ? "Deleting..."
-              : "Delete Employee"
-          }
-          cancelText="Cancel"
-          loading={deleting}
-          danger
-        />
+              <div>
+                <span>
+                  Designation
+                </span>
+
+                <strong>
+                  {designation}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Status
+                </span>
+
+                <Badge
+                  variant={getStatusVariant(
+                    status
+                  )}
+                >
+                  {status.replaceAll(
+                    "_",
+                    " "
+                  )}
+                </Badge>
+              </div>
+
+              <div>
+                <span>
+                  Joining Date
+                </span>
+
+                <strong>
+                  {formatDate(
+                    joiningDate
+                  )}
+                </strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="admin-employee-details-card">
+            <div className="admin-employee-details-card-header">
+              <div>
+                <h2>
+                  Record Information
+                </h2>
+
+                <p>
+                  Record timestamps.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-employee-record-info">
+              <div>
+                <span>
+                  Created
+                </span>
+
+                <strong>
+                  {formatDateTime(
+                    createdAt
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Last Updated
+                </span>
+
+                <strong>
+                  {formatDateTime(
+                    updatedAt
+                  )}
+                </strong>
+              </div>
+            </div>
+          </section>
+        </aside>
       </div>
-    </AdminLayout>
+
+      <ConfirmDialog
+        isOpen={deleteOpen}
+        onClose={() =>
+          !deleting &&
+          setDeleteOpen(false)
+        }
+        onConfirm={
+          handleDelete
+        }
+        title="Delete Employee"
+        message="Are you sure you want to delete this employee? This action cannot be undone."
+        confirmText={
+          deleting
+            ? "Deleting..."
+            : "Delete Employee"
+        }
+        cancelText="Cancel"
+        loading={deleting}
+        danger
+      />
+    </div>
   );
 };
 

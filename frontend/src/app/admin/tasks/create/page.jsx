@@ -1,17 +1,24 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-import AdminLayout from "../../layout";
+import {
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
+
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
 import Textarea from "@/components/common/Textarea";
 import Loader from "@/components/common/Loader";
 
-import taskService  from "@/services/task.service";
-import { getEmployees } from "@/services/employee.service";import { employeeService } from "@/services/employee.service";
+import taskService from "@/services/task.service";
+import { getEmployees } from "@/services/employee.service";
 
 import "./create-task.css";
 
@@ -23,22 +30,35 @@ const CreateTaskPage = () => {
   const isEditMode = Boolean(editId);
 
   const [employees, setEmployees] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [submitting, setSubmitting] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const [success, setSuccess] =
+    useState("");
 
   const [form, setForm] = useState({
     title: "",
     description: "",
     assignedTo: "",
-   priority: "Medium",
+    priority: "Medium",
     status: "Pending",
     dueDate: "",
     notes: "",
   });
 
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] =
+    useState({});
+
+  /* =========================================================
+     HELPERS
+  ========================================================= */
 
   const getId = (item) => {
     if (!item) return "";
@@ -63,7 +83,8 @@ const CreateTaskPage = () => {
     if (!object) return fallback;
 
     for (const key of keys) {
-      const value = object?.[key];
+      const value =
+        object?.[key];
 
       if (
         value !== undefined &&
@@ -85,25 +106,37 @@ const CreateTaskPage = () => {
       return response;
     }
 
-    if (Array.isArray(response?.data)) {
+    if (
+      Array.isArray(
+        response?.data
+      )
+    ) {
       return response.data;
     }
 
     if (
       key &&
-      Array.isArray(response?.data?.[key])
+      Array.isArray(
+        response?.data?.[key]
+      )
     ) {
       return response.data[key];
     }
 
     if (
       key &&
-      Array.isArray(response?.[key])
+      Array.isArray(
+        response?.[key]
+      )
     ) {
       return response[key];
     }
 
-    if (Array.isArray(response?.results)) {
+    if (
+      Array.isArray(
+        response?.results
+      )
+    ) {
       return response.results;
     }
 
@@ -115,7 +148,8 @@ const CreateTaskPage = () => {
   ) => {
     if (!value) return "";
 
-    const date = new Date(value);
+    const date =
+      new Date(value);
 
     if (
       Number.isNaN(
@@ -138,6 +172,10 @@ const CreateTaskPage = () => {
 
     return `${year}-${month}-${day}`;
   };
+
+  /* =========================================================
+     LOAD DATA
+  ========================================================= */
 
   const loadData = async () => {
     try {
@@ -186,7 +224,8 @@ const CreateTaskPage = () => {
           );
 
         const assignedToId =
-          typeof assignedTo === "object"
+          typeof assignedTo ===
+          "object"
             ? getId(assignedTo)
             : assignedTo ||
               getValue(
@@ -208,6 +247,7 @@ const CreateTaskPage = () => {
               "subject",
             ]
           ),
+
           description:
             getValue(
               task,
@@ -216,15 +256,19 @@ const CreateTaskPage = () => {
                 "details",
               ]
             ),
+
           assignedTo:
             assignedToId,
-         priority: String(
-  getValue(
-    task,
-    ["priority"],
-    "Medium"
-  )
-),
+
+          priority:
+            String(
+              getValue(
+                task,
+                ["priority"],
+                "Medium"
+              )
+            ),
+
           status:
             String(
               getValue(
@@ -233,6 +277,7 @@ const CreateTaskPage = () => {
                 "Pending"
               )
             ).toUpperCase(),
+
           dueDate:
             normalizeDateForInput(
               getValue(
@@ -244,10 +289,14 @@ const CreateTaskPage = () => {
                 ]
               )
             ),
+
           notes:
             getValue(
               task,
-              ["notes", "remarks"]
+              [
+                "notes",
+                "remarks",
+              ]
             ),
         });
       }
@@ -270,29 +319,42 @@ const CreateTaskPage = () => {
     loadData();
   }, [editId]);
 
-  const employeeOptions = useMemo(
-    () => [
-      {
-        label: "Select employee",
-        value: "",
-      },
-      ...employees.map(
-        (employee) => ({
-          label: getValue(
-            employee,
-            [
-              "name",
-              "fullName",
-              "employeeName",
-            ],
-            "Unnamed Employee"
-          ),
-          value: getId(employee),
-        })
-      ),
-    ],
-    [employees]
-  );
+  /* =========================================================
+     EMPLOYEE OPTIONS
+  ========================================================= */
+
+  const employeeOptions =
+    useMemo(
+      () => [
+        {
+          label:
+            "Select employee",
+          value: "",
+        },
+
+        ...employees.map(
+          (employee) => ({
+            label: getValue(
+              employee,
+              [
+                "name",
+                "fullName",
+                "employeeName",
+              ],
+              "Unnamed Employee"
+            ),
+
+            value:
+              getId(employee),
+          })
+        ),
+      ],
+      [employees]
+    );
+
+  /* =========================================================
+     FIELD UPDATE
+  ========================================================= */
 
   const updateField = (
     field,
@@ -311,6 +373,10 @@ const CreateTaskPage = () => {
     setError("");
     setSuccess("");
   };
+
+  /* =========================================================
+     VALIDATION
+  ========================================================= */
 
   const validate = () => {
     const nextErrors = {};
@@ -338,18 +404,38 @@ const CreateTaskPage = () => {
     );
   };
 
+  /* =========================================================
+     PAYLOAD
+  ========================================================= */
+
   const buildPayload = () => {
     return {
-      title: form.title.trim(),
+      title:
+        form.title.trim(),
+
       description:
         form.description.trim(),
-      assignedTo: form.assignedTo,
-      priority: form.priority,
-      status: form.status,
-      dueDate: form.dueDate,
-      notes: form.notes.trim(),
+
+      assignedTo:
+        form.assignedTo,
+
+      priority:
+        form.priority,
+
+      status:
+        form.status,
+
+      dueDate:
+        form.dueDate,
+
+      notes:
+        form.notes.trim(),
     };
   };
+
+  /* =========================================================
+     SUBMIT
+  ========================================================= */
 
   const handleSubmit = async (
     event
@@ -429,313 +515,377 @@ const CreateTaskPage = () => {
     }
   };
 
+  /* =========================================================
+     CANCEL
+  ========================================================= */
+
   const handleCancel = () => {
     router.push(
       "/admin/tasks"
     );
   };
 
+  /* =========================================================
+     LOADING
+  ========================================================= */
+
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="admin-create-task-loading">
-          <Loader />
-          <p>
-            Loading task form...
-          </p>
-        </div>
-      </AdminLayout>
+      <div className="admin-create-task-loading">
+        <Loader />
+
+        <p>
+          Loading task form...
+        </p>
+      </div>
     );
   }
 
+  /* =========================================================
+     PAGE
+  ========================================================= */
+
   return (
-    <AdminLayout>
-      <div className="admin-create-task-page">
-        <div className="admin-create-task-header">
-          <div>
-            <button
-              type="button"
-              className="admin-create-task-back"
-              onClick={
-                handleCancel
-              }
-            >
-              ← Back to Tasks
-            </button>
+    <div className="admin-create-task-page">
 
-            <h1>
-              {isEditMode
-                ? "Edit Task"
-                : "Create Task"}
-            </h1>
+      <div className="admin-create-task-header">
 
-            <p>
-              {isEditMode
-                ? "Update task details and assignment."
-                : "Create and assign a new operational task."}
-            </p>
-          </div>
+        <div>
+
+          <button
+            type="button"
+            className="admin-create-task-back"
+            onClick={
+              handleCancel
+            }
+          >
+            ← Back to Tasks
+          </button>
+
+          <h1>
+            {isEditMode
+              ? "Edit Task"
+              : "Create Task"}
+          </h1>
+
+          <p>
+            {isEditMode
+              ? "Update task details and assignment."
+              : "Create and assign a new operational task."}
+          </p>
+
         </div>
 
-        {error && (
-          <div className="admin-create-task-error">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="admin-create-task-success">
-            {success}
-          </div>
-        )}
-
-        <form
-          className="admin-create-task-form"
-          onSubmit={
-            handleSubmit
-          }
-        >
-          <div className="admin-create-task-card">
-            <div className="admin-create-task-card-header">
-              <div>
-                <h2>
-                  Task Information
-                </h2>
-
-                <p>
-                  Enter the basic details
-                  for this task.
-                </p>
-              </div>
-            </div>
-
-            <div className="admin-create-task-card-body">
-              <div className="admin-create-task-grid">
-                <div className="admin-create-task-field full-width">
-                  <Input
-                    label="Task Title"
-                    name="title"
-                    value={
-                      form.title
-                    }
-                    onChange={(event) =>
-                      updateField(
-                        "title",
-                        event
-                          .target
-                          .value
-                      )
-                    }
-                    placeholder="Enter task title"
-                    required
-                    error={
-                      errors.title
-                    }
-                  />
-                </div>
-
-                <div className="admin-create-task-field full-width">
-                  <Textarea
-                    label="Description"
-                    name="description"
-                    value={
-                      form.description
-                    }
-                    onChange={(event) =>
-                      updateField(
-                        "description",
-                        event
-                          .target
-                          .value
-                      )
-                    }
-                    placeholder="Describe the task and expected outcome"
-                    rows={5}
-                  />
-                </div>
-
-                <div className="admin-create-task-field">
-                  <Select
-                    label="Assign To"
-                    name="assignedTo"
-                    value={
-                      form.assignedTo
-                    }
-                    onChange={(event) =>
-                      updateField(
-                        "assignedTo",
-                        event?.target
-                          ? event.target
-                              .value
-                          : event
-                      )
-                    }
-                    options={
-                      employeeOptions
-                    }
-                    required
-                    error={
-                      errors.assignedTo
-                    }
-                  />
-                </div>
-
-                <div className="admin-create-task-field">
-                  <Select
-                    label="Priority"
-                    name="priority"
-                    value={
-                      form.priority
-                    }
-                    onChange={(event) =>
-                      updateField(
-                        "priority",
-                        event?.target
-                          ? event.target
-                              .value
-                          : event
-                      )
-                    }
-                    options={[
-                     {
-  label: "Urgent",
-  value: "Urgent",
-},
-{
-  label: "High",
-  value: "High",
-},
-{
-  label: "Medium",
-  value: "Medium",
-},
-{
-  label: "Low",
-  value: "LOw",
-},
-                    ]}
-                  />
-                </div>
-
-                <div className="admin-create-task-field">
-                  <Select
-                    label="Status"
-                    name="status"
-                    value={
-                      form.status
-                    }
-                    onChange={(event) =>
-                      updateField(
-                        "status",
-                        event?.target
-                          ? event.target
-                              .value
-                          : event
-                      )
-                    }
-                    options={[
-                      {
-                        label: "Pending",
-                        value: "Pending",
-                      },
-                      {
-                        label: "In Progress",
-                        value:
-                          "In Progress",
-                      },
-                      {
-                        label: "Completed",
-                        value:
-                          "Completed",
-                      },
-                      {
-                        label: "Cancelled",
-                        value:
-                          "Cancelled",
-                      },
-                    ]}
-                  />
-                </div>
-
-                <div className="admin-create-task-field">
-                  <Input
-                    label="Due Date"
-                    name="dueDate"
-                    type="date"
-                    value={
-                      form.dueDate
-                    }
-                    onChange={(event) =>
-                      updateField(
-                        "dueDate",
-                        event
-                          .target
-                          .value
-                      )
-                    }
-                    required
-                    error={
-                      errors.dueDate
-                    }
-                  />
-                </div>
-
-                <div className="admin-create-task-field full-width">
-                  <Textarea
-                    label="Notes"
-                    name="notes"
-                    value={
-                      form.notes
-                    }
-                    onChange={(event) =>
-                      updateField(
-                        "notes",
-                        event
-                          .target
-                          .value
-                      )
-                    }
-                    placeholder="Add any additional notes"
-                    rows={4}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="admin-create-task-actions">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={
-                handleCancel
-              }
-              disabled={
-                submitting
-              }
-            >
-              Cancel
-            </Button>
-
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={
-                submitting
-              }
-            >
-              {submitting
-                ? isEditMode
-                  ? "Updating..."
-                  : "Creating..."
-                : isEditMode
-                ? "Update Task"
-                : "Create Task"}
-            </Button>
-          </div>
-        </form>
       </div>
-    </AdminLayout>
+
+      {error && (
+        <div className="admin-create-task-error">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="admin-create-task-success">
+          {success}
+        </div>
+      )}
+
+      <form
+        className="admin-create-task-form"
+        onSubmit={
+          handleSubmit
+        }
+      >
+
+        {/* TASK INFORMATION */}
+
+        <div className="admin-create-task-card">
+
+          <div className="admin-create-task-card-header">
+
+            <div>
+
+              <h2>
+                Task Information
+              </h2>
+
+              <p>
+                Enter the basic details
+                for this task.
+              </p>
+
+            </div>
+
+          </div>
+
+          <div className="admin-create-task-card-body">
+
+            <div className="admin-create-task-grid">
+
+              {/* TITLE */}
+
+              <div className="admin-create-task-field full-width">
+
+                <Input
+                  label="Task Title"
+                  name="title"
+                  value={
+                    form.title
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    updateField(
+                      "title",
+                      event.target.value
+                    )
+                  }
+                  placeholder="Enter task title"
+                  required
+                  error={
+                    errors.title
+                  }
+                />
+
+              </div>
+
+              {/* DESCRIPTION */}
+
+              <div className="admin-create-task-field full-width">
+
+                <Textarea
+                  label="Description"
+                  name="description"
+                  value={
+                    form.description
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    updateField(
+                      "description",
+                      event.target.value
+                    )
+                  }
+                  placeholder="Describe the task and expected outcome"
+                  rows={5}
+                />
+
+              </div>
+
+              {/* ASSIGN */}
+
+              <div className="admin-create-task-field">
+
+                <Select
+                  label="Assign To"
+                  name="assignedTo"
+                  value={
+                    form.assignedTo
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    updateField(
+                      "assignedTo",
+                      event?.target
+                        ? event.target.value
+                        : event
+                    )
+                  }
+                  options={
+                    employeeOptions
+                  }
+                  required
+                  error={
+                    errors.assignedTo
+                  }
+                />
+
+              </div>
+
+              {/* PRIORITY */}
+
+              <div className="admin-create-task-field">
+
+                <Select
+                  label="Priority"
+                  name="priority"
+                  value={
+                    form.priority
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    updateField(
+                      "priority",
+                      event?.target
+                        ? event.target.value
+                        : event
+                    )
+                  }
+                  options={[
+                    {
+                      label: "Urgent",
+                      value: "Urgent",
+                    },
+                    {
+                      label: "High",
+                      value: "High",
+                    },
+                    {
+                      label: "Medium",
+                      value: "Medium",
+                    },
+                    {
+                      label: "Low",
+                      value: "Low",
+                    },
+                  ]}
+                />
+
+              </div>
+
+              {/* STATUS */}
+
+              <div className="admin-create-task-field">
+
+                <Select
+                  label="Status"
+                  name="status"
+                  value={
+                    form.status
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    updateField(
+                      "status",
+                      event?.target
+                        ? event.target.value
+                        : event
+                    )
+                  }
+                  options={[
+                    {
+                      label: "Pending",
+                      value: "Pending",
+                    },
+                    {
+                      label: "In Progress",
+                      value:
+                        "In Progress",
+                    },
+                    {
+                      label: "Completed",
+                      value:
+                        "Completed",
+                    },
+                    {
+                      label: "Cancelled",
+                      value:
+                        "Cancelled",
+                    },
+                  ]}
+                />
+
+              </div>
+
+              {/* DUE DATE */}
+
+              <div className="admin-create-task-field">
+
+                <Input
+                  label="Due Date"
+                  name="dueDate"
+                  type="date"
+                  value={
+                    form.dueDate
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    updateField(
+                      "dueDate",
+                      event.target.value
+                    )
+                  }
+                  required
+                  error={
+                    errors.dueDate
+                  }
+                />
+
+              </div>
+
+              {/* NOTES */}
+
+              <div className="admin-create-task-field full-width">
+
+                <Textarea
+                  label="Notes"
+                  name="notes"
+                  value={
+                    form.notes
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    updateField(
+                      "notes",
+                      event.target.value
+                    )
+                  }
+                  placeholder="Add any additional notes"
+                  rows={4}
+                />
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* ACTIONS */}
+
+        <div className="admin-create-task-actions">
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={
+              handleCancel
+            }
+            disabled={
+              submitting
+            }
+          >
+            Cancel
+          </Button>
+
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={
+              submitting
+            }
+          >
+            {submitting
+              ? isEditMode
+                ? "Updating..."
+                : "Creating..."
+              : isEditMode
+              ? "Update Task"
+              : "Create Task"}
+          </Button>
+
+        </div>
+
+      </form>
+
+    </div>
   );
 };
 

@@ -1,24 +1,45 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import Link from "next/link";
-import AdminLayout from "../layout";
+
 import Badge from "@/components/common/Badge";
 import Button from "@/components/common/Button";
 import Loader from "@/components/common/Loader";
 import SearchBox from "@/components/common/SearchBox";
 import Select from "@/components/common/Select";
 import Pagination from "@/components/common/Pagination";
+
 import leaveService from "@/services/leave.service";
 import employeeService from "@/services/employee.service";
+
 import "./leaves.css";
 
 const STATUS_OPTIONS = [
-  { value: "", label: "All Statuses" },
-  { value: "PENDING", label: "Pending" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "REJECTED", label: "Rejected" },
-  { value: "CANCELLED", label: "Cancelled" },
+  {
+    value: "",
+    label: "All Statuses",
+  },
+  {
+    value: "PENDING",
+    label: "Pending",
+  },
+  {
+    value: "APPROVED",
+    label: "Approved",
+  },
+  {
+    value: "REJECTED",
+    label: "Rejected",
+  },
+  {
+    value: "CANCELLED",
+    label: "Cancelled",
+  },
 ];
 
 const PAGE_SIZE = 10;
@@ -28,7 +49,9 @@ const getInitials = (name = "") =>
     .trim()
     .split(/\s+/)
     .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
+    .map((part) =>
+      part[0]?.toUpperCase()
+    )
     .join("") || "NA";
 
 const formatDate = (value) => {
@@ -36,13 +59,18 @@ const formatDate = (value) => {
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
 
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return date.toLocaleDateString(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }
+  );
 };
 
 const normalizeStatus = (status) => {
@@ -51,54 +79,120 @@ const normalizeStatus = (status) => {
   return String(status)
     .replace(/_/g, " ")
     .toLowerCase()
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    .replace(
+      /\b\w/g,
+      (letter) =>
+        letter.toUpperCase()
+    );
 };
 
 const getStatusVariant = (status) => {
-  switch (String(status || "").toUpperCase()) {
+  switch (
+    String(status || "").toUpperCase()
+  ) {
     case "PENDING":
       return "warning";
+
     case "APPROVED":
       return "success";
+
     case "REJECTED":
       return "danger";
+
     case "CANCELLED":
       return "default";
+
     default:
       return "default";
   }
 };
 
 const extractLeaves = (response) => {
-  if (Array.isArray(response)) return response;
+  if (Array.isArray(response)) {
+    return response;
+  }
 
-  if (Array.isArray(response?.data)) return response.data;
-  if (Array.isArray(response?.data?.data)) return response.data.data;
-  if (Array.isArray(response?.leaves)) return response.leaves;
-  if (Array.isArray(response?.data?.leaves)) return response.data.leaves;
+  if (Array.isArray(response?.data)) {
+    return response.data;
+  }
+
+  if (
+    Array.isArray(
+      response?.data?.data
+    )
+  ) {
+    return response.data.data;
+  }
+
+  if (
+    Array.isArray(response?.leaves)
+  ) {
+    return response.leaves;
+  }
+
+  if (
+    Array.isArray(
+      response?.data?.leaves
+    )
+  ) {
+    return response.data.leaves;
+  }
 
   return [];
 };
 
 const extractEmployees = (response) => {
-  if (Array.isArray(response)) return response;
+  if (Array.isArray(response)) {
+    return response;
+  }
 
-  if (Array.isArray(response?.data)) return response.data;
-  if (Array.isArray(response?.data?.data)) return response.data.data;
-  if (Array.isArray(response?.employees)) return response.employees;
-  if (Array.isArray(response?.data?.employees)) return response.data.employees;
+  if (Array.isArray(response?.data)) {
+    return response.data;
+  }
+
+  if (
+    Array.isArray(
+      response?.data?.data
+    )
+  ) {
+    return response.data.data;
+  }
+
+  if (
+    Array.isArray(
+      response?.employees
+    )
+  ) {
+    return response.employees;
+  }
+
+  if (
+    Array.isArray(
+      response?.data?.employees
+    )
+  ) {
+    return response.data.employees;
+  }
 
   return [];
 };
 
 const getEmployee = (leave) => {
-  if (!leave?.employee) return null;
+  if (!leave?.employee) {
+    return null;
+  }
 
-  return typeof leave.employee === "object" ? leave.employee : null;
+  return typeof leave.employee ===
+    "object"
+    ? leave.employee
+    : null;
 };
 
 const getEmployeeId = (leave) => {
-  if (typeof leave?.employee === "string") {
+  if (
+    typeof leave?.employee ===
+    "string"
+  ) {
     return leave.employee;
   }
 
@@ -110,26 +204,35 @@ const getEmployeeId = (leave) => {
   );
 };
 
-const getEmployeeName = (leave, employees = []) => {
-  const employee = getEmployee(leave);
+const getEmployeeName = (
+  leave,
+  employees = []
+) => {
+  const employee =
+    getEmployee(leave);
 
   if (employee) {
     return (
       employee.name ||
-      `${employee.firstName || ""} ${employee.lastName || ""}`.trim() ||
+      `${employee.firstName || ""} ${
+        employee.lastName || ""
+      }`.trim() ||
       employee.fullName ||
       "Unknown Employee"
     );
   }
 
-  const employeeId = getEmployeeId(leave);
+  const employeeId =
+    getEmployeeId(leave);
 
-  const matchedEmployee = employees.find(
-    (item) =>
-      item?._id === employeeId ||
-      item?.id === employeeId ||
-      item?.employeeId === employeeId
-  );
+  const matchedEmployee =
+    employees.find(
+      (item) =>
+        item?._id === employeeId ||
+        item?.id === employeeId ||
+        item?.employeeId ===
+          employeeId
+    );
 
   if (matchedEmployee) {
     return (
@@ -146,30 +249,50 @@ const getEmployeeName = (leave, employees = []) => {
 };
 
 const AdminLeavesPage = () => {
-  const [leaves, setLeaves] = useState([]);
-  const [employees, setEmployees] = useState([]);
+  const [leaves, setLeaves] =
+    useState([]);
 
-  const [loading, setLoading] = useState(true);
-  const [employeeLoading, setEmployeeLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [employees, setEmployees] =
+    useState([]);
 
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
+  const [loading, setLoading] =
+    useState(true);
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const [employeeLoading, setEmployeeLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  const [search, setSearch] =
+    useState("");
+
+  const [status, setStatus] =
+    useState("");
+
+  const [currentPage, setCurrentPage] =
+    useState(1);
 
   const loadEmployees = async () => {
     try {
       setEmployeeLoading(true);
 
-      const response = await employeeService.getEmployees({
-        page: 1,
-        limit: 1000,
-      });
+      const response =
+        await employeeService.getEmployees(
+          {
+            page: 1,
+            limit: 1000,
+          }
+        );
 
-      setEmployees(extractEmployees(response));
+      setEmployees(
+        extractEmployees(response)
+      );
     } catch (err) {
-      console.error("Failed to load employees:", err);
+      console.error(
+        "Failed to load employees:",
+        err
+      );
     } finally {
       setEmployeeLoading(false);
     }
@@ -189,12 +312,21 @@ const AdminLeavesPage = () => {
         params.status = status;
       }
 
-      const response = await leaveService.getLeaves(params);
+      const response =
+        await leaveService.getLeaves(
+          params
+        );
 
-      setLeaves(extractLeaves(response));
+      setLeaves(
+        extractLeaves(response)
+      );
+
       setCurrentPage(1);
     } catch (err) {
-      console.error("Failed to load leave requests:", err);
+      console.error(
+        "Failed to load leave requests:",
+        err
+      );
 
       setError(
         err?.message ||
@@ -218,61 +350,120 @@ const AdminLeavesPage = () => {
       loadLeaves();
     }, 250);
 
-    return () => clearTimeout(timer);
+    return () =>
+      clearTimeout(timer);
   }, [status]);
 
   const filteredLeaves = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query =
+      search.trim().toLowerCase();
 
-    if (!query) return leaves;
+    if (!query) {
+      return leaves;
+    }
 
-    return leaves.filter((leave) => {
-      const employeeName = getEmployeeName(leave, employees).toLowerCase();
-      const employeeId = String(getEmployeeId(leave)).toLowerCase();
+    return leaves.filter(
+      (leave) => {
+        const employeeName =
+          getEmployeeName(
+            leave,
+            employees
+          ).toLowerCase();
 
-      const leaveType = String(
-        leave.leaveType || leave.type || ""
-      ).toLowerCase();
+        const employeeId =
+          String(
+            getEmployeeId(leave)
+          ).toLowerCase();
 
-      const reason = String(leave.reason || "").toLowerCase();
+        const leaveType =
+          String(
+            leave.leaveType ||
+              leave.type ||
+              ""
+          ).toLowerCase();
 
-      const startDate = formatDate(
-        leave.startDate || leave.fromDate || leave.from
-      ).toLowerCase();
+        const reason =
+          String(
+            leave.reason || ""
+          ).toLowerCase();
 
-      const endDate = formatDate(
-        leave.endDate || leave.toDate || leave.to
-      ).toLowerCase();
+        const startDate =
+          formatDate(
+            leave.startDate ||
+              leave.fromDate ||
+              leave.from
+          ).toLowerCase();
 
-      return (
-        employeeName.includes(query) ||
-        employeeId.includes(query) ||
-        leaveType.includes(query) ||
-        reason.includes(query) ||
-        startDate.includes(query) ||
-        endDate.includes(query)
-      );
-    });
-  }, [leaves, employees, search]);
+        const endDate =
+          formatDate(
+            leave.endDate ||
+              leave.toDate ||
+              leave.to
+          ).toLowerCase();
+
+        return (
+          employeeName.includes(
+            query
+          ) ||
+          employeeId.includes(
+            query
+          ) ||
+          leaveType.includes(
+            query
+          ) ||
+          reason.includes(query) ||
+          startDate.includes(
+            query
+          ) ||
+          endDate.includes(query)
+        );
+      }
+    );
+  }, [
+    leaves,
+    employees,
+    search,
+  ]);
 
   const summary = useMemo(() => {
-    const total = filteredLeaves.length;
+    const total =
+      filteredLeaves.length;
 
-    const pending = filteredLeaves.filter(
-      (leave) => String(leave.status).toUpperCase() === "PENDING"
-    ).length;
+    const pending =
+      filteredLeaves.filter(
+        (leave) =>
+          String(
+            leave.status
+          ).toUpperCase() ===
+          "PENDING"
+      ).length;
 
-    const approved = filteredLeaves.filter(
-      (leave) => String(leave.status).toUpperCase() === "APPROVED"
-    ).length;
+    const approved =
+      filteredLeaves.filter(
+        (leave) =>
+          String(
+            leave.status
+          ).toUpperCase() ===
+          "APPROVED"
+      ).length;
 
-    const rejected = filteredLeaves.filter(
-      (leave) => String(leave.status).toUpperCase() === "REJECTED"
-    ).length;
+    const rejected =
+      filteredLeaves.filter(
+        (leave) =>
+          String(
+            leave.status
+          ).toUpperCase() ===
+          "REJECTED"
+      ).length;
 
-    const cancelled = filteredLeaves.filter(
-      (leave) => String(leave.status).toUpperCase() === "CANCELLED"
-    ).length;
+    const cancelled =
+      filteredLeaves.filter(
+        (leave) =>
+          String(
+            leave.status
+          ).toUpperCase() ===
+          "CANCELLED"
+      ).length;
 
     return {
       total,
@@ -285,20 +476,38 @@ const AdminLeavesPage = () => {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredLeaves.length / PAGE_SIZE)
+    Math.ceil(
+      filteredLeaves.length /
+        PAGE_SIZE
+    )
   );
 
-  const paginatedLeaves = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
+  const paginatedLeaves =
+    useMemo(() => {
+      const start =
+        (currentPage - 1) *
+        PAGE_SIZE;
 
-    return filteredLeaves.slice(start, start + PAGE_SIZE);
-  }, [filteredLeaves, currentPage]);
+      return filteredLeaves.slice(
+        start,
+        start + PAGE_SIZE
+      );
+    }, [
+      filteredLeaves,
+      currentPage,
+    ]);
 
   useEffect(() => {
-    if (currentPage > totalPages) {
+    if (
+      currentPage >
+      totalPages
+    ) {
       setCurrentPage(totalPages);
     }
-  }, [currentPage, totalPages]);
+  }, [
+    currentPage,
+    totalPages,
+  ]);
 
   const handleRefresh = () => {
     loadLeaves();
@@ -312,180 +521,291 @@ const AdminLeavesPage = () => {
   };
 
   return (
-    <AdminLayout>
-      <div className="admin-leaves-page">
-        <div className="admin-leaves-header">
-          <div>
-            <div className="admin-leaves-breadcrumb">
-              <Link href="/admin">Admin</Link>
-              <span>/</span>
-              <span>Leaves</span>
-            </div>
+    <div className="admin-leaves-page">
+      <div className="admin-leaves-header">
+        <div>
+          <div className="admin-leaves-breadcrumb">
+            <Link href="/admin">
+              Admin
+            </Link>
 
-            <h1>Leave Management</h1>
+            <span>/</span>
+
+            <span>
+              Leaves
+            </span>
+          </div>
+
+          <h1>
+            Leave Management
+          </h1>
+
+          <p>
+            Review employee leave
+            requests and monitor their
+            approval status.
+          </p>
+        </div>
+
+        <div className="admin-leaves-header-actions">
+          <Link href="/admin/leaves/create">
+            <Button>
+              Create Leave Request
+            </Button>
+          </Link>
+
+          <Button
+            variant="secondary"
+            onClick={handleRefresh}
+            disabled={
+              loading ||
+              employeeLoading
+            }
+          >
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="admin-leaves-error">
+          <div>
+            <strong>
+              Unable to load leave
+              requests
+            </strong>
 
             <p>
-              Review employee leave requests and monitor their approval
-              status.
+              {error}
             </p>
           </div>
 
-          <div className="admin-leaves-header-actions">
-            <Link href="/admin/leaves/create">
-              <Button>Create Leave Request</Button>
-            </Link>
+          <Button
+            variant="secondary"
+            onClick={loadLeaves}
+          >
+            Try Again
+          </Button>
+        </div>
+      )}
 
+      <div className="admin-leaves-stats">
+        <div className="admin-leaves-stat-card">
+          <div className="admin-leaves-stat-icon">
+            T
+          </div>
+
+          <div>
+            <span>
+              Total Requests
+            </span>
+
+            <strong>
+              {summary.total}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-leaves-stat-card">
+          <div className="admin-leaves-stat-icon warning">
+            P
+          </div>
+
+          <div>
+            <span>
+              Pending
+            </span>
+
+            <strong>
+              {summary.pending}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-leaves-stat-card">
+          <div className="admin-leaves-stat-icon success">
+            A
+          </div>
+
+          <div>
+            <span>
+              Approved
+            </span>
+
+            <strong>
+              {summary.approved}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-leaves-stat-card">
+          <div className="admin-leaves-stat-icon danger">
+            R
+          </div>
+
+          <div>
+            <span>
+              Rejected
+            </span>
+
+            <strong>
+              {summary.rejected}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-leaves-stat-card">
+          <div className="admin-leaves-stat-icon">
+            C
+          </div>
+
+          <div>
+            <span>
+              Cancelled
+            </span>
+
+            <strong>
+              {summary.cancelled}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="admin-leaves-card">
+        <div className="admin-leaves-filters">
+          <div className="admin-leaves-search">
+            <SearchBox
+              value={search}
+              onChange={setSearch}
+              placeholder="Search employee, leave type, or reason..."
+            />
+          </div>
+
+          <div className="admin-leaves-filter">
+            <Select
+              value={status}
+              onChange={(event) =>
+                setStatus(
+                  event?.target
+                    ?.value ?? event
+                )
+              }
+              options={
+                STATUS_OPTIONS
+              }
+              placeholder="All Statuses"
+            />
+          </div>
+
+          {(search || status) && (
             <Button
-              variant="secondary"
-              onClick={handleRefresh}
-              disabled={loading || employeeLoading}
+              variant="ghost"
+              onClick={
+                handleClearFilters
+              }
+              className="admin-leaves-clear"
             >
-              Refresh
+              Clear Filters
             </Button>
-          </div>
+          )}
         </div>
 
-        {error && (
-          <div className="admin-leaves-error">
-            <div>
-              <strong>Unable to load leave requests</strong>
-              <p>{error}</p>
-            </div>
-
-            <Button variant="secondary" onClick={loadLeaves}>
-              Try Again
-            </Button>
+        {loading ? (
+          <div className="admin-leaves-loader">
+            <Loader />
           </div>
-        )}
+        ) : (
+          <>
+            <div className="admin-leaves-table-wrapper">
+              <table className="admin-leaves-table">
+                <thead>
+                  <tr>
+                    <th>
+                      Employee
+                    </th>
 
-        <div className="admin-leaves-stats">
-          <div className="admin-leaves-stat-card">
-            <div className="admin-leaves-stat-icon">T</div>
-            <div>
-              <span>Total Requests</span>
-              <strong>{summary.total}</strong>
-            </div>
-          </div>
+                    <th>
+                      Leave Type
+                    </th>
 
-          <div className="admin-leaves-stat-card">
-            <div className="admin-leaves-stat-icon warning">P</div>
-            <div>
-              <span>Pending</span>
-              <strong>{summary.pending}</strong>
-            </div>
-          </div>
+                    <th>
+                      Start Date
+                    </th>
 
-          <div className="admin-leaves-stat-card">
-            <div className="admin-leaves-stat-icon success">A</div>
-            <div>
-              <span>Approved</span>
-              <strong>{summary.approved}</strong>
-            </div>
-          </div>
+                    <th>
+                      End Date
+                    </th>
 
-          <div className="admin-leaves-stat-card">
-            <div className="admin-leaves-stat-icon danger">R</div>
-            <div>
-              <span>Rejected</span>
-              <strong>{summary.rejected}</strong>
-            </div>
-          </div>
+                    <th>
+                      Days
+                    </th>
 
-          <div className="admin-leaves-stat-card">
-            <div className="admin-leaves-stat-icon">C</div>
-            <div>
-              <span>Cancelled</span>
-              <strong>{summary.cancelled}</strong>
-            </div>
-          </div>
-        </div>
+                    <th>
+                      Reason
+                    </th>
 
-        <div className="admin-leaves-card">
-          <div className="admin-leaves-filters">
-            <div className="admin-leaves-search">
-              <SearchBox
-                value={search}
-                onChange={setSearch}
-                placeholder="Search employee, leave type, or reason..."
-              />
-            </div>
+                    <th>
+                      Status
+                    </th>
+                  </tr>
+                </thead>
 
-            <div className="admin-leaves-filter">
-              <Select
-                value={status}
-                onChange={(event) =>
-                  setStatus(event?.target?.value ?? event)
-                }
-                options={STATUS_OPTIONS}
-                placeholder="All Statuses"
-              />
-            </div>
-
-            {(search || status) && (
-              <Button
-                variant="ghost"
-                onClick={handleClearFilters}
-                className="admin-leaves-clear"
-              >
-                Clear Filters
-              </Button>
-            )}
-          </div>
-
-          {loading ? (
-            <div className="admin-leaves-loader">
-              <Loader />
-            </div>
-          ) : (
-            <>
-              <div className="admin-leaves-table-wrapper">
-                <table className="admin-leaves-table">
-                  <thead>
+                <tbody>
+                  {paginatedLeaves.length ===
+                  0 ? (
                     <tr>
-                      <th>Employee</th>
-                      <th>Leave Type</th>
-                      <th>Start Date</th>
-                      <th>End Date</th>
-                      <th>Days</th>
-                      <th>Reason</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {paginatedLeaves.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan="7"
-                          className="admin-leaves-empty-cell"
-                        >
-                          <div className="admin-leaves-empty">
-                            <div className="admin-leaves-empty-icon">L</div>
-
-                            <h3>No leave requests found</h3>
-
-                            <p>
-                              Try changing your filters or create a new leave
-                              request.
-                            </p>
-
-                            {(search || status) && (
-                              <Button
-                                variant="secondary"
-                                onClick={handleClearFilters}
-                              >
-                                Clear Filters
-                              </Button>
-                            )}
+                      <td
+                        colSpan="7"
+                        className="admin-leaves-empty-cell"
+                      >
+                        <div className="admin-leaves-empty">
+                          <div className="admin-leaves-empty-icon">
+                            L
                           </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedLeaves.map((leave, index) => {
-                        const employeeName = getEmployeeName(
-                          leave,
-                          employees
-                        );
+
+                          <h3>
+                            No leave requests
+                            found
+                          </h3>
+
+                          <p>
+                            Try changing
+                            your filters
+                            or create a
+                            new leave
+                            request.
+                          </p>
+
+                          {(search ||
+                            status) && (
+                            <Button
+                              variant="secondary"
+                              onClick={
+                                handleClearFilters
+                              }
+                            >
+                              Clear Filters
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedLeaves.map(
+                      (
+                        leave,
+                        index
+                      ) => {
+                        const employeeName =
+                          getEmployeeName(
+                            leave,
+                            employees
+                          );
+
+                        const employeeId =
+                          getEmployeeId(
+                            leave
+                          );
 
                         const startDate =
                           leave.startDate ||
@@ -517,46 +837,79 @@ const AdminLeavesPage = () => {
                         const key =
                           leave._id ||
                           leave.id ||
-                          `${getEmployeeId(leave)}-${startDate}-${index}`;
+                          `${employeeId}-${startDate}-${index}`;
 
                         return (
-                          <tr key={key}>
+                          <tr
+                            key={key}
+                          >
                             <td>
-                              <Link
-                                href={
-                                  getEmployeeId(leave) !== "—"
-                                    ? `/admin/employees/${getEmployeeId(
-                                        leave
-                                      )}`
-                                    : "#"
-                                }
-                                className="admin-leaves-employee"
-                              >
-                                <div className="admin-leaves-avatar">
-                                  {getInitials(employeeName)}
-                                </div>
+                              {employeeId !==
+                              "—" ? (
+                                <Link
+                                  href={`/admin/employees/${employeeId}`}
+                                  className="admin-leaves-employee"
+                                >
+                                  <div className="admin-leaves-avatar">
+                                    {getInitials(
+                                      employeeName
+                                    )}
+                                  </div>
 
-                                <div>
-                                  <strong>{employeeName}</strong>
+                                  <div>
+                                    <strong>
+                                      {
+                                        employeeName
+                                      }
+                                    </strong>
 
-                                  <span>
-                                    {getEmployeeId(leave) !== "—"
-                                      ? `ID: ${getEmployeeId(leave)}`
-                                      : "Employee"}
-                                  </span>
+                                    <span>
+                                      {`ID: ${employeeId}`}
+                                    </span>
+                                  </div>
+                                </Link>
+                              ) : (
+                                <div className="admin-leaves-employee">
+                                  <div className="admin-leaves-avatar">
+                                    {getInitials(
+                                      employeeName
+                                    )}
+                                  </div>
+
+                                  <div>
+                                    <strong>
+                                      {
+                                        employeeName
+                                      }
+                                    </strong>
+
+                                    <span>
+                                      Employee
+                                    </span>
+                                  </div>
                                 </div>
-                              </Link>
+                              )}
                             </td>
 
                             <td>
                               <span className="admin-leaves-type">
-                                {normalizeStatus(leaveType)}
+                                {normalizeStatus(
+                                  leaveType
+                                )}
                               </span>
                             </td>
 
-                            <td>{formatDate(startDate)}</td>
+                            <td>
+                              {formatDate(
+                                startDate
+                              )}
+                            </td>
 
-                            <td>{formatDate(endDate)}</td>
+                            <td>
+                              {formatDate(
+                                endDate
+                              )}
+                            </td>
 
                             <td>
                               <span className="admin-leaves-days">
@@ -575,47 +928,66 @@ const AdminLeavesPage = () => {
 
                             <td>
                               <Badge
-                                variant={getStatusVariant(leave.status)}
+                                variant={getStatusVariant(
+                                  leave.status
+                                )}
                               >
-                                {normalizeStatus(leave.status)}
+                                {normalizeStatus(
+                                  leave.status
+                                )}
                               </Badge>
                             </td>
                           </tr>
                         );
-                      })
-                    )}
-                  </tbody>
-                </table>
+                      }
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {filteredLeaves.length >
+              PAGE_SIZE && (
+              <div className="admin-leaves-pagination">
+                <span>
+                  Showing{" "}
+                  {Math.min(
+                    (currentPage -
+                      1) *
+                      PAGE_SIZE +
+                      1,
+                    filteredLeaves.length
+                  )}{" "}
+                  to{" "}
+                  {Math.min(
+                    currentPage *
+                      PAGE_SIZE,
+                    filteredLeaves.length
+                  )}{" "}
+                  of{" "}
+                  {
+                    filteredLeaves.length
+                  }{" "}
+                  requests
+                </span>
+
+                <Pagination
+                  currentPage={
+                    currentPage
+                  }
+                  totalPages={
+                    totalPages
+                  }
+                  onPageChange={
+                    setCurrentPage
+                  }
+                />
               </div>
-
-              {filteredLeaves.length > PAGE_SIZE && (
-                <div className="admin-leaves-pagination">
-                  <span>
-                    Showing{" "}
-                    {Math.min(
-                      (currentPage - 1) * PAGE_SIZE + 1,
-                      filteredLeaves.length
-                    )}{" "}
-                    to{" "}
-                    {Math.min(
-                      currentPage * PAGE_SIZE,
-                      filteredLeaves.length
-                    )}{" "}
-                    of {filteredLeaves.length} requests
-                  </span>
-
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            )}
+          </>
+        )}
       </div>
-    </AdminLayout>
+    </div>
   );
 };
 

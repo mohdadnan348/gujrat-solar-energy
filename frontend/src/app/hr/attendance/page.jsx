@@ -1,15 +1,21 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import SearchBox from "@/components/common/SearchBox";
 import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
 import Modal from "@/components/common/Modal";
-import { useAuth } from "@/hooks/useAuth";
+
 import attendanceService from "@/services/attendance.service";
+
+import "./attendance.css";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -21,8 +27,14 @@ const STATUS_OPTIONS = [
   { value: "Late", label: "Late" },
 ];
 
+/* =========================================================
+   RESPONSE NORMALIZER
+========================================================= */
+
 const normalizeResponse = (response) => {
-  if (Array.isArray(response)) return response;
+  if (Array.isArray(response)) {
+    return response;
+  }
 
   if (Array.isArray(response?.data)) {
     return response.data;
@@ -36,6 +48,10 @@ const normalizeResponse = (response) => {
     return response.data.records;
   }
 
+  if (Array.isArray(response?.data?.items)) {
+    return response.data.items;
+  }
+
   if (Array.isArray(response?.attendance)) {
     return response.attendance;
   }
@@ -44,35 +60,154 @@ const normalizeResponse = (response) => {
     return response.records;
   }
 
+  if (Array.isArray(response?.items)) {
+    return response.items;
+  }
+
   return [];
 };
 
+/* =========================================================
+   CHECK EMPLOYEE DATA
+========================================================= */
+
+const hasEmployeeData = (record) => {
+  const employee =
+    record?.employee ||
+    record?.employeeDetails ||
+    record?.employeeData ||
+    record?.employeeProfile ||
+    record?.user;
+
+  if (!employee) {
+    return false;
+  }
+
+  if (typeof employee === "string") {
+    return false;
+  }
+
+  return Boolean(
+    employee?.name ||
+      employee?.firstName ||
+      employee?.employeeId ||
+      employee?.empId ||
+      employee?.email
+  );
+};
+
+/* =========================================================
+   HYDRATE ATTENDANCE RECORDS
+   If list API does not contain populated employee,
+   fetch the individual attendance record.
+========================================================= */
+
+const hydrateAttendanceRecords = async (records) => {
+  if (!Array.isArray(records) || !records.length) {
+    return [];
+  }
+
+  const hydrated = await Promise.all(
+    records.map(async (record) => {
+      if (hasEmployeeData(record)) {
+        return record;
+      }
+
+      const attendanceId =
+        record?._id || record?.id;
+
+      if (!attendanceId) {
+        return record;
+      }
+
+      try {
+        const response =
+          await attendanceService.getAttendanceById(
+            attendanceId
+          );
+
+        const detailedRecord =
+          response?.data?.data ||
+          response?.data ||
+          response;
+
+        if (
+          detailedRecord &&
+          typeof detailedRecord === "object"
+        ) {
+          return {
+            ...record,
+            ...detailedRecord,
+          };
+        }
+      } catch (error) {
+        console.error(
+          "Failed to load attendance employee details:",
+          error
+        );
+      }
+
+      return record;
+    })
+  );
+
+  return hydrated;
+};
+
+/* =========================================================
+   PAGE
+========================================================= */
+
 const HrAttendancePage = () => {
-  const { user, logout, loading: authLoading } = useAuth();
+  const [attendance, setAttendance] =
+    useState([]);
 
-  const [attendance, setAttendance] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
+  const [loading, setLoading] =
+    useState(true);
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [dateFilter, setDateFilter] = useState("");
+  const [refreshing, setRefreshing] =
+    useState(false);
 
-  const [page, setPage] = useState(1);
-  const [selectedRecord, setSelectedRecord] = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
+  const [error, setError] =
+    useState("");
 
-  const handleLogout = async () => {
-    await logout();
-  };
+  const [search, setSearch] =
+    useState("");
+
+  const [statusFilter, setStatusFilter] =
+    useState("ALL");
+
+  const [dateFilter, setDateFilter] =
+    useState("");
+
+  const [page, setPage] =
+    useState(1);
+
+  const [selectedRecord, setSelectedRecord] =
+    useState(null);
+
+  const [showDetails, setShowDetails] =
+    useState(false);
+
+  const [detailsLoading, setDetailsLoading] =
+    useState(false);
+
+  /* =====================================================
+     SEARCH
+  ===================================================== */
 
   const handleSearch = (value) => {
     setSearch(value);
     setPage(1);
   };
 
-  const loadAttendance = async (isRefresh = false) => {
+  /* =====================================================
+     LOAD ATTENDANCE
+  ===================================================== */
+
+  const loadAttendance = async (
+    isRefresh = false
+  ) => {
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -84,14 +219,33 @@ const HrAttendancePage = () => {
 
       const params = {};
 
+      /*
+       * Backend supports attendance date
+       * through date filters.
+       */
       if (dateFilter) {
-        params.date = dateFilter;
+        params.startDate = dateFilter;
+        params.endDate = dateFilter;
       }
 
       const response =
-        await attendanceService.getAttendance(params);
+        await attendanceService.getAttendance(
+          params
+        );
 
-      setAttendance(normalizeResponse(response));
+      const records =
+        normalizeResponse(response);
+
+      /*
+       * Make sure employee information is available.
+       * Backend getAttendanceById populates employee.
+       */
+      const hydratedRecords =
+        await hydrateAttendanceRecords(
+          records
+        );
+
+      setAttendance(hydratedRecords);
     } catch (err) {
       console.error(
         "HR attendance loading error:",
@@ -115,20 +269,61 @@ const HrAttendancePage = () => {
     loadAttendance();
   }, [dateFilter]);
 
+  /* =====================================================
+     EMPLOYEE HELPERS
+  ===================================================== */
+
   const getEmployee = (record) => {
-    return (
+    const employee =
       record?.employee ||
-      record?.user ||
       record?.employeeDetails ||
-      {}
-    );
+      record?.employeeData ||
+      record?.employeeProfile ||
+      record?.user;
+
+    if (employee) {
+      return employee;
+    }
+
+    /*
+     * Some APIs may return employee data directly
+     * on attendance record.
+     */
+    if (
+      record?.employeeName ||
+      record?.employeeId ||
+      record?.empId ||
+      record?.employeeEmail
+    ) {
+      return {
+        name: record?.employeeName,
+        employeeId:
+          record?.employeeId ||
+          record?.empId,
+        email:
+          record?.employeeEmail ||
+          record?.email,
+        department:
+          record?.department,
+        designation:
+          record?.designation,
+      };
+    }
+
+    return {};
   };
 
   const getEmployeeName = (record) => {
-    const employee = getEmployee(record);
+    const employee =
+      getEmployee(record);
 
-    if (typeof employee === "string") {
-      return employee;
+    if (
+      typeof employee === "string"
+    ) {
+      return (
+        record?.employeeName ||
+        employee
+      );
     }
 
     if (employee?.name) {
@@ -137,29 +332,44 @@ const HrAttendancePage = () => {
 
     const firstName =
       employee?.firstName ||
-      record?.employeeName?.split(" ")?.[0] ||
+      record?.firstName ||
       "";
 
     const lastName =
       employee?.lastName ||
-      record?.employeeName
-        ?.split(" ")
-        ?.slice(1)
-        .join(" ") ||
+      record?.lastName ||
       "";
 
-    return (
-      `${firstName} ${lastName}`.trim() ||
-      record?.employeeName ||
-      "Unknown Employee"
-    );
+    const combinedName =
+      `${firstName} ${lastName}`.trim();
+
+    if (combinedName) {
+      return combinedName;
+    }
+
+    if (record?.employeeName) {
+      return record.employeeName;
+    }
+
+    if (record?.name) {
+      return record.name;
+    }
+
+    return "Unknown Employee";
   };
 
   const getEmployeeId = (record) => {
-    const employee = getEmployee(record);
+    const employee =
+      getEmployee(record);
 
-    if (typeof employee === "string") {
-      return record?.employeeId || "—";
+    if (
+      typeof employee === "string"
+    ) {
+      return (
+        record?.employeeId ||
+        record?.empId ||
+        "—"
+      );
     }
 
     return (
@@ -167,19 +377,125 @@ const HrAttendancePage = () => {
       employee?.empId ||
       employee?.code ||
       record?.employeeId ||
+      record?.empId ||
       "—"
     );
   };
 
   const getEmail = (record) => {
-    const employee = getEmployee(record);
+    const employee =
+      getEmployee(record);
 
-    if (typeof employee === "string") {
-      return record?.email || "—";
+    if (
+      typeof employee === "string"
+    ) {
+      return (
+        record?.email ||
+        record?.employeeEmail ||
+        "—"
+      );
     }
 
-    return employee?.email || record?.email || "—";
+    return (
+      employee?.email ||
+      employee?.emailAddress ||
+      record?.email ||
+      record?.employeeEmail ||
+      "—"
+    );
   };
+
+  const getMobile = (record) => {
+    const employee =
+      getEmployee(record);
+
+    if (
+      typeof employee === "string"
+    ) {
+      return (
+        record?.mobile ||
+        record?.phone ||
+        "—"
+      );
+    }
+
+    return (
+      employee?.mobile ||
+      employee?.phone ||
+      record?.mobile ||
+      record?.phone ||
+      "—"
+    );
+  };
+
+  const getDepartment = (record) => {
+    const employee =
+      getEmployee(record);
+
+    if (
+      typeof employee === "string"
+    ) {
+      return (
+        record?.department ||
+        "—"
+      );
+    }
+
+    return (
+      employee?.department ||
+      record?.department ||
+      "—"
+    );
+  };
+
+  const getDesignation = (record) => {
+    const employee =
+      getEmployee(record);
+
+    if (
+      typeof employee === "string"
+    ) {
+      return (
+        record?.designation ||
+        "—"
+      );
+    }
+
+    return (
+      employee?.designation ||
+      record?.designation ||
+      "—"
+    );
+  };
+
+  const getProfileImage = (record) => {
+    const employee =
+      getEmployee(record);
+
+    if (
+      typeof employee === "string"
+    ) {
+      return (
+        record?.profileImage ||
+        record?.avatar ||
+        null
+      );
+    }
+
+    return (
+      employee?.profileImage ||
+      employee?.avatar ||
+      employee?.photo ||
+      employee?.image ||
+      record?.profileImage ||
+      record?.avatar ||
+      null
+    );
+  };
+
+  /* =====================================================
+     ATTENDANCE HELPERS
+  ===================================================== */
 
   const getStatus = (record) => {
     return (
@@ -191,8 +507,8 @@ const HrAttendancePage = () => {
 
   const getDate = (record) => {
     return (
-      record?.date ||
       record?.attendanceDate ||
+      record?.date ||
       record?.createdAt ||
       null
     );
@@ -217,23 +533,35 @@ const HrAttendancePage = () => {
   };
 
   const getWorkingHours = (record) => {
-    if (record?.workingHours !== undefined) {
-      return record.workingHours;
-    }
-
-    if (record?.totalHours !== undefined) {
+    if (
+      record?.totalHours !== undefined &&
+      record?.totalHours !== null
+    ) {
       return record.totalHours;
     }
 
-    const checkIn = getCheckIn(record);
-    const checkOut = getCheckOut(record);
+    if (
+      record?.workingHours !== undefined &&
+      record?.workingHours !== null
+    ) {
+      return record.workingHours;
+    }
+
+    const checkIn =
+      getCheckIn(record);
+
+    const checkOut =
+      getCheckOut(record);
 
     if (!checkIn || !checkOut) {
       return "—";
     }
 
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
+    const start =
+      new Date(checkIn);
+
+    const end =
+      new Date(checkOut);
 
     if (
       Number.isNaN(start.getTime()) ||
@@ -244,71 +572,113 @@ const HrAttendancePage = () => {
     }
 
     const minutes = Math.round(
-      (end.getTime() - start.getTime()) / 60000
+      (end.getTime() -
+        start.getTime()) /
+        60000
     );
 
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
+    const hours =
+      Math.floor(minutes / 60);
+
+    const remainingMinutes =
+      minutes % 60;
 
     return `${hours}h ${remainingMinutes}m`;
   };
 
+  /* =====================================================
+     FORMATTERS
+  ===================================================== */
+
   const formatDate = (value) => {
-    if (!value) return "—";
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
+    if (!value) {
       return "—";
     }
 
-    return date.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    const date =
+      new Date(value);
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return "—";
+    }
+
+    return date.toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    );
   };
 
   const formatTime = (value) => {
-    if (!value) return "—";
+    if (!value) {
+      return "—";
+    }
 
-    const date = new Date(value);
+    const date =
+      new Date(value);
 
-    if (!Number.isNaN(date.getTime())) {
-      return date.toLocaleTimeString("en-IN", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      });
+    if (
+      !Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return date.toLocaleTimeString(
+        "en-IN",
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }
+      );
     }
 
     return String(value);
   };
 
-  const normalizeStatus = (status) => {
+  const normalizeStatus = (
+    status
+  ) => {
     return String(status)
       .replace(/_/g, " ")
       .trim()
       .toLowerCase();
   };
 
-  const formatStatus = (status) => {
+  const formatStatus = (
+    status
+  ) => {
     return String(status)
       .replace(/_/g, " ")
       .toLowerCase()
-      .replace(/\b\w/g, (letter) =>
-        letter.toUpperCase()
+      .replace(
+        /\b\w/g,
+        (letter) =>
+          letter.toUpperCase()
       );
   };
 
-  const getStatusVariant = (status) => {
-    const normalized = normalizeStatus(status);
+  const getStatusVariant = (
+    status
+  ) => {
+    const normalized =
+      normalizeStatus(status);
 
-    if (normalized === "present") {
+    if (
+      normalized === "present"
+    ) {
       return "success";
     }
 
-    if (normalized === "absent") {
+    if (
+      normalized === "absent"
+    ) {
       return "danger";
     }
 
@@ -322,140 +692,310 @@ const HrAttendancePage = () => {
     return "secondary";
   };
 
-  const normalizedAttendance = useMemo(() => {
-    return attendance.map((record) => ({
-      ...record,
-      displayName: getEmployeeName(record),
-      displayEmployeeId: getEmployeeId(record),
-      displayEmail: getEmail(record),
-      displayStatus: getStatus(record),
-      displayDate: getDate(record),
-      displayCheckIn: getCheckIn(record),
-      displayCheckOut: getCheckOut(record),
-      displayWorkingHours: getWorkingHours(record),
-    }));
-  }, [attendance]);
+  /* =====================================================
+     NORMALIZED ATTENDANCE
+  ===================================================== */
 
-  const filteredAttendance = useMemo(() => {
-    const searchValue = search
-      .trim()
-      .toLowerCase();
+  const normalizedAttendance =
+    useMemo(() => {
+      return attendance.map(
+        (record) => ({
+          ...record,
 
-    return normalizedAttendance.filter((record) => {
-      const employeeId = String(
-        record.displayEmployeeId || ""
-      ).toLowerCase();
+          displayName:
+            getEmployeeName(record),
 
-      const email = String(
-        record.displayEmail || ""
-      ).toLowerCase();
+          displayEmployeeId:
+            getEmployeeId(record),
 
-      const name = String(
-        record.displayName || ""
-      ).toLowerCase();
+          displayEmail:
+            getEmail(record),
 
-      const matchesSearch =
-        !searchValue ||
-        name.includes(searchValue) ||
-        employeeId.includes(searchValue) ||
-        email.includes(searchValue);
+          displayMobile:
+            getMobile(record),
 
-      const matchesStatus =
-        statusFilter === "ALL" ||
-        normalizeStatus(record.displayStatus) ===
-          normalizeStatus(statusFilter);
+          displayDepartment:
+            getDepartment(record),
 
-      return matchesSearch && matchesStatus;
-    });
-  }, [
-    normalizedAttendance,
-    search,
-    statusFilter,
-  ]);
+          displayDesignation:
+            getDesignation(record),
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(
-      filteredAttendance.length / ITEMS_PER_PAGE
-    )
-  );
+          displayProfileImage:
+            getProfileImage(record),
 
-  const currentPage = Math.min(
-    page,
-    totalPages
-  );
+          displayStatus:
+            getStatus(record),
 
-  const paginatedAttendance = useMemo(() => {
-    const start =
-      (currentPage - 1) * ITEMS_PER_PAGE;
+          displayDate:
+            getDate(record),
 
-    return filteredAttendance.slice(
-      start,
-      start + ITEMS_PER_PAGE
+          displayCheckIn:
+            getCheckIn(record),
+
+          displayCheckOut:
+            getCheckOut(record),
+
+          displayWorkingHours:
+            getWorkingHours(record),
+        })
+      );
+    }, [attendance]);
+
+  /* =====================================================
+     FILTERING
+  ===================================================== */
+
+  const filteredAttendance =
+    useMemo(() => {
+      const searchValue =
+        search
+          .trim()
+          .toLowerCase();
+
+      return normalizedAttendance.filter(
+        (record) => {
+          const employeeId =
+            String(
+              record.displayEmployeeId ||
+                ""
+            ).toLowerCase();
+
+          const email =
+            String(
+              record.displayEmail ||
+                ""
+            ).toLowerCase();
+
+          const name =
+            String(
+              record.displayName ||
+                ""
+            ).toLowerCase();
+
+          const mobile =
+            String(
+              record.displayMobile ||
+                ""
+            ).toLowerCase();
+
+          const matchesSearch =
+            !searchValue ||
+            name.includes(
+              searchValue
+            ) ||
+            employeeId.includes(
+              searchValue
+            ) ||
+            email.includes(
+              searchValue
+            ) ||
+            mobile.includes(
+              searchValue
+            );
+
+          const matchesStatus =
+            statusFilter === "ALL" ||
+            normalizeStatus(
+              record.displayStatus
+            ) ===
+              normalizeStatus(
+                statusFilter
+              );
+
+          return (
+            matchesSearch &&
+            matchesStatus
+          );
+        }
+      );
+    }, [
+      normalizedAttendance,
+      search,
+      statusFilter,
+    ]);
+
+  /* =====================================================
+     PAGINATION
+  ===================================================== */
+
+  const totalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        filteredAttendance.length /
+          ITEMS_PER_PAGE
+      )
     );
-  }, [filteredAttendance, currentPage]);
+
+  const currentPage =
+    Math.min(
+      page,
+      totalPages
+    );
+
+  const paginatedAttendance =
+    useMemo(() => {
+      const start =
+        (currentPage - 1) *
+        ITEMS_PER_PAGE;
+
+      return filteredAttendance.slice(
+        start,
+        start + ITEMS_PER_PAGE
+      );
+    }, [
+      filteredAttendance,
+      currentPage,
+    ]);
 
   useEffect(() => {
     if (page > totalPages) {
       setPage(totalPages);
     }
-  }, [page, totalPages]);
+  }, [
+    page,
+    totalPages,
+  ]);
 
-  const stats = useMemo(() => {
-    const total = normalizedAttendance.length;
+  /* =====================================================
+     STATS
+  ===================================================== */
 
-    const present = normalizedAttendance.filter(
-      (record) =>
-        normalizeStatus(record.displayStatus) ===
-        "present"
-    ).length;
+  const stats =
+    useMemo(() => {
+      const total =
+        normalizedAttendance.length;
 
-    const absent = normalizedAttendance.filter(
-      (record) =>
-        normalizeStatus(record.displayStatus) ===
-        "absent"
-    ).length;
+      const present =
+        normalizedAttendance.filter(
+          (record) =>
+            normalizeStatus(
+              record.displayStatus
+            ) === "present"
+        ).length;
 
-    const late = normalizedAttendance.filter(
-      (record) =>
-        ["late", "half day"].includes(
-          normalizeStatus(record.displayStatus)
-        )
-    ).length;
+      const absent =
+        normalizedAttendance.filter(
+          (record) =>
+            normalizeStatus(
+              record.displayStatus
+            ) === "absent"
+        ).length;
 
-    return {
-      total,
-      present,
-      absent,
-      late,
-    };
-  }, [normalizedAttendance]);
+      const late =
+        normalizedAttendance.filter(
+          (record) =>
+            [
+              "late",
+              "half day",
+            ].includes(
+              normalizeStatus(
+                record.displayStatus
+              )
+            )
+        ).length;
 
-  const getInitials = (name) => {
-    const words = String(name)
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
+      return {
+        total,
+        present,
+        absent,
+        late,
+      };
+    }, [
+      normalizedAttendance,
+    ]);
 
-    if (!words.length) return "E";
+  /* =====================================================
+     INITIALS
+  ===================================================== */
+
+  const getInitials = (
+    name
+  ) => {
+    const words =
+      String(name)
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+
+    if (!words.length) {
+      return "E";
+    }
 
     return words
       .slice(0, 2)
       .map((word) =>
-        word.charAt(0).toUpperCase()
+        word
+          .charAt(0)
+          .toUpperCase()
       )
       .join("");
   };
 
-  const openDetails = (record) => {
+  /* =====================================================
+     DETAILS
+  ===================================================== */
+
+  const openDetails = async (
+    record
+  ) => {
     setSelectedRecord(record);
     setShowDetails(true);
+
+    const attendanceId =
+      record?._id ||
+      record?.id;
+
+    if (!attendanceId) {
+      return;
+    }
+
+    /*
+     * Always fetch complete attendance detail
+     * so employee information is populated.
+     */
+    try {
+      setDetailsLoading(true);
+
+      const response =
+        await attendanceService.getAttendanceById(
+          attendanceId
+        );
+
+      const detailedRecord =
+        response?.data?.data ||
+        response?.data ||
+        response;
+
+      if (
+        detailedRecord &&
+        typeof detailedRecord ===
+          "object"
+      ) {
+        setSelectedRecord({
+          ...record,
+          ...detailedRecord,
+        });
+      }
+    } catch (error) {
+      console.error(
+        "Failed to load attendance details:",
+        error
+      );
+    } finally {
+      setDetailsLoading(false);
+    }
   };
 
   const closeDetails = () => {
     setSelectedRecord(null);
     setShowDetails(false);
+    setDetailsLoading(false);
   };
+
+  /* =====================================================
+     CLEAR FILTERS
+  ===================================================== */
 
   const clearFilters = () => {
     setSearch("");
@@ -464,498 +1004,725 @@ const HrAttendancePage = () => {
     setPage(1);
   };
 
-  if (authLoading || loading) {
+  /* =====================================================
+     LOADING
+  ===================================================== */
+
+  if (loading) {
     return (
-      <MainLayout
-        user={user}
-        onLogout={handleLogout}
-        onSearch={handleSearch}
-        notificationCount={0}
-      >
-        <div className="hr-attendance-loading">
-          <Loader />
-        </div>
-      </MainLayout>
+      <div className="hr-attendance-loading">
+        <Loader />
+      </div>
     );
   }
 
+  /* =====================================================
+     UI
+  ===================================================== */
+
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      onSearch={handleSearch}
-      notificationCount={0}
-    >
-      <div className="hr-attendance-page">
-        <div className="hr-attendance-header">
+    <div className="hr-attendance-page">
+
+      {/* HEADER */}
+      <div className="hr-attendance-header">
+        <div>
+          <div className="hr-attendance-breadcrumb">
+            HR <span>/</span> Attendance
+          </div>
+
+          <h1>Attendance</h1>
+
+          <p>
+            Monitor employee attendance,
+            check-in and check-out records.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() =>
+            loadAttendance(true)
+          }
+          disabled={refreshing}
+        >
+          {refreshing
+            ? "Refreshing..."
+            : "↻ Refresh"}
+        </Button>
+      </div>
+
+      {/* STATS */}
+      <div className="hr-attendance-stats">
+
+        <div className="hr-attendance-stat-card">
+          <div className="hr-attendance-stat-icon">
+            📋
+          </div>
+
           <div>
-            <div className="hr-attendance-breadcrumb">
-              HR <span>/</span> Attendance
-            </div>
+            <span>Total Records</span>
+            <strong>
+              {stats.total}
+            </strong>
+          </div>
+        </div>
 
-            <h1>Attendance</h1>
-
-            <p>
-              Monitor employee attendance,
-              check-in and check-out records.
-            </p>
+        <div className="hr-attendance-stat-card">
+          <div className="hr-attendance-stat-icon">
+            ✓
           </div>
 
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => loadAttendance(true)}
-            disabled={refreshing}
+          <div>
+            <span>Present</span>
+            <strong>
+              {stats.present}
+            </strong>
+          </div>
+        </div>
+
+        <div className="hr-attendance-stat-card">
+          <div className="hr-attendance-stat-icon">
+            ✕
+          </div>
+
+          <div>
+            <span>Absent</span>
+            <strong>
+              {stats.absent}
+            </strong>
+          </div>
+        </div>
+
+        <div className="hr-attendance-stat-card">
+          <div className="hr-attendance-stat-icon">
+            ◷
+          </div>
+
+          <div>
+            <span>Late / Half Day</span>
+            <strong>
+              {stats.late}
+            </strong>
+          </div>
+        </div>
+
+      </div>
+
+      {/* TOOLBAR */}
+      <div className="hr-attendance-toolbar">
+
+        <div className="hr-attendance-search">
+          <SearchBox
+            value={search}
+            onChange={handleSearch}
+            placeholder="Search employee, ID or email..."
+          />
+        </div>
+
+        <div className="hr-attendance-filters">
+
+          <select
+            className="hr-attendance-filter-select"
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
           >
-            {refreshing
-              ? "Refreshing..."
-              : "↻ Refresh"}
-          </Button>
-        </div>
-
-        <div className="hr-attendance-stats">
-          <div className="hr-attendance-stat-card">
-            <div className="hr-attendance-stat-icon">
-              📋
-            </div>
-
-            <div>
-              <span>Total Records</span>
-              <strong>{stats.total}</strong>
-            </div>
-          </div>
-
-          <div className="hr-attendance-stat-card">
-            <div className="hr-attendance-stat-icon">
-              ✓
-            </div>
-
-            <div>
-              <span>Present</span>
-              <strong>{stats.present}</strong>
-            </div>
-          </div>
-
-          <div className="hr-attendance-stat-card">
-            <div className="hr-attendance-stat-icon">
-              ✕
-            </div>
-
-            <div>
-              <span>Absent</span>
-              <strong>{stats.absent}</strong>
-            </div>
-          </div>
-
-          <div className="hr-attendance-stat-card">
-            <div className="hr-attendance-stat-icon">
-              ◷
-            </div>
-
-            <div>
-              <span>Late / Half Day</span>
-              <strong>{stats.late}</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className="hr-attendance-toolbar">
-          <div className="hr-attendance-search">
-            <SearchBox
-              value={search}
-              onChange={handleSearch}
-              placeholder="Search employee, ID or email..."
-            />
-          </div>
-
-          <div className="hr-attendance-filters">
-            <select
-              className="hr-attendance-filter-select"
-              value={statusFilter}
-              onChange={(event) => {
-                setStatusFilter(event.target.value);
-                setPage(1);
-              }}
-            >
-              {STATUS_OPTIONS.map((option) => (
+            {STATUS_OPTIONS.map(
+              (option) => (
                 <option
                   key={option.value}
                   value={option.value}
                 >
                   {option.label}
                 </option>
-              ))}
-            </select>
+              )
+            )}
+          </select>
 
-            <input
-              type="date"
-              className="hr-attendance-date-input"
-              value={dateFilter}
-              onChange={(event) => {
-                setDateFilter(event.target.value);
-                setPage(1);
-              }}
-            />
+          <input
+            type="date"
+            className="hr-attendance-date-input"
+            value={dateFilter}
+            onChange={(event) => {
+              setDateFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
+          />
+
+          {(search ||
+            statusFilter !== "ALL" ||
+            dateFilter) && (
+            <button
+              type="button"
+              className="hr-attendance-clear-btn"
+              onClick={clearFilters}
+            >
+              Clear Filters
+            </button>
+          )}
+
+        </div>
+      </div>
+
+      {/* ERROR */}
+      {error && (
+        <div className="hr-attendance-error">
+          <span>{error}</span>
+
+          <button
+            type="button"
+            onClick={() =>
+              loadAttendance()
+            }
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {/* ATTENDANCE CARD */}
+      <div className="hr-attendance-card">
+
+        <div className="hr-attendance-card-header">
+
+          <div>
+            <h2>
+              Attendance Records
+            </h2>
+
+            <p>
+              {filteredAttendance.length}{" "}
+              record
+              {filteredAttendance.length !==
+              1
+                ? "s"
+                : ""}{" "}
+              found
+            </p>
+          </div>
+
+          {dateFilter && (
+            <div className="hr-attendance-selected-date">
+              {formatDate(
+                dateFilter
+              )}
+            </div>
+          )}
+
+        </div>
+
+        {/* EMPTY */}
+        {paginatedAttendance.length ===
+        0 ? (
+          <div className="hr-attendance-empty">
+
+            <div className="hr-attendance-empty-icon">
+              📅
+            </div>
+
+            <h3>
+              No attendance records found
+            </h3>
+
+            <p>
+              Try changing the search,
+              date or status filter.
+            </p>
 
             {(search ||
-              statusFilter !== "ALL" ||
+              statusFilter !==
+                "ALL" ||
               dateFilter) && (
               <button
                 type="button"
-                className="hr-attendance-clear-btn"
-                onClick={clearFilters}
+                className="hr-attendance-empty-clear"
+                onClick={
+                  clearFilters
+                }
               >
                 Clear Filters
               </button>
             )}
+
           </div>
-        </div>
+        ) : (
+          <>
+            {/* TABLE */}
+            <div className="hr-attendance-table-wrapper">
 
-        {error && (
-          <div className="hr-attendance-error">
-            <span>{error}</span>
+              <table className="hr-attendance-table">
 
-            <button
-              type="button"
-              onClick={() => loadAttendance()}
-            >
-              Try Again
-            </button>
-          </div>
-        )}
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Date</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                    <th>Working Hours</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
 
-        <div className="hr-attendance-card">
-          <div className="hr-attendance-card-header">
-            <div>
-              <h2>Attendance Records</h2>
+                <tbody>
 
-              <p>
-                {filteredAttendance.length} record
-                {filteredAttendance.length !== 1
-                  ? "s"
-                  : ""}{" "}
-                found
-              </p>
+                  {paginatedAttendance.map(
+                    (
+                      record,
+                      index
+                    ) => {
+
+                      const recordKey =
+                        record._id ||
+                        record.id ||
+                        `${record.displayEmployeeId}-${record.displayDate}-${index}`;
+
+                      return (
+                        <tr
+                          key={
+                            recordKey
+                          }
+                        >
+
+                          {/* EMPLOYEE */}
+                          <td>
+                            <div className="hr-attendance-employee">
+
+                              <div className="hr-attendance-avatar">
+
+                                {record.displayProfileImage ? (
+                                  <img
+                                    src={
+                                      record.displayProfileImage
+                                    }
+                                    alt={
+                                      record.displayName
+                                    }
+                                  />
+                                ) : (
+                                  getInitials(
+                                    record.displayName
+                                  )
+                                )}
+
+                              </div>
+
+                              <div>
+
+                                <strong>
+                                  {
+                                    record.displayName
+                                  }
+                                </strong>
+
+                                <span>
+                                  {
+                                    record.displayEmployeeId
+                                  }
+                                </span>
+
+                              </div>
+
+                            </div>
+                          </td>
+
+                          {/* DATE */}
+                          <td>
+                            {formatDate(
+                              record.displayDate
+                            )}
+                          </td>
+
+                          {/* CHECK IN */}
+                          <td>
+                            <span className="hr-attendance-time">
+                              {formatTime(
+                                record.displayCheckIn
+                              )}
+                            </span>
+                          </td>
+
+                          {/* CHECK OUT */}
+                          <td>
+                            <span className="hr-attendance-time">
+                              {formatTime(
+                                record.displayCheckOut
+                              )}
+                            </span>
+                          </td>
+
+                          {/* HOURS */}
+                          <td>
+                            <span className="hr-attendance-hours">
+                              {
+                                record.displayWorkingHours
+                              }
+                            </span>
+                          </td>
+
+                          {/* STATUS */}
+                          <td>
+                            <Badge
+                              variant={getStatusVariant(
+                                record.displayStatus
+                              )}
+                            >
+                              {formatStatus(
+                                record.displayStatus
+                              )}
+                            </Badge>
+                          </td>
+
+                          {/* ACTION */}
+                          <td>
+                            <button
+                              type="button"
+                              className="hr-attendance-view-btn"
+                              onClick={() =>
+                                openDetails(
+                                  record
+                                )
+                              }
+                            >
+                              View
+                            </button>
+                          </td>
+
+                        </tr>
+                      );
+                    }
+                  )}
+
+                </tbody>
+
+              </table>
+
             </div>
 
-            {dateFilter && (
-              <div className="hr-attendance-selected-date">
-                {formatDate(dateFilter)}
+            {/* PAGINATION */}
+            {totalPages > 1 && (
+              <div className="hr-attendance-pagination">
+
+                <Pagination
+                  currentPage={
+                    currentPage
+                  }
+                  totalPages={
+                    totalPages
+                  }
+                  onPageChange={
+                    setPage
+                  }
+                />
+
               </div>
             )}
-          </div>
 
-          {paginatedAttendance.length === 0 ? (
-            <div className="hr-attendance-empty">
-              <div className="hr-attendance-empty-icon">
-                📅
-              </div>
+          </>
+        )}
 
-              <h3>
-                No attendance records found
-              </h3>
+      </div>
 
-              <p>
-                Try changing the search, date or
-                status filter.
-              </p>
+      {/* =================================================
+          DETAILS MODAL
+      ================================================= */}
 
-              {(search ||
-                statusFilter !== "ALL" ||
-                dateFilter) && (
-                <button
-                  type="button"
-                  className="hr-attendance-empty-clear"
-                  onClick={clearFilters}
-                >
-                  Clear Filters
-                </button>
-              )}
-            </div>
-          ) : (
-            <>
-              <div className="hr-attendance-table-wrapper">
-                <table className="hr-attendance-table">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Date</th>
-                      <th>Check In</th>
-                      <th>Check Out</th>
-                      <th>Working Hours</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {paginatedAttendance.map(
-                      (record, index) => {
-                        const recordKey =
-                          record._id ||
-                          record.id ||
-                          `${record.displayEmployeeId}-${record.displayDate}-${index}`;
-
-                        const profileImage =
-                          record.employee
-                            ?.profileImage ||
-                          record.employee?.avatar ||
-                          record.user?.profileImage;
-
-                        return (
-                          <tr key={recordKey}>
-                            <td>
-                              <div className="hr-attendance-employee">
-                                <div className="hr-attendance-avatar">
-                                  {profileImage ? (
-                                    <img
-                                      src={profileImage}
-                                      alt={
-                                        record.displayName
-                                      }
-                                    />
-                                  ) : (
-                                    getInitials(
-                                      record.displayName
-                                    )
-                                  )}
-                                </div>
-
-                                <div>
-                                  <strong>
-                                    {
-                                      record.displayName
-                                    }
-                                  </strong>
-
-                                  <span>
-                                    {
-                                      record.displayEmployeeId
-                                    }
-                                  </span>
-                                </div>
-                              </div>
-                            </td>
-
-                            <td>
-                              {formatDate(
-                                record.displayDate
-                              )}
-                            </td>
-
-                            <td>
-                              <span className="hr-attendance-time">
-                                {formatTime(
-                                  record.displayCheckIn
-                                )}
-                              </span>
-                            </td>
-
-                            <td>
-                              <span className="hr-attendance-time">
-                                {formatTime(
-                                  record.displayCheckOut
-                                )}
-                              </span>
-                            </td>
-
-                            <td>
-                              <span className="hr-attendance-hours">
-                                {
-                                  record.displayWorkingHours
-                                }
-                              </span>
-                            </td>
-
-                            <td>
-                              <Badge
-                                variant={getStatusVariant(
-                                  record.displayStatus
-                                )}
-                              >
-                                {formatStatus(
-                                  record.displayStatus
-                                )}
-                              </Badge>
-                            </td>
-
-                            <td>
-                              <button
-                                type="button"
-                                className="hr-attendance-view-btn"
-                                onClick={() =>
-                                  openDetails(record)
-                                }
-                              >
-                                View
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      }
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {totalPages > 1 && (
-                <div className="hr-attendance-pagination">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setPage}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {showDetails && selectedRecord && (
+      {showDetails &&
+        selectedRecord && (
           <Modal
             isOpen={showDetails}
-            onClose={closeDetails}
+            onClose={
+              closeDetails
+            }
             title="Attendance Details"
           >
+
             <div className="hr-attendance-details">
-              <div className="hr-attendance-details-profile">
-                <div className="hr-attendance-details-avatar">
-                  {getInitials(
-                    getEmployeeName(
-                      selectedRecord
-                    )
-                  )}
-                </div>
 
-                <div>
-                  <h3>
-                    {getEmployeeName(
-                      selectedRecord
-                    )}
-                  </h3>
-
-                  <p>
-                    {getEmployeeId(
-                      selectedRecord
-                    )}
-                  </p>
-
-                  <Badge
-                    variant={getStatusVariant(
-                      getStatus(selectedRecord)
-                    )}
-                  >
-                    {formatStatus(
-                      getStatus(selectedRecord)
-                    )}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="hr-attendance-details-grid">
-                <div>
-                  <span>Employee ID</span>
-                  <strong>
-                    {getEmployeeId(
-                      selectedRecord
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Email</span>
-                  <strong>
-                    {getEmail(selectedRecord)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Attendance Date</span>
-                  <strong>
-                    {formatDate(
-                      getDate(selectedRecord)
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Status</span>
-                  <strong>
-                    {formatStatus(
-                      getStatus(selectedRecord)
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Check In</span>
-                  <strong>
-                    {formatTime(
-                      getCheckIn(selectedRecord)
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Check Out</span>
-                  <strong>
-                    {formatTime(
-                      getCheckOut(selectedRecord)
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Working Hours</span>
-                  <strong>
-                    {getWorkingHours(
-                      selectedRecord
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Created At</span>
-                  <strong>
-                    {formatDate(
-                      selectedRecord.createdAt
-                    )}
-                  </strong>
-                </div>
-              </div>
-
-              {selectedRecord.notes && (
-                <div className="hr-attendance-details-notes">
-                  <span>Notes</span>
-                  <p>
-                    {selectedRecord.notes}
-                  </p>
-                </div>
-              )}
-
-              {selectedRecord.remark && (
-                <div className="hr-attendance-details-notes">
-                  <span>Remark</span>
-                  <p>
-                    {selectedRecord.remark}
-                  </p>
-                </div>
-              )}
-
-              <div className="hr-attendance-details-footer">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={closeDetails}
+              {detailsLoading ? (
+                <div
+                  className="hr-attendance-loading"
+                  style={{
+                    minHeight:
+                      "260px",
+                  }}
                 >
-                  Close
-                </Button>
-              </div>
+                  <Loader />
+                </div>
+              ) : (
+                <>
+                  {/* PROFILE */}
+                  <div className="hr-attendance-details-profile">
+
+                    <div className="hr-attendance-details-avatar">
+
+                      {getInitials(
+                        getEmployeeName(
+                          selectedRecord
+                        )
+                      )}
+
+                    </div>
+
+                    <div>
+
+                      <h3>
+                        {getEmployeeName(
+                          selectedRecord
+                        )}
+                      </h3>
+
+                      <p>
+                        {getEmployeeId(
+                          selectedRecord
+                        )}
+                      </p>
+
+                      <Badge
+                        variant={getStatusVariant(
+                          getStatus(
+                            selectedRecord
+                          )
+                        )}
+                      >
+                        {formatStatus(
+                          getStatus(
+                            selectedRecord
+                          )
+                        )}
+                      </Badge>
+
+                    </div>
+
+                  </div>
+
+                  {/* DETAILS GRID */}
+                  <div className="hr-attendance-details-grid">
+
+                    <div>
+                      <span>
+                        Employee ID
+                      </span>
+
+                      <strong>
+                        {getEmployeeId(
+                          selectedRecord
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Email
+                      </span>
+
+                      <strong>
+                        {getEmail(
+                          selectedRecord
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Mobile
+                      </span>
+
+                      <strong>
+                        {getMobile(
+                          selectedRecord
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Department
+                      </span>
+
+                      <strong>
+                        {getDepartment(
+                          selectedRecord
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Designation
+                      </span>
+
+                      <strong>
+                        {getDesignation(
+                          selectedRecord
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Attendance Date
+                      </span>
+
+                      <strong>
+                        {formatDate(
+                          getDate(
+                            selectedRecord
+                          )
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Status
+                      </span>
+
+                      <strong>
+                        {formatStatus(
+                          getStatus(
+                            selectedRecord
+                          )
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Check In
+                      </span>
+
+                      <strong>
+                        {formatTime(
+                          getCheckIn(
+                            selectedRecord
+                          )
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Check Out
+                      </span>
+
+                      <strong>
+                        {formatTime(
+                          getCheckOut(
+                            selectedRecord
+                          )
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Working Hours
+                      </span>
+
+                      <strong>
+                        {getWorkingHours(
+                          selectedRecord
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Created At
+                      </span>
+
+                      <strong>
+                        {formatDate(
+                          selectedRecord.createdAt
+                        )}
+                      </strong>
+                    </div>
+
+                  </div>
+
+                  {/* NOTES */}
+                  {selectedRecord.notes && (
+                    <div className="hr-attendance-details-notes">
+
+                      <span>
+                        Notes
+                      </span>
+
+                      <p>
+                        {
+                          selectedRecord.notes
+                        }
+                      </p>
+
+                    </div>
+                  )}
+
+                  {/* REMARK */}
+                  {selectedRecord.remark && (
+                    <div className="hr-attendance-details-notes">
+
+                      <span>
+                        Remark
+                      </span>
+
+                      <p>
+                        {
+                          selectedRecord.remark
+                        }
+                      </p>
+
+                    </div>
+                  )}
+
+                  {/* REMARKS */}
+                  {selectedRecord.remarks && (
+                    <div className="hr-attendance-details-notes">
+
+                      <span>
+                        Remarks
+                      </span>
+
+                      <p>
+                        {
+                          selectedRecord.remarks
+                        }
+                      </p>
+
+                    </div>
+                  )}
+
+                  {/* FOOTER */}
+                  <div className="hr-attendance-details-footer">
+
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={
+                        closeDetails
+                      }
+                    >
+                      Close
+                    </Button>
+
+                  </div>
+
+                </>
+              )}
+
             </div>
+
           </Modal>
         )}
-      </div>
-    </MainLayout>
+
+    </div>
   );
 };
 

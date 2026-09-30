@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
+import Link from "next/link";
 import employeeService from "@/services/employee.service";
-import { useAuth } from "@/hooks/useAuth";
+
+import "./employees.css";
 
 const HR_EMPLOYEE_ROLES = ["EMPLOYEE", "MANAGER", "HR"];
-
 const HR_EMPLOYEES = "/hr/employees";
 
 const getId = (item) =>
@@ -102,8 +102,6 @@ const normalizeEmployees = (response) => {
 };
 
 const HrEmployeesPage = () => {
-  const { user, logout, loading: authLoading } = useAuth();
-
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -134,7 +132,7 @@ const HrEmployeesPage = () => {
 
       setEmployees(normalizeEmployees(response));
     } catch (err) {
-      console.error("Failed to load employees:", err);
+      console.error("Failed to load HR employees:", err);
 
       setError(
         err?.response?.data?.message ||
@@ -240,11 +238,8 @@ const HrEmployeesPage = () => {
     ).length;
 
     const managers = employees.filter(
-      (employee) => getRole(employee) === "MANAGER"
-    ).length;
-
-    const hrEmployees = employees.filter(
-      (employee) => getRole(employee) === "HR"
+      (employee) =>
+        getRole(employee).toUpperCase() === "MANAGER"
     ).length;
 
     return {
@@ -252,7 +247,6 @@ const HrEmployeesPage = () => {
       active,
       inactive,
       managers,
-      hrEmployees,
     };
   }, [employees]);
 
@@ -292,10 +286,6 @@ const HrEmployeesPage = () => {
   const closeDetails = () => {
     setSelectedEmployee(null);
     setShowDetails(false);
-  };
-
-  const handleLogout = async () => {
-    await logout();
   };
 
   const getStatusClass = (status) => {
@@ -338,35 +328,30 @@ const HrEmployeesPage = () => {
     }).format(parsedDate);
   };
 
-  if (authLoading) {
-    return (
-      <div className="hr-employees-loading">
-        Loading...
-      </div>
-    );
-  }
-
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      notificationCount={0}
-    >
-      <div className="hr-employees-page">
-        <div className="hr-employees-header">
-          <div>
-            <span className="hr-employees-eyebrow">
-              Human Resources
-            </span>
+    <div className="hr-employees-page">
+      {/* Header */}
+      <div className="hr-employees-header">
+        <div>
+          <span className="hr-employees-eyebrow">
+            Human Resources
+          </span>
 
-            <h1>Employees</h1>
+          <h1>Employees</h1>
 
-            <p>
-              View and manage employee information,
-              roles and account status.
-            </p>
-          </div>
+          <p>
+            View and manage employee information,
+            roles and account status.
+          </p>
+        </div>
 
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            flexWrap: "wrap",
+          }}
+        >
           <button
             type="button"
             className="hr-employees-refresh"
@@ -375,578 +360,591 @@ const HrEmployeesPage = () => {
           >
             {loading ? "Refreshing..." : "↻ Refresh"}
           </button>
+
+          <Link
+            href={`${HR_EMPLOYEES}/create`}
+            className="hr-employees-refresh"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textDecoration: "none",
+            }}
+          >
+            + Add Employee
+          </Link>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="hr-employees-stats">
+        <div className="hr-employee-stat-card">
+          <div className="hr-employee-stat-icon">
+            <svg
+              width="21"
+              height="21"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="9" cy="7" r="4" />
+              <path d="M2.5 21a6.5 6.5 0 0 1 13 0" />
+              <path d="M16 4.5a3.5 3.5 0 0 1 0 7" />
+              <path d="M18 14a5.5 5.5 0 0 1 3.5 5" />
+            </svg>
+          </div>
+
+          <div>
+            <span>Total Employees</span>
+            <strong>{stats.total}</strong>
+          </div>
         </div>
 
-        <div className="hr-employees-stats">
-          <div className="hr-employee-stat-card">
-            <div className="hr-employee-stat-icon">
+        <div className="hr-employee-stat-card">
+          <div className="hr-employee-stat-icon success">
+            <svg
+              width="21"
+              height="21"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="m8 12 2.5 2.5L16 9" />
+            </svg>
+          </div>
+
+          <div>
+            <span>Active</span>
+            <strong>{stats.active}</strong>
+          </div>
+        </div>
+
+        <div className="hr-employee-stat-card">
+          <div className="hr-employee-stat-icon danger">
+            <svg
+              width="21"
+              height="21"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M9 12h6" />
+            </svg>
+          </div>
+
+          <div>
+            <span>Inactive</span>
+            <strong>{stats.inactive}</strong>
+          </div>
+        </div>
+
+        <div className="hr-employee-stat-card">
+          <div className="hr-employee-stat-icon manager">
+            <svg
+              width="21"
+              height="21"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21a8 8 0 0 1 16 0" />
+            </svg>
+          </div>
+
+          <div>
+            <span>Managers</span>
+            <strong>{stats.managers}</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className="hr-employees-toolbar">
+        <div className="hr-employee-search">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-4-4" />
+          </svg>
+
+          <input
+            type="search"
+            value={search}
+            onChange={(event) =>
+              handleSearch(event.target.value)
+            }
+            placeholder="Search by name, email, phone or role..."
+            aria-label="Search employees"
+          />
+        </div>
+
+        <div className="hr-employee-filters">
+          <select
+            value={statusFilter}
+            onChange={(event) =>
+              handleStatusFilter(event.target.value)
+            }
+            aria-label="Filter by status"
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+
+          <select
+            value={roleFilter}
+            onChange={(event) =>
+              handleRoleFilter(event.target.value)
+            }
+            aria-label="Filter by role"
+          >
+            <option value="ALL">All Roles</option>
+
+            {HR_EMPLOYEE_ROLES.map((role) => (
+              <option key={role} value={role}>
+                {role}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={departmentFilter}
+            onChange={(event) =>
+              handleDepartmentFilter(event.target.value)
+            }
+            aria-label="Filter by department"
+          >
+            <option value="ALL">
+              All Departments
+            </option>
+
+            {departments.map((department) => (
+              <option
+                key={department}
+                value={department}
+              >
+                {department}
+              </option>
+            ))}
+          </select>
+
+          {(search ||
+            statusFilter !== "ALL" ||
+            roleFilter !== "ALL" ||
+            departmentFilter !== "ALL") && (
+            <button
+              type="button"
+              className="hr-clear-filters"
+              onClick={clearFilters}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="hr-employees-error">
+          <span>{error}</span>
+
+          <button
+            type="button"
+            onClick={loadEmployees}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Employee Card */}
+      <div className="hr-employees-card">
+        <div className="hr-employees-card-header">
+          <div>
+            <span>Employee Directory</span>
+
+            <h2>
+              {filteredEmployees.length} Employees
+            </h2>
+          </div>
+
+          <div className="hr-employees-result-count">
+            Showing{" "}
+            {filteredEmployees.length === 0
+              ? 0
+              : (page - 1) * pageSize + 1}{" "}
+            -{" "}
+            {Math.min(
+              page * pageSize,
+              filteredEmployees.length
+            )}{" "}
+            of {filteredEmployees.length}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="hr-employees-table-loading">
+            <div className="hr-loading-spinner" />
+            <span>Loading employees...</span>
+          </div>
+        ) : visibleEmployees.length === 0 ? (
+          <div className="hr-employees-empty">
+            <div className="hr-empty-icon">
               <svg
-                width="21"
-                height="21"
+                width="32"
+                height="32"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="1.8"
+                strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
                 <circle cx="9" cy="7" r="4" />
                 <path d="M2.5 21a6.5 6.5 0 0 1 13 0" />
-                <path d="M16 4.5a3.5 3.5 0 0 1 0 7" />
-                <path d="M18 14a5.5 5.5 0 0 1 3.5 5" />
+                <path d="M16 11h5" />
+                <path d="M18.5 8.5v5" />
               </svg>
             </div>
 
-            <div>
-              <span>Total Employees</span>
-              <strong>{stats.total}</strong>
-            </div>
-          </div>
+            <h3>No employees found</h3>
 
-          <div className="hr-employee-stat-card">
-            <div className="hr-employee-stat-icon success">
-              <svg
-                width="21"
-                height="21"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="9" />
-                <path d="m8 12 2.5 2.5L16 9" />
-              </svg>
-            </div>
-
-            <div>
-              <span>Active</span>
-              <strong>{stats.active}</strong>
-            </div>
-          </div>
-
-          <div className="hr-employee-stat-card">
-            <div className="hr-employee-stat-icon danger">
-              <svg
-                width="21"
-                height="21"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="9" />
-                <path d="M9 12h6" />
-              </svg>
-            </div>
-
-            <div>
-              <span>Inactive</span>
-              <strong>{stats.inactive}</strong>
-            </div>
-          </div>
-
-          <div className="hr-employee-stat-card">
-            <div className="hr-employee-stat-icon manager">
-              <svg
-                width="21"
-                height="21"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="8" r="4" />
-                <path d="M4 21a8 8 0 0 1 16 0" />
-              </svg>
-            </div>
-
-            <div>
-              <span>Managers</span>
-              <strong>{stats.managers}</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className="hr-employees-toolbar">
-          <div className="hr-employee-search">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-4-4" />
-            </svg>
-
-            <input
-              type="search"
-              value={search}
-              onChange={(event) =>
-                handleSearch(event.target.value)
-              }
-              placeholder="Search by name, email, phone or role..."
-              aria-label="Search employees"
-            />
-          </div>
-
-          <div className="hr-employee-filters">
-            <select
-              value={statusFilter}
-              onChange={(event) =>
-                handleStatusFilter(event.target.value)
-              }
-              aria-label="Filter by status"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-            </select>
-
-            <select
-              value={roleFilter}
-              onChange={(event) =>
-                handleRoleFilter(event.target.value)
-              }
-              aria-label="Filter by role"
-            >
-              <option value="ALL">All Roles</option>
-
-              {HR_EMPLOYEE_ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={departmentFilter}
-              onChange={(event) =>
-                handleDepartmentFilter(event.target.value)
-              }
-              aria-label="Filter by department"
-            >
-              <option value="ALL">
-                All Departments
-              </option>
-
-              {departments.map((department) => (
-                <option
-                  key={department}
-                  value={department}
-                >
-                  {department}
-                </option>
-              ))}
-            </select>
-
-            {(search ||
-              statusFilter !== "ALL" ||
-              roleFilter !== "ALL" ||
-              departmentFilter !== "ALL") && (
-              <button
-                type="button"
-                className="hr-clear-filters"
-                onClick={clearFilters}
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-
-        {error && (
-          <div className="hr-employees-error">
-            <span>{error}</span>
+            <p>
+              Try changing your search or filter
+              criteria.
+            </p>
 
             <button
               type="button"
-              onClick={loadEmployees}
+              onClick={clearFilters}
             >
-              Retry
+              Clear Filters
             </button>
           </div>
-        )}
+        ) : (
+          <>
+            <div className="hr-employees-table-wrapper">
+              <table className="hr-employees-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Contact</th>
+                    <th>Role</th>
+                    <th>Department</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
 
-        <div className="hr-employees-card">
-          <div className="hr-employees-card-header">
-            <div>
-              <span>Employee Directory</span>
-              <h2>
-                {filteredEmployees.length} Employees
-              </h2>
+                <tbody>
+                  {visibleEmployees.map((employee) => {
+                    const id = getId(employee);
+                    const status = getStatus(employee);
+                    const role = getRole(employee);
+
+                    return (
+                      <tr
+                        key={
+                          id ||
+                          getEmail(employee)
+                        }
+                      >
+                        <td>
+                          <div className="hr-employee-profile">
+                            <div className="hr-employee-avatar">
+                              {getAvatarLetter(employee)}
+                            </div>
+
+                            <div>
+                              <strong>
+                                {getName(employee)}
+                              </strong>
+
+                              <span>
+                                {id
+                                  ? `ID: ${id}`
+                                  : "Employee profile"}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td>
+                          <div className="hr-employee-contact">
+                            <span>
+                              {getEmail(employee)}
+                            </span>
+
+                            <small>
+                              {getPhone(employee)}
+                            </small>
+                          </div>
+                        </td>
+
+                        <td>
+                          <span
+                            className={getRoleClass(role)}
+                          >
+                            {role}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span className="hr-employee-department">
+                            {getDepartment(employee)}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span
+                            className={getStatusClass(status)}
+                          >
+                            <i />
+                            {status}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span className="hr-employee-date">
+                            {formatDate(
+                              employee?.joiningDate ||
+                                employee?.dateOfJoining ||
+                                employee?.createdAt
+                            )}
+                          </span>
+                        </td>
+
+                        <td>
+                          <button
+                            type="button"
+                            className="hr-view-employee"
+                            onClick={() =>
+                              openDetails(employee)
+                            }
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
 
-            <div className="hr-employees-result-count">
-              Showing{" "}
-              {filteredEmployees.length === 0
-                ? 0
-                : (page - 1) * pageSize + 1}{" "}
-              -{" "}
-              {Math.min(
-                page * pageSize,
-                filteredEmployees.length
-              )}{" "}
-              of {filteredEmployees.length}
-            </div>
-          </div>
+            <div className="hr-employees-pagination">
+              <div className="hr-page-size">
+                <span>Rows per page</span>
 
-          {loading ? (
-            <div className="hr-employees-table-loading">
-              <div className="hr-loading-spinner" />
-              <span>Loading employees...</span>
-            </div>
-          ) : visibleEmployees.length === 0 ? (
-            <div className="hr-employees-empty">
-              <div className="hr-empty-icon">
-                <svg
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <select
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageSize(
+                      Number(event.target.value)
+                    );
+                    setPage(1);
+                  }}
                 >
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M2.5 21a6.5 6.5 0 0 1 13 0" />
-                  <path d="M16 11h5" />
-                  <path d="M18.5 8.5v5" />
-                </svg>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
               </div>
 
-              <h3>No employees found</h3>
+              <div className="hr-pagination-controls">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() =>
+                    setPage((current) =>
+                      Math.max(1, current - 1)
+                    )
+                  }
+                >
+                  Previous
+                </button>
 
-              <p>
-                Try changing your search or filter
-                criteria.
-              </p>
+                <span>
+                  Page {page} of {totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={page >= totalPages}
+                  onClick={() =>
+                    setPage((current) =>
+                      Math.min(
+                        totalPages,
+                        current + 1
+                      )
+                    )
+                  }
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Employee Details Modal */}
+      {showDetails && selectedEmployee && (
+        <div
+          className="hr-employee-modal-backdrop"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget
+            ) {
+              closeDetails();
+            }
+          }}
+        >
+          <div
+            className="hr-employee-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="employee-details-title"
+          >
+            <div className="hr-employee-modal-header">
+              <div>
+                <span>Employee Details</span>
+
+                <h2 id="employee-details-title">
+                  {getName(selectedEmployee)}
+                </h2>
+              </div>
 
               <button
                 type="button"
-                onClick={clearFilters}
+                className="hr-modal-close"
+                onClick={closeDetails}
+                aria-label="Close employee details"
               >
-                Clear Filters
+                ×
               </button>
             </div>
-          ) : (
-            <>
-              <div className="hr-employees-table-wrapper">
-                <table className="hr-employees-table">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Contact</th>
-                      <th>Role</th>
-                      <th>Department</th>
-                      <th>Status</th>
-                      <th>Joined</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
 
-                  <tbody>
-                    {visibleEmployees.map(
-                      (employee) => {
-                        const id = getId(employee);
-                        const status =
-                          getStatus(employee);
-                        const role =
-                          getRole(employee);
-
-                        return (
-                          <tr key={id || getEmail(employee)}>
-                            <td>
-                              <div className="hr-employee-profile">
-                                <div className="hr-employee-avatar">
-                                  {getAvatarLetter(
-                                    employee
-                                  )}
-                                </div>
-
-                                <div>
-                                  <strong>
-                                    {getName(employee)}
-                                  </strong>
-
-                                  <span>
-                                    {id
-                                      ? `ID: ${id}`
-                                      : "Employee profile"}
-                                  </span>
-                                </div>
-                              </div>
-                            </td>
-
-                            <td>
-                              <div className="hr-employee-contact">
-                                <span>
-                                  {getEmail(employee)}
-                                </span>
-
-                                <small>
-                                  {getPhone(employee)}
-                                </small>
-                              </div>
-                            </td>
-
-                            <td>
-                              <span
-                                className={getRoleClass(
-                                  role
-                                )}
-                              >
-                                {role}
-                              </span>
-                            </td>
-
-                            <td>
-                              <span className="hr-employee-department">
-                                {getDepartment(
-                                  employee
-                                )}
-                              </span>
-                            </td>
-
-                            <td>
-                              <span
-                                className={getStatusClass(
-                                  status
-                                )}
-                              >
-                                <i />
-                                {status}
-                              </span>
-                            </td>
-
-                            <td>
-                              <span className="hr-employee-date">
-                                {formatDate(
-                                  employee?.joiningDate ||
-                                    employee?.dateOfJoining ||
-                                    employee?.createdAt
-                                )}
-                              </span>
-                            </td>
-
-                            <td>
-                              <button
-                                type="button"
-                                className="hr-view-employee"
-                                onClick={() =>
-                                  openDetails(employee)
-                                }
-                              >
-                                View
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      }
-                    )}
-                  </tbody>
-                </table>
+            <div className="hr-employee-modal-profile">
+              <div className="hr-modal-avatar">
+                {getAvatarLetter(
+                  selectedEmployee
+                )}
               </div>
 
-              <div className="hr-employees-pagination">
-                <div className="hr-page-size">
-                  <span>Rows per page</span>
+              <div>
+                <strong>
+                  {getName(selectedEmployee)}
+                </strong>
 
-                  <select
-                    value={pageSize}
-                    onChange={(event) => {
-                      setPageSize(
-                        Number(event.target.value)
-                      );
-                      setPage(1);
-                    }}
-                  >
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </select>
-                </div>
-
-                <div className="hr-pagination-controls">
-                  <button
-                    type="button"
-                    disabled={page <= 1}
-                    onClick={() =>
-                      setPage((current) =>
-                        Math.max(1, current - 1)
-                      )
-                    }
-                  >
-                    Previous
-                  </button>
-
-                  <span>
-                    Page {page} of {totalPages}
-                  </span>
-
-                  <button
-                    type="button"
-                    disabled={page >= totalPages}
-                    onClick={() =>
-                      setPage((current) =>
-                        Math.min(
-                          totalPages,
-                          current + 1
-                        )
-                      )
-                    }
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
-        {showDetails && selectedEmployee && (
-          <div
-            className="hr-employee-modal-backdrop"
-            onMouseDown={(event) => {
-              if (
-                event.target === event.currentTarget
-              ) {
-                closeDetails();
-              }
-            }}
-          >
-            <div
-              className="hr-employee-modal"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="employee-details-title"
-            >
-              <div className="hr-employee-modal-header">
-                <div>
-                  <span>Employee Details</span>
-                  <h2 id="employee-details-title">
-                    {getName(selectedEmployee)}
-                  </h2>
-                </div>
-
-                <button
-                  type="button"
-                  className="hr-modal-close"
-                  onClick={closeDetails}
-                  aria-label="Close employee details"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="hr-employee-modal-profile">
-                <div className="hr-modal-avatar">
-                  {getAvatarLetter(
-                    selectedEmployee
-                  )}
-                </div>
-
-                <div>
-                  <strong>
-                    {getName(selectedEmployee)}
-                  </strong>
-
-                  <span>
-                    {getRole(selectedEmployee)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="hr-employee-details-grid">
-                <div>
-                  <span>Employee ID</span>
-                  <strong>
-                    {getId(selectedEmployee) ||
-                      "Not available"}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Status</span>
-                  <strong>
-                    {getStatus(selectedEmployee)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Email</span>
-                  <strong>
-                    {getEmail(selectedEmployee)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Phone</span>
-                  <strong>
-                    {getPhone(selectedEmployee)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Role</span>
-                  <strong>
-                    {getRole(selectedEmployee)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Department</span>
-                  <strong>
-                    {getDepartment(selectedEmployee)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Joining Date</span>
-                  <strong>
-                    {formatDate(
-                      selectedEmployee?.joiningDate ||
-                        selectedEmployee?.dateOfJoining ||
-                        selectedEmployee?.createdAt
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Created</span>
-                  <strong>
-                    {formatDate(
-                      selectedEmployee?.createdAt
-                    )}
-                  </strong>
-                </div>
-              </div>
-
-              <div className="hr-employee-modal-footer">
-                <button
-                  type="button"
-                  onClick={closeDetails}
-                >
-                  Close
-                </button>
+                <span>
+                  {getRole(selectedEmployee)}
+                </span>
               </div>
             </div>
+
+            <div className="hr-employee-details-grid">
+              <div>
+                <span>Employee ID</span>
+                <strong>
+                  {getId(selectedEmployee) ||
+                    "Not available"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Status</span>
+                <strong>
+                  {getStatus(selectedEmployee)}
+                </strong>
+              </div>
+
+              <div>
+                <span>Email</span>
+                <strong>
+                  {getEmail(selectedEmployee)}
+                </strong>
+              </div>
+
+              <div>
+                <span>Phone</span>
+                <strong>
+                  {getPhone(selectedEmployee)}
+                </strong>
+              </div>
+
+              <div>
+                <span>Role</span>
+                <strong>
+                  {getRole(selectedEmployee)}
+                </strong>
+              </div>
+
+              <div>
+                <span>Department</span>
+                <strong>
+                  {getDepartment(selectedEmployee)}
+                </strong>
+              </div>
+
+              <div>
+                <span>Joining Date</span>
+                <strong>
+                  {formatDate(
+                    selectedEmployee?.joiningDate ||
+                      selectedEmployee?.dateOfJoining ||
+                      selectedEmployee?.createdAt
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>Created</span>
+                <strong>
+                  {formatDate(
+                    selectedEmployee?.createdAt
+                  )}
+                </strong>
+              </div>
+            </div>
+
+            <div className="hr-employee-modal-footer">
+              <button
+                type="button"
+                onClick={closeDetails}
+              >
+                Close
+              </button>
+            </div>
           </div>
-        )}
-      </div>
-    </MainLayout>
+        </div>
+      )}
+    </div>
   );
 };
 

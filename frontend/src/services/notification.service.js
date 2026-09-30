@@ -2,7 +2,10 @@ import api from "@/services/api";
 
 const BASE_URL = "/notifications";
 
-export const getMyNotifications = async (params = {}) => {
+/**
+ * Get current user's notifications
+ */
+const getNotifications = async (params = {}) => {
   const response = await api.get(`${BASE_URL}/my`, {
     params,
   });
@@ -10,7 +13,17 @@ export const getMyNotifications = async (params = {}) => {
   return response.data;
 };
 
-export const getUnreadCount = async () => {
+/**
+ * Alias for backward compatibility
+ */
+const getMyNotifications = async (params = {}) => {
+  return getNotifications(params);
+};
+
+/**
+ * Get unread notification count
+ */
+const getUnreadCount = async () => {
   const response = await api.get(
     `${BASE_URL}/unread-count`
   );
@@ -18,7 +31,10 @@ export const getUnreadCount = async () => {
   return response.data;
 };
 
-export const markNotificationAsRead = async (
+/**
+ * Mark one notification as read
+ */
+const markNotificationAsRead = async (
   notificationId
 ) => {
   if (!notificationId) {
@@ -32,7 +48,10 @@ export const markNotificationAsRead = async (
   return response.data;
 };
 
-export const markAllNotificationsAsRead = async () => {
+/**
+ * Mark all notifications as read
+ */
+const markAllNotificationsAsRead = async () => {
   const response = await api.put(
     `${BASE_URL}/read-all`
   );
@@ -41,6 +60,7 @@ export const markAllNotificationsAsRead = async () => {
 };
 
 const notificationService = {
+  getNotifications,
   getMyNotifications,
   getUnreadCount,
   markNotificationAsRead,

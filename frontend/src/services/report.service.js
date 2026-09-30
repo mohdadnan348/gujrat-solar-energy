@@ -17,37 +17,49 @@ const reportService = {
 
   // Quotation report
   getQuotationReport: async (params = {}) => {
-    const response = await api.get(`${BASE_URL}/quotations`, { params });
+    const response = await api.get(`${BASE_URL}/quotations`, {
+      params,
+    });
     return response.data;
   },
 
   // Invoice report
   getInvoiceReport: async (params = {}) => {
-    const response = await api.get(`${BASE_URL}/invoices`, { params });
+    const response = await api.get(`${BASE_URL}/invoices`, {
+      params,
+    });
     return response.data;
   },
 
   // Task report
   getTaskReport: async (params = {}) => {
-    const response = await api.get(`${BASE_URL}/tasks`, { params });
+    const response = await api.get(`${BASE_URL}/tasks`, {
+      params,
+    });
     return response.data;
   },
 
   // Attendance report
   getAttendanceReport: async (params = {}) => {
-    const response = await api.get(`${BASE_URL}/attendance`, { params });
+    const response = await api.get(`${BASE_URL}/attendance`, {
+      params,
+    });
     return response.data;
   },
 
   // Leave report
   getLeaveReport: async (params = {}) => {
-    const response = await api.get(`${BASE_URL}/leaves`, { params });
+    const response = await api.get(`${BASE_URL}/leaves`, {
+      params,
+    });
     return response.data;
   },
 
   // Employee report
   getEmployeeReport: async (params = {}) => {
-    const response = await api.get(`${BASE_URL}/employees`, { params });
+    const response = await api.get(`${BASE_URL}/employees`, {
+      params,
+    });
     return response.data;
   },
 

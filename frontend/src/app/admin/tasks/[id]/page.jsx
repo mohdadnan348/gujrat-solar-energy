@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-import AdminLayout from "../../layout";
+import {
+  useParams,
+  useRouter,
+} from "next/navigation";
+
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import Loader from "@/components/common/Loader";
@@ -21,13 +28,20 @@ const TaskDetailsPage = () => {
   const taskId = params?.id;
 
   const [task, setTask] = useState(null);
-  const [employees, setEmployees] = useState([]);
+  const [employees, setEmployees] =
+    useState([]);
 
-  const [loading, setLoading] = useState(true);
-  const [deleting, setDeleting] = useState(false);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [error, setError] = useState("");
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const [deleteOpen, setDeleteOpen] =
+    useState(false);
 
   const getValue = (
     object,
@@ -37,7 +51,8 @@ const TaskDetailsPage = () => {
     if (!object) return fallback;
 
     for (const key of keys) {
-      const value = object?.[key];
+      const value =
+        object?.[key];
 
       if (
         value !== undefined &&
@@ -75,25 +90,37 @@ const TaskDetailsPage = () => {
       return response;
     }
 
-    if (Array.isArray(response?.data)) {
+    if (
+      Array.isArray(
+        response?.data
+      )
+    ) {
       return response.data;
     }
 
     if (
       key &&
-      Array.isArray(response?.data?.[key])
+      Array.isArray(
+        response?.data?.[key]
+      )
     ) {
       return response.data[key];
     }
 
     if (
       key &&
-      Array.isArray(response?.[key])
+      Array.isArray(
+        response?.[key]
+      )
     ) {
       return response[key];
     }
 
-    if (Array.isArray(response?.results)) {
+    if (
+      Array.isArray(
+        response?.results
+      )
+    ) {
       return response.results;
     }
 
@@ -120,7 +147,9 @@ const TaskDetailsPage = () => {
         taskResponse,
         employeesResponse,
       ] = await Promise.all([
-        taskService.getTaskById(taskId),
+        taskService.getTaskById(
+          taskId
+        ),
         employeeService.getEmployees(),
       ]);
 
@@ -255,7 +284,8 @@ const TaskDetailsPage = () => {
   const assignee = useMemo(() => {
     if (
       assignedTo &&
-      typeof assignedTo === "object"
+      typeof assignedTo ===
+        "object"
     ) {
       return assignedTo;
     }
@@ -287,24 +317,26 @@ const TaskDetailsPage = () => {
     "Unassigned"
   );
 
-  const assigneeEmail = getValue(
-    assignee,
-    [
-      "email",
-      "emailAddress",
-    ],
-    ""
-  );
+  const assigneeEmail =
+    getValue(
+      assignee,
+      [
+        "email",
+        "emailAddress",
+      ],
+      ""
+    );
 
-  const assigneePhone = getValue(
-    assignee,
-    [
-      "phone",
-      "mobile",
-      "mobileNumber",
-    ],
-    ""
-  );
+  const assigneePhone =
+    getValue(
+      assignee,
+      [
+        "phone",
+        "mobile",
+        "mobileNumber",
+      ],
+      ""
+    );
 
   const taskNumber = getValue(
     task,
@@ -325,14 +357,15 @@ const TaskDetailsPage = () => {
     null
   );
 
-  const relatedCustomer = getValue(
-    task,
-    [
-      "customer",
-      "customerId",
-    ],
-    null
-  );
+  const relatedCustomer =
+    getValue(
+      task,
+      [
+        "customer",
+        "customerId",
+      ],
+      null
+    );
 
   const formatDate = (value) => {
     if (!value) return "—";
@@ -496,500 +529,612 @@ const TaskDetailsPage = () => {
     }
   };
 
+  /* =========================================================
+     LOADING
+     AdminLayout removed to prevent duplicate layout.
+  ========================================================= */
+
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="admin-task-details-loading">
-          <Loader />
-          <p>
-            Loading task details...
-          </p>
-        </div>
-      </AdminLayout>
+      <div className="admin-task-details-loading">
+        <Loader />
+
+        <p>
+          Loading task details...
+        </p>
+      </div>
     );
   }
+
+  /* =========================================================
+     NOT FOUND
+  ========================================================= */
 
   if (!task) {
     return (
-      <AdminLayout>
-        <div className="admin-task-details-page">
-          <div className="admin-task-details-error-state">
-            <h2>
-              Task Not Found
-            </h2>
+      <div className="admin-task-details-page">
 
-            <p>
-              The requested task could not
-              be found.
-            </p>
+        <div className="admin-task-details-error-state">
 
-            <Button
-              type="button"
-              variant="primary"
-              onClick={() =>
-                router.push(
-                  "/admin/tasks"
-                )
-              }
-            >
-              Back to Tasks
-            </Button>
-          </div>
+          <h2>
+            Task Not Found
+          </h2>
+
+          <p>
+            The requested task could not
+            be found.
+          </p>
+
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() =>
+              router.push(
+                "/admin/tasks"
+              )
+            }
+          >
+            Back to Tasks
+          </Button>
+
         </div>
-      </AdminLayout>
+
+      </div>
     );
   }
 
+  /* =========================================================
+     PAGE
+  ========================================================= */
+
   return (
-    <AdminLayout>
-      <div className="admin-task-details-page">
-        <div className="admin-task-details-header">
-          <div>
-            <button
-              type="button"
-              className="admin-task-details-back"
-              onClick={() =>
-                router.push(
-                  "/admin/tasks"
-                )
-              }
-            >
-              ← Back to Tasks
-            </button>
+    <div className="admin-task-details-page">
 
-            <div className="admin-task-details-title-row">
-              <div>
-                <h1>
-                  {title}
-                </h1>
+      <div className="admin-task-details-header">
 
-                {taskNumber && (
-                  <span className="admin-task-reference">
-                    {taskNumber}
-                  </span>
-                )}
-              </div>
+        <div>
 
-              <div className="admin-task-details-statuses">
-                <Badge
-                  variant={getPriorityVariant(
-                    priority
-                  )}
-                >
-                  {priority.replaceAll(
-                    "_",
-                    " "
-                  )}
-                </Badge>
+          <button
+            type="button"
+            className="admin-task-details-back"
+            onClick={() =>
+              router.push(
+                "/admin/tasks"
+              )
+            }
+          >
+            ← Back to Tasks
+          </button>
 
-                <Badge
-                  variant={getStatusVariant(
-                    status
-                  )}
-                >
-                  {status.replaceAll(
-                    "_",
-                    " "
-                  )}
-                </Badge>
-              </div>
+          <div className="admin-task-details-title-row">
+
+            <div>
+
+              <h1>
+                {title}
+              </h1>
+
+              {taskNumber && (
+                <span className="admin-task-reference">
+                  {taskNumber}
+                </span>
+              )}
+
             </div>
+
+            <div className="admin-task-details-statuses">
+
+              <Badge
+                variant={getPriorityVariant(
+                  priority
+                )}
+              >
+                {priority.replaceAll(
+                  "_",
+                  " "
+                )}
+              </Badge>
+
+              <Badge
+                variant={getStatusVariant(
+                  status
+                )}
+              >
+                {status.replaceAll(
+                  "_",
+                  " "
+                )}
+              </Badge>
+
+            </div>
+
           </div>
 
-          <div className="admin-task-details-actions">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() =>
-                router.push(
-                  `/admin/tasks/create?edit=${taskId}`
-                )
-              }
-            >
-              Edit Task
-            </Button>
-
-            <Button
-              type="button"
-              variant="danger"
-              onClick={() =>
-                setDeleteOpen(true)
-              }
-            >
-              Delete
-            </Button>
-          </div>
         </div>
 
-        {error && (
-          <div className="admin-task-details-error">
-            {error}
-          </div>
-        )}
+        <div className="admin-task-details-actions">
 
-        <div className="admin-task-details-grid">
-          <div className="admin-task-details-main">
-            <section className="admin-task-details-card">
-              <div className="admin-task-details-card-header">
-                <div>
-                  <h2>
-                    Task Information
-                  </h2>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() =>
+              router.push(
+                `/admin/tasks/create?edit=${taskId}`
+              )
+            }
+          >
+            Edit Task
+          </Button>
 
-                  <p>
-                    Task description and
-                    operational details.
-                  </p>
-                </div>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={() =>
+              setDeleteOpen(true)
+            }
+          >
+            Delete
+          </Button>
+
+        </div>
+
+      </div>
+
+      {error && (
+        <div className="admin-task-details-error">
+          {error}
+        </div>
+      )}
+
+      <div className="admin-task-details-grid">
+
+        <div className="admin-task-details-main">
+
+          <section className="admin-task-details-card">
+
+            <div className="admin-task-details-card-header">
+
+              <div>
+
+                <h2>
+                  Task Information
+                </h2>
+
+                <p>
+                  Task description and
+                  operational details.
+                </p>
+
               </div>
 
-              <div className="admin-task-details-card-body">
-                <div className="admin-task-info-block">
-                  <span>
-                    Description
-                  </span>
+            </div>
 
-                  <p>
-                    {description ||
-                      "No description provided."}
-                  </p>
-                </div>
+            <div className="admin-task-details-card-body">
 
-                <div className="admin-task-info-grid">
-                  <div className="admin-task-info-item">
-                    <span>
-                      Priority
-                    </span>
+              <div className="admin-task-info-block">
 
-                    <div>
-                      <Badge
-                        variant={getPriorityVariant(
-                          priority
-                        )}
-                      >
-                        {priority.replaceAll(
-                          "_",
-                          " "
-                        )}
-                      </Badge>
-                    </div>
-                  </div>
+                <span>
+                  Description
+                </span>
 
-                  <div className="admin-task-info-item">
-                    <span>
-                      Status
-                    </span>
+                <p>
+                  {description ||
+                    "No description provided."}
+                </p>
 
-                    <div>
-                      <Badge
-                        variant={getStatusVariant(
-                          status
-                        )}
-                      >
-                        {status.replaceAll(
-                          "_",
-                          " "
-                        )}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <div className="admin-task-info-item">
-                    <span>
-                      Due Date
-                    </span>
-
-                    <strong
-                      className={
-                        isOverdue
-                          ? "overdue"
-                          : ""
-                      }
-                    >
-                      {formatDate(
-                        dueDate
-                      )}
-                    </strong>
-
-                    {isOverdue && (
-                      <small className="admin-task-overdue-label">
-                        Overdue
-                      </small>
-                    )}
-                  </div>
-
-                  <div className="admin-task-info-item">
-                    <span>
-                      Created
-                    </span>
-
-                    <strong>
-                      {formatDate(
-                        createdAt
-                      )}
-                    </strong>
-                  </div>
-
-                  <div className="admin-task-info-item">
-                    <span>
-                      Last Updated
-                    </span>
-
-                    <strong>
-                      {formatDate(
-                        updatedAt
-                      )}
-                    </strong>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="admin-task-details-card">
-              <div className="admin-task-details-card-header">
-                <div>
-                  <h2>
-                    Notes
-                  </h2>
-
-                  <p>
-                    Additional information
-                    related to this task.
-                  </p>
-                </div>
               </div>
 
-              <div className="admin-task-details-card-body">
-                <div className="admin-task-notes">
-                  {notes ? (
-                    <p>
-                      {notes}
-                    </p>
-                  ) : (
-                    <span>
-                      No additional notes
-                      available.
-                    </span>
-                  )}
-                </div>
-              </div>
-            </section>
+              <div className="admin-task-info-grid">
 
-            {(relatedLead ||
-              relatedCustomer) && (
-              <section className="admin-task-details-card">
-                <div className="admin-task-details-card-header">
-                  <div>
-                    <h2>
-                      Related Records
-                    </h2>
+                <div className="admin-task-info-item">
 
-                    <p>
-                      Records connected to
-                      this task.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="admin-task-details-card-body">
-                  <div className="admin-task-related-grid">
-                    {relatedLead && (
-                      <div className="admin-task-related-item">
-                        <span>
-                          Lead
-                        </span>
-
-                        <strong>
-                          {typeof relatedLead ===
-                          "object"
-                            ? getValue(
-                                relatedLead,
-                                [
-                                  "name",
-                                  "leadNumber",
-                                  "_id",
-                                ],
-                                "Related Lead"
-                              )
-                            : String(
-                                relatedLead
-                              )}
-                        </strong>
-                      </div>
-                    )}
-
-                    {relatedCustomer && (
-                      <div className="admin-task-related-item">
-                        <span>
-                          Customer
-                        </span>
-
-                        <strong>
-                          {typeof relatedCustomer ===
-                          "object"
-                            ? getValue(
-                                relatedCustomer,
-                                [
-                                  "name",
-                                  "customerNumber",
-                                  "_id",
-                                ],
-                                "Related Customer"
-                              )
-                            : String(
-                                relatedCustomer
-                              )}
-                        </strong>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </section>
-            )}
-          </div>
-
-          <aside className="admin-task-details-sidebar">
-            <section className="admin-task-details-card">
-              <div className="admin-task-details-card-header">
-                <div>
-                  <h2>
-                    Assigned Employee
-                  </h2>
-
-                  <p>
-                    Current task assignee.
-                  </p>
-                </div>
-              </div>
-
-              <div className="admin-task-details-card-body">
-                <div className="admin-task-assignee-profile">
-                  <div className="admin-task-profile-avatar">
-                    {assigneeName
-                      .charAt(0)
-                      .toUpperCase()}
-                  </div>
-
-                  <div>
-                    <h3>
-                      {assigneeName}
-                    </h3>
-
-                    {assigneeEmail && (
-                      <a
-                        href={`mailto:${assigneeEmail}`}
-                      >
-                        {assigneeEmail}
-                      </a>
-                    )}
-
-                    {assigneePhone && (
-                      <a
-                        href={`tel:${assigneePhone}`}
-                      >
-                        {assigneePhone}
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                {!assignee && (
-                  <div className="admin-task-unassigned">
-                    This task is currently
-                    unassigned.
-                  </div>
-                )}
-              </div>
-            </section>
-
-            <section className="admin-task-details-card">
-              <div className="admin-task-details-card-header">
-                <div>
-                  <h2>
-                    Task Summary
-                  </h2>
-
-                  <p>
-                    Quick overview of this
-                    task.
-                  </p>
-                </div>
-              </div>
-
-              <div className="admin-task-summary">
-                <div>
-                  <span>
-                    Status
-                  </span>
-
-                  <strong>
-                    {status.replaceAll(
-                      "_",
-                      " "
-                    )}
-                  </strong>
-                </div>
-
-                <div>
                   <span>
                     Priority
                   </span>
 
-                  <strong>
-                    {priority}
-                  </strong>
+                  <div>
+
+                    <Badge
+                      variant={getPriorityVariant(
+                        priority
+                      )}
+                    >
+                      {priority.replaceAll(
+                        "_",
+                        " "
+                      )}
+                    </Badge>
+
+                  </div>
+
                 </div>
 
-                <div>
+                <div className="admin-task-info-item">
+
+                  <span>
+                    Status
+                  </span>
+
+                  <div>
+
+                    <Badge
+                      variant={getStatusVariant(
+                        status
+                      )}
+                    >
+                      {status.replaceAll(
+                        "_",
+                        " "
+                      )}
+                    </Badge>
+
+                  </div>
+
+                </div>
+
+                <div className="admin-task-info-item">
+
                   <span>
                     Due Date
                   </span>
 
-                  <strong>
+                  <strong
+                    className={
+                      isOverdue
+                        ? "overdue"
+                        : ""
+                    }
+                  >
                     {formatDate(
                       dueDate
                     )}
                   </strong>
+
+                  {isOverdue && (
+                    <small className="admin-task-overdue-label">
+                      Overdue
+                    </small>
+                  )}
+
                 </div>
 
-                <div>
+                <div className="admin-task-info-item">
+
                   <span>
                     Created
                   </span>
 
                   <strong>
-                    {formatDateTime(
+                    {formatDate(
                       createdAt
                     )}
                   </strong>
+
                 </div>
+
+                <div className="admin-task-info-item">
+
+                  <span>
+                    Last Updated
+                  </span>
+
+                  <strong>
+                    {formatDate(
+                      updatedAt
+                    )}
+                  </strong>
+
+                </div>
+
               </div>
+
+            </div>
+
+          </section>
+
+          <section className="admin-task-details-card">
+
+            <div className="admin-task-details-card-header">
+
+              <div>
+
+                <h2>
+                  Notes
+                </h2>
+
+                <p>
+                  Additional information
+                  related to this task.
+                </p>
+
+              </div>
+
+            </div>
+
+            <div className="admin-task-details-card-body">
+
+              <div className="admin-task-notes">
+
+                {notes ? (
+                  <p>
+                    {notes}
+                  </p>
+                ) : (
+                  <span>
+                    No additional notes
+                    available.
+                  </span>
+                )}
+
+              </div>
+
+            </div>
+
+          </section>
+
+          {(relatedLead ||
+            relatedCustomer) && (
+            <section className="admin-task-details-card">
+
+              <div className="admin-task-details-card-header">
+
+                <div>
+
+                  <h2>
+                    Related Records
+                  </h2>
+
+                  <p>
+                    Records connected to
+                    this task.
+                  </p>
+
+                </div>
+
+              </div>
+
+              <div className="admin-task-details-card-body">
+
+                <div className="admin-task-related-grid">
+
+                  {relatedLead && (
+                    <div className="admin-task-related-item">
+
+                      <span>
+                        Lead
+                      </span>
+
+                      <strong>
+                        {typeof relatedLead ===
+                        "object"
+                          ? getValue(
+                              relatedLead,
+                              [
+                                "name",
+                                "leadNumber",
+                                "_id",
+                              ],
+                              "Related Lead"
+                            )
+                          : String(
+                              relatedLead
+                            )}
+                      </strong>
+
+                    </div>
+                  )}
+
+                  {relatedCustomer && (
+                    <div className="admin-task-related-item">
+
+                      <span>
+                        Customer
+                      </span>
+
+                      <strong>
+                        {typeof relatedCustomer ===
+                        "object"
+                          ? getValue(
+                              relatedCustomer,
+                              [
+                                "name",
+                                "customerNumber",
+                                "_id",
+                              ],
+                              "Related Customer"
+                            )
+                          : String(
+                              relatedCustomer
+                            )}
+                      </strong>
+
+                    </div>
+                  )}
+
+                </div>
+
+              </div>
+
             </section>
-          </aside>
+          )}
+
         </div>
 
-        <ConfirmDialog
-          isOpen={deleteOpen}
-          onClose={() =>
-            !deleting &&
-            setDeleteOpen(false)
-          }
-          onConfirm={
-            handleDelete
-          }
-          title="Delete Task"
-          message="Are you sure you want to delete this task? This action cannot be undone."
-          confirmText={
-            deleting
-              ? "Deleting..."
-              : "Delete Task"
-          }
-          cancelText="Cancel"
-          loading={deleting}
-          danger
-        />
+        <aside className="admin-task-details-sidebar">
+
+          <section className="admin-task-details-card">
+
+            <div className="admin-task-details-card-header">
+
+              <div>
+
+                <h2>
+                  Assigned Employee
+                </h2>
+
+                <p>
+                  Current task assignee.
+                </p>
+
+              </div>
+
+            </div>
+
+            <div className="admin-task-details-card-body">
+
+              <div className="admin-task-assignee-profile">
+
+                <div className="admin-task-profile-avatar">
+
+                  {assigneeName
+                    .charAt(0)
+                    .toUpperCase()}
+
+                </div>
+
+                <div>
+
+                  <h3>
+                    {assigneeName}
+                  </h3>
+
+                  {assigneeEmail && (
+                    <a
+                      href={`mailto:${assigneeEmail}`}
+                    >
+                      {assigneeEmail}
+                    </a>
+                  )}
+
+                  {assigneePhone && (
+                    <a
+                      href={`tel:${assigneePhone}`}
+                    >
+                      {assigneePhone}
+                    </a>
+                  )}
+
+                </div>
+
+              </div>
+
+              {!assignee && (
+                <div className="admin-task-unassigned">
+                  This task is currently
+                  unassigned.
+                </div>
+              )}
+
+            </div>
+
+          </section>
+
+          <section className="admin-task-details-card">
+
+            <div className="admin-task-details-card-header">
+
+              <div>
+
+                <h2>
+                  Task Summary
+                </h2>
+
+                <p>
+                  Quick overview of this
+                  task.
+                </p>
+
+              </div>
+
+            </div>
+
+            <div className="admin-task-summary">
+
+              <div>
+
+                <span>
+                  Status
+                </span>
+
+                <strong>
+                  {status.replaceAll(
+                    "_",
+                    " "
+                  )}
+                </strong>
+
+              </div>
+
+              <div>
+
+                <span>
+                  Priority
+                </span>
+
+                <strong>
+                  {priority}
+                </strong>
+
+              </div>
+
+              <div>
+
+                <span>
+                  Due Date
+                </span>
+
+                <strong>
+                  {formatDate(
+                    dueDate
+                  )}
+                </strong>
+
+              </div>
+
+              <div>
+
+                <span>
+                  Created
+                </span>
+
+                <strong>
+                  {formatDateTime(
+                    createdAt
+                  )}
+                </strong>
+
+              </div>
+
+            </div>
+
+          </section>
+
+        </aside>
+
       </div>
-    </AdminLayout>
+
+      <ConfirmDialog
+        isOpen={deleteOpen}
+        onClose={() =>
+          !deleting &&
+          setDeleteOpen(false)
+        }
+        onConfirm={
+          handleDelete
+        }
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        confirmText={
+          deleting
+            ? "Deleting..."
+            : "Delete Task"
+        }
+        cancelText="Cancel"
+        loading={deleting}
+        danger
+      />
+
+    </div>
   );
 };
 

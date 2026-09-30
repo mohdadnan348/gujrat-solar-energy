@@ -43,6 +43,14 @@ const taskSchema = new mongoose.Schema(
       index: true,
     },
 
+    // Optional relation with quotation
+quotation: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Quotation",
+  default: null,
+  index: true,
+},
+
     // Employee responsible for completing task
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,

@@ -2,9 +2,14 @@
 
 import React from "react";
 import StatCard from "./StatCard";
+import "./AdminStats.css";
 
-const AdminStats = ({ stats = {}, loading = false }) => {
-  const dashboardStats = stats?.stats || stats;
+const AdminStats = ({
+  stats = {},
+  loading = false,
+}) => {
+  const dashboardStats =
+    stats?.stats || stats || {};
 
   const totalLeads =
     dashboardStats?.leads?.total ??
@@ -21,112 +26,155 @@ const AdminStats = ({ stats = {}, loading = false }) => {
     dashboardStats?.totalCustomers ??
     0;
 
-  const totalEmployees =
+  const activeEmployees =
     dashboardStats?.users?.activeEmployees ??
+    dashboardStats?.employees?.active ??
+    dashboardStats?.activeEmployees ??
     dashboardStats?.totalEmployees ??
     0;
 
+  const statsCards = [
+    {
+      title: "Total Leads",
+      value: totalLeads,
+      variant: "primary",
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
+    },
+
+    {
+      title: "Total Quotations",
+      value: totalQuotations,
+      variant: "info",
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 20 8" />
+          <line
+            x1="14"
+            y1="2"
+            x2="14"
+            y2="8"
+          />
+          <line
+            x1="14"
+            y1="8"
+            x2="20"
+            y2="8"
+          />
+          <line
+            x1="8"
+            y1="13"
+            x2="16"
+            y2="13"
+          />
+          <line
+            x1="8"
+            y1="17"
+            x2="14"
+            y2="17"
+          />
+        </svg>
+      ),
+    },
+
+    {
+      title: "Total Customers",
+      value: totalCustomers,
+      variant: "success",
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle
+            cx="9"
+            cy="7"
+            r="4"
+          />
+          <path d="M3 21v-1a6 6 0 0 1 12 0v1" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          <path d="M21 21v-1a6 6 0 0 0-3-5.19" />
+        </svg>
+      ),
+    },
+
+    {
+      title: "Active Employees",
+      value: activeEmployees,
+      variant: "warning",
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle
+            cx="12"
+            cy="7"
+            r="4"
+          />
+          <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
+        </svg>
+      ),
+    },
+  ];
+
   return (
     <div className="gse-stats-grid">
-      <StatCard
-        title="Total Leads"
-        value={totalLeads}
-        icon={
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
-        }
-        variant="primary"
-        loading={loading}
-      />
-
-      <StatCard
-        title="Total Quotations"
-        value={totalQuotations}
-        icon={
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 20 8" />
-            <line x1="14" y1="2" x2="14" y2="8" />
-            <line x1="14" y1="8" x2="20" y2="8" />
-            <line x1="8" y1="13" x2="16" y2="13" />
-            <line x1="8" y1="17" x2="14" y2="17" />
-          </svg>
-        }
-        variant="info"
-        loading={loading}
-      />
-
-      <StatCard
-        title="Total Customers"
-        value={totalCustomers}
-        icon={
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="9" cy="7" r="4" />
-            <path d="M3 21v-1a6 6 0 0 1 12 0v1" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            <path d="M21 21v-1a6 6 0 0 0-3-5.19" />
-          </svg>
-        }
-        variant="success"
-        loading={loading}
-      />
-
-      <StatCard
-        title="Active Employees"
-        value={totalEmployees}
-        icon={
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="7" r="4" />
-            <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
-          </svg>
-        }
-        variant="warning"
-        loading={loading}
-      />
+      {statsCards.map((card) => (
+        <div
+          className="gse-stat-grid-item"
+          key={card.title}
+        >
+          <StatCard
+            title={card.title}
+            value={card.value}
+            icon={card.icon}
+            variant={card.variant}
+            loading={loading}
+          />
+        </div>
+      ))}
     </div>
   );
 };

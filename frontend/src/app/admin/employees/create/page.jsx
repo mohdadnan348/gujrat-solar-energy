@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import AdminLayout from "../../layout";
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
@@ -11,11 +10,6 @@ import Textarea from "@/components/common/Textarea";
 import Loader from "@/components/common/Loader";
 
 import employeeService from "@/services/employee.service";
-console.log("EMPLOYEE SERVICE:", employeeService);
-console.log(
-  "GET EMPLOYEE BY ID:",
-  employeeService?.getEmployeeById
-);
 import "./create-employee.css";
 
 const CreateEmployeePage = () => {
@@ -495,20 +489,17 @@ const CreateEmployeePage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="admin-create-employee-loading">
-          <Loader />
-          <p>
-            Loading employee form...
-          </p>
-        </div>
-      </AdminLayout>
+      <div className="admin-create-employee-loading">
+        <Loader />
+        <p>
+          Loading employee form...
+        </p>
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div className="admin-create-employee-page">
+    <div className="admin-create-employee-page">
         <div className="admin-create-employee-header">
           <div>
             <button
@@ -977,7 +968,6 @@ const CreateEmployeePage = () => {
           </div>
         </form>
       </div>
-    </AdminLayout>
   );
 };
 
