@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import SearchBox from "@/components/common/SearchBox";
@@ -11,10 +10,12 @@ import Modal from "@/components/common/Modal";
 import { useAuth } from "@/hooks/useAuth";
 import notificationService from "@/services/notification.service";
 
+import "./notifications.css";
+
 const PAGE_SIZE = 10;
 
 const ManagerNotificationsPage = () => {
-  const { user, logout, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,11 +26,12 @@ const ManagerNotificationsPage = () => {
   const [typeFilter, setTypeFilter] = useState("ALL");
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedNotification, setSelectedNotification] = useState(null);
+  const [selectedNotification, setSelectedNotification] =
+    useState(null);
 
-  const handleLogout = async () => {
-    await logout();
-  };
+  /* =========================
+     LOAD NOTIFICATIONS
+  ========================= */
 
   const loadNotifications = async () => {
     try {
@@ -49,11 +51,14 @@ const ManagerNotificationsPage = () => {
 
       setNotifications(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Failed to load notifications:", err);
+      console.error(
+        "Failed to load notifications:",
+        err
+      );
 
       setError(
-        err?.message ||
-          err?.response?.data?.message ||
+        err?.response?.data?.message ||
+          err?.message ||
           "Unable to load notifications."
       );
 
@@ -71,31 +76,35 @@ const ManagerNotificationsPage = () => {
     setCurrentPage(1);
   }, [search, readFilter, typeFilter]);
 
+  /* =========================
+     HELPERS
+  ========================= */
+
   const getNotificationTitle = (notification) => {
-    return (
+    return String(
       notification?.title ||
-      notification?.subject ||
-      notification?.name ||
-      "Notification"
+        notification?.subject ||
+        notification?.name ||
+        "Notification"
     );
   };
 
   const getNotificationMessage = (notification) => {
-    return (
+    return String(
       notification?.message ||
-      notification?.description ||
-      notification?.body ||
-      notification?.content ||
-      "No message available."
+        notification?.description ||
+        notification?.body ||
+        notification?.content ||
+        "No message available."
     );
   };
 
   const getNotificationType = (notification) => {
-    return (
+    return String(
       notification?.type ||
-      notification?.notificationType ||
-      notification?.category ||
-      "GENERAL"
+        notification?.notificationType ||
+        notification?.category ||
+        "GENERAL"
     );
   };
 
@@ -128,11 +137,12 @@ const ManagerNotificationsPage = () => {
   const formatType = (type) => {
     if (!type) return "General";
 
-    return type
-      .toString()
+    return String(type)
       .toLowerCase()
       .replace(/_/g, " ")
-      .replace(/\b\w/g, (char) => char.toUpperCase());
+      .replace(/\b\w/g, (char) =>
+        char.toUpperCase()
+      );
   };
 
   const formatDate = (value) => {
@@ -141,7 +151,7 @@ const ManagerNotificationsPage = () => {
     const date = new Date(value);
 
     if (Number.isNaN(date.getTime())) {
-      return value;
+      return String(value);
     }
 
     return date.toLocaleDateString("en-IN", {
@@ -157,7 +167,7 @@ const ManagerNotificationsPage = () => {
     const date = new Date(value);
 
     if (Number.isNaN(date.getTime())) {
-      return value;
+      return String(value);
     }
 
     return date.toLocaleString("en-IN", {
@@ -171,7 +181,7 @@ const ManagerNotificationsPage = () => {
   };
 
   const getTypeVariant = (type) => {
-    const normalized = type?.toString().toUpperCase();
+    const normalized = String(type || "").toUpperCase();
 
     if (
       normalized === "LEAD" ||
@@ -194,18 +204,11 @@ const ManagerNotificationsPage = () => {
       return "info";
     }
 
-    if (
-      normalized === "SYSTEM" ||
-      normalized === "GENERAL"
-    ) {
-      return "default";
-    }
-
     return "default";
   };
 
   const getNotificationIcon = (type) => {
-    const normalized = type?.toString().toUpperCase();
+    const normalized = String(type || "").toUpperCase();
 
     if (normalized.includes("LEAD")) return "◉";
     if (normalized.includes("TASK")) return "✓";
@@ -216,6 +219,10 @@ const ManagerNotificationsPage = () => {
 
     return "●";
   };
+
+  /* =========================
+     NORMALIZE
+  ========================= */
 
   const normalizedNotifications = useMemo(() => {
     return notifications.map((notification) => ({
@@ -228,35 +235,46 @@ const ManagerNotificationsPage = () => {
     }));
   }, [notifications]);
 
+  /* =========================
+     FILTER
+  ========================= */
+
   const filteredNotifications = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    return normalizedNotifications.filter((notification) => {
-      const matchesSearch =
-        !query ||
-        notification._title
-          .toLowerCase()
-          .includes(query) ||
-        notification._message
-          .toLowerCase()
-          .includes(query) ||
-        notification._type
-          .toString()
-          .toLowerCase()
-          .includes(query);
+    return normalizedNotifications.filter(
+      (notification) => {
+        const matchesSearch =
+          !query ||
+          String(notification._title)
+            .toLowerCase()
+            .includes(query) ||
+          String(notification._message)
+            .toLowerCase()
+            .includes(query) ||
+          String(notification._type)
+            .toLowerCase()
+            .includes(query);
 
-      const matchesRead =
-        readFilter === "ALL" ||
-        (readFilter === "READ" && notification._isRead) ||
-        (readFilter === "UNREAD" && !notification._isRead);
+        const matchesRead =
+          readFilter === "ALL" ||
+          (readFilter === "READ" &&
+            notification._isRead) ||
+          (readFilter === "UNREAD" &&
+            !notification._isRead);
 
-      const matchesType =
-        typeFilter === "ALL" ||
-        notification._type.toString().toUpperCase() ===
-          typeFilter;
+        const matchesType =
+          typeFilter === "ALL" ||
+          String(notification._type).toUpperCase() ===
+            typeFilter;
 
-      return matchesSearch && matchesRead && matchesType;
-    });
+        return (
+          matchesSearch &&
+          matchesRead &&
+          matchesType
+        );
+      }
+    );
   }, [
     normalizedNotifications,
     search,
@@ -264,13 +282,20 @@ const ManagerNotificationsPage = () => {
     typeFilter,
   ]);
 
+  /* =========================
+     PAGINATION
+  ========================= */
+
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredNotifications.length / PAGE_SIZE)
+    Math.ceil(
+      filteredNotifications.length / PAGE_SIZE
+    )
   );
 
   const paginatedNotifications = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
+    const start =
+      (currentPage - 1) * PAGE_SIZE;
 
     return filteredNotifications.slice(
       start,
@@ -278,23 +303,33 @@ const ManagerNotificationsPage = () => {
     );
   }, [filteredNotifications, currentPage]);
 
+  /* =========================
+     COUNTS
+  ========================= */
+
   const unreadCount = useMemo(() => {
     return normalizedNotifications.filter(
       (notification) => !notification._isRead
     ).length;
   }, [normalizedNotifications]);
 
-  const readCount = normalizedNotifications.length - unreadCount;
+  const readCount =
+    normalizedNotifications.length - unreadCount;
 
   const uniqueTypes = useMemo(() => {
     return [
       ...new Set(
-        normalizedNotifications.map((notification) =>
-          notification._type.toString().toUpperCase()
+        normalizedNotifications.map(
+          (notification) =>
+            String(notification._type).toUpperCase()
         )
       ),
     ];
   }, [normalizedNotifications]);
+
+  /* =========================
+     ACTIONS
+  ========================= */
 
   const handleNotificationClick = (notification) => {
     setSelectedNotification(notification);
@@ -302,14 +337,24 @@ const ManagerNotificationsPage = () => {
 
   const handleMarkAllRead = async () => {
     try {
-      if (typeof notificationService.markAllAsRead === "function") {
+      if (
+        typeof notificationService.markAllAsRead ===
+        "function"
+      ) {
         await notificationService.markAllAsRead();
         await loadNotifications();
       }
     } catch (err) {
-      console.error("Failed to mark all notifications as read:", err);
+      console.error(
+        "Failed to mark all notifications as read:",
+        err
+      );
     }
   };
+
+  /* =========================
+     AUTH LOADING
+  ========================= */
 
   if (authLoading) {
     return (
@@ -319,334 +364,358 @@ const ManagerNotificationsPage = () => {
     );
   }
 
+  /* =========================
+     PAGE
+  ========================= */
+
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      onSearch={(value) =>
-        console.log("Manager global search:", value)
-      }
-      notificationCount={unreadCount}
-    >
-      <div className="manager-notifications-page">
-        <div className="manager-notifications-header">
-          <div>
-            <span className="manager-notifications-eyebrow">
-              Communication Center
+    <div className="manager-notifications">
+      {/* HEADER */}
+      <div className="manager-notifications__header">
+        <div>
+          <span className="manager-notifications__eyebrow">
+            Communication Center
+          </span>
+
+          <h1 className="manager-notifications__title">
+            Notifications
+          </h1>
+
+          <p className="manager-notifications__subtitle">
+            Stay updated with leads, tasks, quotations
+            and system activities.
+          </p>
+        </div>
+
+        <div className="manager-notifications__actions">
+          {unreadCount > 0 && (
+            <Button
+              variant="secondary"
+              onClick={handleMarkAllRead}
+            >
+              Mark All as Read
+            </Button>
+          )}
+
+          <Button
+            variant="secondary"
+            onClick={loadNotifications}
+            disabled={loading}
+          >
+            ↻ Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* ERROR */}
+      {error && (
+        <div className="manager-notifications__error">
+          <span>{error}</span>
+
+          <Button
+            size="small"
+            variant="secondary"
+            onClick={loadNotifications}
+          >
+            Retry
+          </Button>
+        </div>
+      )}
+
+      {/* SUMMARY */}
+      <div className="manager-notifications__summary">
+        <div className="manager-notifications__summary-card">
+          <span className="manager-notifications__summary-icon">
+            🔔
+          </span>
+
+          <div className="manager-notifications__summary-content">
+            <span className="manager-notifications__summary-label">
+              Total Notifications
             </span>
 
-            <h1>Notifications</h1>
-
-            <p>
-              Stay updated with leads, tasks, quotations and system
-              activities.
-            </p>
-          </div>
-
-          <div className="manager-notifications-header-actions">
-            {unreadCount > 0 && (
-              <Button
-                variant="secondary"
-                onClick={handleMarkAllRead}
-              >
-                Mark All as Read
-              </Button>
-            )}
-
-            <Button
-              variant="secondary"
-              onClick={loadNotifications}
-              disabled={loading}
-            >
-              ↻ Refresh
-            </Button>
+            <strong className="manager-notifications__summary-value">
+              {normalizedNotifications.length}
+            </strong>
           </div>
         </div>
 
-        {error && (
-          <div className="manager-notifications-error">
-            <span>{error}</span>
+        <div className="manager-notifications__summary-card">
+          <span className="manager-notifications__summary-icon">
+            ●
+          </span>
 
-            <Button
-              size="small"
-              variant="secondary"
-              onClick={loadNotifications}
-            >
-              Retry
-            </Button>
-          </div>
-        )}
+          <div className="manager-notifications__summary-content">
+            <span className="manager-notifications__summary-label">
+              Unread
+            </span>
 
-        <div className="manager-notifications-summary">
-          <div className="manager-notification-summary-card">
-            <span>Total Notifications</span>
-            <strong>{normalizedNotifications.length}</strong>
-          </div>
-
-          <div className="manager-notification-summary-card manager-notification-unread">
-            <span>Unread</span>
-            <strong>{unreadCount}</strong>
-          </div>
-
-          <div className="manager-notification-summary-card manager-notification-read">
-            <span>Read</span>
-            <strong>{readCount}</strong>
+            <strong className="manager-notifications__summary-value">
+              {unreadCount}
+            </strong>
           </div>
         </div>
 
-        <div className="manager-notifications-toolbar">
+        <div className="manager-notifications__summary-card">
+          <span className="manager-notifications__summary-icon">
+            ✓
+          </span>
+
+          <div className="manager-notifications__summary-content">
+            <span className="manager-notifications__summary-label">
+              Read
+            </span>
+
+            <strong className="manager-notifications__summary-value">
+              {readCount}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div className="manager-notifications__content">
+        {/* TOOLBAR */}
+        <div className="manager-notifications__toolbar">
           <SearchBox
             value={search}
             onChange={setSearch}
             placeholder="Search notifications..."
           />
 
-          <select
-            className="manager-notifications-filter"
-            value={readFilter}
-            onChange={(event) =>
-              setReadFilter(event.target.value)
-            }
-          >
-            <option value="ALL">All Notifications</option>
-            <option value="UNREAD">Unread</option>
-            <option value="READ">Read</option>
-          </select>
-
-          <select
-            className="manager-notifications-filter"
-            value={typeFilter}
-            onChange={(event) =>
-              setTypeFilter(event.target.value)
-            }
-          >
-            <option value="ALL">All Types</option>
-
-            {uniqueTypes.map((type) => (
-              <option key={type} value={type}>
-                {formatType(type)}
+          <div className="manager-notifications__filters">
+            <select
+              className="manager-notifications__filter"
+              value={readFilter}
+              onChange={(event) =>
+                setReadFilter(event.target.value)
+              }
+            >
+              <option value="ALL">
+                All Notifications
               </option>
-            ))}
-          </select>
+              <option value="UNREAD">Unread</option>
+              <option value="READ">Read</option>
+            </select>
+
+            <select
+              className="manager-notifications__filter"
+              value={typeFilter}
+              onChange={(event) =>
+                setTypeFilter(event.target.value)
+              }
+            >
+              <option value="ALL">All Types</option>
+
+              {uniqueTypes.map((type) => (
+                <option key={type} value={type}>
+                  {formatType(type)}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <div className="manager-notifications-card">
-          {loading ? (
-            <div className="manager-notifications-table-loading">
-              <Loader />
-            </div>
-          ) : (
-            <>
-              <div className="manager-notifications-table-wrapper">
-                <table className="manager-notifications-table">
-                  <thead>
-                    <tr>
-                      <th>Notification</th>
-                      <th>Type</th>
-                      <th>Date</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
+        {/* LIST */}
+        {loading ? (
+          <div className="manager-notifications__loading">
+            <span className="manager-notifications__spinner" />
+            Loading notifications...
+          </div>
+        ) : (
+          <>
+            <div className="manager-notifications__list">
+              {paginatedNotifications.length === 0 ? (
+                <div className="manager-notifications__empty">
+                  <span className="manager-notifications__empty-icon">
+                    🔔
+                  </span>
 
-                  <tbody>
-                    {paginatedNotifications.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan="5"
-                          className="manager-notifications-empty"
+                  <h3>No notifications found</h3>
+
+                  <p>
+                    You&apos;re all caught up or no
+                    notification matches the selected
+                    filters.
+                  </p>
+                </div>
+              ) : (
+                paginatedNotifications.map(
+                  (notification) => (
+                    <div
+                      key={
+                        notification._id ||
+                        notification.id ||
+                        `${notification._title}-${notification._date}`
+                      }
+                      className={`manager-notifications__item ${
+                        !notification._isRead
+                          ? "manager-notifications__item--unread"
+                          : ""
+                      }`}
+                    >
+                      <span className="manager-notifications__item-icon">
+                        {getNotificationIcon(
+                          notification._type
+                        )}
+                      </span>
+
+                      <div className="manager-notifications__item-body">
+                        <h3 className="manager-notifications__item-title">
+                          {notification._title}
+                        </h3>
+
+                        <p className="manager-notifications__item-message">
+                          {notification._message}
+                        </p>
+
+                        <span className="manager-notifications__item-time">
+                          {formatDateTime(
+                            notification._date
+                          )}
+                        </span>
+                      </div>
+
+                      {!notification._isRead && (
+                        <span className="manager-notifications__unread-dot" />
+                      )}
+
+                      <div className="manager-notifications__item-actions">
+                        <Badge
+                          variant={getTypeVariant(
+                            notification._type
+                          )}
                         >
-                          <div>
-                            <span className="manager-notifications-empty-icon">
-                              🔔
-                            </span>
+                          {formatType(
+                            notification._type
+                          )}
+                        </Badge>
 
-                            <strong>
-                              No notifications found
-                            </strong>
+                        <Button
+                          size="small"
+                          variant="secondary"
+                          onClick={() =>
+                            handleNotificationClick(
+                              notification
+                            )
+                          }
+                        >
+                          View
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                )
+              )}
+            </div>
 
-                            <p>
-                              You&apos;re all caught up or no notification
-                              matches the selected filters.
-                            </p>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedNotifications.map(
-                        (notification) => (
-                          <tr
-                            key={
-                              notification._id ||
-                              notification.id ||
-                              `${notification._title}-${notification._date}`
-                            }
-                            className={
-                              notification._isRead
-                                ? ""
-                                : "manager-notification-unread-row"
-                            }
-                          >
-                            <td>
-                              <div className="manager-notification-item">
-                                <span className="manager-notification-icon">
-                                  {getNotificationIcon(
-                                    notification._type
-                                  )}
-                                </span>
+            {filteredNotifications.length > 0 && (
+              <div className="manager-notifications__pagination">
+                <span>
+                  Showing{" "}
+                  {Math.min(
+                    (currentPage - 1) * PAGE_SIZE + 1,
+                    filteredNotifications.length
+                  )}{" "}
+                  -{" "}
+                  {Math.min(
+                    currentPage * PAGE_SIZE,
+                    filteredNotifications.length
+                  )}{" "}
+                  of {filteredNotifications.length}
+                </span>
 
-                                <div>
-                                  <strong>
-                                    {notification._title}
-                                  </strong>
-
-                                  <p>
-                                    {notification._message}
-                                  </p>
-                                </div>
-                              </div>
-                            </td>
-
-                            <td>
-                              <Badge
-                                variant={getTypeVariant(
-                                  notification._type
-                                )}
-                              >
-                                {formatType(
-                                  notification._type
-                                )}
-                              </Badge>
-                            </td>
-
-                            <td>
-                              <span className="manager-notification-date">
-                                {formatDate(notification._date)}
-                              </span>
-                            </td>
-
-                            <td>
-                              {notification._isRead ? (
-                                <span className="manager-notification-status read">
-                                  Read
-                                </span>
-                              ) : (
-                                <span className="manager-notification-status unread">
-                                  Unread
-                                </span>
-                              )}
-                            </td>
-
-                            <td>
-                              <Button
-                                size="small"
-                                variant="secondary"
-                                onClick={() =>
-                                  handleNotificationClick(
-                                    notification
-                                  )
-                                }
-                              >
-                                View
-                              </Button>
-                            </td>
-                          </tr>
-                        )
-                      )
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {filteredNotifications.length > 0 && (
-                <div className="manager-notifications-pagination">
+                <div className="manager-notifications__pagination-actions">
                   <Pagination
                     currentPage={currentPage}
                     totalPages={totalPages}
                     onPageChange={setCurrentPage}
                   />
                 </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {selectedNotification && (
-          <Modal
-            isOpen={Boolean(selectedNotification)}
-            onClose={() => setSelectedNotification(null)}
-            title="Notification Details"
-          >
-            <div className="manager-notification-modal-content">
-              <div className="manager-notification-modal-header">
-                <span className="manager-notification-modal-icon">
-                  {getNotificationIcon(
-                    selectedNotification._type
-                  )}
-                </span>
-
-                <div>
-                  <h2>
-                    {selectedNotification._title}
-                  </h2>
-
-                  <p>
-                    {formatDateTime(
-                      selectedNotification._date
-                    )}
-                  </p>
-                </div>
               </div>
-
-              <div className="manager-notification-modal-meta">
-                <div>
-                  <span>Type</span>
-
-                  <Badge
-                    variant={getTypeVariant(
-                      selectedNotification._type
-                    )}
-                  >
-                    {formatType(
-                      selectedNotification._type
-                    )}
-                  </Badge>
-                </div>
-
-                <div>
-                  <span>Status</span>
-
-                  <strong>
-                    {selectedNotification._isRead
-                      ? "Read"
-                      : "Unread"}
-                  </strong>
-                </div>
-              </div>
-
-              <div className="manager-notification-message">
-                <span>Message</span>
-
-                <p>
-                  {selectedNotification._message}
-                </p>
-              </div>
-
-              <div className="manager-notification-modal-footer">
-                <Button
-                  variant="secondary"
-                  onClick={() =>
-                    setSelectedNotification(null)
-                  }
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          </Modal>
+            )}
+          </>
         )}
       </div>
-    </MainLayout>
+
+      {/* DETAILS MODAL */}
+      {selectedNotification && (
+        <Modal
+          isOpen={Boolean(selectedNotification)}
+          onClose={() =>
+            setSelectedNotification(null)
+          }
+          title="Notification Details"
+        >
+          <div className="manager-notification-modal-content">
+            <div className="manager-notification-modal-header">
+              <span className="manager-notification-modal-icon">
+                {getNotificationIcon(
+                  selectedNotification._type
+                )}
+              </span>
+
+              <div>
+                <h2>
+                  {selectedNotification._title}
+                </h2>
+
+                <p>
+                  {formatDateTime(
+                    selectedNotification._date
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="manager-notification-modal-meta">
+              <div>
+                <span>Type</span>
+
+                <Badge
+                  variant={getTypeVariant(
+                    selectedNotification._type
+                  )}
+                >
+                  {formatType(
+                    selectedNotification._type
+                  )}
+                </Badge>
+              </div>
+
+              <div>
+                <span>Status</span>
+
+                <strong>
+                  {selectedNotification._isRead
+                    ? "Read"
+                    : "Unread"}
+                </strong>
+              </div>
+            </div>
+
+            <div className="manager-notification-message">
+              <span>Message</span>
+
+              <p>
+                {selectedNotification._message}
+              </p>
+            </div>
+
+            <div className="manager-notification-modal-footer">
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  setSelectedNotification(null)
+                }
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
   );
 };
 

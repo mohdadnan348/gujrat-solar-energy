@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import SearchBox from "@/components/common/SearchBox";
@@ -10,8 +9,10 @@ import Loader from "@/components/common/Loader";
 import { useAuth } from "@/hooks/useAuth";
 import quotationService from "@/services/quotation.service";
 
+import "./quotations.css";
+
 const ManagerQuotationsPage = () => {
-  const { user, logout, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const [quotations, setQuotations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +21,8 @@ const ManagerQuotationsPage = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [page, setPage] = useState(1);
-  const [selectedQuotation, setSelectedQuotation] = useState(null);
+  const [selectedQuotation, setSelectedQuotation] =
+    useState(null);
 
   const itemsPerPage = 10;
 
@@ -47,8 +49,8 @@ const ManagerQuotationsPage = () => {
       console.error("Quotations error:", err);
 
       setError(
-        err?.message ||
-          err?.response?.data?.message ||
+        err?.response?.data?.message ||
+          err?.message ||
           "Unable to load quotations."
       );
 
@@ -63,10 +65,6 @@ const ManagerQuotationsPage = () => {
       loadQuotations();
     }
   }, [authLoading, user]);
-
-  const handleLogout = async () => {
-    await logout();
-  };
 
   const getCustomerName = (quotation) =>
     quotation?.customer?.name ||
@@ -199,9 +197,11 @@ const ManagerQuotationsPage = () => {
         quotation?.lead?.phone,
         quotation?.city,
         quotation?.systemSize,
+        quotation?.capacity,
         quotation?.notes,
       ]
         .filter(Boolean)
+        .map((value) => String(value))
         .join(" ")
         .toLowerCase();
 
@@ -290,596 +290,621 @@ const ManagerQuotationsPage = () => {
   }
 
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      notificationCount={0}
-    >
-      <div className="manager-quotations-page">
-        <div className="manager-quotations-header">
-          <div>
-            <span className="manager-quotations-eyebrow">
-              Manager Portal
-            </span>
+    <div className="manager-quotations-page">
+      {/* Header */}
+      <div className="manager-quotations-header">
+        <div>
+          <span className="manager-quotations-eyebrow">
+            Manager Portal
+          </span>
 
-            <h1>Quotations</h1>
+          <h1>Quotations</h1>
 
-            <p>
-              Review, track and manage customer
-              quotations and proposals.
-            </p>
-          </div>
+          <p>
+            Review, track and manage customer
+            quotations and proposals.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={loadQuotations}
+        >
+          Refresh
+        </Button>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="manager-quotations-error">
+          <span>{error}</span>
 
           <Button
             type="button"
             variant="secondary"
             onClick={loadQuotations}
           >
-            Refresh
+            Retry
           </Button>
         </div>
+      )}
 
-        {error && (
-          <div className="manager-quotations-error">
-            <span>{error}</span>
+      {/* Toolbar */}
+      <div className="manager-quotations-toolbar">
+        <SearchBox
+          value={search}
+          onChange={(value) => setSearch(value)}
+          placeholder="Search quotation, customer..."
+        />
 
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={loadQuotations}
-            >
-              Retry
-            </Button>
-          </div>
-        )}
+        <select
+          className="manager-quotations-status-filter"
+          value={statusFilter}
+          onChange={(event) =>
+            setStatusFilter(event.target.value)
+          }
+        >
+          <option value="ALL">All Status</option>
+          <option value="DRAFT">Draft</option>
+          <option value="SENT">Sent</option>
+          <option value="PENDING">Pending</option>
+          <option value="APPROVED">
+            Approved
+          </option>
+          <option value="ACCEPTED">
+            Accepted
+          </option>
+          <option value="REJECTED">
+            Rejected
+          </option>
+          <option value="EXPIRED">
+            Expired
+          </option>
+          <option value="CANCELLED">
+            Cancelled
+          </option>
+        </select>
+      </div>
 
-        <div className="manager-quotations-toolbar">
-          <SearchBox
-            value={search}
-            onChange={(value) => setSearch(value)}
-            placeholder="Search quotation, customer..."
-          />
-
-          <select
-            className="manager-quotations-status-filter"
-            value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(
-                event.target.value
-              )
-            }
-          >
-            <option value="ALL">All Status</option>
-            <option value="DRAFT">Draft</option>
-            <option value="SENT">Sent</option>
-            <option value="PENDING">Pending</option>
-            <option value="APPROVED">
-              Approved
-            </option>
-            <option value="ACCEPTED">
-              Accepted
-            </option>
-            <option value="REJECTED">
-              Rejected
-            </option>
-            <option value="EXPIRED">
-              Expired
-            </option>
-            <option value="CANCELLED">
-              Cancelled
-            </option>
-          </select>
+      {/* Summary */}
+      <div className="manager-quotations-summary">
+        <div className="manager-quotation-summary-card">
+          <span>Total Quotations</span>
+          <strong>
+            {filteredQuotations.length}
+          </strong>
         </div>
 
-        <div className="manager-quotations-summary">
-          <div className="manager-quotation-summary-card">
-            <span>Total Quotations</span>
-            <strong>
-              {filteredQuotations.length}
-            </strong>
-          </div>
-
-          <div className="manager-quotation-summary-card">
-            <span>Approved</span>
-            <strong>
-              {
-                filteredQuotations.filter(
-                  (item) =>
-                    [
-                      "APPROVED",
-                      "ACCEPTED",
-                    ].includes(
-                      String(
-                        getStatus(item)
-                      ).toUpperCase()
-                    )
-                ).length
-              }
-            </strong>
-          </div>
-
-          <div className="manager-quotation-summary-card">
-            <span>Draft</span>
-            <strong>
-              {
-                filteredQuotations.filter(
-                  (item) =>
+        <div className="manager-quotation-summary-card">
+          <span>Approved</span>
+          <strong>
+            {
+              filteredQuotations.filter(
+                (item) =>
+                  [
+                    "APPROVED",
+                    "ACCEPTED",
+                  ].includes(
                     String(
                       getStatus(item)
-                    ).toUpperCase() ===
-                    "DRAFT"
-                ).length
-              }
-            </strong>
-          </div>
+                    ).toUpperCase()
+                  )
+              ).length
+            }
+          </strong>
         </div>
 
-        <div className="manager-quotations-card">
-          <div className="manager-quotations-table-wrapper">
-            <table className="manager-quotations-table">
-              <thead>
+        <div className="manager-quotation-summary-card">
+          <span>Draft</span>
+          <strong>
+            {
+              filteredQuotations.filter(
+                (item) =>
+                  String(
+                    getStatus(item)
+                  ).toUpperCase() ===
+                  "DRAFT"
+              ).length
+            }
+          </strong>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="manager-quotations-card">
+        <div className="manager-quotations-table-wrapper">
+          <table className="manager-quotations-table">
+            <thead>
+              <tr>
+                <th>Quotation</th>
+                <th>Customer</th>
+                <th>System Size</th>
+                <th>Total Amount</th>
+                <th>Status</th>
+                <th>Valid Until</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {paginatedQuotations.length === 0 ? (
                 <tr>
-                  <th>Quotation</th>
-                  <th>Customer</th>
-                  <th>System Size</th>
-                  <th>Total Amount</th>
-                  <th>Status</th>
-                  <th>Valid Until</th>
-                  <th>Created</th>
-                  <th>Actions</th>
+                  <td
+                    colSpan="8"
+                    className="manager-quotations-empty"
+                  >
+                    <div>
+                      <span>▤</span>
+
+                      <strong>
+                        No quotations found
+                      </strong>
+
+                      <p>
+                        Try changing your search
+                        or status filter.
+                      </p>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-
-              <tbody>
-                {paginatedQuotations.length ===
-                0 ? (
-                  <tr>
-                    <td
-                      colSpan="8"
-                      className="manager-quotations-empty"
+              ) : (
+                paginatedQuotations.map(
+                  (quotation, index) => (
+                    <tr
+                      key={
+                        quotation?._id ||
+                        quotation?.id ||
+                        index
+                      }
                     >
-                      <div>
-                        <span>▤</span>
-                        <strong>
-                          No quotations found
-                        </strong>
-                        <p>
-                          Try changing your search
-                          or status filter.
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedQuotations.map(
-                    (quotation, index) => (
-                      <tr
-                        key={
-                          quotation?._id ||
-                          quotation?.id ||
-                          index
-                        }
-                      >
-                        <td>
-                          <div className="manager-quotation-number-block">
-                            <strong>
-                              {getQuotationNumber(
-                                quotation
-                              )}
-                            </strong>
-
-                            <span>
-                              {getItems(
-                                quotation
-                              ).length}{" "}
-                              item
-                              {getItems(
-                                quotation
-                              ).length !== 1
-                                ? "s"
-                                : ""}
-                            </span>
-                          </div>
-                        </td>
-
-                        <td>
-                          <div className="manager-quotation-customer">
-                            <div className="manager-quotation-avatar">
-                              {getCustomerName(
-                                quotation
-                              )
-                                .charAt(0)
-                                .toUpperCase()}
-                            </div>
-
-                            <div>
-                              <strong>
-                                {getCustomerName(
-                                  quotation
-                                )}
-                              </strong>
-
-                              <span>
-                                {quotation?.customer
-                                  ?.phone ||
-                                  quotation?.customer
-                                    ?.mobile ||
-                                  quotation?.lead
-                                    ?.phone ||
-                                  "No phone"}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td>
-                          {quotation?.systemSize ||
-                            quotation?.capacity ||
-                            quotation
-                              ?.systemConfiguration
-                              ?.systemSize ||
-                            "—"}
-                          {(quotation?.systemSize ||
-                            quotation?.capacity ||
-                            quotation
-                              ?.systemConfiguration
-                              ?.systemSize) &&
-                            " kW"}
-                        </td>
-
-                        <td>
-                          <strong className="manager-quotation-amount">
-                            {formatCurrency(
-                              getTotal(
-                                quotation
-                              )
+                      {/* Quotation */}
+                      <td>
+                        <div className="manager-quotation-number-block">
+                          <strong>
+                            {getQuotationNumber(
+                              quotation
                             )}
                           </strong>
-                        </td>
 
-                        <td>
-                          <Badge
-                            variant={getBadgeVariant(
-                              getStatus(
-                                quotation
-                              )
-                            )}
-                          >
+                          <span>
+                            {getItems(
+                              quotation
+                            ).length}{" "}
+                            item
+                            {getItems(
+                              quotation
+                            ).length !== 1
+                              ? "s"
+                              : ""}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Customer */}
+                      <td>
+                        <div className="manager-quotation-customer">
+                          <div className="manager-quotation-avatar">
                             {String(
-                              getStatus(
+                              getCustomerName(
                                 quotation
                               )
-                            ).replaceAll(
-                              "_",
-                              " "
-                            )}
-                          </Badge>
-                        </td>
-
-                        <td>
-                          {formatDate(
-                            quotation?.validUntil ||
-                              quotation?.validityDate ||
-                              quotation?.expiryDate
-                          )}
-                        </td>
-
-                        <td>
-                          {formatDate(
-                            quotation?.createdAt
-                          )}
-                        </td>
-
-                        <td>
-                          <div className="manager-quotation-actions">
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              onClick={() =>
-                                setSelectedQuotation(
-                                  quotation
-                                )
-                              }
-                            >
-                              View
-                            </Button>
-
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              onClick={() =>
-                                handleDownloadPdf(
-                                  quotation
-                                )
-                              }
-                            >
-                              PDF
-                            </Button>
+                            )
+                              .charAt(0)
+                              .toUpperCase()}
                           </div>
-                        </td>
-                      </tr>
-                    )
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
 
-          {filteredQuotations.length > 0 && (
-            <div className="manager-quotations-pagination">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
-            </div>
-          )}
-        </div>
-
-        {selectedQuotation && (
-          <div
-            className="manager-quotation-modal-overlay"
-            onClick={() =>
-              setSelectedQuotation(null)
-            }
-          >
-            <div
-              className="manager-quotation-modal"
-              onClick={(event) =>
-                event.stopPropagation()
-              }
-            >
-              <div className="manager-quotation-modal-header">
-                <div>
-                  <span>
-                    Quotation Details
-                  </span>
-
-                  <h2>
-                    {getQuotationNumber(
-                      selectedQuotation
-                    )}
-                  </h2>
-
-                  <p>
-                    {getCustomerName(
-                      selectedQuotation
-                    )}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSelectedQuotation(null)
-                  }
-                  aria-label="Close"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="manager-quotation-modal-body">
-                <div className="manager-quotation-info-grid">
-                  <div>
-                    <span>Customer</span>
-                    <strong>
-                      {getCustomerName(
-                        selectedQuotation
-                      )}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>Status</span>
-
-                    <Badge
-                      variant={getBadgeVariant(
-                        getStatus(
-                          selectedQuotation
-                        )
-                      )}
-                    >
-                      {String(
-                        getStatus(
-                          selectedQuotation
-                        )
-                      ).replaceAll(
-                        "_",
-                        " "
-                      )}
-                    </Badge>
-                  </div>
-
-                  <div>
-                    <span>Quotation Date</span>
-                    <strong>
-                      {formatDate(
-                        selectedQuotation?.quotationDate ||
-                          selectedQuotation?.date ||
-                          selectedQuotation?.createdAt
-                      )}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>Valid Until</span>
-                    <strong>
-                      {formatDate(
-                        selectedQuotation?.validUntil ||
-                          selectedQuotation?.validityDate ||
-                          selectedQuotation?.expiryDate
-                      )}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>System Size</span>
-                    <strong>
-                      {selectedQuotation?.systemSize ||
-                        selectedQuotation?.capacity ||
-                        selectedQuotation
-                          ?.systemConfiguration
-                          ?.systemSize ||
-                        "—"}
-                      {(selectedQuotation?.systemSize ||
-                        selectedQuotation?.capacity ||
-                        selectedQuotation
-                          ?.systemConfiguration
-                          ?.systemSize) &&
-                        " kW"}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>Customer Phone</span>
-                    <strong>
-                      {selectedQuotation?.customer
-                        ?.phone ||
-                        selectedQuotation?.customer
-                          ?.mobile ||
-                        selectedQuotation?.lead
-                          ?.phone ||
-                        "—"}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="manager-quotation-items-section">
-                  <div className="manager-quotation-section-heading">
-                    <h3>Quotation Items</h3>
-                    <span>
-                      {getItems(
-                        selectedQuotation
-                      ).length}{" "}
-                      item
-                      {getItems(
-                        selectedQuotation
-                      ).length !== 1
-                        ? "s"
-                        : ""}
-                    </span>
-                  </div>
-
-                  <div className="manager-quotation-items">
-                    {getItems(
-                      selectedQuotation
-                    ).length === 0 ? (
-                      <div className="manager-quotation-no-items">
-                        No quotation items available.
-                      </div>
-                    ) : (
-                      getItems(
-                        selectedQuotation
-                      ).map(
-                        (item, index) => (
-                          <div
-                            className="manager-quotation-item"
-                            key={
-                              item?._id ||
-                              item?.id ||
-                              index
-                            }
-                          >
-                            <div>
-                              <strong>
-                                {item?.name ||
-                                  item?.productName ||
-                                  item?.description ||
-                                  `Item ${index + 1}`}
-                              </strong>
-
-                              {item?.description &&
-                                item?.name && (
-                                  <span>
-                                    {
-                                      item.description
-                                    }
-                                  </span>
-                                )}
-                            </div>
-
-                            <span>
-                              Qty:{" "}
-                              {item?.quantity ||
-                                item?.qty ||
-                                1}
-                            </span>
-
+                          <div>
                             <strong>
-                              {formatCurrency(
-                                item?.total ||
-                                  item?.amount ||
-                                  (
-                                    Number(
-                                      item?.quantity ||
-                                        item?.qty ||
-                                        1
-                                    ) *
-                                    Number(
-                                      item?.unitPrice ||
-                                        item?.price ||
-                                        0
-                                    )
-                                  )
+                              {getCustomerName(
+                                quotation
                               )}
                             </strong>
-                          </div>
-                        )
-                      )
-                    )}
-                  </div>
-                </div>
 
-                <div className="manager-quotation-total-box">
-                  <span>Grand Total</span>
+                            <span>
+                              {quotation?.customer
+                                ?.phone ||
+                                quotation
+                                  ?.customer
+                                  ?.mobile ||
+                                quotation?.lead
+                                  ?.phone ||
+                                "No phone"}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* System Size */}
+                      <td>
+                        {quotation?.systemSize ||
+                          quotation?.capacity ||
+                          quotation
+                            ?.systemConfiguration
+                            ?.systemSize ||
+                          "—"}
+
+                        {(quotation?.systemSize ||
+                          quotation?.capacity ||
+                          quotation
+                            ?.systemConfiguration
+                            ?.systemSize) &&
+                          " kW"}
+                      </td>
+
+                      {/* Amount */}
+                      <td>
+                        <strong className="manager-quotation-amount">
+                          {formatCurrency(
+                            getTotal(quotation)
+                          )}
+                        </strong>
+                      </td>
+
+                      {/* Status */}
+                      <td>
+                        <Badge
+                          variant={getBadgeVariant(
+                            getStatus(
+                              quotation
+                            )
+                          )}
+                        >
+                          {String(
+                            getStatus(
+                              quotation
+                            )
+                          ).replaceAll(
+                            "_",
+                            " "
+                          )}
+                        </Badge>
+                      </td>
+
+                      {/* Valid Until */}
+                      <td>
+                        {formatDate(
+                          quotation?.validUntil ||
+                            quotation?.validityDate ||
+                            quotation?.expiryDate
+                        )}
+                      </td>
+
+                      {/* Created */}
+                      <td>
+                        {formatDate(
+                          quotation?.createdAt
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td>
+                        <div className="manager-quotation-actions">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() =>
+                              setSelectedQuotation(
+                                quotation
+                              )
+                            }
+                          >
+                            View
+                          </Button>
+
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() =>
+                              handleDownloadPdf(
+                                quotation
+                              )
+                            }
+                          >
+                            PDF
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                )
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {filteredQuotations.length > 0 && (
+          <div className="manager-quotations-pagination">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Quotation Details Modal */}
+      {selectedQuotation && (
+        <div
+          className="manager-quotation-modal-overlay"
+          onClick={() =>
+            setSelectedQuotation(null)
+          }
+        >
+          <div
+            className="manager-quotation-modal"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            {/* Modal Header */}
+            <div className="manager-quotation-modal-header">
+              <div>
+                <span>
+                  Quotation Details
+                </span>
+
+                <h2>
+                  {getQuotationNumber(
+                    selectedQuotation
+                  )}
+                </h2>
+
+                <p>
+                  {getCustomerName(
+                    selectedQuotation
+                  )}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedQuotation(null)
+                }
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="manager-quotation-modal-body">
+              <div className="manager-quotation-info-grid">
+                <div>
+                  <span>Customer</span>
+
                   <strong>
-                    {formatCurrency(
-                      getTotal(
-                        selectedQuotation
-                      )
+                    {getCustomerName(
+                      selectedQuotation
                     )}
                   </strong>
                 </div>
 
-                {selectedQuotation?.notes && (
-                  <div className="manager-quotation-notes">
-                    <span>Notes</span>
-                    <p>
-                      {selectedQuotation.notes}
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <span>Status</span>
+
+                  <Badge
+                    variant={getBadgeVariant(
+                      getStatus(
+                        selectedQuotation
+                      )
+                    )}
+                  >
+                    {String(
+                      getStatus(
+                        selectedQuotation
+                      )
+                    ).replaceAll(
+                      "_",
+                      " "
+                    )}
+                  </Badge>
+                </div>
+
+                <div>
+                  <span>Quotation Date</span>
+
+                  <strong>
+                    {formatDate(
+                      selectedQuotation?.quotationDate ||
+                        selectedQuotation?.date ||
+                        selectedQuotation?.createdAt
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Valid Until</span>
+
+                  <strong>
+                    {formatDate(
+                      selectedQuotation?.validUntil ||
+                        selectedQuotation?.validityDate ||
+                        selectedQuotation?.expiryDate
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>System Size</span>
+
+                  <strong>
+                    {selectedQuotation?.systemSize ||
+                      selectedQuotation?.capacity ||
+                      selectedQuotation
+                        ?.systemConfiguration
+                        ?.systemSize ||
+                      "—"}
+
+                    {(selectedQuotation?.systemSize ||
+                      selectedQuotation?.capacity ||
+                      selectedQuotation
+                        ?.systemConfiguration
+                        ?.systemSize) &&
+                      " kW"}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Customer Phone</span>
+
+                  <strong>
+                    {selectedQuotation?.customer
+                      ?.phone ||
+                      selectedQuotation?.customer
+                        ?.mobile ||
+                      selectedQuotation?.lead
+                        ?.phone ||
+                      "—"}
+                  </strong>
+                </div>
               </div>
 
-              <div className="manager-quotation-modal-footer">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() =>
-                    handleDownloadPdf(
+              {/* Items */}
+              <div className="manager-quotation-items-section">
+                <div className="manager-quotation-section-heading">
+                  <h3>Quotation Items</h3>
+
+                  <span>
+                    {getItems(
+                      selectedQuotation
+                    ).length}{" "}
+                    item
+                    {getItems(
+                      selectedQuotation
+                    ).length !== 1
+                      ? "s"
+                      : ""}
+                  </span>
+                </div>
+
+                <div className="manager-quotation-items">
+                  {getItems(
+                    selectedQuotation
+                  ).length === 0 ? (
+                    <div className="manager-quotation-no-items">
+                      No quotation items available.
+                    </div>
+                  ) : (
+                    getItems(
+                      selectedQuotation
+                    ).map(
+                      (item, index) => (
+                        <div
+                          className="manager-quotation-item"
+                          key={
+                            item?._id ||
+                            item?.id ||
+                            index
+                          }
+                        >
+                          <div>
+                            <strong>
+                              {item?.name ||
+                                item?.productName ||
+                                item?.description ||
+                                `Item ${
+                                  index + 1
+                                }`}
+                            </strong>
+
+                            {item?.description &&
+                              item?.name && (
+                                <span>
+                                  {
+                                    item.description
+                                  }
+                                </span>
+                              )}
+                          </div>
+
+                          <span>
+                            Qty:{" "}
+                            {item?.quantity ||
+                              item?.qty ||
+                              1}
+                          </span>
+
+                          <strong>
+                            {formatCurrency(
+                              item?.total ||
+                                item?.amount ||
+                                Number(
+                                  item?.quantity ||
+                                    item?.qty ||
+                                    1
+                                ) *
+                                  Number(
+                                    item?.unitPrice ||
+                                      item?.price ||
+                                      0
+                                  )
+                            )}
+                          </strong>
+                        </div>
+                      )
+                    )
+                  )}
+                </div>
+              </div>
+
+              {/* Total */}
+              <div className="manager-quotation-total-box">
+                <span>Grand Total</span>
+
+                <strong>
+                  {formatCurrency(
+                    getTotal(
                       selectedQuotation
                     )
-                  }
-                >
-                  Download PDF
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() =>
-                    setSelectedQuotation(null)
-                  }
-                >
-                  Close
-                </Button>
+                  )}
+                </strong>
               </div>
+
+              {/* Notes */}
+              {selectedQuotation?.notes && (
+                <div className="manager-quotation-notes">
+                  <span>Notes</span>
+
+                  <p>
+                    {selectedQuotation.notes}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="manager-quotation-modal-footer">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  handleDownloadPdf(
+                    selectedQuotation
+                  )
+                }
+              >
+                Download PDF
+              </Button>
+
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  setSelectedQuotation(null)
+                }
+              >
+                Close
+              </Button>
             </div>
           </div>
-        )}
-      </div>
-    </MainLayout>
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import AdminLayout from "@/app/admin/layout";
+
 import Select from "@/components/common/Select";
 import DatePicker from "@/components/common/DatePicker";
 import Button from "@/components/common/Button";
@@ -338,19 +338,10 @@ const EmployeeReportPage = () => {
     );
   }, [attendanceData]);
 
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="admin-employee-report-loading">
-          <Loader />
-          <p>Loading employee report...</p>
-        </div>
-      </AdminLayout>
-    );
-  }
+
 
   return (
-    <AdminLayout>
+  
       <main className="admin-employee-report-page">
         <div className="admin-employee-report-header">
           <div>
@@ -837,7 +828,7 @@ const EmployeeReportPage = () => {
           </div>
         </section>
       </main>
-    </AdminLayout>
+   
   );
 };
 

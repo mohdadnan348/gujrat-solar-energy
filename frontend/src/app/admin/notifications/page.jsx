@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import AdminLayout from "@/app/admin/layout";
 import notificationService from "@/services/notification.service";
 import Loader from "@/components/common/Loader";
 import Badge from "@/components/common/Badge";
@@ -285,18 +284,9 @@ const NotificationsPage = () => {
     setPage(1);
   };
 
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="admin-notifications-loading">
-          <Loader />
-        </div>
-      </AdminLayout>
-    );
-  }
 
   return (
-    <AdminLayout>
+
       <div className="admin-notifications-page">
         <div className="admin-notifications-header">
           <div>
@@ -498,7 +488,7 @@ const NotificationsPage = () => {
           )}
         </div>
       </div>
-    </AdminLayout>
+    
   );
 };
 

@@ -1,37 +1,63 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import MainLayout from "@/components/layout/MainLayout";
+import React, {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  useParams,
+  useRouter,
+} from "next/navigation";
+
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import Loader from "@/components/common/Loader";
-import { useAuth } from "@/hooks/useAuth";
+
 import leadService from "@/services/lead.service";
 import leadActivityService from "@/services/leadActivity.service";
+
+import "./lead-details.css";
 
 const LeadDetailsPage = () => {
   const params = useParams();
   const router = useRouter();
 
-  const { user, logout, loading: authLoading } = useAuth();
+  const [lead, setLead] =
+    useState(null);
 
-  const [lead, setLead] = useState(null);
-  const [activities, setActivities] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activityLoading, setActivityLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [activities, setActivities] =
+    useState([]);
 
-  const leadId = params?.id;
+  const [loading, setLoading] =
+    useState(true);
+
+  const [activityLoading, setActivityLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  const leadId =
+    params?.id;
+
+  /* =====================================================
+     LOAD LEAD
+  ===================================================== */
 
   const loadLead = async () => {
-    if (!leadId) return;
+    if (!leadId) {
+      return;
+    }
 
     try {
       setLoading(true);
       setError("");
 
-      const response = await leadService.getLeadById(leadId);
+      const response =
+        await leadService.getLeadById(
+          leadId
+        );
 
       const data =
         response?.data?.lead ||
@@ -39,13 +65,18 @@ const LeadDetailsPage = () => {
         response?.data ||
         response;
 
-      setLead(data || null);
+      setLead(
+        data || null
+      );
     } catch (err) {
-      console.error("Lead details error:", err);
+      console.error(
+        "Lead details error:",
+        err
+      );
 
       setError(
-        err?.message ||
-          err?.response?.data?.message ||
+        err?.response?.data?.message ||
+          err?.message ||
           "Unable to load lead details."
       );
     } finally {
@@ -53,184 +84,293 @@ const LeadDetailsPage = () => {
     }
   };
 
-  const loadActivities = async () => {
-    if (!leadId) return;
+  /* =====================================================
+     LOAD ACTIVITIES
+  ===================================================== */
 
-    try {
-      setActivityLoading(true);
-
-      let response;
-
-      if (
-        typeof leadActivityService.getActivitiesByLead ===
-        "function"
-      ) {
-        response =
-          await leadActivityService.getActivitiesByLead(
-            leadId
-          );
-      } else if (
-        typeof leadActivityService.getLeadActivities ===
-        "function"
-      ) {
-        response =
-          await leadActivityService.getLeadActivities(
-            leadId
-          );
+  const loadActivities =
+    async () => {
+      if (!leadId) {
+        return;
       }
 
-      const data =
-        response?.data?.activities ||
-        response?.activities ||
-        response?.data?.items ||
-        response?.items ||
-        response?.data ||
-        [];
+      try {
+        setActivityLoading(
+          true
+        );
 
-      setActivities(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Lead activities error:", err);
-      setActivities([]);
-    } finally {
-      setActivityLoading(false);
-    }
-  };
+        let response;
+
+        if (
+          typeof leadActivityService.getActivitiesByLead ===
+          "function"
+        ) {
+          response =
+            await leadActivityService.getActivitiesByLead(
+              leadId
+            );
+        } else if (
+          typeof leadActivityService.getLeadActivities ===
+          "function"
+        ) {
+          response =
+            await leadActivityService.getLeadActivities(
+              leadId
+            );
+        }
+
+        const data =
+          response?.data?.activities ||
+          response?.activities ||
+          response?.data?.items ||
+          response?.items ||
+          response?.data ||
+          [];
+
+        setActivities(
+          Array.isArray(data)
+            ? data
+            : []
+        );
+      } catch (err) {
+        console.error(
+          "Lead activities error:",
+          err
+        );
+
+        setActivities([]);
+      } finally {
+        setActivityLoading(
+          false
+        );
+      }
+    };
+
+  /* =====================================================
+     LOAD DATA
+  ===================================================== */
 
   useEffect(() => {
-    if (!authLoading && user && leadId) {
+    if (
+      leadId
+    ) {
       loadLead();
       loadActivities();
     }
-  }, [authLoading, user, leadId]);
+  }, [leadId]);
 
-  const handleLogout = async () => {
-    await logout();
-  };
+  /* =====================================================
+     REFRESH
+  ===================================================== */
 
-  const handleRefresh = () => {
-    loadLead();
-    loadActivities();
-  };
+  const handleRefresh =
+    () => {
+      loadLead();
+      loadActivities();
+    };
 
-  const formatDate = (value) => {
-    if (!value) return "—";
+  /* =====================================================
+     FORMAT DATE
+  ===================================================== */
 
-    const date = new Date(value);
+  const formatDate =
+    (value) => {
+      if (!value) {
+        return "—";
+      }
 
-    if (Number.isNaN(date.getTime())) return "—";
+      const date =
+        new Date(value);
 
-    return date.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+        return "—";
+      }
 
-  const formatDateTime = (value) => {
-    if (!value) return "—";
+      return date.toLocaleDateString(
+        "en-IN",
+        {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }
+      );
+    };
 
-    const date = new Date(value);
+  /* =====================================================
+     FORMAT DATE TIME
+  ===================================================== */
 
-    if (Number.isNaN(date.getTime())) return "—";
+  const formatDateTime =
+    (value) => {
+      if (!value) {
+        return "—";
+      }
 
-    return date.toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+      const date =
+        new Date(value);
 
-  const getLeadName = () =>
-    lead?.name ||
-    lead?.customerName ||
-    lead?.customer?.name ||
-    "Unnamed Lead";
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+        return "—";
+      }
 
-  const getLeadNumber = () =>
-    lead?.leadNumber ||
-    lead?.leadNo ||
-    lead?.referenceNumber ||
-    "—";
+      return date.toLocaleString(
+        "en-IN",
+        {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      );
+    };
 
-  const getStatus = () =>
-    lead?.status ||
-    lead?.leadStatus ||
-    "NEW";
+  /* =====================================================
+     LEAD HELPERS
+  ===================================================== */
 
-  const getPriority = () =>
-    lead?.priority || "MEDIUM";
+  const getLeadName =
+    () =>
+      lead?.name ||
+      lead?.customerName ||
+      lead?.customer?.name ||
+      "Unnamed Lead";
 
-  const getAssignedEmployee = () =>
-    lead?.assignedTo?.name ||
-    lead?.assignedTo?.fullName ||
-    lead?.assignedEmployee?.name ||
-    lead?.employee?.name ||
-    "Unassigned";
+  const getLeadNumber =
+    () =>
+      lead?.leadNumber ||
+      lead?.leadNo ||
+      lead?.referenceNumber ||
+      lead?.leadId ||
+      lead?._id ||
+      "—";
 
-  const getBadgeVariant = (value) => {
-    const status = String(value).toLowerCase();
+  const getStatus =
+    () =>
+      lead?.status ||
+      lead?.leadStatus ||
+      "NEW";
 
-    if (
-      [
-        "won",
-        "converted",
-        "accepted",
-        "completed",
-      ].includes(status)
-    ) {
-      return "success";
-    }
+  const getPriority =
+    () =>
+      lead?.priority ||
+      "MEDIUM";
 
-    if (
-      [
-        "lost",
-        "rejected",
-        "cancelled",
-        "overdue",
-      ].includes(status)
-    ) {
-      return "danger";
-    }
+  const getAssignedEmployee =
+    () => {
+      const assigned =
+        lead?.assignedTo ||
+        lead?.assignedEmployee ||
+        lead?.employee;
 
-    if (
-      [
-        "qualified",
-        "contacted",
-        "quotation",
-        "site_visit",
-        "in_progress",
-        "high",
-      ].includes(status)
-    ) {
-      return "warning";
-    }
+      if (!assigned) {
+        return "Unassigned";
+      }
 
-    return "default";
-  };
+      if (
+        typeof assigned ===
+        "string"
+      ) {
+        return "Assigned";
+      }
 
-  const getActivityTitle = (activity) =>
-    activity?.title ||
-    activity?.activityType ||
-    activity?.type ||
-    "Activity";
+      return (
+        assigned?.name ||
+        assigned?.fullName ||
+        assigned?.employeeName ||
+        "Assigned"
+      );
+    };
 
-  const getActivityDescription = (activity) =>
-    activity?.description ||
-    activity?.remarks ||
-    activity?.note ||
-    activity?.message ||
-    "No description available.";
+  /* =====================================================
+     BADGE VARIANT
+  ===================================================== */
 
-  const getActivityUser = (activity) =>
-    activity?.createdBy?.name ||
-    activity?.createdBy?.fullName ||
-    activity?.user?.name ||
-    activity?.employee?.name ||
-    "System";
+  const getBadgeVariant =
+    (value) => {
+      const status =
+        String(
+          value
+        ).toLowerCase();
 
-  if (authLoading || loading) {
+      if (
+        [
+          "won",
+          "converted",
+          "accepted",
+          "completed",
+        ].includes(status)
+      ) {
+        return "success";
+      }
+
+      if (
+        [
+          "lost",
+          "rejected",
+          "cancelled",
+          "overdue",
+        ].includes(status)
+      ) {
+        return "danger";
+      }
+
+      if (
+        [
+          "qualified",
+          "contacted",
+          "quotation",
+          "site_visit",
+          "in_progress",
+          "high",
+        ].includes(status)
+      ) {
+        return "warning";
+      }
+
+      return "default";
+    };
+
+  /* =====================================================
+     ACTIVITY HELPERS
+  ===================================================== */
+
+  const getActivityTitle =
+    (activity) =>
+      activity?.title ||
+      activity?.activityType ||
+      activity?.type ||
+      "Activity";
+
+  const getActivityDescription =
+    (activity) =>
+      activity?.description ||
+      activity?.remarks ||
+      activity?.note ||
+      activity?.message ||
+      "No description available.";
+
+  const getActivityUser =
+    (activity) =>
+      activity?.createdBy?.name ||
+      activity?.createdBy?.fullName ||
+      activity?.user?.name ||
+      activity?.employee?.name ||
+      "System";
+
+  /* =====================================================
+     LOADING
+  ===================================================== */
+
+  if (loading) {
     return (
       <div className="manager-lead-details-loading">
         <Loader />
@@ -238,401 +378,659 @@ const LeadDetailsPage = () => {
     );
   }
 
+  /* =====================================================
+     PAGE
+  ===================================================== */
+
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      notificationCount={0}
-    >
-      <div className="manager-lead-details-page">
-        <div className="manager-lead-details-header">
-          <div>
-            <button
-              type="button"
-              className="manager-lead-back-button"
-              onClick={() =>
-                router.push("/manager/leads")
-              }
-            >
-              ← Back to Leads
-            </button>
+    <div className="manager-lead-details-page">
 
-            <span className="manager-lead-details-eyebrow">
-              Manager Portal
-            </span>
+      {/* =================================================
+          HEADER
+      ================================================= */}
 
-            <div className="manager-lead-title-row">
-              <div>
-                <h1>{getLeadName()}</h1>
+      <div className="manager-lead-details-header">
 
-                <p>
-                  Lead No. {getLeadNumber()}
-                </p>
-              </div>
+        <div>
 
-              <Badge
-                variant={getBadgeVariant(getStatus())}
-              >
-                {String(getStatus()).replaceAll(
-                  "_",
-                  " "
-                )}
-              </Badge>
+          <button
+            type="button"
+            className="manager-lead-back-button"
+            onClick={() =>
+              router.push(
+                "/manager/leads"
+              )
+            }
+          >
+            ← Back to Leads
+          </button>
+
+          <span className="manager-lead-details-eyebrow">
+            Manager Portal
+          </span>
+
+          <div className="manager-lead-title-row">
+
+            <div>
+
+              <h1>
+                {getLeadName()}
+              </h1>
+
+              <p>
+                Lead No.{" "}
+                {getLeadNumber()}
+              </p>
+
             </div>
+
+            <Badge
+              variant={getBadgeVariant(
+                getStatus()
+              )}
+            >
+              {String(
+                getStatus()
+              ).replaceAll(
+                "_",
+                " "
+              )}
+            </Badge>
+
           </div>
+
+        </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={
+            handleRefresh
+          }
+        >
+          Refresh
+        </Button>
+
+      </div>
+
+      {/* =================================================
+          ERROR
+      ================================================= */}
+
+      {error && (
+        <div className="manager-lead-details-error">
+
+          <span>
+            {error}
+          </span>
 
           <Button
             type="button"
             variant="secondary"
-            onClick={handleRefresh}
+            onClick={
+              loadLead
+            }
           >
-            Refresh
+            Retry
           </Button>
+
         </div>
+      )}
 
-        {error && (
-          <div className="manager-lead-details-error">
-            <span>{error}</span>
+      {/* =================================================
+          NOT FOUND
+      ================================================= */}
 
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={loadLead}
-            >
-              Retry
-            </Button>
+      {!lead ? (
+        <div className="manager-lead-empty">
+
+          <div className="manager-lead-empty-icon">
+            !
           </div>
-        )}
 
-        {!lead ? (
-          <div className="manager-lead-empty">
-            <div className="manager-lead-empty-icon">
-              !
-            </div>
+          <h2>
+            Lead not found
+          </h2>
 
-            <h2>Lead not found</h2>
+          <p>
+            The requested lead
+            could not be found.
+          </p>
 
-            <p>
-              The requested lead could not be found.
-            </p>
+          <Button
+            type="button"
+            onClick={() =>
+              router.push(
+                "/manager/leads"
+              )
+            }
+          >
+            Back to Leads
+          </Button>
 
-            <Button
-              type="button"
-              onClick={() =>
-                router.push("/manager/leads")
-              }
-            >
-              Back to Leads
-            </Button>
-          </div>
-        ) : (
-          <div className="manager-lead-details-grid">
-            <main className="manager-lead-main-column">
-              <section className="manager-lead-info-card">
-                <div className="manager-lead-card-header">
-                  <div>
-                    <h2>Lead Information</h2>
-                    <p>
-                      Customer and lead information
-                    </p>
-                  </div>
-                </div>
+        </div>
+      ) : (
 
-                <div className="manager-lead-info-grid">
-                  <div className="manager-lead-info-item">
-                    <span>Customer Name</span>
-                    <strong>{getLeadName()}</strong>
-                  </div>
+        <div className="manager-lead-details-grid">
 
-                  <div className="manager-lead-info-item">
-                    <span>Lead Number</span>
-                    <strong>{getLeadNumber()}</strong>
-                  </div>
+          {/* =================================================
+              MAIN COLUMN
+          ================================================= */}
 
-                  <div className="manager-lead-info-item">
-                    <span>Company Name</span>
-                    <strong>
-                      {lead?.companyName || "—"}
-                    </strong>
-                  </div>
+          <main className="manager-lead-main-column">
 
-                  <div className="manager-lead-info-item">
-                    <span>Mobile</span>
-                    <strong>
-                      {lead?.phone ||
-                        lead?.mobile ||
-                        lead?.contactNumber ||
-                        "—"}
-                    </strong>
-                  </div>
+            {/* =================================================
+                LEAD INFORMATION
+            ================================================= */}
 
-                  <div className="manager-lead-info-item">
-                    <span>Email</span>
-                    <strong>
-                      {lead?.email || "—"}
-                    </strong>
-                  </div>
+            <section className="manager-lead-info-card">
 
-                  <div className="manager-lead-info-item">
-                    <span>City</span>
-                    <strong>
-                      {lead?.city ||
-                        lead?.address?.city ||
-                        "—"}
-                    </strong>
-                  </div>
+              <div className="manager-lead-card-header">
 
-                  <div className="manager-lead-info-item">
-                    <span>Lead Source</span>
-                    <strong>
-                      {lead?.source || "—"}
-                    </strong>
-                  </div>
+                <div>
 
-                  <div className="manager-lead-info-item">
-                    <span>Assigned Employee</span>
-                    <strong>
-                      {getAssignedEmployee()}
-                    </strong>
-                  </div>
-
-                  <div className="manager-lead-info-item">
-                    <span>Created At</span>
-                    <strong>
-                      {formatDate(lead?.createdAt)}
-                    </strong>
-                  </div>
-
-                  <div className="manager-lead-info-item">
-                    <span>Updated At</span>
-                    <strong>
-                      {formatDate(lead?.updatedAt)}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="manager-lead-description">
-                  <span>Address</span>
+                  <h2>
+                    Lead Information
+                  </h2>
 
                   <p>
-                    {lead?.address?.fullAddress ||
-                      lead?.address ||
-                      "No address available."}
+                    Customer and lead
+                    information
                   </p>
-                </div>
-              </section>
 
-              <section className="manager-lead-info-card">
-                <div className="manager-lead-card-header">
-                  <div>
-                    <h2>Solar Requirement</h2>
-                    <p>
-                      Requirement information captured
-                      from the lead
-                    </p>
-                  </div>
                 </div>
 
-                <div className="manager-lead-info-grid">
-                  <div className="manager-lead-info-item">
-                    <span>Required Capacity</span>
-                    <strong>
-                      {lead?.requiredKW ||
-                        lead?.systemSize ||
-                        lead?.solarCapacity ||
+              </div>
+
+              <div className="manager-lead-info-grid">
+
+                <div className="manager-lead-info-item">
+                  <span>
+                    Customer Name
+                  </span>
+
+                  <strong>
+                    {getLeadName()}
+                  </strong>
+                </div>
+
+                <div className="manager-lead-info-item">
+                  <span>
+                    Lead Number
+                  </span>
+
+                  <strong>
+                    {getLeadNumber()}
+                  </strong>
+                </div>
+
+                <div className="manager-lead-info-item">
+                  <span>
+                    Company Name
+                  </span>
+
+                  <strong>
+                    {lead?.companyName ||
+                      "—"}
+                  </strong>
+                </div>
+
+                <div className="manager-lead-info-item">
+                  <span>
+                    Mobile
+                  </span>
+
+                  <strong>
+                    {lead?.phone ||
+                      lead?.mobile ||
+                      lead?.contactNumber ||
+                      "—"}
+                  </strong>
+                </div>
+
+                <div className="manager-lead-info-item">
+                  <span>
+                    Email
+                  </span>
+
+                  <strong>
+                    {lead?.email ||
+                      "—"}
+                  </strong>
+                </div>
+
+                <div className="manager-lead-info-item">
+                  <span>
+                    City
+                  </span>
+
+                  <strong>
+                    {lead?.city ||
+                      lead?.address?.city ||
+                      "—"}
+                  </strong>
+                </div>
+
+                <div className="manager-lead-info-item">
+                  <span>
+                    Lead Source
+                  </span>
+
+                  <strong>
+                    {typeof lead?.source ===
+                    "object"
+                      ? lead?.source?.name ||
+                        lead?.source?.label ||
+                        lead?.source?._id ||
+                        "—"
+                      : lead?.source ||
                         "—"}
-                    </strong>
-                  </div>
-
-                  <div className="manager-lead-info-item">
-                    <span>Monthly Electricity Bill</span>
-                    <strong>
-                      {lead?.monthlyBill
-                        ? `₹${lead.monthlyBill}`
-                        : "—"}
-                    </strong>
-                  </div>
-
-                  <div className="manager-lead-info-item">
-                    <span>Roof Type</span>
-                    <strong>
-                      {lead?.roofType || "—"}
-                    </strong>
-                  </div>
-
-                  <div className="manager-lead-info-item">
-                    <span>Property Type</span>
-                    <strong>
-                      {lead?.propertyType ||
-                        lead?.siteType ||
-                        "—"}
-                    </strong>
-                  </div>
+                  </strong>
                 </div>
 
-                <div className="manager-lead-description">
-                  <span>Requirement / Notes</span>
+                <div className="manager-lead-info-item">
+                  <span>
+                    Assigned Employee
+                  </span>
 
-                  <p>
-                    {lead?.requirement ||
-                      lead?.description ||
-                      lead?.notes ||
-                      "No requirement notes available."}
-                  </p>
-                </div>
-              </section>
-
-              <section className="manager-lead-info-card">
-                <div className="manager-lead-card-header">
-                  <div>
-                    <h2>Activity History</h2>
-                    <p>
-                      Follow-ups and actions recorded
-                      against this lead
-                    </p>
-                  </div>
-                </div>
-
-                {activityLoading ? (
-                  <div className="manager-lead-activity-loader">
-                    <Loader />
-                  </div>
-                ) : activities.length === 0 ? (
-                  <div className="manager-lead-no-activity">
-                    <div>⌁</div>
-                    <h3>No activities yet</h3>
-                    <p>
-                      There is no activity history
-                      available for this lead.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="manager-lead-activity-list">
-                    {activities.map(
-                      (activity, index) => (
-                        <div
-                          className="manager-lead-activity-item"
-                          key={
-                            activity?._id ||
-                            activity?.id ||
-                            index
-                          }
-                        >
-                          <div className="manager-lead-activity-dot" />
-
-                          <div className="manager-lead-activity-content">
-                            <div className="manager-lead-activity-top">
-                              <h3>
-                                {getActivityTitle(
-                                  activity
-                                )}
-                              </h3>
-
-                              <span>
-                                {formatDateTime(
-                                  activity?.createdAt ||
-                                    activity?.date
-                                )}
-                              </span>
-                            </div>
-
-                            <p>
-                              {getActivityDescription(
-                                activity
-                              )}
-                            </p>
-
-                            <small>
-                              By{" "}
-                              {getActivityUser(
-                                activity
-                              )}
-                            </small>
-                          </div>
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
-              </section>
-            </main>
-
-            <aside className="manager-lead-sidebar">
-              <section className="manager-lead-summary-card">
-                <div className="manager-lead-summary-icon">
-                  L
-                </div>
-
-                <span>Current Status</span>
-
-                <strong>
-                  {String(getStatus()).replaceAll(
-                    "_",
-                    " "
-                  )}
-                </strong>
-
-                <Badge
-                  variant={getBadgeVariant(
-                    getStatus()
-                  )}
-                >
-                  Lead Status
-                </Badge>
-              </section>
-
-              <section className="manager-lead-side-card">
-                <h3>Lead Summary</h3>
-
-                <div className="manager-lead-side-row">
-                  <span>Priority</span>
-
-                  <Badge
-                    variant={getBadgeVariant(
-                      getPriority()
-                    )}
-                  >
-                    {String(
-                      getPriority()
-                    ).replaceAll("_", " ")}
-                  </Badge>
-                </div>
-
-                <div className="manager-lead-side-row">
-                  <span>Assigned To</span>
                   <strong>
                     {getAssignedEmployee()}
                   </strong>
                 </div>
 
-                <div className="manager-lead-side-row">
-                  <span>Follow-up</span>
+                <div className="manager-lead-info-item">
+                  <span>
+                    Created At
+                  </span>
+
                   <strong>
                     {formatDate(
-                      lead?.followUpDate
+                      lead?.createdAt
                     )}
                   </strong>
                 </div>
 
-                <div className="manager-lead-side-row">
-                  <span>Created</span>
+                <div className="manager-lead-info-item">
+                  <span>
+                    Updated At
+                  </span>
+
                   <strong>
-                    {formatDate(lead?.createdAt)}
+                    {formatDate(
+                      lead?.updatedAt
+                    )}
                   </strong>
                 </div>
 
-                <div className="manager-lead-side-row">
-                  <span>Last Updated</span>
+              </div>
+
+              <div className="manager-lead-description">
+
+                <span>
+                  Address
+                </span>
+
+                <p>
+                  {typeof lead?.address ===
+                  "object"
+                    ? lead?.address?.fullAddress ||
+                      lead?.address?.address ||
+                      [
+                        lead?.address?.street,
+                        lead?.address?.city,
+                        lead?.address?.state,
+                      ]
+                        .filter(Boolean)
+                        .join(", ") ||
+                      "No address available."
+                    : lead?.address ||
+                      "No address available."}
+                </p>
+
+              </div>
+
+            </section>
+
+            {/* =================================================
+                SOLAR REQUIREMENT
+            ================================================= */}
+
+            <section className="manager-lead-info-card">
+
+              <div className="manager-lead-card-header">
+
+                <div>
+
+                  <h2>
+                    Solar Requirement
+                  </h2>
+
+                  <p>
+                    Requirement information
+                    captured from the lead
+                  </p>
+
+                </div>
+
+              </div>
+
+              <div className="manager-lead-info-grid">
+
+                <div className="manager-lead-info-item">
+                  <span>
+                    Required Capacity
+                  </span>
+
                   <strong>
-                    {formatDate(lead?.updatedAt)}
+                    {lead?.requiredKW ||
+                      lead?.requiredKw ||
+                      lead?.systemSize ||
+                      lead?.solarCapacity ||
+                      "—"}
                   </strong>
                 </div>
-              </section>
-            </aside>
-          </div>
-        )}
-      </div>
-    </MainLayout>
+
+                <div className="manager-lead-info-item">
+                  <span>
+                    Monthly Electricity Bill
+                  </span>
+
+                  <strong>
+                    {lead?.monthlyBill
+                      ? `₹${lead.monthlyBill}`
+                      : "—"}
+                  </strong>
+                </div>
+
+                <div className="manager-lead-info-item">
+                  <span>
+                    Roof Type
+                  </span>
+
+                  <strong>
+                    {lead?.roofType ||
+                      "—"}
+                  </strong>
+                </div>
+
+                <div className="manager-lead-info-item">
+                  <span>
+                    Property Type
+                  </span>
+
+                  <strong>
+                    {lead?.propertyType ||
+                      lead?.siteType ||
+                      "—"}
+                  </strong>
+                </div>
+
+              </div>
+
+              <div className="manager-lead-description">
+
+                <span>
+                  Requirement / Notes
+                </span>
+
+                <p>
+                  {lead?.requirement ||
+                    lead?.description ||
+                    lead?.notes ||
+                    "No requirement notes available."}
+                </p>
+
+              </div>
+
+            </section>
+
+            {/* =================================================
+                ACTIVITY HISTORY
+            ================================================= */}
+
+            <section className="manager-lead-info-card">
+
+              <div className="manager-lead-card-header">
+
+                <div>
+
+                  <h2>
+                    Activity History
+                  </h2>
+
+                  <p>
+                    Follow-ups and actions
+                    recorded against this lead
+                  </p>
+
+                </div>
+
+              </div>
+
+              {activityLoading ? (
+
+                <div className="manager-lead-activity-loader">
+                  <Loader />
+                </div>
+
+              ) : activities.length ===
+                0 ? (
+
+                <div className="manager-lead-no-activity">
+
+                  <div>
+                    ⌁
+                  </div>
+
+                  <h3>
+                    No activities yet
+                  </h3>
+
+                  <p>
+                    There is no activity
+                    history available
+                    for this lead.
+                  </p>
+
+                </div>
+
+              ) : (
+
+                <div className="manager-lead-activity-list">
+
+                  {activities.map(
+                    (
+                      activity,
+                      index
+                    ) => (
+
+                      <div
+                        className="manager-lead-activity-item"
+                        key={
+                          activity?._id ||
+                          activity?.id ||
+                          index
+                        }
+                      >
+
+                        <div className="manager-lead-activity-dot" />
+
+                        <div className="manager-lead-activity-content">
+
+                          <div className="manager-lead-activity-top">
+
+                            <h3>
+                              {getActivityTitle(
+                                activity
+                              )}
+                            </h3>
+
+                            <span>
+                              {formatDateTime(
+                                activity?.createdAt ||
+                                  activity?.date
+                              )}
+                            </span>
+
+                          </div>
+
+                          <p>
+                            {getActivityDescription(
+                              activity
+                            )}
+                          </p>
+
+                          <small>
+                            By{" "}
+                            {getActivityUser(
+                              activity
+                            )}
+                          </small>
+
+                        </div>
+
+                      </div>
+
+                    )
+                  )}
+
+                </div>
+
+              )}
+
+            </section>
+
+          </main>
+
+          {/* =================================================
+              SIDEBAR
+          ================================================= */}
+
+          <aside className="manager-lead-sidebar">
+
+            {/* STATUS */}
+
+            <section className="manager-lead-summary-card">
+
+              <div className="manager-lead-summary-icon">
+                L
+              </div>
+
+              <span>
+                Current Status
+              </span>
+
+              <strong>
+                {String(
+                  getStatus()
+                ).replaceAll(
+                  "_",
+                  " "
+                )}
+              </strong>
+
+              <Badge
+                variant={getBadgeVariant(
+                  getStatus()
+                )}
+              >
+                Lead Status
+              </Badge>
+
+            </section>
+
+            {/* SUMMARY */}
+
+            <section className="manager-lead-side-card">
+
+              <h3>
+                Lead Summary
+              </h3>
+
+              <div className="manager-lead-side-row">
+
+                <span>
+                  Priority
+                </span>
+
+                <Badge
+                  variant={getBadgeVariant(
+                    getPriority()
+                  )}
+                >
+                  {String(
+                    getPriority()
+                  ).replaceAll(
+                    "_",
+                    " "
+                  )}
+                </Badge>
+
+              </div>
+
+              <div className="manager-lead-side-row">
+
+                <span>
+                  Assigned To
+                </span>
+
+                <strong>
+                  {getAssignedEmployee()}
+                </strong>
+
+              </div>
+
+              <div className="manager-lead-side-row">
+
+                <span>
+                  Follow-up
+                </span>
+
+                <strong>
+                  {formatDate(
+                    lead?.followUpDate
+                  )}
+                </strong>
+
+              </div>
+
+              <div className="manager-lead-side-row">
+
+                <span>
+                  Created
+                </span>
+
+                <strong>
+                  {formatDate(
+                    lead?.createdAt
+                  )}
+                </strong>
+
+              </div>
+
+              <div className="manager-lead-side-row">
+
+                <span>
+                  Last Updated
+                </span>
+
+                <strong>
+                  {formatDate(
+                    lead?.updatedAt
+                  )}
+                </strong>
+
+              </div>
+
+            </section>
+
+          </aside>
+
+        </div>
+
+      )}
+
+    </div>
   );
 };
 

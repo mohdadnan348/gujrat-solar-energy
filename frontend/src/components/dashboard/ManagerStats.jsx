@@ -2,33 +2,59 @@
 
 import React from "react";
 import StatCard from "./StatCard";
-
+import "./ManagerStats.css";
 const ManagerStats = ({ stats = {}, loading = false }) => {
-  const dashboardStats = stats?.stats || stats;
+  const dashboardStats = stats?.stats || stats || {};
 
-  const teamLeads =
-    dashboardStats?.leads?.total ??
-    dashboardStats?.teamLeads ??
-    0;
+  const getValue = (...values) => {
+    for (const value of values) {
+      if (
+        value !== undefined &&
+        value !== null &&
+        value !== ""
+      ) {
+        return value;
+      }
+    }
 
-  const activeQuotations =
-    dashboardStats?.quotations?.active ??
-    dashboardStats?.quotations?.total ??
-    dashboardStats?.activeQuotations ??
-    0;
+    return 0;
+  };
 
-  const teamTasks =
-    dashboardStats?.tasks?.total ??
-    dashboardStats?.teamTasks ??
-    0;
+  const teamLeads = getValue(
+    dashboardStats?.leads?.total,
+    dashboardStats?.leads?.teamLeads,
+    dashboardStats?.teamLeads,
+    dashboardStats?.totalLeads
+  );
 
-  const teamMembers =
-    dashboardStats?.users?.activeEmployees ??
-    dashboardStats?.teamMembers ??
-    0;
+  const activeQuotations = getValue(
+    dashboardStats?.quotations?.active,
+    dashboardStats?.quotations?.total,
+    dashboardStats?.activeQuotations,
+    dashboardStats?.totalQuotations
+  );
+
+  const teamTasks = getValue(
+    dashboardStats?.tasks?.total,
+    dashboardStats?.tasks?.pending,
+    dashboardStats?.teamTasks,
+    dashboardStats?.totalTasks,
+    dashboardStats?.pendingTasks
+  );
+
+  const teamMembers = getValue(
+    dashboardStats?.users?.activeEmployees,
+    dashboardStats?.users?.totalEmployees,
+    dashboardStats?.team?.members,
+    dashboardStats?.team?.teamMembers,
+    dashboardStats?.teamMembers,
+    dashboardStats?.activeEmployees,
+    dashboardStats?.totalEmployees
+  );
 
   return (
     <div className="gse-stats-grid">
+      {/* TEAM LEADS */}
       <StatCard
         title="Team Leads"
         value={teamLeads}
@@ -54,6 +80,7 @@ const ManagerStats = ({ stats = {}, loading = false }) => {
         loading={loading}
       />
 
+      {/* ACTIVE QUOTATIONS */}
       <StatCard
         title="Active Quotations"
         value={activeQuotations}
@@ -81,6 +108,7 @@ const ManagerStats = ({ stats = {}, loading = false }) => {
         loading={loading}
       />
 
+      {/* TEAM TASKS */}
       <StatCard
         title="Team Tasks"
         value={teamTasks}
@@ -96,7 +124,13 @@ const ManagerStats = ({ stats = {}, loading = false }) => {
             strokeLinejoin="round"
             aria-hidden="true"
           >
-            <rect x="3" y="4" width="18" height="17" rx="2" />
+            <rect
+              x="3"
+              y="4"
+              width="18"
+              height="17"
+              rx="2"
+            />
             <path d="M8 2v4" />
             <path d="M16 2v4" />
             <path d="M3 10h18" />
@@ -107,6 +141,7 @@ const ManagerStats = ({ stats = {}, loading = false }) => {
         loading={loading}
       />
 
+      {/* TEAM MEMBERS */}
       <StatCard
         title="Team Members"
         value={teamMembers}

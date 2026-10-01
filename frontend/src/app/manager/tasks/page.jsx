@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import SearchBox from "@/components/common/SearchBox";
@@ -9,9 +8,10 @@ import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
 import { useAuth } from "@/hooks/useAuth";
 import taskService from "@/services/task.service";
+import "./tasks.css";
 
 const ManagerTasksPage = () => {
-  const { user, logout, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +24,10 @@ const ManagerTasksPage = () => {
   const [selectedTask, setSelectedTask] = useState(null);
 
   const itemsPerPage = 10;
+
+  /* =========================
+     LOAD TASKS
+  ========================= */
 
   const loadTasks = async () => {
     try {
@@ -45,8 +49,8 @@ const ManagerTasksPage = () => {
       console.error("Tasks error:", err);
 
       setError(
-        err?.message ||
-          err?.response?.data?.message ||
+        err?.response?.data?.message ||
+          err?.message ||
           "Unable to load tasks."
       );
 
@@ -62,9 +66,9 @@ const ManagerTasksPage = () => {
     }
   }, [authLoading, user]);
 
-  const handleLogout = async () => {
-    await logout();
-  };
+  /* =========================
+     HELPERS
+  ========================= */
 
   const getTaskTitle = (task) =>
     task?.title ||
@@ -154,9 +158,11 @@ const ManagerTasksPage = () => {
     }
 
     if (
-      ["high", "urgent", "critical"].includes(
-        status
-      )
+      [
+        "high",
+        "urgent",
+        "critical",
+      ].includes(status)
     ) {
       return "danger";
     }
@@ -197,9 +203,12 @@ const ManagerTasksPage = () => {
     ).toLowerCase();
 
     if (
-      ["completed", "complete", "done", "cancelled"].includes(
-        status
-      )
+      [
+        "completed",
+        "complete",
+        "done",
+        "cancelled",
+      ].includes(status)
     ) {
       return false;
     }
@@ -214,7 +223,13 @@ const ManagerTasksPage = () => {
   };
 
   const getEffectiveStatus = (task) =>
-    isOverdue(task) ? "OVERDUE" : getStatus(task);
+    isOverdue(task)
+      ? "OVERDUE"
+      : getStatus(task);
+
+  /* =========================
+     FILTER
+  ========================= */
 
   const filteredTasks = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -236,10 +251,7 @@ const ManagerTasksPage = () => {
         priorityFilter === "ALL" ||
         priority === priorityFilter;
 
-      if (
-        !matchesStatus ||
-        !matchesPriority
-      ) {
+      if (!matchesStatus || !matchesPriority) {
         return false;
       }
 
@@ -256,6 +268,7 @@ const ManagerTasksPage = () => {
         task?.type,
       ]
         .filter(Boolean)
+        .map((value) => String(value))
         .join(" ")
         .toLowerCase();
 
@@ -271,8 +284,7 @@ const ManagerTasksPage = () => {
   const totalPages = Math.max(
     1,
     Math.ceil(
-      filteredTasks.length /
-        itemsPerPage
+      filteredTasks.length / itemsPerPage
     )
   );
 
@@ -298,19 +310,37 @@ const ManagerTasksPage = () => {
     setPage(nextPage);
   };
 
+  /* =========================
+     SUMMARY
+  ========================= */
+
   const totalCompleted = tasks.filter((task) =>
-    ["completed", "complete", "done"].includes(
+    [
+      "completed",
+      "complete",
+      "done",
+    ].includes(
       String(getStatus(task)).toLowerCase()
     )
   ).length;
 
   const totalPending = tasks.filter((task) =>
-    ["pending", "in_progress", "in progress"].includes(
+    [
+      "pending",
+      "in_progress",
+      "in progress",
+    ].includes(
       String(getStatus(task)).toLowerCase()
     )
   ).length;
 
-  const totalOverdue = tasks.filter(isOverdue).length;
+  const totalOverdue = tasks.filter(
+    isOverdue
+  ).length;
+
+  /* =========================
+     LOADING
+  ========================= */
 
   if (authLoading || loading) {
     return (
@@ -320,496 +350,508 @@ const ManagerTasksPage = () => {
     );
   }
 
+  /* =========================
+     PAGE
+  ========================= */
+
   return (
-    <MainLayout
-      user={user}
-      onLogout={handleLogout}
-      notificationCount={0}
-    >
-      <div className="manager-tasks-page">
-        <div className="manager-tasks-header">
-          <div>
-            <span className="manager-tasks-eyebrow">
-              Manager Portal
-            </span>
+    <div className="manager-tasks-page">
+      {/* HEADER */}
+      <div className="manager-tasks-header">
+        <div>
+          <span className="manager-tasks-eyebrow">
+            Manager Portal
+          </span>
 
-            <h1>Tasks</h1>
+          <h1>Tasks</h1>
 
-            <p>
-              Monitor team tasks, assignments,
-              priorities and completion status.
-            </p>
-          </div>
+          <p>
+            Monitor team tasks, assignments,
+            priorities and completion status.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={loadTasks}
+        >
+          Refresh
+        </Button>
+      </div>
+
+      {/* ERROR */}
+      {error && (
+        <div className="manager-tasks-error">
+          <span>{error}</span>
 
           <Button
             type="button"
             variant="secondary"
             onClick={loadTasks}
           >
-            Refresh
+            Retry
           </Button>
         </div>
+      )}
 
-        {error && (
-          <div className="manager-tasks-error">
-            <span>{error}</span>
-
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={loadTasks}
-            >
-              Retry
-            </Button>
-          </div>
-        )}
-
-        <div className="manager-tasks-summary">
-          <div className="manager-task-summary-card">
-            <span>Total Tasks</span>
-            <strong>{tasks.length}</strong>
-          </div>
-
-          <div className="manager-task-summary-card">
-            <span>Pending / Active</span>
-            <strong>{totalPending}</strong>
-          </div>
-
-          <div className="manager-task-summary-card">
-            <span>Completed</span>
-            <strong>{totalCompleted}</strong>
-          </div>
-
-          <div className="manager-task-summary-card manager-task-overdue-card">
-            <span>Overdue</span>
-            <strong>{totalOverdue}</strong>
-          </div>
+      {/* SUMMARY */}
+      <div className="manager-tasks-summary">
+        <div className="manager-task-summary-card">
+          <span>Total Tasks</span>
+          <strong>{tasks.length}</strong>
         </div>
 
-        <div className="manager-tasks-toolbar">
-          <SearchBox
-            value={search}
-            onChange={(value) => setSearch(value)}
-            placeholder="Search task, employee, customer..."
-          />
-
-          <select
-            className="manager-tasks-filter"
-            value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(event.target.value)
-            }
-          >
-            <option value="ALL">All Status</option>
-            <option value="PENDING">Pending</option>
-            <option value="IN_PROGRESS">
-              In Progress
-            </option>
-            <option value="COMPLETED">
-              Completed
-            </option>
-            <option value="OVERDUE">
-              Overdue
-            </option>
-            <option value="CANCELLED">
-              Cancelled
-            </option>
-          </select>
-
-          <select
-            className="manager-tasks-filter"
-            value={priorityFilter}
-            onChange={(event) =>
-              setPriorityFilter(
-                event.target.value
-              )
-            }
-          >
-            <option value="ALL">
-              All Priority
-            </option>
-            <option value="LOW">Low</option>
-            <option value="MEDIUM">
-              Medium
-            </option>
-            <option value="HIGH">High</option>
-            <option value="URGENT">
-              Urgent
-            </option>
-          </select>
+        <div className="manager-task-summary-card">
+          <span>Pending / Active</span>
+          <strong>{totalPending}</strong>
         </div>
 
-        <div className="manager-tasks-card">
-          <div className="manager-tasks-table-wrapper">
-            <table className="manager-tasks-table">
-              <thead>
+        <div className="manager-task-summary-card">
+          <span>Completed</span>
+          <strong>{totalCompleted}</strong>
+        </div>
+
+        <div className="manager-task-summary-card manager-task-overdue-card">
+          <span>Overdue</span>
+          <strong>{totalOverdue}</strong>
+        </div>
+      </div>
+
+      {/* TOOLBAR */}
+      <div className="manager-tasks-toolbar">
+        <SearchBox
+          value={search}
+          onChange={(value) => setSearch(value)}
+          placeholder="Search task, employee, customer..."
+        />
+
+        <select
+          className="manager-tasks-filter"
+          value={statusFilter}
+          onChange={(event) =>
+            setStatusFilter(event.target.value)
+          }
+        >
+          <option value="ALL">All Status</option>
+          <option value="PENDING">Pending</option>
+          <option value="IN_PROGRESS">
+            In Progress
+          </option>
+          <option value="COMPLETED">
+            Completed
+          </option>
+          <option value="OVERDUE">
+            Overdue
+          </option>
+          <option value="CANCELLED">
+            Cancelled
+          </option>
+        </select>
+
+        <select
+          className="manager-tasks-filter"
+          value={priorityFilter}
+          onChange={(event) =>
+            setPriorityFilter(
+              event.target.value
+            )
+          }
+        >
+          <option value="ALL">
+            All Priority
+          </option>
+          <option value="LOW">Low</option>
+          <option value="MEDIUM">
+            Medium
+          </option>
+          <option value="HIGH">High</option>
+          <option value="URGENT">
+            Urgent
+          </option>
+        </select>
+      </div>
+
+      {/* TABLE */}
+      <div className="manager-tasks-card">
+        <div className="manager-tasks-table-wrapper">
+          <table className="manager-tasks-table">
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Customer</th>
+                <th>Assigned To</th>
+                <th>Priority</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {paginatedTasks.length === 0 ? (
                 <tr>
-                  <th>Task</th>
-                  <th>Customer</th>
-                  <th>Assigned To</th>
-                  <th>Priority</th>
-                  <th>Due Date</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th>Action</th>
+                  <td
+                    colSpan="8"
+                    className="manager-tasks-empty"
+                  >
+                    <div>
+                      <span>✓</span>
+
+                      <strong>
+                        No tasks found
+                      </strong>
+
+                      <p>
+                        Try changing your search
+                        or filters.
+                      </p>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
+              ) : (
+                paginatedTasks.map(
+                  (task, index) => {
+                    const taskStatus =
+                      getEffectiveStatus(task);
 
-              <tbody>
-                {paginatedTasks.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan="8"
-                      className="manager-tasks-empty"
-                    >
-                      <div>
-                        <span>✓</span>
-                        <strong>
-                          No tasks found
-                        </strong>
-                        <p>
-                          Try changing your search
-                          or filters.
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedTasks.map(
-                    (task, index) => {
-                      const taskStatus =
-                        getEffectiveStatus(
-                          task
-                        );
+                    return (
+                      <tr
+                        key={
+                          task?._id ||
+                          task?.id ||
+                          index
+                        }
+                      >
+                        {/* TASK */}
+                        <td>
+                          <div className="manager-task-title-block">
+                            <strong>
+                              {getTaskTitle(task)}
+                            </strong>
 
-                      return (
-                        <tr
-                          key={
-                            task?._id ||
-                            task?.id ||
-                            index
-                          }
-                        >
-                          <td>
-                            <div className="manager-task-title-block">
-                              <strong>
-                                {getTaskTitle(
-                                  task
-                                )}
-                              </strong>
-
-                              {getTaskDescription(
-                                task
-                              ) && (
-                                <span>
-                                  {getTaskDescription(
-                                    task
-                                  )}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-
-                          <td>
-                            <span className="manager-task-customer">
-                              {getCustomerName(
-                                task
-                              )}
-                            </span>
-                          </td>
-
-                          <td>
-                            <div className="manager-task-assignee">
-                              <div className="manager-task-avatar">
-                                {getAssignedEmployee(
-                                  task
-                                )
-                                  .charAt(0)
-                                  .toUpperCase()}
-                              </div>
-
+                            {getTaskDescription(
+                              task
+                            ) && (
                               <span>
-                                {getAssignedEmployee(
+                                {getTaskDescription(
                                   task
                                 )}
                               </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* CUSTOMER */}
+                        <td>
+                          <span className="manager-task-customer">
+                            {getCustomerName(task)}
+                          </span>
+                        </td>
+
+                        {/* ASSIGNED */}
+                        <td>
+                          <div className="manager-task-assignee">
+                            <div className="manager-task-avatar">
+                              {getAssignedEmployee(
+                                task
+                              )
+                                .charAt(0)
+                                .toUpperCase()}
                             </div>
-                          </td>
 
-                          <td>
-                            <Badge
-                              variant={getBadgeVariant(
-                                getPriority(
-                                  task
-                                )
-                              )}
-                            >
-                              {String(
-                                getPriority(
-                                  task
-                                )
-                              ).replaceAll(
-                                "_",
-                                " "
-                              )}
-                            </Badge>
-                          </td>
-
-                          <td>
-                            <span
-                              className={
-                                taskStatus ===
-                                "OVERDUE"
-                                  ? "manager-task-due-overdue"
-                                  : ""
-                              }
-                            >
-                              {formatDate(
-                                task?.dueDate ||
-                                  task?.deadline ||
-                                  task?.endDate
+                            <span>
+                              {getAssignedEmployee(
+                                task
                               )}
                             </span>
-                          </td>
+                          </div>
+                        </td>
 
-                          <td>
-                            <Badge
-                              variant={getBadgeVariant(
-                                taskStatus
-                              )}
-                            >
-                              {String(
-                                taskStatus
-                              ).replaceAll(
-                                "_",
-                                " "
-                              )}
-                            </Badge>
-                          </td>
-
-                          <td>
-                            {formatDate(
-                              task?.createdAt
+                        {/* PRIORITY */}
+                        <td>
+                          <Badge
+                            variant={getBadgeVariant(
+                              getPriority(task)
                             )}
-                          </td>
+                          >
+                            {String(
+                              getPriority(task)
+                            ).replaceAll(
+                              "_",
+                              " "
+                            )}
+                          </Badge>
+                        </td>
 
-                          <td>
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              onClick={() =>
-                                setSelectedTask(
-                                  task
-                                )
-                              }
-                            >
-                              View
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    }
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
+                        {/* DUE DATE */}
+                        <td>
+                          <span
+                            className={
+                              taskStatus ===
+                              "OVERDUE"
+                                ? "manager-task-due-overdue"
+                                : ""
+                            }
+                          >
+                            {formatDate(
+                              task?.dueDate ||
+                                task?.deadline ||
+                                task?.endDate
+                            )}
+                          </span>
+                        </td>
 
-          {filteredTasks.length > 0 && (
-            <div className="manager-tasks-pagination">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
-            </div>
-          )}
+                        {/* STATUS */}
+                        <td>
+                          <Badge
+                            variant={getBadgeVariant(
+                              taskStatus
+                            )}
+                          >
+                            {String(
+                              taskStatus
+                            ).replaceAll(
+                              "_",
+                              " "
+                            )}
+                          </Badge>
+                        </td>
+
+                        {/* CREATED */}
+                        <td>
+                          {formatDate(
+                            task?.createdAt
+                          )}
+                        </td>
+
+                        {/* ACTION */}
+                        <td>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() =>
+                              setSelectedTask(task)
+                            }
+                          >
+                            View
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  }
+                )
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {selectedTask && (
-          <div
-            className="manager-task-modal-overlay"
-            onClick={() =>
-              setSelectedTask(null)
-            }
-          >
-            <div
-              className="manager-task-modal"
-              onClick={(event) =>
-                event.stopPropagation()
-              }
-            >
-              <div className="manager-task-modal-header">
-                <div>
-                  <span>Task Details</span>
-
-                  <h2>
-                    {getTaskTitle(
-                      selectedTask
-                    )}
-                  </h2>
-
-                  <p>
-                    {getCustomerName(
-                      selectedTask
-                    )}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSelectedTask(null)
-                  }
-                  aria-label="Close"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="manager-task-modal-body">
-                <div className="manager-task-detail-grid">
-                  <div>
-                    <span>Status</span>
-
-                    <Badge
-                      variant={getBadgeVariant(
-                        getEffectiveStatus(
-                          selectedTask
-                        )
-                      )}
-                    >
-                      {String(
-                        getEffectiveStatus(
-                          selectedTask
-                        )
-                      ).replaceAll(
-                        "_",
-                        " "
-                      )}
-                    </Badge>
-                  </div>
-
-                  <div>
-                    <span>Priority</span>
-
-                    <Badge
-                      variant={getBadgeVariant(
-                        getPriority(
-                          selectedTask
-                        )
-                      )}
-                    >
-                      {String(
-                        getPriority(
-                          selectedTask
-                        )
-                      ).replaceAll(
-                        "_",
-                        " "
-                      )}
-                    </Badge>
-                  </div>
-
-                  <div>
-                    <span>Assigned To</span>
-
-                    <strong>
-                      {getAssignedEmployee(
-                        selectedTask
-                      )}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>Customer</span>
-
-                    <strong>
-                      {getCustomerName(
-                        selectedTask
-                      )}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>Due Date</span>
-
-                    <strong>
-                      {formatDate(
-                        selectedTask?.dueDate ||
-                          selectedTask?.deadline ||
-                          selectedTask?.endDate
-                      )}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>Created On</span>
-
-                    <strong>
-                      {formatDate(
-                        selectedTask?.createdAt
-                      )}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="manager-task-description">
-                  <span>Description</span>
-
-                  <p>
-                    {getTaskDescription(
-                      selectedTask
-                    ) ||
-                      "No description available for this task."}
-                  </p>
-                </div>
-
-                {selectedTask?.category && (
-                  <div className="manager-task-meta-row">
-                    <span>Category</span>
-                    <strong>
-                      {selectedTask.category}
-                    </strong>
-                  </div>
-                )}
-
-                {selectedTask?.type && (
-                  <div className="manager-task-meta-row">
-                    <span>Task Type</span>
-                    <strong>
-                      {selectedTask.type}
-                    </strong>
-                  </div>
-                )}
-
-                {selectedTask?.notes && (
-                  <div className="manager-task-description">
-                    <span>Notes</span>
-
-                    <p>
-                      {selectedTask.notes}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="manager-task-modal-footer">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() =>
-                    setSelectedTask(null)
-                  }
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
+        {/* PAGINATION */}
+        {filteredTasks.length > 0 && (
+          <div className="manager-tasks-pagination">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
           </div>
         )}
       </div>
-    </MainLayout>
+
+      {/* TASK MODAL */}
+      {selectedTask && (
+        <div
+          className="manager-task-modal-overlay"
+          onClick={() =>
+            setSelectedTask(null)
+          }
+        >
+          <div
+            className="manager-task-modal"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            {/* MODAL HEADER */}
+            <div className="manager-task-modal-header">
+              <div>
+                <span>Task Details</span>
+
+                <h2>
+                  {getTaskTitle(selectedTask)}
+                </h2>
+
+                <p>
+                  {getCustomerName(
+                    selectedTask
+                  )}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedTask(null)
+                }
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* MODAL BODY */}
+            <div className="manager-task-modal-body">
+              <div className="manager-task-detail-grid">
+                <div>
+                  <span>Status</span>
+
+                  <Badge
+                    variant={getBadgeVariant(
+                      getEffectiveStatus(
+                        selectedTask
+                      )
+                    )}
+                  >
+                    {String(
+                      getEffectiveStatus(
+                        selectedTask
+                      )
+                    ).replaceAll(
+                      "_",
+                      " "
+                    )}
+                  </Badge>
+                </div>
+
+                <div>
+                  <span>Priority</span>
+
+                  <Badge
+                    variant={getBadgeVariant(
+                      getPriority(selectedTask)
+                    )}
+                  >
+                    {String(
+                      getPriority(selectedTask)
+                    ).replaceAll(
+                      "_",
+                      " "
+                    )}
+                  </Badge>
+                </div>
+
+                <div>
+                  <span>Assigned To</span>
+
+                  <strong>
+                    {getAssignedEmployee(
+                      selectedTask
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Customer</span>
+
+                  <strong>
+                    {getCustomerName(
+                      selectedTask
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Due Date</span>
+
+                  <strong>
+                    {formatDate(
+                      selectedTask?.dueDate ||
+                        selectedTask?.deadline ||
+                        selectedTask?.endDate
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Created On</span>
+
+                  <strong>
+                    {formatDate(
+                      selectedTask?.createdAt
+                    )}
+                  </strong>
+                </div>
+              </div>
+
+              {/* DESCRIPTION */}
+              <div className="manager-task-description">
+                <span>Description</span>
+
+                <p>
+                  {getTaskDescription(
+                    selectedTask
+                  ) ||
+                    "No description available for this task."}
+                </p>
+              </div>
+
+              {/* CATEGORY */}
+              {selectedTask?.category && (
+                <div className="manager-task-meta-row">
+                  <span>Category</span>
+
+                  <strong>
+                    {String(
+                      selectedTask.category
+                    )}
+                  </strong>
+                </div>
+              )}
+
+              {/* TASK TYPE */}
+              {selectedTask?.type && (
+                <div className="manager-task-meta-row">
+                  <span>Task Type</span>
+
+                  <strong>
+                    {String(
+                      selectedTask.type
+                    )}
+                  </strong>
+                </div>
+              )}
+
+              {/* NOTES */}
+              {selectedTask?.notes && (
+                <div className="manager-task-description">
+                  <span>Notes</span>
+
+                  <p>
+                    {String(
+                      selectedTask.notes
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* FOOTER */}
+            <div className="manager-task-modal-footer">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  setSelectedTask(null)
+                }
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

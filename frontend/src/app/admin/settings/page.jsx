@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import AdminLayout from "@/app/admin/layout";
+
 import "./settings.css";
 
 const settingsSections = [
@@ -52,7 +52,7 @@ const settingsSections = [
 
 const SettingsPage = () => {
   return (
-    <AdminLayout>
+  
       <div className="admin-settings-page">
         <div className="admin-settings-header">
           <div>
@@ -87,7 +87,7 @@ const SettingsPage = () => {
           ))}
         </div>
       </div>
-    </AdminLayout>
+    
   );
 };
 

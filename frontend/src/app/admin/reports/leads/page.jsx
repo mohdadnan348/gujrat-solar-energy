@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import AdminLayout from "../../layout";
+
 import Button from "@/components/common/Button";
 import Loader from "@/components/common/Loader";
 import Select from "@/components/common/Select";
@@ -253,19 +253,10 @@ const AdminLeadReportPage = () => {
     window.print();
   };
 
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="admin-lead-report-loading">
-          <Loader />
-          <p>Loading lead report...</p>
-        </div>
-      </AdminLayout>
-    );
-  }
+
 
   return (
-    <AdminLayout>
+ 
       <div className="admin-lead-report-page">
         <div className="admin-lead-report-header">
           <div>
@@ -686,7 +677,7 @@ const AdminLeadReportPage = () => {
           </div>
         </section>
       </div>
-    </AdminLayout>
+   
   );
 };
 

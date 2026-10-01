@@ -658,7 +658,7 @@ const QuotationDetailsPage = () => {
         setError("");
 
         const response =
-          await pdfService.downloadQuotationPDF(
+          await pdfService.downloadQuotationpdf(
             quotationId
           );
 

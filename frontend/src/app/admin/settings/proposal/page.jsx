@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import AdminLayout from "@/app/admin/layout";
+
 import settingService from "@/services/setting.service";
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
@@ -128,18 +128,10 @@ const ProposalSettingsPage = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="proposal-settings-loading">
-          <Loader />
-        </div>
-      </AdminLayout>
-    );
-  }
+
 
   return (
-    <AdminLayout>
+   
       <div className="proposal-settings-page">
         <div className="proposal-settings-header">
           <div>
@@ -363,7 +355,7 @@ const ProposalSettingsPage = () => {
           </div>
         </form>
       </div>
-    </AdminLayout>
+    
   );
 };
 

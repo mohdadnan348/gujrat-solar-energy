@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import AdminLayout from "@/app/admin/layout";
+
 import settingService from "@/services/setting.service";
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
@@ -138,18 +138,10 @@ const BankSettingsPage = () => {
     setSuccess("");
   };
 
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="bank-settings-loading">
-          <Loader />
-        </div>
-      </AdminLayout>
-    );
-  }
+
 
   return (
-    <AdminLayout>
+  
       <div className="bank-settings-page">
         <div className="bank-settings-header">
           <div>
@@ -336,7 +328,7 @@ const BankSettingsPage = () => {
           </div>
         </form>
       </div>
-    </AdminLayout>
+    
   );
 };
 

@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import AdminLayout from "../layout";
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import SearchBox from "@/components/common/SearchBox";
@@ -12,7 +11,7 @@ import Loader from "@/components/common/Loader";
 import Select from "@/components/common/Select";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 
-import { invoiceService } from "@/services/invoice.service";
+import invoiceService from "@/services/invoice.service";
 
 import "./invoices.css";
 
@@ -465,16 +464,17 @@ const AdminInvoicesPage = () => {
       setError("");
 
       if (
-        typeof invoiceService.deleteInvoice !==
+        typeof invoiceService.cancelInvoice !==
         "function"
       ) {
         throw new Error(
-          "Invoice delete service available nahi hai."
+          "Invoice cancel service available nahi hai."
         );
       }
 
-      await invoiceService.deleteInvoice(
-        deleteId
+      await invoiceService.cancelInvoice(
+        deleteId,
+        "Cancelled by Admin"
       );
 
       setInvoices((previous) =>
@@ -507,20 +507,17 @@ const AdminInvoicesPage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="admin-invoices-loading">
-          <Loader />
-          <p>
-            Invoices load ho rahi hain...
-          </p>
-        </div>
-      </AdminLayout>
+      <div className="admin-invoices-loading">
+        <Loader />
+        <p>
+          Invoices load ho rahi hain...
+        </p>
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div className="admin-invoices-page">
+    <div className="admin-invoices-page">
         {/* Page Header */}
         <div className="admin-invoices-page-header">
           <div>
@@ -1027,7 +1024,7 @@ const AdminInvoicesPage = () => {
                                     )
                                   }
                                   disabled={!id}
-                                  title="Delete Invoice"
+                                  title="Cancel Invoice"
                                 >
                                   Delete
                                 </button>
@@ -1069,19 +1066,18 @@ const AdminInvoicesPage = () => {
           onConfirm={
             handleDelete
           }
-          title="Delete Invoice"
+          title="Cancel Invoice"
           message="Are you sure you want to delete this invoice? This action cannot be undone."
           confirmText={
             deleting
-              ? "Deleting..."
-              : "Delete Invoice"
+              ? "Cancelling..."
+              : "Cancel Invoice"
           }
           cancelText="Cancel"
           loading={deleting}
           danger
         />
-      </div>
-    </AdminLayout>
+    </div>
   );
 };
 

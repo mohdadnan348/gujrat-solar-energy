@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import AdminLayout from "../../layout";
+
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
@@ -687,21 +687,10 @@ const CreateInvoicePage = () => {
     })}`;
   };
 
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="admin-create-invoice-loading">
-          <Loader />
-          <p>
-            Loading invoice form...
-          </p>
-        </div>
-      </AdminLayout>
-    );
-  }
+
 
   return (
-    <AdminLayout>
+  
       <div className="admin-create-invoice-page">
         {/* Header */}
         <div className="admin-create-invoice-header">
@@ -1262,7 +1251,7 @@ const CreateInvoicePage = () => {
           </div>
         </form>
       </div>
-    </AdminLayout>
+  
   );
 };
 

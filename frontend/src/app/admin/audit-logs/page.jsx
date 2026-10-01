@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import AdminLayout from "@/app/admin/layout";
 import activityLogService from "@/services/activityLog.service";
 import Loader from "@/components/common/Loader";
 import Badge from "@/components/common/Badge";
@@ -402,18 +401,10 @@ const AuditLogsPage = () => {
     URL.revokeObjectURL(url);
   };
 
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="admin-audit-loading">
-          <Loader />
-        </div>
-      </AdminLayout>
-    );
-  }
+
 
   return (
-    <AdminLayout>
+    
       <div className="admin-audit-page">
         <div className="admin-audit-header">
           <div>
@@ -671,7 +662,7 @@ const AuditLogsPage = () => {
           )}
         </div>
       </div>
-    </AdminLayout>
+   
   );
 };
 

@@ -1,24 +1,111 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import { useRouter } from "next/navigation";
-import AdminLayout from "../layout";
+
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import SearchBox from "@/components/common/SearchBox";
 import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
 import Modal from "@/components/common/Modal";
-import { useAuth } from "@/hooks/useAuth";
-import  systemConfigurationService from "@/services/systemConfiguration.service";
+
+import systemConfigurationService from "@/services/systemConfiguration.service";
+
+import "./configurations.css";
 
 const PAGE_SIZE = 10;
 
-const getValue = (obj, keys, fallback = "—") => {
-  if (!obj) return fallback;
+/* =========================================================
+   SAFE HELPERS
+========================================================= */
+
+const getId = (item) => {
+  if (!item) return "";
+
+  if (typeof item === "string") {
+    return item;
+  }
+
+  return (
+    item?._id ||
+    item?.id ||
+    item?.configurationId ||
+    item?.configurationID ||
+    ""
+  );
+};
+
+/*
+ * Normal object -> readable text
+ *
+ * Backend se agar:
+ * customer: {
+ *   _id,
+ *   customerId,
+ *   name,
+ *   companyName,
+ *   mobile,
+ *   email,
+ *   status
+ * }
+ *
+ * aaye to React object ko directly render nahi karega.
+ */
+const displayValue = (
+  value,
+  fallback = "—"
+) => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return fallback;
+  }
+
+  if (
+    typeof value === "string" ||
+    typeof value === "number"
+  ) {
+    return String(value);
+  }
+
+  if (typeof value === "object") {
+    return (
+      value?.name ||
+      value?.fullName ||
+      value?.customerName ||
+      value?.companyName ||
+      value?.leadName ||
+      value?.configurationNumber ||
+      value?.configurationId ||
+      value?.customerId ||
+      value?.leadId ||
+      value?._id ||
+      fallback
+    );
+  }
+
+  return String(value);
+};
+
+const getValue = (
+  object,
+  keys,
+  fallback = "—"
+) => {
+  if (!object) {
+    return fallback;
+  }
 
   for (const key of keys) {
-    const value = obj?.[key];
+    const value = object?.[key];
 
     if (
       value !== undefined &&
@@ -32,77 +119,258 @@ const getValue = (obj, keys, fallback = "—") => {
   return fallback;
 };
 
-const getId = (item) =>
-  item?._id ||
-  item?.id ||
-  item?.configurationId ||
-  item?.configurationID;
-
-const normalizeList = (response) => {
-  if (Array.isArray(response)) return response;
-
-  if (Array.isArray(response?.data)) return response.data;
-  if (Array.isArray(response?.data?.data)) return response.data.data;
-  if (Array.isArray(response?.data?.configurations)) {
-    return response.data.configurations;
-  }
-  if (Array.isArray(response?.configurations)) {
-    return response.configurations;
-  }
-  if (Array.isArray(response?.results)) return response.results;
-
-  return [];
+const safeValue = (
+  object,
+  keys,
+  fallback = "—"
+) => {
+  return displayValue(
+    getValue(
+      object,
+      keys,
+      fallback
+    ),
+    fallback
+  );
 };
 
-const formatDate = (value) => {
-  if (!value) return "—";
+/* =========================================================
+   RESPONSE NORMALIZATION
+========================================================= */
 
-  const date = new Date(value);
+const normalizeList = (
+  response
+) => {
+  let list = [];
 
-  if (Number.isNaN(date.getTime())) return String(value);
+  if (Array.isArray(response)) {
+    list = response;
+  } else if (
+    Array.isArray(response?.data)
+  ) {
+    list = response.data;
+  } else if (
+    Array.isArray(
+      response?.data?.data
+    )
+  ) {
+    list =
+      response.data.data;
+  } else if (
+    Array.isArray(
+      response?.data?.configurations
+    )
+  ) {
+    list =
+      response.data.configurations;
+  } else if (
+    Array.isArray(
+      response?.configurations
+    )
+  ) {
+    list =
+      response.configurations;
+  } else if (
+    Array.isArray(
+      response?.results
+    )
+  ) {
+    list =
+      response.results;
+  } else if (
+    Array.isArray(
+      response?.data?.results
+    )
+  ) {
+    list =
+      response.data.results;
+  }
 
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return list;
 };
 
-const formatNumber = (value) => {
-  if (value === undefined || value === null || value === "") {
+/*
+ * Important:
+ * API object ko frontend ke render-safe object
+ * mein normalize kar rahe hain.
+ */
+const normalizeConfiguration = (
+  configuration
+) => {
+  if (
+    !configuration ||
+    typeof configuration !==
+      "object"
+  ) {
+    return configuration;
+  }
+
+  const customer =
+    configuration.customer;
+
+  const lead =
+    configuration.lead;
+
+  const systemType =
+    configuration.systemType;
+
+  const inverter =
+    configuration.inverter;
+
+  return {
+    ...configuration,
+
+    customerName: displayValue(
+      configuration.customerName ||
+        customer,
+      "—"
+    ),
+
+    leadName: displayValue(
+      configuration.leadName ||
+        lead,
+      ""
+    ),
+
+    systemType: displayValue(
+      systemType,
+      "—"
+    ),
+
+    inverterCapacity: displayValue(
+      configuration.inverterCapacity ||
+        configuration.inverterSize ||
+        inverter,
+      "—"
+    ),
+
+    configurationNumber:
+      displayValue(
+        configuration.configurationNumber ||
+          configuration.configurationNo ||
+          configuration.configNumber,
+        ""
+      ),
+
+    status: displayValue(
+      configuration.status,
+      "—"
+    ),
+  };
+};
+
+/* =========================================================
+   DATE
+========================================================= */
+
+const formatDate = (
+  value
+) => {
+  if (!value) {
     return "—";
   }
 
-  const number = Number(value);
-
-  if (Number.isNaN(number)) return String(value);
-
-  return number.toLocaleString("en-IN");
-};
-
-const getStatusVariant = (status) => {
-  const normalized = String(status || "").toUpperCase();
+  const date =
+    new Date(value);
 
   if (
-    normalized === "ACTIVE" ||
-    normalized === "COMPLETED" ||
-    normalized === "APPROVED"
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return displayValue(value);
+  }
+
+  return date.toLocaleDateString(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }
+  );
+};
+
+/* =========================================================
+   NUMBER
+========================================================= */
+
+const formatNumber = (
+  value
+) => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return "—";
+  }
+
+  if (
+    typeof value === "object"
+  ) {
+    return "—";
+  }
+
+  const number =
+    Number(value);
+
+  if (
+    Number.isNaN(number)
+  ) {
+    return displayValue(
+      value
+    );
+  }
+
+  return number.toLocaleString(
+    "en-IN"
+  );
+};
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+const getStatusVariant = (
+  status
+) => {
+  const normalized =
+    String(
+      status || ""
+    ).toUpperCase();
+
+  if (
+    normalized ===
+      "ACTIVE" ||
+    normalized ===
+      "COMPLETED" ||
+    normalized ===
+      "APPROVED" ||
+    normalized ===
+      "CONFIGURED"
   ) {
     return "success";
   }
 
   if (
-    normalized === "PENDING" ||
-    normalized === "IN_PROGRESS" ||
-    normalized === "DRAFT"
+    normalized ===
+      "PENDING" ||
+    normalized ===
+      "IN_PROGRESS" ||
+    normalized ===
+      "DRAFT"
   ) {
     return "warning";
   }
 
   if (
-    normalized === "CANCELLED" ||
-    normalized === "REJECTED" ||
-    normalized === "INACTIVE"
+    normalized ===
+      "CANCELLED" ||
+    normalized ===
+      "REJECTED" ||
+    normalized ===
+      "INACTIVE"
   ) {
     return "danger";
   }
@@ -110,517 +378,917 @@ const getStatusVariant = (status) => {
   return "default";
 };
 
-const SystemConfigurationsPage = () => {
-  const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+/* =========================================================
+   PAGE
+========================================================= */
 
-  const [configurations, setConfigurations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
+const SystemConfigurationsPage =
+  () => {
+    const router =
+      useRouter();
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [systemTypeFilter, setSystemTypeFilter] = useState("ALL");
-  const [currentPage, setCurrentPage] = useState(1);
+    const [
+      configurations,
+      setConfigurations,
+    ] = useState([]);
 
-  const [selectedConfiguration, setSelectedConfiguration] =
-    useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
+    const [
+      loading,
+      setLoading,
+    ] = useState(true);
 
-  const loadConfigurations = async (showRefresh = false) => {
-    try {
-      setError("");
+    const [
+      refreshing,
+      setRefreshing,
+    ] = useState(false);
 
-      if (showRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+    const [
+      error,
+      setError,
+    ] = useState("");
 
-      const response =
-        await systemConfigurationService.getSystemConfigurations();
+    const [
+      search,
+      setSearch,
+    ] = useState("");
 
-      setConfigurations(normalizeList(response));
-    } catch (err) {
-      console.error("Failed to load system configurations:", err);
+    const [
+      statusFilter,
+      setStatusFilter,
+    ] = useState("ALL");
 
-      setError(
-        err?.message ||
-          "System configurations load nahi ho paaye. Please try again."
-      );
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+    const [
+      systemTypeFilter,
+      setSystemTypeFilter,
+    ] = useState("ALL");
 
-  useEffect(() => {
-    if (!authLoading && user) {
+    const [
+      currentPage,
+      setCurrentPage,
+    ] = useState(1);
+
+    const [
+      selectedConfiguration,
+      setSelectedConfiguration,
+    ] = useState(null);
+
+    const [
+      modalOpen,
+      setModalOpen,
+    ] = useState(false);
+
+    /* =====================================================
+       LOAD
+    ===================================================== */
+
+    const loadConfigurations =
+      async (
+        showRefresh = false
+      ) => {
+        try {
+          setError("");
+
+          if (showRefresh) {
+            setRefreshing(true);
+          } else {
+            setLoading(true);
+          }
+
+          const response =
+            await systemConfigurationService.getSystemConfigurations();
+
+          const list =
+            normalizeList(
+              response
+            );
+
+          const normalized =
+            list.map(
+              normalizeConfiguration
+            );
+
+          setConfigurations(
+            normalized
+          );
+        } catch (err) {
+          console.error(
+            "System configuration load error:",
+            err
+          );
+
+          setConfigurations(
+            []
+          );
+
+          setError(
+            err?.response
+              ?.data?.message ||
+              err?.message ||
+              "System configurations load nahi ho paaye."
+          );
+        } finally {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      };
+
+    useEffect(() => {
       loadConfigurations();
-    }
-  }, [authLoading, user]);
+    }, []);
 
-  const systemTypes = useMemo(() => {
-    const values = configurations
-      .map((item) =>
-        getValue(
-          item,
-          ["systemType", "system_type", "type"],
-          ""
-        )
-      )
-      .filter(Boolean);
+    /* =====================================================
+       SYSTEM TYPES
+    ===================================================== */
 
-    return [...new Set(values.map((value) => String(value)))];
-  }, [configurations]);
+    const systemTypes =
+      useMemo(() => {
+        const values =
+          configurations
+            .map(
+              (item) =>
+                displayValue(
+                  item?.systemType,
+                  ""
+                )
+            )
+            .filter(Boolean);
 
-  const statuses = useMemo(() => {
-    const values = configurations
-      .map((item) => getValue(item, ["status"], ""))
-      .filter(Boolean);
+        return [
+          ...new Set(values),
+        ];
+      }, [
+        configurations,
+      ]);
 
-    return [...new Set(values.map((value) => String(value)))];
-  }, [configurations]);
+    /* =====================================================
+       STATUSES
+    ===================================================== */
 
-  const filteredConfigurations = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const statuses =
+      useMemo(() => {
+        const values =
+          configurations
+            .map(
+              (item) =>
+                displayValue(
+                  item?.status,
+                  ""
+                )
+            )
+            .filter(Boolean);
 
-    return configurations.filter((item) => {
-      const customerName = String(
-        getValue(
-          item,
-          ["customerName", "customer", "name"],
-          ""
-        )
-      ).toLowerCase();
+        return [
+          ...new Set(values),
+        ];
+      }, [
+        configurations,
+      ]);
 
-      const configurationNumber = String(
-        getValue(
-          item,
-          [
-            "configurationNumber",
-            "configurationNo",
-            "configNumber",
-            "number",
-          ],
-          ""
-        )
-      ).toLowerCase();
+    /* =====================================================
+       FILTER
+    ===================================================== */
 
-      const leadName = String(
-        getValue(
-          item,
-          ["leadName", "lead", "leadId"],
-          ""
-        )
-      ).toLowerCase();
+    const filteredConfigurations =
+      useMemo(() => {
+        const query =
+          search
+            .trim()
+            .toLowerCase();
 
-      const systemType = String(
-        getValue(
-          item,
-          ["systemType", "system_type", "type"],
-          ""
+        return configurations.filter(
+          (item) => {
+            const customerName =
+              displayValue(
+                item?.customerName,
+                ""
+              ).toLowerCase();
+
+            const configurationNumber =
+              displayValue(
+                item?.configurationNumber,
+                ""
+              ).toLowerCase();
+
+            const leadName =
+              displayValue(
+                item?.leadName,
+                ""
+              ).toLowerCase();
+
+            const systemType =
+              displayValue(
+                item?.systemType,
+                ""
+              ).toLowerCase();
+
+            const capacity =
+              displayValue(
+                getValue(
+                  item,
+                  [
+                    "systemSizeKW",
+                    "requiredKW",
+                    "capacityKW",
+                    "systemCapacity",
+                  ],
+                  ""
+                ),
+                ""
+              ).toLowerCase();
+
+            const searchableText =
+              [
+                customerName,
+                configurationNumber,
+                leadName,
+                systemType,
+                capacity,
+              ].join(" ");
+
+            const matchesSearch =
+              !query ||
+              searchableText.includes(
+                query
+              );
+
+            const status =
+              displayValue(
+                item?.status,
+                ""
+              );
+
+            const matchesStatus =
+              statusFilter ===
+                "ALL" ||
+              status.toUpperCase() ===
+                statusFilter.toUpperCase();
+
+            const matchesSystemType =
+              systemTypeFilter ===
+                "ALL" ||
+              systemType ===
+                systemTypeFilter.toLowerCase();
+
+            return (
+              matchesSearch &&
+              matchesStatus &&
+              matchesSystemType
+            );
+          }
+        );
+      }, [
+        configurations,
+        search,
+        statusFilter,
+        systemTypeFilter,
+      ]);
+
+    /* =====================================================
+       PAGINATION
+    ===================================================== */
+
+    const totalPages =
+      Math.max(
+        1,
+        Math.ceil(
+          filteredConfigurations.length /
+            PAGE_SIZE
         )
       );
 
-      const status = String(
-        getValue(item, ["status"], "")
+    const safeCurrentPage =
+      Math.min(
+        currentPage,
+        totalPages
       );
 
-      const searchableText = [
-        customerName,
-        configurationNumber,
-        leadName,
-        systemType.toLowerCase(),
-        String(
-          getValue(item, ["requiredKW", "systemSizeKW", "capacityKW"], "")
-        ).toLowerCase(),
-      ].join(" ");
+    const paginatedConfigurations =
+      useMemo(() => {
+        const start =
+          (safeCurrentPage -
+            1) *
+          PAGE_SIZE;
 
-      const matchesSearch =
-        !query || searchableText.includes(query);
+        return filteredConfigurations.slice(
+          start,
+          start +
+            PAGE_SIZE
+        );
+      }, [
+        filteredConfigurations,
+        safeCurrentPage,
+      ]);
 
-      const matchesStatus =
-        statusFilter === "ALL" ||
-        status.toUpperCase() === statusFilter.toUpperCase();
+    useEffect(() => {
+      setCurrentPage(1);
+    }, [
+      search,
+      statusFilter,
+      systemTypeFilter,
+    ]);
 
-      const matchesSystemType =
-        systemTypeFilter === "ALL" ||
-        systemType.toLowerCase() ===
-          systemTypeFilter.toLowerCase();
+    useEffect(() => {
+      if (
+        currentPage >
+        totalPages
+      ) {
+        setCurrentPage(
+          totalPages
+        );
+      }
+    }, [
+      currentPage,
+      totalPages,
+    ]);
 
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesSystemType
-      );
-    });
-  }, [
-    configurations,
-    search,
-    statusFilter,
-    systemTypeFilter,
-  ]);
+    /* =====================================================
+       STATS
+    ===================================================== */
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredConfigurations.length / PAGE_SIZE)
-  );
+    const stats =
+      useMemo(() => {
+        const total =
+          configurations.length;
 
-  const paginatedConfigurations = useMemo(() => {
-    const safePage = Math.min(currentPage, totalPages);
-    const start = (safePage - 1) * PAGE_SIZE;
+        const active =
+          configurations.filter(
+            (item) =>
+              displayValue(
+                item?.status,
+                ""
+              ).toUpperCase() ===
+              "ACTIVE"
+          ).length;
 
-    return filteredConfigurations.slice(
-      start,
-      start + PAGE_SIZE
-    );
-  }, [
-    filteredConfigurations,
-    currentPage,
-    totalPages,
-  ]);
+        const pending =
+          configurations.filter(
+            (item) => {
+              const status =
+                displayValue(
+                  item?.status,
+                  ""
+                ).toUpperCase();
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter, systemTypeFilter]);
+              return (
+                status ===
+                  "PENDING" ||
+                status ===
+                  "DRAFT" ||
+                status ===
+                  "IN_PROGRESS"
+              );
+            }
+          ).length;
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+        const totalCapacity =
+          configurations.reduce(
+            (
+              sum,
+              item
+            ) => {
+              const value =
+                Number(
+                  getValue(
+                    item,
+                    [
+                      "systemSizeKW",
+                      "requiredKW",
+                      "capacityKW",
+                      "systemCapacity",
+                    ],
+                    0
+                  )
+                );
 
-  const stats = useMemo(() => {
-    const total = configurations.length;
-
-    const active = configurations.filter(
-      (item) =>
-        String(getValue(item, ["status"], ""))
-          .toUpperCase() === "ACTIVE"
-    ).length;
-
-    const pending = configurations.filter((item) => {
-      const status = String(
-        getValue(item, ["status"], "")
-      ).toUpperCase();
-
-      return (
-        status === "PENDING" ||
-        status === "DRAFT" ||
-        status === "IN_PROGRESS"
-      );
-    }).length;
-
-    const totalCapacity = configurations.reduce(
-      (sum, item) => {
-        const value = Number(
-          getValue(
-            item,
-            [
-              "systemSizeKW",
-              "requiredKW",
-              "capacityKW",
-              "systemCapacity",
-            ],
+              return (
+                sum +
+                (Number.isNaN(
+                  value
+                )
+                  ? 0
+                  : value)
+              );
+            },
             0
-          )
+          );
+
+        return {
+          total,
+          active,
+          pending,
+          totalCapacity,
+        };
+      }, [
+        configurations,
+      ]);
+
+    /* =====================================================
+       ACTIONS
+    ===================================================== */
+
+    const handleCreate =
+      () => {
+        router.push(
+          "/admin/system-configurations/create"
+        );
+      };
+
+    const handleView =
+      (configuration) => {
+        const id =
+          getId(
+            configuration
+          );
+
+        if (id) {
+          router.push(
+            `/admin/system-configurations/${id}`
+          );
+          return;
+        }
+
+        setSelectedConfiguration(
+          configuration
         );
 
-        return sum + (Number.isNaN(value) ? 0 : value);
-      },
-      0
-    );
+        setModalOpen(true);
+      };
 
-    return {
-      total,
-      active,
-      pending,
-      totalCapacity,
-    };
-  }, [configurations]);
+    const closeModal =
+      () => {
+        setModalOpen(false);
+        setSelectedConfiguration(
+          null
+        );
+      };
 
-  const openDetails = (configuration) => {
-    setSelectedConfiguration(configuration);
-    setModalOpen(true);
-  };
+    /* =====================================================
+       LOADING
+    ===================================================== */
 
-  const closeDetails = () => {
-    setModalOpen(false);
-    setSelectedConfiguration(null);
-  };
-
-  const handleCreate = () => {
-    router.push("/admin/system-configurations/create");
-  };
-
-  if (authLoading || loading) {
-    return (
-      <AdminLayout>
+    if (loading) {
+      return (
         <div className="admin-configurations-loading">
           <Loader />
         </div>
-      </AdminLayout>
-    );
-  }
+      );
+    }
 
-  return (
-    <AdminLayout>
+    /* =====================================================
+       MAIN
+    ===================================================== */
+
+    return (
       <div className="admin-configurations-page">
-        {/* Header */}
+
+        {/* =================================================
+            HEADER
+        ================================================= */}
+
         <div className="admin-configurations-header">
+
           <div>
+
             <div className="admin-configurations-breadcrumb">
-              Admin <span>/</span> System Configurations
+              Admin{" "}
+              <span>/</span>{" "}
+              System Configurations
             </div>
 
             <div className="admin-configurations-title-row">
+
               <div className="admin-configurations-title-icon">
                 ☀
               </div>
 
               <div>
-                <h1>System Configurations</h1>
+
+                <h1>
+                  System Configurations
+                </h1>
+
                 <p>
-                  Solar systems ki configuration aur technical
-                  details manage karein.
+                  Solar systems ki
+                  configuration aur
+                  technical details
+                  manage karein.
                 </p>
+
               </div>
+
             </div>
+
           </div>
 
           <div className="admin-configurations-header-actions">
+
             <Button
               type="button"
               variant="secondary"
-              onClick={() => loadConfigurations(true)}
-              disabled={refreshing}
+              onClick={() =>
+                loadConfigurations(
+                  true
+                )
+              }
+              disabled={
+                refreshing
+              }
             >
-              {refreshing ? "Refreshing..." : "↻ Refresh"}
+              {refreshing
+                ? "Refreshing..."
+                : "↻ Refresh"}
             </Button>
 
             <Button
               type="button"
               variant="primary"
-              onClick={handleCreate}
+              onClick={
+                handleCreate
+              }
             >
               + New Configuration
             </Button>
+
           </div>
+
         </div>
 
-        {/* Stats */}
+        {/* =================================================
+            STATS
+        ================================================= */}
+
         <div className="admin-configurations-stats">
+
           <div className="admin-configuration-stat-card">
+
             <div className="admin-configuration-stat-icon">
               #
             </div>
+
             <div>
-              <span>Total Configurations</span>
-              <strong>{stats.total}</strong>
+
+              <span>
+                Total Configurations
+              </span>
+
+              <strong>
+                {stats.total}
+              </strong>
+
             </div>
+
           </div>
 
           <div className="admin-configuration-stat-card">
+
             <div className="admin-configuration-stat-icon active">
               ✓
             </div>
+
             <div>
-              <span>Active</span>
-              <strong>{stats.active}</strong>
+
+              <span>
+                Active
+              </span>
+
+              <strong>
+                {stats.active}
+              </strong>
+
             </div>
+
           </div>
 
           <div className="admin-configuration-stat-card">
+
             <div className="admin-configuration-stat-icon pending">
               ◷
             </div>
+
             <div>
-              <span>Pending / Draft</span>
-              <strong>{stats.pending}</strong>
+
+              <span>
+                Pending / Draft
+              </span>
+
+              <strong>
+                {stats.pending}
+              </strong>
+
             </div>
+
           </div>
 
           <div className="admin-configuration-stat-card">
+
             <div className="admin-configuration-stat-icon capacity">
               ⚡
             </div>
+
             <div>
-              <span>Total Capacity</span>
+
+              <span>
+                Total Capacity
+              </span>
+
               <strong>
-                {formatNumber(stats.totalCapacity)} kW
+                {formatNumber(
+                  stats.totalCapacity
+                )}{" "}
+                kW
               </strong>
+
             </div>
+
           </div>
+
         </div>
 
-        {/* Error */}
+        {/* =================================================
+            ERROR
+        ================================================= */}
+
         {error && (
           <div className="admin-configurations-error">
+
             <div>
-              <strong>Unable to load configurations</strong>
-              <p>{error}</p>
+
+              <strong>
+                Unable to load
+                configurations
+              </strong>
+
+              <p>
+                {error}
+              </p>
+
             </div>
 
             <Button
               type="button"
               variant="secondary"
-              onClick={() => loadConfigurations()}
+              onClick={() =>
+                loadConfigurations()
+              }
             >
               Try Again
             </Button>
+
           </div>
         )}
 
-        {/* Filters */}
+        {/* =================================================
+            FILTERS
+        ================================================= */}
+
         <div className="admin-configurations-toolbar">
+
           <div className="admin-configurations-search">
+
             <SearchBox
               value={search}
-              onChange={setSearch}
+              onChange={
+                setSearch
+              }
               placeholder="Search customer, configuration, lead..."
             />
+
           </div>
 
           <div className="admin-configurations-filters">
+
             <select
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value)
+              value={
+                statusFilter
+              }
+              onChange={(
+                event
+              ) =>
+                setStatusFilter(
+                  event.target
+                    .value
+                )
               }
               className="admin-configuration-filter"
             >
-              <option value="ALL">All Status</option>
 
-              {statuses.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
+              <option value="ALL">
+                All Status
+              </option>
+
+              {statuses.map(
+                (status) => (
+                  <option
+                    key={status}
+                    value={status}
+                  >
+                    {status}
+                  </option>
+                )
+              )}
+
             </select>
 
             <select
-              value={systemTypeFilter}
-              onChange={(e) =>
-                setSystemTypeFilter(e.target.value)
+              value={
+                systemTypeFilter
+              }
+              onChange={(
+                event
+              ) =>
+                setSystemTypeFilter(
+                  event.target
+                    .value
+                )
               }
               className="admin-configuration-filter"
             >
-              <option value="ALL">All System Types</option>
 
-              {systemTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
+              <option value="ALL">
+                All System Types
+              </option>
+
+              {systemTypes.map(
+                (type) => (
+                  <option
+                    key={type}
+                    value={type}
+                  >
+                    {type}
+                  </option>
+                )
+              )}
+
             </select>
+
           </div>
+
         </div>
 
-        {/* Table */}
+        {/* =================================================
+            TABLE
+        ================================================= */}
+
         <div className="admin-configurations-card">
+
           <div className="admin-configurations-card-header">
+
             <div>
-              <h2>Configuration Records</h2>
+
+              <h2>
+                Configuration Records
+              </h2>
+
               <p>
-                {filteredConfigurations.length} configuration
-                {filteredConfigurations.length !== 1 ? "s" : ""} found
+                {
+                  filteredConfigurations.length
+                }{" "}
+                configuration
+                {filteredConfigurations.length !==
+                1
+                  ? "s"
+                  : ""}{" "}
+                found
               </p>
+
             </div>
+
           </div>
 
-          {paginatedConfigurations.length === 0 ? (
+          {paginatedConfigurations.length ===
+          0 ? (
+
             <div className="admin-configurations-empty">
+
               <div className="admin-configurations-empty-icon">
                 ☀
               </div>
 
-              <h3>No configurations found</h3>
+              <h3>
+                No configurations
+                found
+              </h3>
 
               <p>
                 {search ||
-                statusFilter !== "ALL" ||
-                systemTypeFilter !== "ALL"
+                statusFilter !==
+                  "ALL" ||
+                systemTypeFilter !==
+                  "ALL"
                   ? "Aapke current filters ke according koi configuration nahi mili."
                   : "Abhi tak koi system configuration create nahi hui hai."}
               </p>
 
               {!search &&
-                statusFilter === "ALL" &&
-                systemTypeFilter === "ALL" && (
+                statusFilter ===
+                  "ALL" &&
+                systemTypeFilter ===
+                  "ALL" && (
                   <Button
                     type="button"
                     variant="primary"
-                    onClick={handleCreate}
+                    onClick={
+                      handleCreate
+                    }
                   >
                     Create Configuration
                   </Button>
                 )}
+
             </div>
+
           ) : (
+
             <>
+
               <div className="admin-configurations-table-wrapper">
+
                 <table className="admin-configurations-table">
+
                   <thead>
+
                     <tr>
-                      <th>Configuration</th>
-                      <th>Customer / Lead</th>
-                      <th>System Type</th>
-                      <th>Capacity</th>
-                      <th>Panels</th>
-                      <th>Inverter</th>
-                      <th>Status</th>
-                      <th>Created</th>
-                      <th>Action</th>
+
+                      <th>
+                        Configuration
+                      </th>
+
+                      <th>
+                        Customer / Lead
+                      </th>
+
+                      <th>
+                        System Type
+                      </th>
+
+                      <th>
+                        Capacity
+                      </th>
+
+                      <th>
+                        Panels
+                      </th>
+
+                      <th>
+                        Inverter
+                      </th>
+
+                      <th>
+                        Status
+                      </th>
+
+                      <th>
+                        Created
+                      </th>
+
+                      <th>
+                        Action
+                      </th>
+
                     </tr>
+
                   </thead>
 
                   <tbody>
+
                     {paginatedConfigurations.map(
-                      (configuration, index) => {
-                        const id = getId(configuration);
+                      (
+                        configuration,
+                        index
+                      ) => {
+
+                        const id =
+                          getId(
+                            configuration
+                          );
 
                         const configurationNumber =
-                          getValue(
-                            configuration,
-                            [
-                              "configurationNumber",
-                              "configurationNo",
-                              "configNumber",
-                              "number",
-                            ],
+                          displayValue(
+                            configuration?.configurationNumber,
                             `CONFIG-${String(
-                              index + 1
-                            ).padStart(3, "0")}`
+                              index +
+                                1
+                            ).padStart(
+                              3,
+                              "0"
+                            )}`
                           );
 
                         const customerName =
-                          getValue(
-                            configuration,
-                            [
-                              "customerName",
-                              "customer.name",
-                              "customer",
-                              "name",
-                            ],
+                          displayValue(
+                            configuration?.customerName,
                             "—"
                           );
 
-                        const leadName = getValue(
-                          configuration,
-                          ["leadName", "lead.name", "lead"],
-                          ""
-                        );
+                        const leadName =
+                          displayValue(
+                            configuration?.leadName,
+                            ""
+                          );
 
                         const systemType =
-                          getValue(
-                            configuration,
-                            [
-                              "systemType",
-                              "system_type",
-                              "type",
-                            ],
+                          displayValue(
+                            configuration?.systemType,
                             "—"
                           );
 
@@ -649,98 +1317,145 @@ const SystemConfigurationsPage = () => {
                           );
 
                         const inverter =
-                          getValue(
-                            configuration,
-                            [
-                              "inverterCapacity",
-                              "inverterSize",
-                              "inverter",
-                            ],
+                          displayValue(
+                            configuration?.inverterCapacity,
                             "—"
                           );
 
-                        const status = getValue(
-                          configuration,
-                          ["status"],
-                          "—"
-                        );
+                        const status =
+                          displayValue(
+                            configuration?.status,
+                            "—"
+                          );
 
                         return (
-                          <tr key={id || index}>
+                          <tr
+                            key={
+                              id ||
+                              `${configurationNumber}-${index}`
+                            }
+                          >
+
+                            {/* CONFIGURATION */}
+
                             <td>
+
                               <div className="admin-configuration-number">
+
                                 <span className="admin-configuration-mini-icon">
                                   ⚡
                                 </span>
+
                                 <div>
+
                                   <strong>
-                                    {configurationNumber}
+                                    {
+                                      configurationNumber
+                                    }
                                   </strong>
 
                                   <small>
-                                    {getValue(
-                                      configuration,
-                                      [
-                                        "configurationId",
-                                        "_id",
-                                        "id",
-                                      ],
+                                    {displayValue(
+                                      configuration?._id ||
+                                        configuration?.id,
                                       ""
                                     )}
                                   </small>
+
                                 </div>
+
                               </div>
+
                             </td>
 
+                            {/* CUSTOMER */}
+
                             <td>
+
                               <div className="admin-configuration-customer">
+
                                 <strong>
-                                  {customerName}
+                                  {
+                                    customerName
+                                  }
                                 </strong>
 
                                 {leadName && (
                                   <small>
-                                    Lead: {leadName}
+                                    Lead:{" "}
+                                    {
+                                      leadName
+                                    }
                                   </small>
                                 )}
+
                               </div>
+
                             </td>
 
+                            {/* SYSTEM */}
+
                             <td>
+
                               <span className="admin-system-type">
-                                {systemType}
+                                {
+                                  systemType
+                                }
                               </span>
+
                             </td>
 
+                            {/* CAPACITY */}
+
                             <td>
+
                               <strong>
-                                {capacity !== "—"
+                                {capacity !==
+                                "—"
                                   ? `${formatNumber(
                                       capacity
                                     )} kW`
                                   : "—"}
                               </strong>
+
                             </td>
 
-                            <td>
-                              {formatNumber(panels)}
-                            </td>
+                            {/* PANELS */}
 
                             <td>
-                              {inverter}
+                              {formatNumber(
+                                panels
+                              )}
                             </td>
 
+                            {/* INVERTER */}
+
                             <td>
+                              {
+                                inverter
+                              }
+                            </td>
+
+                            {/* STATUS */}
+
+                            <td>
+
                               <Badge
                                 variant={getStatusVariant(
                                   status
                                 )}
                               >
-                                {status}
+                                {
+                                  status
+                                }
                               </Badge>
+
                             </td>
 
+                            {/* CREATED */}
+
                             <td>
+
                               {formatDate(
                                 getValue(
                                   configuration,
@@ -751,175 +1466,241 @@ const SystemConfigurationsPage = () => {
                                   null
                                 )
                               )}
+
                             </td>
 
+                            {/* ACTION */}
+
                             <td>
+
                               <Button
                                 type="button"
                                 variant="secondary"
                                 size="small"
                                 onClick={() =>
-                                  id
-                                    ? router.push(
-                                        `/admin/system-configurations/${id}`
-                                      )
-                                    : openDetails(
-                                        configuration
-                                      )
+                                  handleView(
+                                    configuration
+                                  )
                                 }
                               >
                                 View
                               </Button>
+
                             </td>
+
                           </tr>
                         );
                       }
                     )}
+
                   </tbody>
+
                 </table>
+
               </div>
 
+              {/* PAGINATION */}
+
               <div className="admin-configurations-pagination">
+
                 <div className="admin-configurations-count">
+
                   Showing{" "}
-                  {filteredConfigurations.length === 0
+
+                  {filteredConfigurations.length ===
+                  0
                     ? 0
-                    : (currentPage - 1) *
+                    : (
+                        safeCurrentPage -
+                        1
+                      ) *
                         PAGE_SIZE +
-                      1}{" "}
-                  to{" "}
+                      1}
+
+                  {" "}to{" "}
+
                   {Math.min(
-                    currentPage * PAGE_SIZE,
+                    safeCurrentPage *
+                      PAGE_SIZE,
                     filteredConfigurations.length
-                  )}{" "}
-                  of {filteredConfigurations.length}
+                  )}
+
+                  {" "}of{" "}
+
+                  {
+                    filteredConfigurations.length
+                  }
+
                 </div>
 
                 <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
+                  currentPage={
+                    safeCurrentPage
+                  }
+                  totalPages={
+                    totalPages
+                  }
+                  onPageChange={
+                    setCurrentPage
+                  }
                 />
+
               </div>
+
             </>
+
           )}
+
         </div>
 
-        {/* Fallback Details Modal */}
+        {/* =================================================
+            FALLBACK MODAL
+        ================================================= */}
+
         <Modal
-          isOpen={modalOpen}
-          onClose={closeDetails}
+          isOpen={
+            modalOpen
+          }
+          onClose={
+            closeModal
+          }
           title="System Configuration Details"
         >
+
           {selectedConfiguration && (
+
             <div className="admin-configuration-modal-content">
+
               <div className="admin-configuration-modal-grid">
+
                 <div>
-                  <span>Configuration</span>
+
+                  <span>
+                    Configuration
+                  </span>
+
                   <strong>
-                    {getValue(
-                      selectedConfiguration,
-                      [
-                        "configurationNumber",
-                        "configurationNo",
-                        "configNumber",
-                      ]
-                    )}
+                    {
+                      displayValue(
+                        selectedConfiguration?.configurationNumber
+                      )
+                    }
                   </strong>
+
                 </div>
 
                 <div>
-                  <span>Status</span>
+
+                  <span>
+                    Customer
+                  </span>
+
                   <strong>
-                    {getValue(
-                      selectedConfiguration,
-                      ["status"]
-                    )}
+                    {
+                      displayValue(
+                        selectedConfiguration?.customerName
+                      )
+                    }
                   </strong>
+
                 </div>
 
                 <div>
-                  <span>Customer</span>
+
+                  <span>
+                    Lead
+                  </span>
+
                   <strong>
-                    {getValue(
-                      selectedConfiguration,
-                      ["customerName", "customer", "name"]
-                    )}
+                    {
+                      displayValue(
+                        selectedConfiguration?.leadName
+                      )
+                    }
                   </strong>
+
                 </div>
 
                 <div>
-                  <span>System Type</span>
+
+                  <span>
+                    System Type
+                  </span>
+
                   <strong>
-                    {getValue(
-                      selectedConfiguration,
-                      ["systemType", "type"]
-                    )}
+                    {
+                      displayValue(
+                        selectedConfiguration?.systemType
+                      )
+                    }
                   </strong>
+
                 </div>
 
                 <div>
-                  <span>System Capacity</span>
+
+                  <span>
+                    Capacity
+                  </span>
+
                   <strong>
-                    {getValue(
-                      selectedConfiguration,
-                      [
-                        "systemSizeKW",
-                        "requiredKW",
-                        "capacityKW",
-                      ]
+                    {formatNumber(
+                      getValue(
+                        selectedConfiguration,
+                        [
+                          "systemSizeKW",
+                          "requiredKW",
+                          "capacityKW",
+                          "systemCapacity",
+                        ],
+                        "—"
+                      )
                     )}{" "}
                     kW
                   </strong>
+
                 </div>
 
                 <div>
-                  <span>Panel Count</span>
+
+                  <span>
+                    Status
+                  </span>
+
                   <strong>
-                    {getValue(
-                      selectedConfiguration,
-                      [
-                        "panelCount",
-                        "numberOfPanels",
-                        "panelsCount",
-                      ]
-                    )}
+                    {
+                      displayValue(
+                        selectedConfiguration?.status
+                      )
+                    }
                   </strong>
+
                 </div>
 
                 <div>
-                  <span>Inverter</span>
-                  <strong>
-                    {getValue(
-                      selectedConfiguration,
-                      [
-                        "inverterCapacity",
-                        "inverterSize",
-                        "inverter",
-                      ]
-                    )}
-                  </strong>
-                </div>
 
-                <div>
-                  <span>Created</span>
+                  <span>
+                    Created
+                  </span>
+
                   <strong>
                     {formatDate(
-                      getValue(
-                        selectedConfiguration,
-                        ["createdAt"],
-                        null
-                      )
+                      selectedConfiguration?.createdAt
                     )}
                   </strong>
+
                 </div>
+
               </div>
+
             </div>
+
           )}
+
         </Modal>
+
       </div>
-    </AdminLayout>
-  );
-};
+    );
+  };
 
 export default SystemConfigurationsPage;

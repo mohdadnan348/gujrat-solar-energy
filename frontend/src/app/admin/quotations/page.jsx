@@ -16,15 +16,92 @@ import Loader from "@/components/common/Loader";
 import Modal from "@/components/common/Modal";
 
 import { quotationService } from "@/services/quotation.service";
-import { pdfService } from "@/services/pdf.service";
 
 import "./quotations.css";
 
 const PAGE_SIZE = 10;
 
-/* =========================================
-   HELPERS
-========================================= */
+/* =========================================================
+   SAFE HELPERS
+========================================================= */
+
+const getId = (item) => {
+  if (!item) return "";
+
+  if (typeof item === "string") {
+    return item;
+  }
+
+  return (
+    item?._id ||
+    item?.id ||
+    item?.quotationId ||
+    item?.quotationID ||
+    ""
+  );
+};
+
+const getObjectDisplayName = (
+  value,
+  fallback = "—"
+) => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return fallback;
+  }
+
+  if (
+    typeof value === "string" ||
+    typeof value === "number"
+  ) {
+    return String(value);
+  }
+
+  if (typeof value === "object") {
+    return (
+      value?.name ||
+      value?.fullName ||
+      value?.customerName ||
+      value?.companyName ||
+      value?.leadName ||
+      value?.leadId ||
+      value?.customerId ||
+      value?.quotationNumber ||
+      value?._id ||
+      fallback
+    );
+  }
+
+  return String(value);
+};
+
+const safeText = (
+  value,
+  fallback = "—"
+) => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return fallback;
+  }
+
+  if (
+    typeof value === "string" ||
+    typeof value === "number"
+  ) {
+    return String(value);
+  }
+
+  return getObjectDisplayName(
+    value,
+    fallback
+  );
+};
 
 const getValue = (
   obj,
@@ -50,78 +127,114 @@ const getValue = (
   return fallback;
 };
 
-const getId = (item) => {
-  if (!item) {
-    return "";
+/* =========================================================
+   NORMALIZE QUOTATION
+   IMPORTANT:
+   Customer object ko API response level par string bana raha hai.
+========================================================= */
+
+const normalizeQuotation = (
+  quotation
+) => {
+  if (
+    !quotation ||
+    typeof quotation !== "object"
+  ) {
+    return quotation;
   }
 
-  if (typeof item === "string") {
-    return item;
-  }
+  const customer =
+    quotation.customer;
 
-  return (
-    item?._id ||
-    item?.id ||
-    item?.quotationId ||
-    item?.quotationID ||
-    ""
-  );
+  const lead =
+    quotation.lead;
+
+  const customerName =
+    quotation.customerName ||
+    getObjectDisplayName(
+      customer,
+      ""
+    );
+
+  const leadName =
+    quotation.leadName ||
+    getObjectDisplayName(
+      lead,
+      ""
+    );
+
+  return {
+    ...quotation,
+
+    /*
+     * IMPORTANT:
+     * Customer object ko direct React child
+     * banne se rokne ke liye string.
+     */
+    customer:
+      typeof customer === "object"
+        ? customerName
+        : customer,
+
+    customerName,
+
+    lead:
+      typeof lead === "object"
+        ? leadName
+        : lead,
+
+    leadName,
+  };
 };
 
 const normalizeList = (
   response
 ) => {
-  if (Array.isArray(response)) {
-    return response;
-  }
+  let list = [];
 
-  if (
+  if (Array.isArray(response)) {
+    list = response;
+  } else if (
     Array.isArray(response?.data)
   ) {
-    return response.data;
-  }
-
-  if (
+    list = response.data;
+  } else if (
     Array.isArray(
       response?.data?.data
     )
   ) {
-    return response.data.data;
-  }
-
-  if (
+    list = response.data.data;
+  } else if (
     Array.isArray(
       response?.quotations
     )
   ) {
-    return response.quotations;
-  }
-
-  if (
+    list = response.quotations;
+  } else if (
     Array.isArray(
       response?.data?.quotations
     )
   ) {
-    return response.data.quotations;
-  }
-
-  if (
+    list =
+      response.data.quotations;
+  } else if (
     Array.isArray(
       response?.results
     )
   ) {
-    return response.results;
-  }
-
-  if (
+    list = response.results;
+  } else if (
     Array.isArray(
       response?.data?.results
     )
   ) {
-    return response.data.results;
+    list =
+      response.data.results;
   }
 
-  return [];
+  return list.map(
+    normalizeQuotation
+  );
 };
 
 const formatDate = (
@@ -139,7 +252,7 @@ const formatDate = (
       date.getTime()
     )
   ) {
-    return String(value);
+    return safeText(value);
   }
 
   return date.toLocaleDateString(
@@ -163,13 +276,19 @@ const formatCurrency = (
     return "₹0";
   }
 
+  if (
+    typeof value === "object"
+  ) {
+    return "₹0";
+  }
+
   const number =
     Number(value);
 
   if (
     Number.isNaN(number)
   ) {
-    return String(value);
+    return "₹0";
   }
 
   return `₹${number.toLocaleString(
@@ -215,40 +334,9 @@ const getStatusVariant = (
   return "default";
 };
 
-const getNestedName = (
-  value
-) => {
-  if (!value) {
-    return "—";
-  }
-
-  if (
-    typeof value === "string"
-  ) {
-    return value;
-  }
-
-  if (
-    typeof value === "object"
-  ) {
-    return (
-      value?.name ||
-      value?.fullName ||
-      value?.customerName ||
-      value?.companyName ||
-      value?.leadId ||
-      value?.customerId ||
-      value?._id ||
-      "—"
-    );
-  }
-
-  return String(value);
-};
-
-/* =========================================
+/* =========================================================
    PAGE
-========================================= */
+========================================================= */
 
 const QuotationsPage = () => {
   const router =
@@ -304,78 +392,87 @@ const QuotationsPage = () => {
     setPdfLoadingId,
   ] = useState(null);
 
-  /* =========================================
-     LOAD QUOTATIONS
-  ========================================= */
+  /* =======================================================
+     LOAD
+  ======================================================= */
 
-  const loadQuotations = async (
-    showRefresh = false
-  ) => {
-    try {
-      setError("");
+  const loadQuotations =
+    async (
+      showRefresh = false
+    ) => {
+      try {
+        setError("");
 
-      if (showRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
+        if (showRefresh) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+
+        const response =
+          await quotationService.getQuotations();
+
+        const list =
+          normalizeList(
+            response
+          );
+
+        setQuotations(
+          Array.isArray(list)
+            ? list
+            : []
+        );
+      } catch (err) {
+        console.error(
+          "Failed to load quotations:",
+          err
+        );
+
+        setQuotations([]);
+
+        setError(
+          err?.response?.data
+            ?.message ||
+            err?.response?.data
+              ?.error ||
+            err?.message ||
+            "Quotations load nahi ho paayi. Please try again."
+        );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-
-      const response =
-        await quotationService.getQuotations();
-
-      setQuotations(
-        normalizeList(response)
-      );
-    } catch (err) {
-      console.error(
-        "Failed to load quotations:",
-        err
-      );
-
-      setError(
-        err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          err?.message ||
-          "Quotations load nahi ho paayi. Please try again."
-      );
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+    };
 
   useEffect(() => {
     loadQuotations();
   }, []);
 
-  /* =========================================
-     STATUS OPTIONS
-  ========================================= */
+  /* =======================================================
+     STATUS
+  ======================================================= */
 
-  const statuses = useMemo(() => {
-    const values =
-      quotations
-        .map((quotation) =>
-          getValue(
-            quotation,
-            ["status"],
-            ""
+  const statuses =
+    useMemo(() => {
+      const values =
+        quotations
+          .map(
+            (quotation) =>
+              safeText(
+                quotation?.status,
+                ""
+              )
           )
-        )
-        .filter(Boolean);
+          .filter(Boolean);
 
-    return [
-      ...new Set(
-        values.map((value) =>
-          String(value)
-        )
-      ),
-    ];
-  }, [quotations]);
+      return [
+        ...new Set(values),
+      ];
+    }, [quotations]);
 
-  /* =========================================
+  /* =======================================================
      FILTER
-  ========================================= */
+  ======================================================= */
 
   const filteredQuotations =
     useMemo(() => {
@@ -387,7 +484,7 @@ const QuotationsPage = () => {
       return quotations.filter(
         (quotation) => {
           const quotationNumber =
-            String(
+            safeText(
               getValue(
                 quotation,
                 [
@@ -397,51 +494,47 @@ const QuotationsPage = () => {
                   "number",
                 ],
                 ""
-              )
+              ),
+              ""
             ).toLowerCase();
 
           const customer =
-            String(
-              getNestedName(
-                getValue(
-                  quotation,
-                  [
-                    "customerName",
-                    "customer",
-                    "customerId",
-                    "name",
-                  ],
-                  null
-                )
-              )
+            safeText(
+              getValue(
+                quotation,
+                [
+                  "customerName",
+                  "customer",
+                  "customerId",
+                  "name",
+                ],
+                ""
+              ),
+              ""
             ).toLowerCase();
 
           const lead =
-            String(
-              getNestedName(
-                getValue(
-                  quotation,
-                  [
-                    "leadName",
-                    "lead",
-                    "leadId",
-                  ],
-                  null
-                )
-              )
+            safeText(
+              getValue(
+                quotation,
+                [
+                  "leadName",
+                  "lead",
+                  "leadId",
+                ],
+                ""
+              ),
+              ""
             ).toLowerCase();
 
           const status =
-            String(
-              getValue(
-                quotation,
-                ["status"],
-                ""
-              )
+            safeText(
+              quotation?.status,
+              ""
             );
 
           const amount =
-            String(
+            safeText(
               getValue(
                 quotation,
                 [
@@ -451,17 +544,17 @@ const QuotationsPage = () => {
                   "netAmount",
                 ],
                 ""
-              )
+              ),
+              ""
             ).toLowerCase();
 
-          const searchableText =
-            [
-              quotationNumber,
-              customer,
-              lead,
-              status.toLowerCase(),
-              amount,
-            ].join(" ");
+          const searchableText = [
+            quotationNumber,
+            customer,
+            lead,
+            status.toLowerCase(),
+            amount,
+          ].join(" ");
 
           const matchesSearch =
             !query ||
@@ -487,9 +580,9 @@ const QuotationsPage = () => {
       statusFilter,
     ]);
 
-  /* =========================================
+  /* =======================================================
      PAGINATION
-  ========================================= */
+  ======================================================= */
 
   const totalPages =
     Math.max(
@@ -500,16 +593,16 @@ const QuotationsPage = () => {
       )
     );
 
+  const safeCurrentPage =
+    Math.min(
+      currentPage,
+      totalPages
+    );
+
   const paginatedQuotations =
     useMemo(() => {
-      const safePage =
-        Math.min(
-          currentPage,
-          totalPages
-        );
-
       const start =
-        (safePage - 1) *
+        (safeCurrentPage - 1) *
         PAGE_SIZE;
 
       return filteredQuotations.slice(
@@ -518,8 +611,7 @@ const QuotationsPage = () => {
       );
     }, [
       filteredQuotations,
-      currentPage,
-      totalPages,
+      safeCurrentPage,
     ]);
 
   useEffect(() => {
@@ -543,69 +635,60 @@ const QuotationsPage = () => {
     totalPages,
   ]);
 
-  /* =========================================
+  /* =======================================================
      STATS
-  ========================================= */
+  ======================================================= */
 
-  const stats = useMemo(() => {
-    const total =
-      quotations.length;
+  const stats =
+    useMemo(() => {
+      const total =
+        quotations.length;
 
-    const draft =
-      quotations.filter(
-        (quotation) =>
-          String(
-            getValue(
-              quotation,
-              ["status"],
+      const draft =
+        quotations.filter(
+          (quotation) =>
+            safeText(
+              quotation?.status,
               ""
-            )
-          ).toUpperCase() ===
-          "DRAFT"
-      ).length;
+            ).toUpperCase() ===
+            "DRAFT"
+        ).length;
 
-    const sent =
-      quotations.filter(
-        (quotation) =>
-          String(
-            getValue(
-              quotation,
-              ["status"],
+      const sent =
+        quotations.filter(
+          (quotation) =>
+            safeText(
+              quotation?.status,
               ""
-            )
-          ).toUpperCase() ===
-          "SENT"
-      ).length;
+            ).toUpperCase() ===
+            "SENT"
+        ).length;
 
-    const accepted =
-      quotations.filter(
-        (quotation) => {
-          const status =
-            String(
-              getValue(
-                quotation,
-                ["status"],
+      const accepted =
+        quotations.filter(
+          (quotation) => {
+            const status =
+              safeText(
+                quotation?.status,
                 ""
-              )
-            ).toUpperCase();
+              ).toUpperCase();
 
-          return (
-            status ===
-              "ACCEPTED" ||
-            status ===
-              "APPROVED"
-          );
-        }
-      ).length;
+            return (
+              status ===
+                "ACCEPTED" ||
+              status ===
+                "APPROVED"
+            );
+          }
+        ).length;
 
-    const totalValue =
-      quotations.reduce(
-        (
-          sum,
-          quotation
-        ) => {
-          const amount =
-            Number(
+      const totalValue =
+        quotations.reduce(
+          (
+            sum,
+            quotation
+          ) => {
+            const raw =
               getValue(
                 quotation,
                 [
@@ -615,68 +698,85 @@ const QuotationsPage = () => {
                   "total",
                 ],
                 0
-              )
-            );
+              );
 
-          return (
-            sum +
-            (Number.isNaN(
-              amount
-            )
-              ? 0
-              : amount)
-          );
-        },
-        0
+            if (
+              typeof raw ===
+              "object"
+            ) {
+              return sum;
+            }
+
+            const amount =
+              Number(raw);
+
+            return (
+              sum +
+              (Number.isNaN(
+                amount
+              )
+                ? 0
+                : amount)
+            );
+          },
+          0
+        );
+
+      return {
+        total,
+        draft,
+        sent,
+        accepted,
+        totalValue,
+      };
+    }, [quotations]);
+
+  /* =======================================================
+     ACTIONS
+  ======================================================= */
+
+  const handleCreate =
+    () => {
+      router.push(
+        "/admin/quotations/create"
+      );
+    };
+
+  const handleView =
+    (quotation) => {
+      const id =
+        getId(quotation);
+
+      if (!id) {
+        setSelectedQuotation(
+          quotation
+        );
+        setModalOpen(true);
+        return;
+      }
+
+      router.push(
+        `/admin/quotations/${id}`
+      );
+    };
+
+  const closeDetails =
+    () => {
+      setSelectedQuotation(
+        null
       );
 
-    return {
-      total,
-      draft,
-      sent,
-      accepted,
-      totalValue,
+      setModalOpen(false);
     };
-  }, [quotations]);
 
-  /* =========================================
-     DETAILS
-  ========================================= */
-
-  const openDetails = (
-    quotation
-  ) => {
-    setSelectedQuotation(
-      quotation
-    );
-
-    setModalOpen(true);
-  };
-
-  const closeDetails = () => {
-    setSelectedQuotation(
-      null
-    );
-
-    setModalOpen(false);
-  };
-
-  /* =========================================
-     CREATE
-  ========================================= */
-
-  const handleCreate = () => {
-    router.push(
-      "/admin/quotations/create"
-    );
-  };
-
-  /* =========================================
+  /* =======================================================
      PDF
-  ========================================= */
+  ======================================================= */
 
   const handleDownloadPdf =
-    async (quotation) => {
+    async (
+      quotation
+    ) => {
       const id =
         getId(quotation);
 
@@ -688,16 +788,28 @@ const QuotationsPage = () => {
         setPdfLoadingId(id);
 
         const response =
-          await pdfService.downloadQuotationPDF(
+          await quotationService.getQuotationPdf(
             id
           );
+
+        let blob = null;
 
         if (
           response instanceof Blob
         ) {
+          blob = response;
+        } else if (
+          response?.data instanceof
+          Blob
+        ) {
+          blob =
+            response.data;
+        }
+
+        if (blob) {
           const url =
             window.URL.createObjectURL(
-              response
+              blob
             );
 
           const anchor =
@@ -707,15 +819,22 @@ const QuotationsPage = () => {
 
           anchor.href = url;
 
-          anchor.download = `${getValue(
-            quotation,
-            [
-              "quotationNumber",
-              "quotationNo",
-              "quoteNumber",
-            ],
-            `quotation-${id}`
-          )}.pdf`;
+          const number =
+            safeText(
+              getValue(
+                quotation,
+                [
+                  "quotationNumber",
+                  "quotationNo",
+                  "quoteNumber",
+                ],
+                `quotation-${id}`
+              ),
+              `quotation-${id}`
+            );
+
+          anchor.download =
+            `${number}.pdf`;
 
           document.body.appendChild(
             anchor
@@ -728,23 +847,27 @@ const QuotationsPage = () => {
           window.URL.revokeObjectURL(
             url
           );
-        } else if (
-          response?.url ||
-          response?.data?.url
-        ) {
-          const url =
-            response?.url ||
-            response?.data?.url;
 
+          return;
+        }
+
+        const url =
+          response?.url ||
+          response?.data?.url;
+
+        if (url) {
           window.open(
             url,
-            "_blank"
+            "_blank",
+            "noopener,noreferrer"
           );
-        } else {
-          router.push(
-            `/admin/quotations/${id}`
-          );
+
+          return;
         }
+
+        router.push(
+          `/admin/quotations/${id}`
+        );
       } catch (err) {
         console.error(
           "Failed to download quotation PDF:",
@@ -755,13 +878,15 @@ const QuotationsPage = () => {
           `/admin/quotations/${id}`
         );
       } finally {
-        setPdfLoadingId(null);
+        setPdfLoadingId(
+          null
+        );
       }
     };
 
-  /* =========================================
+  /* =======================================================
      LOADING
-  ========================================= */
+  ======================================================= */
 
   if (loading) {
     return (
@@ -771,16 +896,19 @@ const QuotationsPage = () => {
     );
   }
 
-  /* =========================================
+  /* =======================================================
      UI
-  ========================================= */
+  ======================================================= */
 
   return (
     <div className="admin-quotations-page">
-      {/* Header */}
+
+      {/* HEADER */}
 
       <div className="admin-quotations-header">
+
         <div>
+
           <div className="admin-quotations-breadcrumb">
             Admin{" "}
             <span>/</span>{" "}
@@ -788,11 +916,13 @@ const QuotationsPage = () => {
           </div>
 
           <div className="admin-quotations-title-row">
+
             <div className="admin-quotations-title-icon">
               ₹
             </div>
 
             <div>
+
               <h1>
                 Quotations
               </h1>
@@ -801,18 +931,26 @@ const QuotationsPage = () => {
                 Solar proposals aur
                 quotations manage karein.
               </p>
+
             </div>
+
           </div>
+
         </div>
 
         <div className="admin-quotations-header-actions">
+
           <Button
             type="button"
             variant="secondary"
             onClick={() =>
-              loadQuotations(true)
+              loadQuotations(
+                true
+              )
             }
-            disabled={refreshing}
+            disabled={
+              refreshing
+            }
           >
             {refreshing
               ? "Refreshing..."
@@ -828,13 +966,17 @@ const QuotationsPage = () => {
           >
             + New Quotation
           </Button>
+
         </div>
+
       </div>
 
-      {/* Stats */}
+      {/* STATS */}
 
       <div className="admin-quotations-stats">
+
         <div className="admin-quotation-stat-card">
+
           <div className="admin-quotation-stat-icon">
             #
           </div>
@@ -848,9 +990,11 @@ const QuotationsPage = () => {
               {stats.total}
             </strong>
           </div>
+
         </div>
 
         <div className="admin-quotation-stat-card">
+
           <div className="admin-quotation-stat-icon draft">
             ◷
           </div>
@@ -864,9 +1008,11 @@ const QuotationsPage = () => {
               {stats.draft}
             </strong>
           </div>
+
         </div>
 
         <div className="admin-quotation-stat-card">
+
           <div className="admin-quotation-stat-icon sent">
             ↑
           </div>
@@ -880,9 +1026,11 @@ const QuotationsPage = () => {
               {stats.sent}
             </strong>
           </div>
+
         </div>
 
         <div className="admin-quotation-stat-card">
+
           <div className="admin-quotation-stat-icon accepted">
             ✓
           </div>
@@ -896,9 +1044,11 @@ const QuotationsPage = () => {
               {stats.accepted}
             </strong>
           </div>
+
         </div>
 
         <div className="admin-quotation-stat-card admin-quotation-value-card">
+
           <div className="admin-quotation-stat-icon value">
             ₹
           </div>
@@ -914,14 +1064,18 @@ const QuotationsPage = () => {
               )}
             </strong>
           </div>
+
         </div>
+
       </div>
 
-      {/* Error */}
+      {/* ERROR */}
 
       {error && (
         <div className="admin-quotations-error">
+
           <div>
+
             <strong>
               Unable to load quotations
             </strong>
@@ -929,6 +1083,7 @@ const QuotationsPage = () => {
             <p>
               {error}
             </p>
+
           </div>
 
           <Button
@@ -940,32 +1095,40 @@ const QuotationsPage = () => {
           >
             Try Again
           </Button>
+
         </div>
       )}
 
-      {/* Filters */}
+      {/* FILTERS */}
 
       <div className="admin-quotations-toolbar">
+
         <div className="admin-quotations-search">
+
           <SearchBox
             value={search}
-            onChange={setSearch}
+            onChange={
+              setSearch
+            }
             placeholder="Search quotation, customer, lead..."
           />
+
         </div>
 
         <div className="admin-quotations-filters">
+
           <select
             className="admin-quotation-filter"
             value={
               statusFilter
             }
-            onChange={(e) =>
+            onChange={(event) =>
               setStatusFilter(
-                e.target.value
+                event.target.value
               )
             }
           >
+
             <option value="ALL">
               All Status
             </option>
@@ -980,15 +1143,21 @@ const QuotationsPage = () => {
                 </option>
               )
             )}
+
           </select>
+
         </div>
+
       </div>
 
-      {/* Table */}
+      {/* TABLE */}
 
       <div className="admin-quotations-card">
+
         <div className="admin-quotations-card-header">
+
           <div>
+
             <h2>
               Quotation Records
             </h2>
@@ -1004,12 +1173,16 @@ const QuotationsPage = () => {
                 : ""}{" "}
               found
             </p>
+
           </div>
+
         </div>
 
         {paginatedQuotations.length ===
         0 ? (
+
           <div className="admin-quotations-empty">
+
             <div className="admin-quotations-empty-icon">
               ₹
             </div>
@@ -1039,13 +1212,21 @@ const QuotationsPage = () => {
                   Create Quotation
                 </Button>
               )}
+
           </div>
+
         ) : (
+
           <>
+
             <div className="admin-quotations-table-wrapper">
+
               <table className="admin-quotations-table">
+
                 <thead>
+
                   <tr>
+
                     <th>
                       Quotation
                     </th>
@@ -1077,29 +1258,41 @@ const QuotationsPage = () => {
                     <th>
                       Actions
                     </th>
+
                   </tr>
+
                 </thead>
 
                 <tbody>
+
                   {paginatedQuotations.map(
                     (
                       quotation,
                       index
                     ) => {
+
                       const id =
                         getId(
                           quotation
                         );
 
                       const number =
-                        getValue(
-                          quotation,
-                          [
-                            "quotationNumber",
-                            "quotationNo",
-                            "quoteNumber",
-                            "number",
-                          ],
+                        safeText(
+                          getValue(
+                            quotation,
+                            [
+                              "quotationNumber",
+                              "quotationNo",
+                              "quoteNumber",
+                              "number",
+                            ],
+                            `QUO-${String(
+                              index + 1
+                            ).padStart(
+                              4,
+                              "0"
+                            )}`
+                          ),
                           `QUO-${String(
                             index + 1
                           ).padStart(
@@ -1108,54 +1301,47 @@ const QuotationsPage = () => {
                           )}`
                         );
 
+                      /*
+                       * Ab customer already normalized
+                       * string hai.
+                       */
                       const customer =
-                        getNestedName(
-                          getValue(
-                            quotation,
-                            [
-                              "customerName",
-                              "customer",
-                              "customerId",
-                              "name",
-                            ],
-                            null
-                          )
+                        safeText(
+                          quotation.customer
                         );
 
                       const lead =
-                        getNestedName(
-                          getValue(
-                            quotation,
-                            [
-                              "leadName",
-                              "lead",
-                              "leadId",
-                            ],
-                            null
-                          )
+                        safeText(
+                          quotation.lead
                         );
 
                       const systemSize =
-                        getValue(
-                          quotation,
-                          [
-                            "systemSizeKW",
-                            "requiredKW",
-                            "requiredKw",
-                            "capacityKW",
-                            "systemCapacity",
-                          ],
+                        safeText(
+                          getValue(
+                            quotation,
+                            [
+                              "systemSizeKW",
+                              "requiredKW",
+                              "requiredKw",
+                              "capacityKW",
+                              "systemCapacity",
+                            ],
+                            ""
+                          ),
                           ""
                         );
 
                       const systemType =
-                        getValue(
-                          quotation,
-                          [
-                            "systemType",
-                            "system_type",
-                            "type",
-                          ],
+                        safeText(
+                          getValue(
+                            quotation,
+                            [
+                              "systemType",
+                              "system_type",
+                              "type",
+                            ],
+                            ""
+                          ),
                           ""
                         );
 
@@ -1172,28 +1358,30 @@ const QuotationsPage = () => {
                         );
 
                       const status =
-                        getValue(
-                          quotation,
-                          [
-                            "status",
-                          ],
+                        safeText(
+                          quotation?.status,
                           "—"
                         );
 
                       return (
+
                         <tr
                           key={
                             id ||
-                            index
+                            `quotation-${index}`
                           }
                         >
+
                           <td>
+
                             <div className="admin-quotation-number">
+
                               <span className="admin-quotation-mini-icon">
                                 ₹
                               </span>
 
                               <div>
+
                                 <strong>
                                   {number}
                                 </strong>
@@ -1202,12 +1390,17 @@ const QuotationsPage = () => {
                                   {id ||
                                     ""}
                                 </small>
+
                               </div>
+
                             </div>
+
                           </td>
 
                           <td>
+
                             <div className="admin-quotation-customer">
+
                               <strong>
                                 {customer}
                               </strong>
@@ -1218,15 +1411,17 @@ const QuotationsPage = () => {
                                   ? `Lead: ${lead}`
                                   : ""}
                               </small>
+
                             </div>
+
                           </td>
 
                           <td>
+
                             <div className="admin-quotation-system">
+
                               <strong>
-                                {systemSize &&
-                                systemSize !==
-                                  "—"
+                                {systemSize
                                   ? `${systemSize} kW`
                                   : "—"}
                               </strong>
@@ -1235,18 +1430,23 @@ const QuotationsPage = () => {
                                 {systemType ||
                                   "—"}
                               </small>
+
                             </div>
+
                           </td>
 
                           <td>
+
                             <strong className="admin-quotation-amount">
                               {formatCurrency(
                                 amount
                               )}
                             </strong>
+
                           </td>
 
                           <td>
+
                             {formatDate(
                               getValue(
                                 quotation,
@@ -1258,21 +1458,23 @@ const QuotationsPage = () => {
                                 null
                               )
                             )}
+
                           </td>
 
                           <td>
+
                             <Badge
                               variant={getStatusVariant(
                                 status
                               )}
                             >
-                              {String(
-                                status
-                              )}
+                              {status}
                             </Badge>
+
                           </td>
 
                           <td>
+
                             {formatDate(
                               getValue(
                                 quotation,
@@ -1283,22 +1485,21 @@ const QuotationsPage = () => {
                                 null
                               )
                             )}
+
                           </td>
 
                           <td>
+
                             <div className="admin-quotation-actions">
+
                               <Button
                                 type="button"
                                 variant="secondary"
                                 size="small"
                                 onClick={() =>
-                                  id
-                                    ? router.push(
-                                        `/admin/quotations/${id}`
-                                      )
-                                    : openDetails(
-                                        quotation
-                                      )
+                                  handleView(
+                                    quotation
+                                  )
                                 }
                               >
                                 View
@@ -1325,41 +1526,56 @@ const QuotationsPage = () => {
                                     : "PDF"}
                                 </Button>
                               )}
+
                             </div>
+
                           </td>
+
                         </tr>
+
                       );
                     }
                   )}
+
                 </tbody>
+
               </table>
+
             </div>
 
             <div className="admin-quotations-pagination">
+
               <div className="admin-quotations-count">
+
                 Showing{" "}
+
                 {filteredQuotations.length ===
                 0
                   ? 0
-                  : (currentPage -
+                  : (safeCurrentPage -
                       1) *
                       PAGE_SIZE +
-                    1}{" "}
-                to{" "}
+                    1}
+
+                {" "}to{" "}
+
                 {Math.min(
-                  currentPage *
+                  safeCurrentPage *
                     PAGE_SIZE,
                   filteredQuotations.length
-                )}{" "}
-                of{" "}
+                )}
+
+                {" "}of{" "}
+
                 {
                   filteredQuotations.length
                 }
+
               </div>
 
               <Pagination
                 currentPage={
-                  currentPage
+                  safeCurrentPage
                 }
                 totalPages={
                   totalPages
@@ -1368,94 +1584,102 @@ const QuotationsPage = () => {
                   setCurrentPage
                 }
               />
+
             </div>
+
           </>
+
         )}
+
       </div>
 
-      {/* Details Modal */}
+      {/* DETAILS MODAL */}
 
       <Modal
-        isOpen={modalOpen}
+        isOpen={
+          modalOpen
+        }
         onClose={
           closeDetails
         }
         title="Quotation Details"
       >
+
         {selectedQuotation && (
+
           <div className="admin-quotation-modal-content">
+
             <div className="admin-quotation-modal-grid">
+
               <div>
+
                 <span>
                   Quotation Number
                 </span>
 
                 <strong>
-                  {getValue(
-                    selectedQuotation,
-                    [
-                      "quotationNumber",
-                      "quotationNo",
-                      "quoteNumber",
-                    ]
+                  {safeText(
+                    selectedQuotation.quotationNumber ||
+                      selectedQuotation.quotationNo
                   )}
                 </strong>
+
               </div>
 
               <div>
+
                 <span>
                   Status
                 </span>
 
                 <strong>
-                  {getValue(
-                    selectedQuotation,
-                    ["status"]
+                  {safeText(
+                    selectedQuotation.status
                   )}
                 </strong>
+
               </div>
 
               <div>
+
                 <span>
                   Customer
                 </span>
 
                 <strong>
-                  {getNestedName(
-                    getValue(
-                      selectedQuotation,
-                      [
-                        "customerName",
-                        "customer",
-                        "name",
-                      ],
-                      null
-                    )
+                  {safeText(
+                    selectedQuotation.customer
                   )}
                 </strong>
+
               </div>
 
               <div>
+
                 <span>
                   System Size
                 </span>
 
                 <strong>
-                  {getValue(
-                    selectedQuotation,
-                    [
-                      "systemSizeKW",
-                      "requiredKW",
-                      "requiredKw",
-                      "capacityKW",
-                    ],
-                    "—"
+                  {safeText(
+                    getValue(
+                      selectedQuotation,
+                      [
+                        "systemSizeKW",
+                        "requiredKW",
+                        "requiredKw",
+                        "capacityKW",
+                      ],
+                      "—"
+                    )
                   )}{" "}
                   kW
                 </strong>
+
               </div>
 
               <div>
+
                 <span>
                   Total Amount
                 </span>
@@ -1474,9 +1698,11 @@ const QuotationsPage = () => {
                     )
                   )}
                 </strong>
+
               </div>
 
               <div>
+
                 <span>
                   Valid Until
                 </span>
@@ -1494,11 +1720,17 @@ const QuotationsPage = () => {
                     )
                   )}
                 </strong>
+
               </div>
+
             </div>
+
           </div>
+
         )}
+
       </Modal>
+
     </div>
   );
 };

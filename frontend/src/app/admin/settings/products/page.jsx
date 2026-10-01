@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import AdminLayout from "@/app/admin/layout";
+
 import settingService from "@/services/setting.service";
 import productService from "@/services/setting.service";
 import Button from "@/components/common/Button";
@@ -393,18 +393,10 @@ const ProductSettingsPage = () => {
     setSearch(value);
   };
 
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="product-settings-loading">
-          <Loader />
-        </div>
-      </AdminLayout>
-    );
-  }
+
 
   return (
-    <AdminLayout>
+  
       <div className="product-settings-page">
         <div className="product-settings-header">
           <div>
@@ -835,7 +827,7 @@ const ProductSettingsPage = () => {
           </Modal>
         )}
       </div>
-    </AdminLayout>
+   
   );
 };
 

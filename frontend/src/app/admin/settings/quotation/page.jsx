@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import AdminLayout from "@/app/admin/layout";
+
 import settingService from "@/services/setting.service";
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
@@ -169,18 +169,9 @@ const QuotationSettingsPage = () => {
     setSuccess("");
   };
 
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="quotation-settings-loading">
-          <Loader />
-        </div>
-      </AdminLayout>
-    );
-  }
 
   return (
-    <AdminLayout>
+   
       <div className="quotation-settings-page">
         <div className="quotation-settings-header">
           <div>
@@ -482,7 +473,7 @@ const QuotationSettingsPage = () => {
           </div>
         </form>
       </div>
-    </AdminLayout>
+    
   );
 };
 

@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-import AdminLayout from "../../layout";
+
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import Loader from "@/components/common/Loader";
@@ -574,23 +574,11 @@ const InvoiceDetailsPage = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="admin-invoice-details-loading">
-          <Loader />
 
-          <p>
-            Loading invoice details...
-          </p>
-        </div>
-      </AdminLayout>
-    );
-  }
 
   if (error && !invoice) {
     return (
-      <AdminLayout>
+      
         <div className="admin-invoice-details-error-state">
           <div className="admin-invoice-error-icon">
             !
@@ -626,13 +614,13 @@ const InvoiceDetailsPage = () => {
             </Button>
           </div>
         </div>
-      </AdminLayout>
+     
     );
   }
 
   if (!invoice) {
     return (
-      <AdminLayout>
+     
         <div className="admin-invoice-details-error-state">
           <h2>
             Invoice not found
@@ -650,12 +638,12 @@ const InvoiceDetailsPage = () => {
             Back to Invoices
           </Button>
         </div>
-      </AdminLayout>
+      
     );
   }
 
   return (
-    <AdminLayout>
+   
       <div className="admin-invoice-details-page">
         {/* Header */}
         <div className="admin-invoice-details-header">
@@ -1335,7 +1323,7 @@ const InvoiceDetailsPage = () => {
           </div>
         </Modal>
       </div>
-    </AdminLayout>
+   
   );
 };
 
