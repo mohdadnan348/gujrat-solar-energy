@@ -2,20 +2,43 @@
 
 import React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+
 import Avatar from "@/components/common/Avatar";
 import Badge from "@/components/common/Badge";
+
 import "./RecentLeads.css";
 
 const RecentLeads = ({
   leads = [],
   loading = false,
   title = "Recent Leads",
-  viewAllHref = "/employee/leads",
+  viewAllHref,
 }) => {
+  const pathname = usePathname();
+
+  const getRoleBasePath = () => {
+    if (pathname?.startsWith("/admin")) {
+      return "/admin";
+    }
+
+    if (pathname?.startsWith("/manager")) {
+      return "/manager";
+    }
+
+    return "/employee";
+  };
+
+  const roleBasePath = getRoleBasePath();
+
+  const finalViewAllHref =
+    viewAllHref || `${roleBasePath}/leads`;
+
   const getLeadName = (lead) =>
     lead?.name ||
     lead?.customerName ||
     lead?.contactPerson ||
+    lead?.customer?.name ||
     "Unnamed Lead";
 
   const getInitials = (lead) => {
@@ -71,7 +94,9 @@ const RecentLeads = ({
   };
 
   const getLeadId = (lead) =>
-    lead?._id || lead?.id || lead?.leadId;
+    lead?._id ||
+    lead?.id ||
+    lead?.leadId;
 
   if (loading) {
     return (
@@ -104,23 +129,26 @@ const RecentLeads = ({
 
   return (
     <div className="gse-recent-leads">
-      {/* Header */}
       <div className="gse-recent-leads-header">
         <div>
           <h3>{title}</h3>
-          <p>Latest leads added to the system</p>
+
+          <p>
+            Latest leads added to the system
+          </p>
         </div>
 
         <Link
-          href={viewAllHref}
+          href={finalViewAllHref}
           className="gse-recent-leads-view-all"
         >
           View All
-          <span aria-hidden="true">→</span>
+          <span aria-hidden="true">
+            →
+          </span>
         </Link>
       </div>
 
-      {/* Empty State */}
       {leads.length === 0 ? (
         <div className="gse-recent-leads-empty">
           <div className="gse-recent-leads-empty-icon">
@@ -142,8 +170,13 @@ const RecentLeads = ({
             </svg>
           </div>
 
-          <strong>No recent leads</strong>
-          <span>New leads will appear here.</span>
+          <strong>
+            No recent leads
+          </strong>
+
+          <span>
+            New leads will appear here.
+          </span>
         </div>
       ) : (
         <div className="gse-recent-leads-list">
@@ -188,7 +221,7 @@ const RecentLeads = ({
             if (leadId) {
               return (
                 <Link
-                  href={`/employee/leads/${leadId}`}
+                  href={`${roleBasePath}/leads/${leadId}`}
                   className="gse-recent-lead"
                   key={leadId}
                 >

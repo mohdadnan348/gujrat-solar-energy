@@ -1,6 +1,15 @@
 const mongoose = require("mongoose");
 const { SYSTEM_TYPE } = require("../config/constants");
 
+const SOLAR_REQUIREMENT_STATUS = {
+  PENDING: "PENDING",
+  IN_PROGRESS: "IN_PROGRESS",
+  APPROVED: "APPROVED",
+  COMPLETED: "COMPLETED",
+  REJECTED: "REJECTED",
+  CANCELLED: "CANCELLED",
+};
+
 const solarRequirementSchema = new mongoose.Schema(
   {
     lead: {
@@ -16,6 +25,24 @@ const solarRequirementSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
+
+    /* =========================
+       STATUS
+    ========================= */
+
+    status: {
+      type: String,
+      enum: Object.values(
+        SOLAR_REQUIREMENT_STATUS
+      ),
+      default:
+        SOLAR_REQUIREMENT_STATUS.PENDING,
+      index: true,
+    },
+
+    /* =========================
+       ELECTRICITY REQUIREMENT
+    ========================= */
 
     requiredKw: {
       type: Number,
@@ -34,6 +61,10 @@ const solarRequirementSchema = new mongoose.Schema(
       min: [0, "Monthly units cannot be negative"],
       default: 0,
     },
+
+    /* =========================
+       SITE DETAILS
+    ========================= */
 
     roofType: {
       type: String,
@@ -71,6 +102,10 @@ const solarRequirementSchema = new mongoose.Schema(
       default: 0,
     },
 
+    /* =========================
+       SYSTEM
+    ========================= */
+
     systemType: {
       type: String,
       enum: Object.values(SYSTEM_TYPE),
@@ -88,6 +123,10 @@ const solarRequirementSchema = new mongoose.Schema(
       default: 0,
     },
 
+    /* =========================
+       SITE SURVEY
+    ========================= */
+
     siteSurveyRequired: {
       type: Boolean,
       default: false,
@@ -97,6 +136,10 @@ const solarRequirementSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    /* =========================
+       FILES
+    ========================= */
 
     photos: {
       type: [String],
@@ -108,11 +151,19 @@ const solarRequirementSchema = new mongoose.Schema(
       default: [],
     },
 
+    /* =========================
+       NOTES
+    ========================= */
+
     notes: {
       type: String,
       trim: true,
       default: "",
     },
+
+    /* =========================
+       AUDIT USERS
+    ========================= */
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -131,10 +182,27 @@ const solarRequirementSchema = new mongoose.Schema(
   }
 );
 
-// Additional indexes
-// lead and customer already have index: true above.
-solarRequirementSchema.index({ systemType: 1 });
-solarRequirementSchema.index({ createdAt: -1 });
+/* =========================
+   INDEXES
+========================= */
+
+solarRequirementSchema.index({
+  lead: 1,
+  status: 1,
+});
+
+solarRequirementSchema.index({
+  customer: 1,
+  status: 1,
+});
+
+solarRequirementSchema.index({
+  systemType: 1,
+});
+
+solarRequirementSchema.index({
+  createdAt: -1,
+});
 
 const SolarRequirement = mongoose.model(
   "SolarRequirement",
@@ -142,3 +210,6 @@ const SolarRequirement = mongoose.model(
 );
 
 module.exports = SolarRequirement;
+
+module.exports.SOLAR_REQUIREMENT_STATUS =
+  SOLAR_REQUIREMENT_STATUS;

@@ -2,31 +2,14 @@ import api from "@/services/api";
 
 const BASE_URL = "/lead-activities";
 
-/**
- * Get lead activities.
- *
- * Supports lead-wise activity history and filters.
- *
- * Example:
- * getLeadActivities({
- *   leadId: "LEAD_ID",
- *   page: 1,
- *   limit: 20,
- *   type: "CALL"
- * })
- */
-export const getLeadActivities = async (params = {}) => {
-  const response = await api.get(BASE_URL, {
-    params,
-  });
-
-  return response.data;
-};
-
-/**
- * Get activities of a specific lead.
- */
-export const getActivitiesByLead = async (
+/*
+|--------------------------------------------------------------------------
+| Get activities of a specific lead
+|--------------------------------------------------------------------------
+| Backend:
+| GET /api/v1/lead-activities/lead/:leadId
+*/
+export const getLeadActivities = async (
   leadId,
   params = {}
 ) => {
@@ -34,20 +17,36 @@ export const getActivitiesByLead = async (
     throw new Error("Lead ID is required.");
   }
 
-  const response = await api.get(BASE_URL, {
-    params: {
-      ...params,
-      leadId,
-    },
-  });
+  const response = await api.get(
+    `${BASE_URL}/lead/${leadId}`,
+    {
+      params,
+    }
+  );
 
   return response.data;
 };
 
-/**
- * Get a single activity by ID.
- */
-export const getLeadActivityById = async (activityId) => {
+/*
+|--------------------------------------------------------------------------
+| Alias: Get activities by lead
+|--------------------------------------------------------------------------
+*/
+export const getActivitiesByLead = async (
+  leadId,
+  params = {}
+) => {
+  return getLeadActivities(leadId, params);
+};
+
+/*
+|--------------------------------------------------------------------------
+| Get single activity
+|--------------------------------------------------------------------------
+*/
+export const getLeadActivityById = async (
+  activityId
+) => {
   if (!activityId) {
     throw new Error("Activity ID is required.");
   }
@@ -59,38 +58,45 @@ export const getLeadActivityById = async (activityId) => {
   return response.data;
 };
 
-/**
- * Create a new lead activity.
- *
- * Examples:
- * CALL
- * WHATSAPP
- * EMAIL
- * MEETING
- * SITE_VISIT
- * NOTE
- * FOLLOW_UP
- */
-export const createLeadActivity = async (activityData) => {
-  if (!activityData || typeof activityData !== "object") {
+/*
+|--------------------------------------------------------------------------
+| Create lead activity
+|--------------------------------------------------------------------------
+| Backend:
+| POST /api/v1/lead-activities/lead/:leadId
+*/
+export const createLeadActivity = async (
+  activityData
+) => {
+  if (
+    !activityData ||
+    typeof activityData !== "object"
+  ) {
     throw new Error("Activity data is required.");
   }
 
-  if (!activityData.leadId) {
+  const {
+    leadId,
+    ...payload
+  } = activityData;
+
+  if (!leadId) {
     throw new Error("Lead ID is required.");
   }
 
   const response = await api.post(
-    BASE_URL,
-    activityData
+    `${BASE_URL}/lead/${leadId}`,
+    payload
   );
 
   return response.data;
 };
 
-/**
- * Update an existing lead activity.
- */
+/*
+|--------------------------------------------------------------------------
+| Update lead activity
+|--------------------------------------------------------------------------
+*/
 export const updateLeadActivity = async (
   activityId,
   activityData
@@ -99,7 +105,10 @@ export const updateLeadActivity = async (
     throw new Error("Activity ID is required.");
   }
 
-  if (!activityData || typeof activityData !== "object") {
+  if (
+    !activityData ||
+    typeof activityData !== "object"
+  ) {
     throw new Error("Activity data is required.");
   }
 
@@ -111,12 +120,14 @@ export const updateLeadActivity = async (
   return response.data;
 };
 
-/**
- * Delete an activity.
- *
- * Backend authorization/audit rules remain authoritative.
- */
-export const deleteLeadActivity = async (activityId) => {
+/*
+|--------------------------------------------------------------------------
+| Delete lead activity
+|--------------------------------------------------------------------------
+*/
+export const deleteLeadActivity = async (
+  activityId
+) => {
   if (!activityId) {
     throw new Error("Activity ID is required.");
   }
@@ -128,9 +139,11 @@ export const deleteLeadActivity = async (activityId) => {
   return response.data;
 };
 
-/**
- * Get follow-up activities.
- */
+/*
+|--------------------------------------------------------------------------
+| Get follow-up activities
+|--------------------------------------------------------------------------
+*/
 export const getFollowUpActivities = async (
   params = {}
 ) => {
@@ -144,9 +157,11 @@ export const getFollowUpActivities = async (
   return response.data;
 };
 
-/**
- * Get activities by activity type.
- */
+/*
+|--------------------------------------------------------------------------
+| Get activities by type
+|--------------------------------------------------------------------------
+*/
 export const getActivitiesByType = async (
   type,
   params = {}
@@ -155,16 +170,24 @@ export const getActivitiesByType = async (
     throw new Error("Activity type is required.");
   }
 
-  const response = await api.get(BASE_URL, {
-    params: {
-      ...params,
-      type,
-    },
-  });
+  const response = await api.get(
+    `${BASE_URL}/lead/${params.leadId || ""}`,
+    {
+      params: {
+        ...params,
+        activityType: type,
+      },
+    }
+  );
 
   return response.data;
 };
 
+/*
+|--------------------------------------------------------------------------
+| Default service
+|--------------------------------------------------------------------------
+*/
 const leadActivityService = {
   getLeadActivities,
   getActivitiesByLead,

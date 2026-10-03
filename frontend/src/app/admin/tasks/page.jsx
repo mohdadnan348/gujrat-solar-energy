@@ -24,7 +24,9 @@ const AdminTasksPage = () => {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
   const [error, setError] = useState("");
+  const [employeeError, setEmployeeError] = useState("");
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -36,6 +38,10 @@ const AdminTasksPage = () => {
 
   const [deleteId, setDeleteId] = useState(null);
   const [deleting, setDeleting] = useState(false);
+
+  /* -------------------------------------------------------
+     Helpers
+  ------------------------------------------------------- */
 
   const getValue = (object, keys, fallback = "") => {
     if (!object) return fallback;
@@ -101,7 +107,105 @@ const AdminTasksPage = () => {
     return [];
   };
 
-  const loadData = async (showRefresh = false) => {
+  const getApiErrorMessage = (
+    err,
+    fallback
+  ) => {
+    const status =
+      err?.status ||
+      err?.response?.status;
+
+    const message =
+      err?.message ||
+      err?.response?.data?.message ||
+      fallback;
+
+    if (status) {
+      return `${message} (HTTP ${status})`;
+    }
+
+    return message;
+  };
+
+  /* -------------------------------------------------------
+     Load Tasks
+  ------------------------------------------------------- */
+
+  const loadTasks = async () => {
+    try {
+      setError("");
+
+      const response =
+        await taskService.getTasks();
+
+      const normalizedTasks =
+        normalizeList(
+          response,
+          "tasks"
+        );
+
+      setTasks(normalizedTasks);
+    } catch (err) {
+      console.error(
+        "Failed to load tasks:",
+        err
+      );
+
+      setTasks([]);
+
+      setError(
+        getApiErrorMessage(
+          err,
+          "Unable to load tasks."
+        )
+      );
+    }
+  };
+
+  /* -------------------------------------------------------
+     Load Employees
+  ------------------------------------------------------- */
+
+  const loadEmployees = async () => {
+    try {
+      setEmployeeError("");
+
+      const response =
+        await getEmployees();
+
+      const normalizedEmployees =
+        normalizeList(
+          response,
+          "employees"
+        );
+
+      setEmployees(
+        normalizedEmployees
+      );
+    } catch (err) {
+      console.error(
+        "Failed to load employees:",
+        err
+      );
+
+      setEmployees([]);
+
+      setEmployeeError(
+        getApiErrorMessage(
+          err,
+          "Unable to load employees."
+        )
+      );
+    }
+  };
+
+  /* -------------------------------------------------------
+     Load Everything
+  ------------------------------------------------------- */
+
+  const loadData = async (
+    showRefresh = false
+  ) => {
     try {
       if (showRefresh) {
         setRefreshing(true);
@@ -110,38 +214,19 @@ const AdminTasksPage = () => {
       }
 
       setError("");
+      setEmployeeError("");
 
-      const [
-        tasksResponse,
-        employeesResponse,
-      ] = await Promise.all([
-        taskService.getTasks(),
-        getEmployees(),
+      /*
+       * IMPORTANT:
+       * Do NOT use Promise.all here.
+       *
+       * Tasks and Employees are independent.
+       * If employee API fails, tasks should still load.
+       */
+      await Promise.allSettled([
+        loadTasks(),
+        loadEmployees(),
       ]);
-
-      setTasks(
-        normalizeList(
-          tasksResponse,
-          "tasks"
-        )
-      );
-
-      setEmployees(
-        normalizeList(
-          employeesResponse,
-          "employees"
-        )
-      );
-    } catch (err) {
-      console.error(
-        "Failed to load tasks:",
-        err
-      );
-
-      setError(
-        err?.message ||
-          "Failed to load tasks."
-      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -161,6 +246,10 @@ const AdminTasksPage = () => {
     assigneeFilter,
     itemsPerPage,
   ]);
+
+  /* -------------------------------------------------------
+     Task Helpers
+  ------------------------------------------------------- */
 
   const getTaskTitle = (task) =>
     getValue(
@@ -341,7 +430,9 @@ const AdminTasksPage = () => {
     return due < new Date();
   };
 
-  const getStatusVariant = (status) => {
+  const getStatusVariant = (
+    status
+  ) => {
     switch (status) {
       case "COMPLETED":
       case "DONE":
@@ -382,80 +473,95 @@ const AdminTasksPage = () => {
     }
   };
 
+  /* -------------------------------------------------------
+     Filtering
+  ------------------------------------------------------- */
+
   const filteredTasks = useMemo(() => {
     const query =
       search
         .trim()
         .toLowerCase();
 
-    return tasks.filter((task) => {
-      const status =
-        getStatus(task);
+    return tasks.filter(
+      (task) => {
+        const status =
+          getStatus(task);
 
-      const priority =
-        getPriority(task);
+        const priority =
+          getPriority(task);
 
-      const assignee =
-        getAssignee(task);
+        const assignee =
+          getAssignee(task);
 
-      const assigneeId =
-        getId(assignee) ||
-        getValue(
-          task,
-          [
-            "assignedToId",
-            "employeeId",
-          ],
-          ""
+        const assigneeId =
+          getId(assignee) ||
+          getValue(
+            task,
+            [
+              "assignedToId",
+              "employeeId",
+            ],
+            ""
+          );
+
+        if (
+          statusFilter !==
+            "ALL" &&
+          status !==
+            statusFilter
+        ) {
+          return false;
+        }
+
+        if (
+          priorityFilter !==
+            "ALL" &&
+          priority !==
+            priorityFilter
+        ) {
+          return false;
+        }
+
+        if (
+          assigneeFilter !==
+            "ALL" &&
+          assigneeId !==
+            assigneeFilter
+        ) {
+          return false;
+        }
+
+        if (!query) {
+          return true;
+        }
+
+        const searchableText = [
+          getTaskTitle(task),
+          getTaskDescription(task),
+          getAssigneeName(task),
+          status,
+          priority,
+          getValue(
+            task,
+            [
+              "taskNumber",
+              "taskId",
+            ],
+            ""
+          ),
+        ]
+          .map((value) =>
+            String(value ?? "")
+          )
+          .join(" ")
+          .toLowerCase();
+
+        return searchableText.includes(
+          query
         );
-
-      if (
-        statusFilter !== "ALL" &&
-        status !== statusFilter
-      ) {
-        return false;
       }
-
-      if (
-        priorityFilter !== "ALL" &&
-        priority !== priorityFilter
-      ) {
-        return false;
-      }
-
-      if (
-        assigneeFilter !== "ALL" &&
-        assigneeId !== assigneeFilter
-      ) {
-        return false;
-      }
-
-      if (!query) {
-        return true;
-      }
-
-      const searchableText = [
-        getTaskTitle(task),
-        getTaskDescription(task),
-        getAssigneeName(task),
-        status,
-        priority,
-        getValue(
-          task,
-          [
-            "taskNumber",
-            "taskId",
-          ],
-          ""
-        ),
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return searchableText.includes(
-        query
-      );
-    });
+    );
   }, [
     tasks,
     employees,
@@ -465,41 +571,49 @@ const AdminTasksPage = () => {
     assigneeFilter,
   ]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(
-      filteredTasks.length /
-        itemsPerPage
-    )
-  );
-
-  const paginatedTasks = useMemo(() => {
-    const start =
-      (currentPage - 1) *
-      itemsPerPage;
-
-    return filteredTasks.slice(
-      start,
-      start + itemsPerPage
+  const totalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        filteredTasks.length /
+          itemsPerPage
+      )
     );
-  }, [
-    filteredTasks,
-    currentPage,
-    itemsPerPage,
-  ]);
+
+  const paginatedTasks =
+    useMemo(() => {
+      const start =
+        (currentPage - 1) *
+        itemsPerPage;
+
+      return filteredTasks.slice(
+        start,
+        start + itemsPerPage
+      );
+    }, [
+      filteredTasks,
+      currentPage,
+      itemsPerPage,
+    ]);
+
+  /* -------------------------------------------------------
+     Stats
+  ------------------------------------------------------- */
 
   const stats = useMemo(() => {
-    const total = tasks.length;
+    const total =
+      tasks.length;
 
-    const pending = tasks.filter(
-      (task) =>
-        [
-          "PENDING",
-          "TODO",
-        ].includes(
-          getStatus(task)
-        )
-    ).length;
+    const pending =
+      tasks.filter(
+        (task) =>
+          [
+            "PENDING",
+            "TODO",
+          ].includes(
+            getStatus(task)
+          )
+      ).length;
 
     const inProgress =
       tasks.filter(
@@ -524,8 +638,9 @@ const AdminTasksPage = () => {
       ).length;
 
     const overdue =
-      tasks.filter((task) =>
-        isOverdue(task)
+      tasks.filter(
+        (task) =>
+          isOverdue(task)
       ).length;
 
     return {
@@ -537,11 +652,16 @@ const AdminTasksPage = () => {
     };
   }, [tasks]);
 
+  /* -------------------------------------------------------
+     Employee Filter
+  ------------------------------------------------------- */
+
   const employeeOptions = [
     {
       label: "All Assignees",
       value: "ALL",
     },
+
     ...employees.map(
       (employee) => ({
         label: getValue(
@@ -557,6 +677,10 @@ const AdminTasksPage = () => {
       })
     ),
   ];
+
+  /* -------------------------------------------------------
+     Delete Task
+  ------------------------------------------------------- */
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -578,12 +702,13 @@ const AdminTasksPage = () => {
         deleteId
       );
 
-      setTasks((previous) =>
-        previous.filter(
-          (task) =>
-            getId(task) !==
-            deleteId
-        )
+      setTasks(
+        (previous) =>
+          previous.filter(
+            (task) =>
+              getId(task) !==
+              deleteId
+          )
       );
 
       setDeleteId(null);
@@ -594,20 +719,19 @@ const AdminTasksPage = () => {
       );
 
       setError(
-        err?.message ||
+        getApiErrorMessage(
+          err,
           "Failed to delete task."
+        )
       );
     } finally {
       setDeleting(false);
     }
   };
 
-  /*
-   * IMPORTANT:
-   * AdminLayout removed from this page.
-   * Parent admin layout will handle the
-   * sidebar/header.
-   */
+  /* -------------------------------------------------------
+     Loading
+  ------------------------------------------------------- */
 
   if (loading) {
     return (
@@ -620,6 +744,10 @@ const AdminTasksPage = () => {
       </div>
     );
   }
+
+  /* -------------------------------------------------------
+     UI
+  ------------------------------------------------------- */
 
   return (
     <div className="admin-tasks-page">
@@ -668,13 +796,73 @@ const AdminTasksPage = () => {
           </Button>
 
         </div>
+
       </div>
 
-      {/* Error */}
+      {/* Main Task Error */}
 
       {error && (
         <div className="admin-tasks-error">
-          {error}
+
+          <strong>
+            Unable to load tasks
+          </strong>
+
+          <div>
+            {error}
+          </div>
+
+          <div
+            style={{
+              marginTop: "10px",
+            }}
+          >
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                loadTasks()
+              }
+            >
+              Retry Tasks
+            </Button>
+          </div>
+
+        </div>
+      )}
+
+      {/* Employee Warning */}
+
+      {employeeError && (
+        <div
+          className="admin-tasks-error"
+          style={{
+            marginBottom: "16px",
+          }}
+        >
+          <strong>
+            Employee filter unavailable
+          </strong>
+
+          <div>
+            {employeeError}
+          </div>
+
+          <div
+            style={{
+              marginTop: "10px",
+            }}
+          >
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                loadEmployees()
+              }
+            >
+              Retry Employees
+            </Button>
+          </div>
         </div>
       )}
 
@@ -890,6 +1078,7 @@ const AdminTasksPage = () => {
           />
 
         </div>
+
       </div>
 
       {/* Task Table */}
@@ -938,6 +1127,8 @@ const AdminTasksPage = () => {
               assigneeFilter !==
                 "ALL"
                 ? "Try changing your filters or search."
+                : error
+                ? "Tasks could not be loaded from the server."
                 : "Create your first task to get started."}
             </p>
 
@@ -966,12 +1157,12 @@ const AdminTasksPage = () => {
         ) : (
 
           <>
+
             <div className="admin-tasks-table-wrapper">
 
               <table className="admin-tasks-table">
 
                 <thead>
-
                   <tr>
 
                     <th>
@@ -1003,7 +1194,6 @@ const AdminTasksPage = () => {
                     </th>
 
                   </tr>
-
                 </thead>
 
                 <tbody>
@@ -1050,8 +1240,10 @@ const AdminTasksPage = () => {
                             <div className="admin-task-title-cell">
 
                               <strong>
-                                {getTaskTitle(
-                                  task
+                                {String(
+                                  getTaskTitle(
+                                    task
+                                  )
                                 )}
                               </strong>
 
@@ -1059,8 +1251,10 @@ const AdminTasksPage = () => {
                                 task
                               ) && (
                                 <span>
-                                  {getTaskDescription(
-                                    task
+                                  {String(
+                                    getTaskDescription(
+                                      task
+                                    )
                                   )}
                                 </span>
                               )}
@@ -1074,12 +1268,14 @@ const AdminTasksPage = () => {
                                 ""
                               ) && (
                                 <small>
-                                  {getValue(
-                                    task,
-                                    [
-                                      "taskNumber",
-                                      "taskId",
-                                    ]
+                                  {String(
+                                    getValue(
+                                      task,
+                                      [
+                                        "taskNumber",
+                                        "taskId",
+                                      ]
+                                    )
                                   )}
                                 </small>
                               )}
@@ -1093,22 +1289,20 @@ const AdminTasksPage = () => {
                             <div className="admin-task-assignee">
 
                               <div className="admin-task-avatar">
-
                                 {String(
                                   getAssigneeName(
                                     task
                                   )
                                 )
-                                  .charAt(
-                                    0
-                                  )
+                                  .charAt(0)
                                   .toUpperCase()}
-
                               </div>
 
                               <span>
-                                {getAssigneeName(
-                                  task
+                                {String(
+                                  getAssigneeName(
+                                    task
+                                  )
                                 )}
                               </span>
 
@@ -1263,7 +1457,6 @@ const AdminTasksPage = () => {
             </div>
 
           </>
-
         )}
 
       </div>

@@ -2,15 +2,37 @@
 
 import React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+
 import Badge from "@/components/common/Badge";
+
 import "./RecentTasks.css";
 
 const RecentTasks = ({
   tasks = [],
   loading = false,
   title = "Recent Tasks",
-  viewAllHref = "/employee/tasks",
+  viewAllHref,
 }) => {
+  const pathname = usePathname();
+
+  const getRoleBasePath = () => {
+    if (pathname?.startsWith("/admin")) {
+      return "/admin";
+    }
+
+    if (pathname?.startsWith("/manager")) {
+      return "/manager";
+    }
+
+    return "/employee";
+  };
+
+  const roleBasePath = getRoleBasePath();
+
+  const finalViewAllHref =
+    viewAllHref || `${roleBasePath}/tasks`;
+
   const getTaskId = (task) =>
     task?._id ||
     task?.id ||
@@ -23,7 +45,9 @@ const RecentTasks = ({
     "Untitled Task";
 
   const getAssignedTo = (task) => {
-    if (typeof task?.assignedTo === "string") {
+    if (
+      typeof task?.assignedTo === "string"
+    ) {
       return task.assignedTo;
     }
 
@@ -31,6 +55,7 @@ const RecentTasks = ({
       task?.assignedTo?.name ||
       task?.assignedTo?.fullName ||
       task?.employee?.name ||
+      task?.employee?.fullName ||
       "Unassigned"
     );
   };
@@ -45,7 +70,9 @@ const RecentTasks = ({
     "Medium";
 
   const getStatusVariant = (status) => {
-    const normalized = String(status || "").toLowerCase();
+    const normalized = String(
+      status || ""
+    ).toLowerCase();
 
     if (
       normalized.includes("completed") ||
@@ -73,7 +100,9 @@ const RecentTasks = ({
   };
 
   const getPriorityVariant = (priority) => {
-    const normalized = String(priority || "").toLowerCase();
+    const normalized = String(
+      priority || ""
+    ).toLowerCase();
 
     if (
       normalized === "high" ||
@@ -94,7 +123,9 @@ const RecentTasks = ({
 
     return String(value)
       .replace(/_/g, " ")
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+      .replace(/\b\w/g, (letter) =>
+        letter.toUpperCase()
+      );
   };
 
   const getTaskDate = (task) => {
@@ -107,15 +138,20 @@ const RecentTasks = ({
 
     const parsedDate = new Date(date);
 
-    if (Number.isNaN(parsedDate.getTime())) {
+    if (
+      Number.isNaN(parsedDate.getTime())
+    ) {
       return null;
     }
 
-    return parsedDate.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    return parsedDate.toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    );
   };
 
   if (loading) {
@@ -151,23 +187,26 @@ const RecentTasks = ({
 
   return (
     <div className="gse-recent-tasks">
-      {/* Header */}
       <div className="gse-recent-tasks-header">
         <div>
           <h3>{title}</h3>
-          <p>Latest tasks and assigned work</p>
+
+          <p>
+            Latest tasks and assigned work
+          </p>
         </div>
 
         <Link
-          href={viewAllHref}
+          href={finalViewAllHref}
           className="gse-recent-tasks-view-all"
         >
           View All
-          <span aria-hidden="true">→</span>
+          <span aria-hidden="true">
+            →
+          </span>
         </Link>
       </div>
 
-      {/* Empty State */}
       {tasks.length === 0 ? (
         <div className="gse-recent-tasks-empty">
           <div className="gse-recent-tasks-empty-icon">
@@ -196,20 +235,26 @@ const RecentTasks = ({
             </svg>
           </div>
 
-          <strong>No recent tasks</strong>
-          <span>New tasks will appear here.</span>
+          <strong>
+            No recent tasks
+          </strong>
+
+          <span>
+            New tasks will appear here.
+          </span>
         </div>
       ) : (
         <div className="gse-recent-tasks-list">
           {tasks.map((task, index) => {
             const taskId = getTaskId(task);
             const status = getStatus(task);
-            const priority = getPriority(task);
-            const taskDate = getTaskDate(task);
+            const priority =
+              getPriority(task);
+            const taskDate =
+              getTaskDate(task);
 
             const content = (
               <>
-                {/* Task Icon */}
                 <div className="gse-recent-task-icon">
                   <svg
                     width="18"
@@ -227,7 +272,6 @@ const RecentTasks = ({
                   </svg>
                 </div>
 
-                {/* Task Information */}
                 <div className="gse-recent-task-info">
                   <div className="gse-recent-task-title">
                     {getTaskTitle(task)}
@@ -252,17 +296,20 @@ const RecentTasks = ({
                   </div>
                 </div>
 
-                {/* Badges */}
                 <div className="gse-recent-task-badges">
                   <Badge
-                    variant={getPriorityVariant(priority)}
+                    variant={getPriorityVariant(
+                      priority
+                    )}
                     size="small"
                   >
                     {formatLabel(priority)}
                   </Badge>
 
                   <Badge
-                    variant={getStatusVariant(status)}
+                    variant={getStatusVariant(
+                      status
+                    )}
                     size="small"
                   >
                     {formatLabel(status)}
@@ -274,7 +321,7 @@ const RecentTasks = ({
             if (taskId) {
               return (
                 <Link
-                  href={`/employee/tasks/${taskId}`}
+                  href={`${roleBasePath}/tasks/${taskId}`}
                   className="gse-recent-task"
                   key={taskId}
                 >

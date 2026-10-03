@@ -791,116 +791,192 @@ const CreateQuotationPage = () => {
     async (event) => {
       event.preventDefault();
 
-      const validationError =
-        validateForm();
+      const validationError = validateForm();
 
       if (validationError) {
-        setError(
-          validationError
-        );
+        setError(validationError);
         return;
       }
+
+      const selectedConfiguration = configurations.find(
+        (configuration) =>
+          String(getId(configuration)) ===
+          String(form.systemConfigurationId)
+      );
+
+      if (!selectedConfiguration) {
+        setError("Selected system configuration nahi mili.");
+        return;
+      }
+
+      const getReferenceId = (value) => {
+        if (!value) return "";
+        if (typeof value === "string") return value;
+        return value?._id || value?.id || "";
+      };
+
+      const leadId = getReferenceId(
+        selectedConfiguration?.lead
+      );
+
+      const solarRequirementId = getReferenceId(
+        selectedConfiguration?.solarRequirement
+      );
+
+      const customerId =
+        form.customerId ||
+        getReferenceId(selectedConfiguration?.customer);
+
+      const normalizeSystemType = (value) => {
+        const type = String(value || "")
+          .trim()
+          .toUpperCase();
+
+        if (type === "ON_GRID" || type === "ON-GRID") {
+          return "On-grid";
+        }
+
+        if (type === "OFF_GRID" || type === "OFF-GRID") {
+          return "Off-grid";
+        }
+
+        if (type === "HYBRID") {
+          return "Hybrid";
+        }
+
+        return "";
+      };
+
+      const rawItems = items.map((item) => ({
+        category: "SOLAR_SYSTEM",
+        name:
+          String(item.description || "Solar System")
+            .trim() || "Solar System",
+        description:
+          String(item.description || "").trim(),
+        quantity: Number(item.quantity) || 0,
+        unit: String(item.unit || "pcs").trim() || "pcs",
+        rate: Number(item.rate) || 0,
+        taxRate: Number(item.taxRate) || 0,
+      }));
+
+      // Backend quotation service calculates totals from quotation items.
+      // Therefore the UI's global discount is distributed proportionally
+      // across the items as a percentage discount.
+      const rawSubtotal = rawItems.reduce(
+        (sum, item) =>
+          sum + item.quantity * item.rate,
+        0
+      );
+
+      const globalDiscount = Number(charges.discount) || 0;
+      const discountRatio =
+        rawSubtotal > 0
+          ? Math.min(
+              Math.max(globalDiscount / rawSubtotal, 0),
+              1
+            )
+          : 0;
+
+      const quotationItems = rawItems.map((item) => ({
+        ...item,
+        discount: Number(
+          (discountRatio * 100).toFixed(4)
+        ),
+      }));
+
+      // Backend model does not have an additionalCharges field.
+      // Convert it into a normal quotation item so it is included
+      // in the authoritative backend calculation.
+      const additionalCharges =
+        Number(charges.additionalCharges) || 0;
+
+      if (additionalCharges > 0) {
+        quotationItems.push({
+          category: "OTHER",
+          name: "Additional Charges",
+          description: "Additional Charges",
+          quantity: 1,
+          unit: "JOB",
+          rate: additionalCharges,
+          discount: 0,
+          taxRate: 0,
+        });
+      }
+
+      const normalizedSystemType = normalizeSystemType(
+        form.systemType ||
+          selectedConfiguration?.systemType
+      );
 
       try {
         setSaving(true);
         setError("");
 
         const payload = {
-          customerId:
-            form.customerId,
-
-          systemConfigurationId:
+          // Backend field names — DO NOT use customerId/systemConfigurationId.
+          customer: customerId || undefined,
+          lead: leadId || undefined,
+          solarRequirement:
+            solarRequirementId || undefined,
+          systemConfiguration:
             form.systemConfigurationId,
 
-          quotationDate:
-            form.quotationDate,
+          quotationDate: form.quotationDate,
+          validUntil: form.validUntil,
 
-          validUntil:
-            form.validUntil,
+          status: "Draft",
+          revisionNumber: 1,
 
-          title:
-            form.title,
+          plantDetails: {
+            capacityKw: Number(form.systemSizeKW),
+            systemType: normalizedSystemType,
+            description:
+              form.title ||
+              "Solar Power System Proposal",
+          },
 
-          systemType:
-            form.systemType,
-
-          systemSizeKW:
-            Number(
-              form.systemSizeKW
-            ),
-
-          items: items.map(
-            (item) => ({
-              description:
-                item.description,
-
-              quantity:
-                Number(
-                  item.quantity
-                ),
-
-              unit:
-                item.unit,
-
-              rate:
-                Number(
-                  item.rate
-                ),
-
-              taxRate:
-                Number(
-                  item.taxRate
-                ) || 0,
-            })
-          ),
-
-          discount,
-
-          additionalCharges,
-
-          subtotal,
-
-          taxTotal,
-
-          grandTotal,
+          items: quotationItems,
 
           paymentTerms:
-            form.paymentTerms,
-
-          warranty:
-            form.warranty,
-
+            form.paymentTerms || undefined,
+          warrantyDetails:
+            form.warranty || undefined,
+          quotationTerms:
+            form.paymentTerms || undefined,
           notes:
-            form.notes ||
-            undefined,
+            form.notes || undefined,
+          proposalTitle:
+            form.title || undefined,
         };
 
-        await quotationService.createQuotation(
-          payload
-        );
+        await quotationService.createQuotation(payload);
 
-        router.push(
-          "/admin/quotations"
-        );
+        router.push("/admin/quotations");
       } catch (err) {
         console.error(
           "Failed to create quotation:",
-          err
+          err?.response?.data || err
         );
 
-        setError(
-          err?.response?.data
-            ?.message ||
-            err?.response?.data
-              ?.error ||
-            err?.message ||
-            "Quotation create nahi ho paayi."
-        );
+        const backendMessage =
+          err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.response?.data?.errors;
+
+        if (Array.isArray(backendMessage)) {
+          setError(backendMessage.join(", "));
+        } else {
+          setError(
+            backendMessage ||
+              err?.message ||
+              "Quotation create nahi ho paayi."
+          );
+        }
       } finally {
         setSaving(false);
       }
     };
-
   /* =========================================
      LOADING
   ========================================= */

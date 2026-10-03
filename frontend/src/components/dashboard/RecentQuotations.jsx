@@ -2,15 +2,37 @@
 
 import React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+
 import Badge from "@/components/common/Badge";
+
 import "./RecentQuotations.css";
 
 const RecentQuotations = ({
   quotations = [],
   loading = false,
   title = "Recent Quotations",
-  viewAllHref = "/employee/quotations",
+  viewAllHref,
 }) => {
+  const pathname = usePathname();
+
+  const getRoleBasePath = () => {
+    if (pathname?.startsWith("/admin")) {
+      return "/admin";
+    }
+
+    if (pathname?.startsWith("/manager")) {
+      return "/manager";
+    }
+
+    return "/employee";
+  };
+
+  const roleBasePath = getRoleBasePath();
+
+  const finalViewAllHref =
+    viewAllHref || `${roleBasePath}/quotations`;
+
   const getQuotationId = (quotation) =>
     quotation?._id ||
     quotation?.id ||
@@ -27,6 +49,7 @@ const RecentQuotations = ({
     quotation?.customer?.name ||
     quotation?.customer?.companyName ||
     quotation?.lead?.name ||
+    quotation?.lead?.customerName ||
     "Customer";
 
   const getAmount = (quotation) => {
@@ -37,13 +60,16 @@ const RecentQuotations = ({
       quotation?.amount ??
       0;
 
-    return Number(amount);
+    return Number(amount) || 0;
   };
 
   const formatAmount = (amount) => {
-    return `₹${Number(amount || 0).toLocaleString("en-IN", {
-      maximumFractionDigits: 2,
-    })}`;
+    return `₹${Number(amount || 0).toLocaleString(
+      "en-IN",
+      {
+        maximumFractionDigits: 2,
+      }
+    )}`;
   };
 
   const getStatus = (quotation) =>
@@ -52,7 +78,9 @@ const RecentQuotations = ({
     "Draft";
 
   const getStatusVariant = (status) => {
-    const normalized = String(status || "").toLowerCase();
+    const normalized = String(
+      status || ""
+    ).toLowerCase();
 
     if (
       normalized.includes("approved") ||
@@ -85,7 +113,9 @@ const RecentQuotations = ({
 
     return String(status)
       .replace(/_/g, " ")
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+      .replace(/\b\w/g, (letter) =>
+        letter.toUpperCase()
+      );
   };
 
   if (loading) {
@@ -123,23 +153,26 @@ const RecentQuotations = ({
 
   return (
     <div className="gse-recent-quotations">
-      {/* Header */}
       <div className="gse-recent-quotations-header">
         <div>
           <h3>{title}</h3>
-          <p>Latest quotations created in the system</p>
+
+          <p>
+            Latest quotations created in the system
+          </p>
         </div>
 
         <Link
-          href={viewAllHref}
+          href={finalViewAllHref}
           className="gse-recent-quotations-view-all"
         >
           View All
-          <span aria-hidden="true">→</span>
+          <span aria-hidden="true">
+            →
+          </span>
         </Link>
       </div>
 
-      {/* Empty State */}
       {quotations.length === 0 ? (
         <div className="gse-recent-quotations-empty">
           <div className="gse-recent-quotations-empty-icon">
@@ -156,66 +189,94 @@ const RecentQuotations = ({
             >
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
-              <line x1="8" y1="13" x2="16" y2="13" />
-              <line x1="8" y1="17" x2="14" y2="17" />
+              <line
+                x1="8"
+                y1="13"
+                x2="16"
+                y2="13"
+              />
+              <line
+                x1="8"
+                y1="17"
+                x2="14"
+                y2="17"
+              />
             </svg>
           </div>
 
-          <strong>No recent quotations</strong>
-          <span>New quotations will appear here.</span>
+          <strong>
+            No recent quotations
+          </strong>
+
+          <span>
+            New quotations will appear here.
+          </span>
         </div>
       ) : (
         <div className="gse-recent-quotations-list">
-          {quotations.map((quotation, index) => {
-            const quotationId = getQuotationId(quotation);
-            const status = getStatus(quotation);
+          {quotations.map(
+            (quotation, index) => {
+              const quotationId =
+                getQuotationId(quotation);
 
-            const content = (
-              <>
-                <div className="gse-recent-quotation-main">
-                  <div className="gse-recent-quotation-number">
-                    {getQuotationNumber(quotation)}
+              const status =
+                getStatus(quotation);
+
+              const content = (
+                <>
+                  <div className="gse-recent-quotation-main">
+                    <div className="gse-recent-quotation-number">
+                      {getQuotationNumber(
+                        quotation
+                      )}
+                    </div>
+
+                    <div className="gse-recent-quotation-customer">
+                      {getCustomerName(
+                        quotation
+                      )}
+                    </div>
                   </div>
 
-                  <div className="gse-recent-quotation-customer">
-                    {getCustomerName(quotation)}
+                  <div className="gse-recent-quotation-amount">
+                    {formatAmount(
+                      getAmount(quotation)
+                    )}
                   </div>
-                </div>
 
-                <div className="gse-recent-quotation-amount">
-                  {formatAmount(getAmount(quotation))}
-                </div>
+                  <Badge
+                    variant={getStatusVariant(
+                      status
+                    )}
+                    size="small"
+                  >
+                    {getStatusLabel(status)}
+                  </Badge>
+                </>
+              );
 
-                <Badge
-                  variant={getStatusVariant(status)}
-                  size="small"
-                >
-                  {getStatusLabel(status)}
-                </Badge>
-              </>
-            );
+              if (quotationId) {
+                return (
+                  <Link
+                    href={`${roleBasePath}/quotations/${quotationId}`}
+                    className="gse-recent-quotation"
+                    key={quotationId}
+                  >
+                    {content}
+                  </Link>
+                );
+              }
 
-            if (quotationId) {
               return (
-                <Link
-                  href={`/employee/quotations/${quotationId}`}
+                <div
                   className="gse-recent-quotation"
-                  key={quotationId}
+                  key={index}
                 >
                   {content}
-                </Link>
+                </div>
               );
             }
-
-            return (
-              <div
-                className="gse-recent-quotation"
-                key={index}
-              >
-                {content}
-              </div>
-            );
-          })}
+          )}
         </div>
       )}
     </div>

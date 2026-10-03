@@ -2,123 +2,254 @@ import api from "@/services/api";
 
 /**
  * PDF Service
- * -----------
- * Backend se quotation, proposal aur invoice PDFs
- * generate/download karne ke liye.
  *
- * PDF generation backend par hogi so that:
- * - calculations authoritative rahen
- * - quotation/invoice data consistent rahe
- * - frontend sirf request/download handle kare
+ * IMPORTANT:
+ * Quotation PDF ka working backend endpoint
+ * quotation.service.js me already defined hai:
+ *
+ * /pdf/quotation/:quotationId
+ *
+ * Isliye /quotations/:id/pdf use nahi karna hai.
  */
+
+const getPdfBlob = async (url, config = {}) => {
+  const response = await api.get(url, {
+    ...config,
+    responseType: "blob",
+  });
+
+  return response;
+};
+
+const downloadBlob = (response, filename) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const blob =
+    response?.data instanceof Blob
+      ? response.data
+      : new Blob([response?.data], {
+          type: "application/pdf",
+        });
+
+  const url = window.URL.createObjectURL(blob);
+
+  const anchor = document.createElement("a");
+
+  anchor.href = url;
+  anchor.download = filename || "document.pdf";
+
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+
+  window.setTimeout(() => {
+    window.URL.revokeObjectURL(url);
+  }, 1000);
+};
+
+const getFilenameFromResponse = (
+  response,
+  fallback
+) => {
+  const contentDisposition =
+    response?.headers?.["content-disposition"] || "";
+
+  const filenameMatch =
+    contentDisposition.match(
+      /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/i
+    );
+
+  const serverFilename =
+    filenameMatch?.[1]
+      ?.replace(/^["']|["']$/g, "")
+      ?.trim();
+
+  return serverFilename || fallback;
+};
+
+const openPdf = (response) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const blob =
+    response?.data instanceof Blob
+      ? response.data
+      : new Blob([response?.data], {
+          type: "application/pdf",
+        });
+
+  const url = window.URL.createObjectURL(blob);
+
+  window.open(
+    url,
+    "_blank",
+    "noopener,noreferrer"
+  );
+
+  window.setTimeout(() => {
+    window.URL.revokeObjectURL(url);
+  }, 60000);
+};
 
 const pdfService = {
   /**
-   * Generate / download quotation PDF
+   * Download Quotation PDF
    */
   async downloadQuotationPdf(quotationId) {
     if (!quotationId) {
-      throw new Error("Quotation ID is required");
+      throw new Error(
+        "Quotation ID is required"
+      );
     }
 
-    return api.download(`/quotations/${quotationId}/pdf`);
+    const response = await getPdfBlob(
+      `/pdf/quotation/${quotationId}`
+    );
+
+    const filename =
+      getFilenameFromResponse(
+        response,
+        `quotation-${quotationId}.pdf`
+      );
+
+    downloadBlob(
+      response,
+      filename
+    );
+
+    return response;
   },
 
   /**
-   * Generate / download invoice PDF
+   * Download Invoice PDF
    */
   async downloadInvoicePdf(invoiceId) {
     if (!invoiceId) {
-      throw new Error("Invoice ID is required");
+      throw new Error(
+        "Invoice ID is required"
+      );
     }
 
-    return api.download(`/invoices/${invoiceId}/pdf`);
+    const response = await getPdfBlob(
+      `/pdf/invoice/${invoiceId}`
+    );
+
+    const filename =
+      getFilenameFromResponse(
+        response,
+        `invoice-${invoiceId}.pdf`
+      );
+
+    downloadBlob(
+      response,
+      filename
+    );
+
+    return response;
   },
 
   /**
-   * Generate / download proposal PDF
-   *
-   * Proposal quotation ke basis par generate hota hai.
+   * Download Proposal PDF
    */
   async downloadProposalPdf(quotationId) {
     if (!quotationId) {
-      throw new Error("Quotation ID is required");
+      throw new Error(
+        "Quotation ID is required"
+      );
     }
 
-    return api.download(`/quotations/${quotationId}/pdf`, {
-      params: {
-        type: "proposal",
-      },
-    });
+    const response = await getPdfBlob(
+      `/pdf/quotation/${quotationId}`,
+      {
+        params: {
+          type: "proposal",
+        },
+      }
+    );
+
+    const filename =
+      getFilenameFromResponse(
+        response,
+        `proposal-${quotationId}.pdf`
+      );
+
+    downloadBlob(
+      response,
+      filename
+    );
+
+    return response;
   },
 
   /**
-   * Open quotation PDF in a new browser tab
+   * Open Quotation PDF
    */
   async openQuotationPdf(quotationId) {
     if (!quotationId) {
-      throw new Error("Quotation ID is required");
+      throw new Error(
+        "Quotation ID is required"
+      );
     }
 
-    const response = await api.get(`/quotations/${quotationId}/pdf`, {
-      responseType: "blob",
-    });
+    const response = await getPdfBlob(
+      `/pdf/quotation/${quotationId}`
+    );
 
-    const blob = new Blob([response.data], {
-      type: "application/pdf",
-    });
+    openPdf(response);
 
-    const url = window.URL.createObjectURL(blob);
-    window.open(url, "_blank");
-
-    setTimeout(() => {
-      window.URL.revokeObjectURL(url);
-    }, 60000);
-
-    return response.data;
+    return response;
   },
 
   /**
-   * Open invoice PDF in a new browser tab
+   * Open Invoice PDF
    */
   async openInvoicePdf(invoiceId) {
     if (!invoiceId) {
-      throw new Error("Invoice ID is required");
+      throw new Error(
+        "Invoice ID is required"
+      );
     }
 
-    const response = await api.get(`/invoices/${invoiceId}/pdf`, {
-      responseType: "blob",
-    });
+    const response = await getPdfBlob(
+      `/pdf/invoice/${invoiceId}`
+    );
 
-    const blob = new Blob([response.data], {
-      type: "application/pdf",
-    });
+    openPdf(response);
 
-    const url = window.URL.createObjectURL(blob);
-    window.open(url, "_blank");
-
-    setTimeout(() => {
-      window.URL.revokeObjectURL(url);
-    }, 60000);
-
-    return response.data;
+    return response;
   },
 };
 
 export default pdfService;
 
-// Named exports
+/* =========================================================
+   NAMED EXPORTS
+========================================================= */
+
 export const downloadQuotationPdf =
-  pdfService.downloadQuotationPdf.bind(pdfService);
+  pdfService.downloadQuotationPdf.bind(
+    pdfService
+  );
 
 export const downloadInvoicePdf =
-  pdfService.downloadInvoicePdf.bind(pdfService);
+  pdfService.downloadInvoicePdf.bind(
+    pdfService
+  );
 
 export const downloadProposalPdf =
-  pdfService.downloadProposalPdf.bind(pdfService);
+  pdfService.downloadProposalPdf.bind(
+    pdfService
+  );
 
 export const openQuotationPdf =
-  pdfService.openQuotationPdf.bind(pdfService);
+  pdfService.openQuotationPdf.bind(
+    pdfService
+  );
 
 export const openInvoicePdf =
-  pdfService.openInvoicePdf.bind(pdfService);
+  pdfService.openInvoicePdf.bind(
+    pdfService
+  );

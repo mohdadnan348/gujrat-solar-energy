@@ -13,7 +13,6 @@ import Badge from "@/components/common/Badge";
 import SearchBox from "@/components/common/SearchBox";
 import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
-import Modal from "@/components/common/Modal";
 
 import solarRequirementService from "@/services/solarRequirement.service";
 
@@ -22,44 +21,24 @@ import "./requirements.css";
 const SolarRequirementsPage = () => {
   const router = useRouter();
 
-  const [requirements, setRequirements] =
-    useState([]);
+  const [requirements, setRequirements] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
 
-  const [loading, setLoading] =
-    useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [typeFilter, setTypeFilter] = useState("ALL");
 
-  const [refreshing, setRefreshing] =
-    useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const [error, setError] =
-    useState("");
+  const itemsPerPage = 10;
 
-  const [search, setSearch] =
-    useState("");
+  /* =========================================================
+     LOAD REQUIREMENTS
+  ========================================================= */
 
-  const [statusFilter, setStatusFilter] =
-    useState("ALL");
-
-  const [typeFilter, setTypeFilter] =
-    useState("ALL");
-
-  const [currentPage, setCurrentPage] =
-    useState(1);
-
-  const [itemsPerPage] =
-    useState(10);
-
-  const [
-    selectedRequirement,
-    setSelectedRequirement,
-  ] = useState(null);
-
-  const [showDetails, setShowDetails] =
-    useState(false);
-
-  const loadRequirements = async (
-    isRefresh = false
-  ) => {
+  const loadRequirements = async (isRefresh = false) => {
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -72,16 +51,17 @@ const SolarRequirementsPage = () => {
       const response =
         await solarRequirementService.getSolarRequirements();
 
-      const data =
-        response?.data || response;
+      const data = response?.data || response;
+
+      const list = Array.isArray(data)
+        ? data
+        : data?.requirements ||
+          data?.solarRequirements ||
+          data?.items ||
+          [];
 
       setRequirements(
-        Array.isArray(data)
-          ? data
-          : data?.requirements ||
-              data?.solarRequirements ||
-              data?.items ||
-              []
+        Array.isArray(list) ? list : []
       );
     } catch (err) {
       console.error(
@@ -90,8 +70,8 @@ const SolarRequirementsPage = () => {
       );
 
       setError(
-        err?.message ||
-          err?.response?.data?.message ||
+        err?.response?.data?.message ||
+          err?.message ||
           "Unable to load solar requirements."
       );
     } finally {
@@ -106,13 +86,13 @@ const SolarRequirementsPage = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [
-    search,
-    statusFilter,
-    typeFilter,
-  ]);
+  }, [search, statusFilter, typeFilter]);
 
-  const getValue = (
+  /* =========================================================
+     HELPERS
+  ========================================================= */
+
+  const safeText = (
     value,
     fallback = "—"
   ) => {
@@ -124,41 +104,205 @@ const SolarRequirementsPage = () => {
       return fallback;
     }
 
-    return value;
+    if (typeof value === "object") {
+      return (
+        value?.name ||
+        value?.fullName ||
+        value?.customerName ||
+        value?.city ||
+        value?.label ||
+        value?.email ||
+        fallback
+      );
+    }
+
+    return String(value);
   };
 
   const getName = (person) => {
     if (!person) return "—";
 
-    if (
-      typeof person === "string"
-    ) {
+    if (typeof person === "string") {
       return person;
     }
 
+    const fullName =
+      `${person?.firstName || ""} ${
+        person?.lastName || ""
+      }`.trim();
+
     return (
-      person.name ||
-      person.fullName ||
-      `${person.firstName || ""} ${
-        person.lastName || ""
-      }`.trim() ||
-      person.email ||
+      person?.name ||
+      person?.fullName ||
+      person?.customerName ||
+      fullName ||
+      person?.email ||
       "—"
     );
+  };
+
+  const getCustomer = (item) => {
+    return (
+      item?.customer ||
+      item?.customerId ||
+      item?.lead ||
+      item?.leadId ||
+      null
+    );
+  };
+
+  const getCustomerName = (item) => {
+    const customer = getCustomer(item);
+
+    return (
+      item?.customerName ||
+      item?.customer?.name ||
+      item?.customer?.fullName ||
+      item?.lead?.customerName ||
+      item?.lead?.name ||
+      getName(customer)
+    );
+  };
+
+  const getCustomerPhone = (item) => {
+    return (
+      item?.phone ||
+      item?.mobile ||
+      item?.customer?.phone ||
+      item?.customer?.mobile ||
+      item?.lead?.phone ||
+      item?.lead?.mobile ||
+      ""
+    );
+  };
+
+  const getCustomerEmail = (item) => {
+    return (
+      item?.email ||
+      item?.customer?.email ||
+      item?.lead?.email ||
+      ""
+    );
+  };
+
+  const getRequirementId = (
+    item,
+    index = 0
+  ) => {
+    return (
+      item?.requirementNumber ||
+      item?.requirementId ||
+      item?._id ||
+      item?.id ||
+      `REQ-${String(index + 1).padStart(3, "0")}`
+    );
+  };
+
+  /* =========================================================
+     CAPACITY
+  ========================================================= */
+
+  const getCapacity = (item) => {
+    const value =
+      item?.requiredKw ??
+      item?.requiredKW ??
+      item?.kw ??
+      item?.systemSize ??
+      item?.capacity ??
+      item?.requiredCapacity ??
+      item?.plantCapacity;
+
+    if (
+      value === null ||
+      value === undefined ||
+      value === ""
+    ) {
+      return null;
+    }
+
+    const numericValue = Number(value);
+
+    return Number.isNaN(numericValue)
+      ? value
+      : numericValue;
+  };
+
+  /* =========================================================
+     SYSTEM TYPE
+  ========================================================= */
+
+  const getSystemType = (item) => {
+    return (
+      item?.systemType ||
+      item?.requirementType ||
+      item?.solarType ||
+      item?.type ||
+      "—"
+    );
+  };
+
+  const getConnectionType = (item) => {
+    return (
+      item?.connectionType ||
+      item?.connection ||
+      "—"
+    );
+  };
+
+  /* =========================================================
+     LOCATION
+  ========================================================= */
+
+  const getLocation = (item) => {
+    const location = item?.location;
+
+    if (
+      typeof location === "object" &&
+      location
+    ) {
+      return (
+        location?.city ||
+        location?.name ||
+        location?.address ||
+        "—"
+      );
+    }
+
+    return (
+      item?.city ||
+      location ||
+      item?.siteAddress ||
+      item?.address ||
+      "—"
+    );
+  };
+
+  /* =========================================================
+     STATUS
+  ========================================================= */
+
+  const getStatus = (item) => {
+    return item?.status || "PENDING";
+  };
+
+  const normalizeStatus = (status) => {
+    return String(status || "")
+      .trim()
+      .toUpperCase()
+      .replace(/[\s-]+/g, "_");
   };
 
   const formatDate = (date) => {
     if (!date) return "—";
 
-    const parsedDate =
-      new Date(date);
+    const parsedDate = new Date(date);
 
     if (
       Number.isNaN(
         parsedDate.getTime()
       )
     ) {
-      return date;
+      return safeText(date);
     }
 
     return parsedDate.toLocaleDateString(
@@ -183,52 +327,16 @@ const SolarRequirementsPage = () => {
     const number = Number(value);
 
     if (Number.isNaN(number)) {
-      return value;
+      return safeText(value);
     }
 
-    return number.toLocaleString(
-      "en-IN"
-    );
+    return number.toLocaleString("en-IN");
   };
 
-  const getStatusVariant = (
-    status
-  ) => {
-    const value = String(
-      status || ""
-    ).toLowerCase();
-
-    if (
-      value.includes("complete") ||
-      value.includes("approved") ||
-      value.includes("converted") ||
-      value.includes("active")
-    ) {
-      return "success";
+  const getStatusText = (status) => {
+    if (!status) {
+      return "Pending";
     }
-
-    if (
-      value.includes("reject") ||
-      value.includes("cancel")
-    ) {
-      return "danger";
-    }
-
-    if (
-      value.includes("pending") ||
-      value.includes("draft") ||
-      value.includes("progress")
-    ) {
-      return "warning";
-    }
-
-    return "info";
-  };
-
-  const getStatusText = (
-    status
-  ) => {
-    if (!status) return "PENDING";
 
     return String(status)
       .replace(/_/g, " ")
@@ -237,99 +345,213 @@ const SolarRequirementsPage = () => {
       );
   };
 
-  const getRequirementType = (
-    item
-  ) => {
-    return (
-      item?.requirementType ||
-      item?.systemType ||
-      item?.solarType ||
-      item?.type ||
-      "—"
-    );
+  const getStatusVariant = (status) => {
+    const value = normalizeStatus(status);
+
+    if (
+      value.includes("COMPLETE") ||
+      value.includes("APPROVED") ||
+      value.includes("CONVERTED") ||
+      value.includes("ACTIVE")
+    ) {
+      return "success";
+    }
+
+    if (
+      value.includes("REJECT") ||
+      value.includes("CANCEL")
+    ) {
+      return "danger";
+    }
+
+    if (
+      value.includes("PENDING") ||
+      value.includes("DRAFT") ||
+      value.includes("PROGRESS") ||
+      value.includes("NEW")
+    ) {
+      return "warning";
+    }
+
+    return "info";
   };
 
-  const getCapacity = (item) => {
-    return (
-      item?.systemSize ||
-      item?.capacity ||
-      item?.requiredCapacity ||
-      item?.plantCapacity ||
-      null
-    );
-  };
+  /* =========================================================
+     FILTERS
+  ========================================================= */
 
-  const filteredRequirements =
-    useMemo(() => {
-      const normalizedSearch =
-        search.trim().toLowerCase();
+  const filteredRequirements = useMemo(() => {
+    const normalizedSearch =
+      search.trim().toLowerCase();
 
-      return requirements.filter(
-        (item) => {
-          const customerName =
-            getName(
-              item?.customer ||
-                item?.customerId ||
-                item?.lead ||
-                item?.leadId
-            );
+    return requirements.filter((item) => {
+      const customerName =
+        getCustomerName(item);
 
-          const searchableText = [
-            item?.requirementNumber,
-            item?.requirementId,
-            item?._id,
-            customerName,
-            item?.customerName,
-            item?.name,
-            item?.phone,
-            item?.mobile,
-            item?.email,
-            item?.city,
-            item?.address,
-            item?.status,
-            item?.systemType,
-            item?.requirementType,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
+      const searchableText = [
+        getRequirementId(item),
+        customerName,
+        getCustomerPhone(item),
+        getCustomerEmail(item),
+        item?.city,
+        item?.location,
+        item?.siteAddress,
+        item?.address,
+        item?.status,
+        item?.systemType,
+        item?.requirementType,
+        item?.connectionType,
+        getCapacity(item),
+      ]
+        .filter(
+          (value) =>
+            value !== null &&
+            value !== undefined &&
+            value !== ""
+        )
+        .map((value) =>
+          typeof value === "object"
+            ? JSON.stringify(value)
+            : String(value)
+        )
+        .join(" ")
+        .toLowerCase();
 
-          const matchesSearch =
-            !normalizedSearch ||
-            searchableText.includes(
-              normalizedSearch
-            );
+      const matchesSearch =
+        !normalizedSearch ||
+        searchableText.includes(
+          normalizedSearch
+        );
 
-          const matchesStatus =
-            statusFilter === "ALL" ||
-            String(item?.status || "")
-              .toUpperCase()
-              .replace(/ /g, "_") ===
-              statusFilter;
+      const normalizedStatus =
+        normalizeStatus(item?.status);
 
-          const type = String(
-            getRequirementType(item)
-          )
-            .toUpperCase()
-            .replace(/ /g, "_");
+      const matchesStatus =
+        statusFilter === "ALL" ||
+        normalizedStatus === statusFilter;
 
-          const matchesType =
-            typeFilter === "ALL" ||
-            type === typeFilter;
+      const normalizedType = String(
+        getSystemType(item)
+      )
+        .toUpperCase()
+        .replace(/[\s-]+/g, "_");
 
-          return (
-            matchesSearch &&
-            matchesStatus &&
-            matchesType
-          );
-        }
+      const matchesType =
+        typeFilter === "ALL" ||
+        normalizedType === typeFilter;
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesType
       );
-    }, [
-      requirements,
-      search,
-      statusFilter,
-      typeFilter,
-    ]);
+    });
+  }, [
+    requirements,
+    search,
+    statusFilter,
+    typeFilter,
+  ]);
+
+  /* =========================================================
+     STATUS OPTIONS
+  ========================================================= */
+
+  const statusOptions = useMemo(() => {
+    const statuses = requirements
+      .map((item) => {
+        const status =
+          item?.status || "PENDING";
+
+        return normalizeStatus(status);
+      })
+      .filter(Boolean);
+
+    return [...new Set(statuses)];
+  }, [requirements]);
+
+  /* =========================================================
+     TYPE OPTIONS
+  ========================================================= */
+
+  const typeOptions = useMemo(() => {
+    const types = requirements
+      .map((item) => {
+        const type =
+          getSystemType(item);
+
+        if (
+          !type ||
+          type === "—"
+        ) {
+          return null;
+        }
+
+        return String(type)
+          .toUpperCase()
+          .replace(/[\s-]+/g, "_");
+      })
+      .filter(Boolean);
+
+    return [...new Set(types)];
+  }, [requirements]);
+
+  /* =========================================================
+     STATS
+  ========================================================= */
+
+  const stats = useMemo(() => {
+    const total =
+      requirements.length;
+
+    const normalizedStatuses =
+      requirements.map((item) =>
+        normalizeStatus(
+          getStatus(item)
+        )
+      );
+
+    const pending =
+      normalizedStatuses.filter(
+        (status) =>
+          [
+            "PENDING",
+            "NEW",
+            "DRAFT",
+          ].includes(status)
+      ).length;
+
+    const inProgress =
+      normalizedStatuses.filter(
+        (status) =>
+          [
+            "IN_PROGRESS",
+            "PROCESSING",
+          ].includes(status)
+      ).length;
+
+    const approved =
+      normalizedStatuses.filter(
+        (status) =>
+          [
+            "APPROVED",
+            "COMPLETED",
+            "ACTIVE",
+            "CONVERTED",
+          ].includes(status)
+      ).length;
+
+    return {
+      total,
+      pending,
+      inProgress,
+      approved,
+    };
+  }, [requirements]);
+
+  /* =========================================================
+     PAGINATION
+  ========================================================= */
 
   const totalPages = Math.max(
     1,
@@ -347,125 +569,42 @@ const SolarRequirementsPage = () => {
         itemsPerPage
     );
 
-  const statusOptions =
-    useMemo(() => {
-      const statuses =
-        requirements
-          .map((item) =>
-            item?.status
-              ? String(item.status)
-                  .toUpperCase()
-                  .replace(/ /g, "_")
-              : null
-          )
-          .filter(Boolean);
-
-      return [
-        ...new Set(statuses),
-      ];
-    }, [requirements]);
-
-  const typeOptions =
-    useMemo(() => {
-      const types =
-        requirements
-          .map((item) => {
-            const type =
-              getRequirementType(
-                item
-              );
-
-            if (
-              !type ||
-              type === "—"
-            ) {
-              return null;
-            }
-
-            return String(type)
-              .toUpperCase()
-              .replace(/ /g, "_");
-          })
-          .filter(Boolean);
-
-      return [
-        ...new Set(types),
-      ];
-    }, [requirements]);
-
-  const stats = useMemo(() => {
-    const total =
-      requirements.length;
-
-    const pending =
-      requirements.filter(
-        (item) =>
-          [
-            "PENDING",
-            "NEW",
-            "DRAFT",
-          ].includes(
-            String(
-              item?.status || ""
-            ).toUpperCase()
-          )
-      ).length;
-
-    const approved =
-      requirements.filter(
-        (item) =>
-          [
-            "APPROVED",
-            "COMPLETED",
-            "ACTIVE",
-          ].includes(
-            String(
-              item?.status || ""
-            ).toUpperCase()
-          )
-      ).length;
-
-    const inProgress =
-      requirements.filter(
-        (item) =>
-          [
-            "IN_PROGRESS",
-            "PROCESSING",
-          ].includes(
-            String(
-              item?.status || ""
-            ).toUpperCase()
-          )
-      ).length;
-
-    return {
-      total,
-      pending,
-      approved,
-      inProgress,
-    };
-  }, [requirements]);
-
-  const openDetails = (
-    requirement
-  ) => {
-    setSelectedRequirement(
-      requirement
-    );
-
-    setShowDetails(true);
-  };
-
-  const closeDetails = () => {
-    setShowDetails(false);
-    setSelectedRequirement(null);
-  };
+  /* =========================================================
+     ACTIONS
+  ========================================================= */
 
   const handleCreate = () => {
     router.push(
       "/admin/solar-requirements/create"
     );
   };
+
+  /**
+   * IMPORTANT:
+   * View button now opens the actual
+   * requirement details page.
+   */
+  const handleView = (item) => {
+    const id =
+      item?._id ||
+      item?.id ||
+      item?.requirementId;
+
+    if (!id) {
+      setError(
+        "Requirement ID is missing."
+      );
+      return;
+    }
+
+    router.push(
+      `/admin/solar-requirements/${id}`
+    );
+  };
+
+  /* =========================================================
+     LOADING
+  ========================================================= */
 
   if (loading) {
     return (
@@ -475,14 +614,20 @@ const SolarRequirementsPage = () => {
     );
   }
 
+  /* =========================================================
+     UI
+  ========================================================= */
+
   return (
     <div className="admin-requirements-page">
 
-      {/* Page Header */}
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
       <div className="admin-requirements-header">
 
-        <div>
+        <div className="admin-requirements-heading">
 
           <span className="admin-page-eyebrow">
             Solar Management
@@ -494,7 +639,8 @@ const SolarRequirementsPage = () => {
 
           <p>
             Manage customer solar
-            requirements and system needs.
+            requirements, capacity and
+            system needs.
           </p>
 
         </div>
@@ -523,7 +669,9 @@ const SolarRequirementsPage = () => {
 
       </div>
 
-      {/* Error */}
+      {/* =====================================================
+          ERROR
+      ===================================================== */}
 
       {error && (
         <div className="admin-requirements-error">
@@ -552,7 +700,9 @@ const SolarRequirementsPage = () => {
         </div>
       )}
 
-      {/* Stats */}
+      {/* =====================================================
+          STATS
+      ===================================================== */}
 
       <div className="admin-requirements-stats">
 
@@ -568,9 +718,7 @@ const SolarRequirementsPage = () => {
             </span>
 
             <strong>
-              {formatNumber(
-                stats.total
-              )}
+              {stats.total}
             </strong>
           </div>
 
@@ -588,9 +736,7 @@ const SolarRequirementsPage = () => {
             </span>
 
             <strong>
-              {formatNumber(
-                stats.pending
-              )}
+              {stats.pending}
             </strong>
           </div>
 
@@ -608,9 +754,7 @@ const SolarRequirementsPage = () => {
             </span>
 
             <strong>
-              {formatNumber(
-                stats.inProgress
-              )}
+              {stats.inProgress}
             </strong>
           </div>
 
@@ -628,9 +772,7 @@ const SolarRequirementsPage = () => {
             </span>
 
             <strong>
-              {formatNumber(
-                stats.approved
-              )}
+              {stats.approved}
             </strong>
           </div>
 
@@ -638,7 +780,9 @@ const SolarRequirementsPage = () => {
 
       </div>
 
-      {/* Filters */}
+      {/* =====================================================
+          FILTERS
+      ===================================================== */}
 
       <div className="admin-requirements-toolbar">
 
@@ -663,6 +807,7 @@ const SolarRequirementsPage = () => {
             }
             className="admin-filter-select"
           >
+
             <option value="ALL">
               All Status
             </option>
@@ -691,6 +836,7 @@ const SolarRequirementsPage = () => {
             }
             className="admin-filter-select"
           >
+
             <option value="ALL">
               All Types
             </option>
@@ -714,7 +860,9 @@ const SolarRequirementsPage = () => {
 
       </div>
 
-      {/* Table */}
+      {/* =====================================================
+          TABLE
+      ===================================================== */}
 
       <div className="admin-requirements-card">
 
@@ -740,6 +888,10 @@ const SolarRequirementsPage = () => {
 
           </div>
 
+          <div className="admin-results-count">
+            {filteredRequirements.length} Results
+          </div>
+
         </div>
 
         {paginatedRequirements.length ===
@@ -755,9 +907,9 @@ const SolarRequirementsPage = () => {
             </h3>
 
             <p>
-              Try changing your filters
-              or create a new solar
-              requirement.
+              No solar requirement
+              matches your current
+              search or filters.
             </p>
 
             <Button
@@ -811,31 +963,26 @@ const SolarRequirementsPage = () => {
               <tbody>
 
                 {paginatedRequirements.map(
-                  (
-                    item,
-                    index
-                  ) => {
+                  (item, index) => {
 
                     const requirementId =
-                      item?.requirementNumber ||
-                      item?.requirementId ||
-                      item?._id ||
-                      `REQ-${index + 1}`;
-
-                    const customer =
-                      item?.customer ||
-                      item?.customerId ||
-                      item?.lead;
+                      getRequirementId(
+                        item,
+                        index
+                      );
 
                     const customerName =
-                      item?.customerName ||
-                      item?.name ||
-                      getName(
-                        customer
+                      getCustomerName(
+                        item
+                      );
+
+                    const customerPhone =
+                      getCustomerPhone(
+                        item
                       );
 
                     const systemType =
-                      getRequirementType(
+                      getSystemType(
                         item
                       );
 
@@ -845,23 +992,23 @@ const SolarRequirementsPage = () => {
                       );
 
                     const location =
-                      item?.city ||
-                      item?.location ||
-                      item?.address ||
-                      "—";
+                      getLocation(
+                        item
+                      );
 
                     const status =
-                      item?.status ||
-                      "PENDING";
+                      getStatus(item);
 
                     return (
                       <tr
                         key={
                           item?._id ||
                           item?.id ||
-                          index
+                          requirementId
                         }
                       >
+
+                        {/* REQUIREMENT */}
 
                         <td>
 
@@ -874,15 +1021,15 @@ const SolarRequirementsPage = () => {
                             <div>
 
                               <strong>
-                                {requirementId}
+                                {safeText(
+                                  requirementId
+                                )}
                               </strong>
 
                               <small>
-                                {item?.createdAt
-                                  ? formatDate(
-                                      item.createdAt
-                                    )
-                                  : "Solar Requirement"}
+                                {formatDate(
+                                  item?.createdAt
+                                )}
                               </small>
 
                             </div>
@@ -891,21 +1038,21 @@ const SolarRequirementsPage = () => {
 
                         </td>
 
+                        {/* CUSTOMER */}
+
                         <td>
 
                           <div className="admin-customer-cell">
 
                             <strong>
-                              {getValue(
+                              {safeText(
                                 customerName
                               )}
                             </strong>
 
-                            {(item?.phone ||
-                              item?.mobile) && (
+                            {customerPhone && (
                               <small>
-                                {item.phone ||
-                                  item.mobile}
+                                {customerPhone}
                               </small>
                             )}
 
@@ -913,15 +1060,33 @@ const SolarRequirementsPage = () => {
 
                         </td>
 
+                        {/* SYSTEM TYPE */}
+
                         <td>
 
-                          <span className="admin-type-text">
-                            {getValue(
-                              systemType
+                          <div className="admin-system-type-cell">
+
+                            <span className="admin-type-text">
+                              {safeText(
+                                systemType
+                              )}
+                            </span>
+
+                            {getConnectionType(
+                              item
+                            ) !== "—" && (
+                              <small>
+                                {getConnectionType(
+                                  item
+                                )}
+                              </small>
                             )}
-                          </span>
+
+                          </div>
 
                         </td>
+
+                        {/* CAPACITY */}
 
                         <td>
 
@@ -940,15 +1105,19 @@ const SolarRequirementsPage = () => {
 
                         </td>
 
+                        {/* LOCATION */}
+
                         <td>
 
                           <span className="admin-location-text">
-                            {getValue(
+                            {safeText(
                               location
                             )}
                           </span>
 
                         </td>
+
+                        {/* STATUS */}
 
                         <td>
 
@@ -964,6 +1133,8 @@ const SolarRequirementsPage = () => {
 
                         </td>
 
+                        {/* CREATED */}
+
                         <td>
 
                           <span className="admin-date-text">
@@ -974,13 +1145,15 @@ const SolarRequirementsPage = () => {
 
                         </td>
 
+                        {/* ACTION */}
+
                         <td>
 
                           <button
                             type="button"
                             className="admin-view-button"
                             onClick={() =>
-                              openDetails(
+                              handleView(
                                 item
                               )
                             }
@@ -1002,6 +1175,8 @@ const SolarRequirementsPage = () => {
           </div>
         )}
 
+        {/* PAGINATION */}
+
         {filteredRequirements.length >
           itemsPerPage && (
           <div className="admin-requirements-pagination">
@@ -1022,213 +1197,6 @@ const SolarRequirementsPage = () => {
         )}
 
       </div>
-
-      {/* Details Modal */}
-
-      <Modal
-        isOpen={showDetails}
-        onClose={closeDetails}
-        title="Solar Requirement Details"
-      >
-
-        {selectedRequirement && (
-          <div className="admin-requirement-modal">
-
-            <div className="admin-modal-summary">
-
-              <div className="admin-modal-solar-icon">
-                ☀
-              </div>
-
-              <div>
-
-                <h3>
-                  {getValue(
-                    selectedRequirement?.requirementNumber ||
-                      selectedRequirement?.requirementId ||
-                      selectedRequirement?._id
-                  )}
-                </h3>
-
-                <Badge
-                  variant={getStatusVariant(
-                    selectedRequirement?.status
-                  )}
-                >
-                  {getStatusText(
-                    selectedRequirement?.status
-                  )}
-                </Badge>
-
-              </div>
-
-            </div>
-
-            <div className="admin-modal-detail-grid">
-
-              <div>
-                <span>
-                  Customer
-                </span>
-
-                <strong>
-                  {getValue(
-                    selectedRequirement?.customerName ||
-                      selectedRequirement?.name ||
-                      getName(
-                        selectedRequirement?.customer ||
-                          selectedRequirement?.customerId ||
-                          selectedRequirement?.lead
-                      )
-                  )}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Phone
-                </span>
-
-                <strong>
-                  {getValue(
-                    selectedRequirement?.phone ||
-                      selectedRequirement?.mobile
-                  )}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Email
-                </span>
-
-                <strong>
-                  {getValue(
-                    selectedRequirement?.email
-                  )}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  System Type
-                </span>
-
-                <strong>
-                  {getValue(
-                    getRequirementType(
-                      selectedRequirement
-                    )
-                  )}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Capacity
-                </span>
-
-                <strong>
-                  {getCapacity(
-                    selectedRequirement
-                  ) !== null
-                    ? `${formatNumber(
-                        getCapacity(
-                          selectedRequirement
-                        )
-                      )} kW`
-                    : "—"}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Location
-                </span>
-
-                <strong>
-                  {getValue(
-                    selectedRequirement?.city ||
-                      selectedRequirement?.location
-                  )}
-                </strong>
-              </div>
-
-              <div className="admin-modal-full">
-
-                <span>
-                  Address
-                </span>
-
-                <strong>
-                  {getValue(
-                    selectedRequirement?.address
-                  )}
-                </strong>
-
-              </div>
-
-              <div className="admin-modal-full">
-
-                <span>
-                  Requirement Details
-                </span>
-
-                <strong>
-                  {getValue(
-                    selectedRequirement?.description ||
-                      selectedRequirement?.requirementDetails ||
-                      selectedRequirement?.notes
-                  )}
-                </strong>
-
-              </div>
-
-              <div>
-
-                <span>
-                  Created At
-                </span>
-
-                <strong>
-                  {formatDate(
-                    selectedRequirement?.createdAt
-                  )}
-                </strong>
-
-              </div>
-
-              <div>
-
-                <span>
-                  Updated At
-                </span>
-
-                <strong>
-                  {formatDate(
-                    selectedRequirement?.updatedAt
-                  )}
-                </strong>
-
-              </div>
-
-            </div>
-
-            <div className="admin-modal-actions">
-
-              <Button
-                variant="secondary"
-                onClick={closeDetails}
-              >
-                Close
-              </Button>
-
-            </div>
-
-          </div>
-        )}
-
-      </Modal>
 
     </div>
   );

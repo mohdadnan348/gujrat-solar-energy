@@ -1,5 +1,22 @@
 const { SYSTEM_TYPE } = require("../config/constants");
 
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
+const SOLAR_REQUIREMENT_STATUS = [
+  "PENDING",
+  "IN_PROGRESS",
+  "APPROVED",
+  "COMPLETED",
+  "REJECTED",
+  "CANCELLED",
+];
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
 const isNonNegativeNumber = (value) => {
   return (
     typeof value === "number" &&
@@ -9,10 +26,28 @@ const isNonNegativeNumber = (value) => {
 };
 
 const isValidObjectId = (value) => {
-  return /^[0-9a-fA-F]{24}$/.test(value);
+  return (
+    typeof value === "string" &&
+    /^[0-9a-fA-F]{24}$/.test(value)
+  );
 };
 
-const validateSolarRequirement = (req, res, next) => {
+const isValidStatus = (value) => {
+  return (
+    typeof value === "string" &&
+    SOLAR_REQUIREMENT_STATUS.includes(value)
+  );
+};
+
+/* =========================================================
+   CREATE VALIDATION
+========================================================= */
+
+const validateSolarRequirement = (
+  req,
+  res,
+  next
+) => {
   const {
     lead,
     customer,
@@ -26,6 +61,7 @@ const validateSolarRequirement = (req, res, next) => {
     connectionType,
     sanctionedLoad,
     systemType,
+    status,
     batteryRequired,
     batteryCapacity,
     siteSurveyRequired,
@@ -37,14 +73,24 @@ const validateSolarRequirement = (req, res, next) => {
 
   const errors = [];
 
-  // Lead
+  /* =========================
+     Lead
+  ========================= */
+
   if (!lead || typeof lead !== "string") {
-    errors.push("Lead reference is required");
+    errors.push(
+      "Lead reference is required"
+    );
   } else if (!isValidObjectId(lead)) {
-    errors.push("Lead reference must be a valid ID");
+    errors.push(
+      "Lead reference must be a valid ID"
+    );
   }
 
-  // Customer
+  /* =========================
+     Customer
+  ========================= */
+
   if (
     customer !== undefined &&
     customer !== null &&
@@ -54,83 +100,128 @@ const validateSolarRequirement = (req, res, next) => {
       typeof customer !== "string" ||
       !isValidObjectId(customer)
     ) {
-      errors.push("Customer reference must be a valid ID");
+      errors.push(
+        "Customer reference must be a valid ID"
+      );
     }
   }
 
-  // Required kW
+  /* =========================
+     Required kW
+  ========================= */
+
   if (
     requiredKw !== undefined &&
     !isNonNegativeNumber(requiredKw)
   ) {
-    errors.push("Required kW must be a non-negative number");
+    errors.push(
+      "Required kW must be a non-negative number"
+    );
   }
 
-  // Monthly Bill
+  /* =========================
+     Monthly Bill
+  ========================= */
+
   if (
     monthlyBill !== undefined &&
     !isNonNegativeNumber(monthlyBill)
   ) {
-    errors.push("Monthly bill must be a non-negative number");
+    errors.push(
+      "Monthly bill must be a non-negative number"
+    );
   }
 
-  // Monthly Units
+  /* =========================
+     Monthly Units
+  ========================= */
+
   if (
     monthlyUnits !== undefined &&
     !isNonNegativeNumber(monthlyUnits)
   ) {
-    errors.push("Monthly units must be a non-negative number");
+    errors.push(
+      "Monthly units must be a non-negative number"
+    );
   }
 
-  // Roof Type
+  /* =========================
+     Roof Type
+  ========================= */
+
   if (
     roofType !== undefined &&
     roofType !== null &&
     roofType !== "" &&
     typeof roofType !== "string"
   ) {
-    errors.push("Roof type must be a string");
+    errors.push(
+      "Roof type must be a string"
+    );
   }
 
-  // Roof Area
+  /* =========================
+     Roof Area
+  ========================= */
+
   if (
     roofArea !== undefined &&
     !isNonNegativeNumber(roofArea)
   ) {
-    errors.push("Roof area must be a non-negative number");
+    errors.push(
+      "Roof area must be a non-negative number"
+    );
   }
 
-  // Site Address
+  /* =========================
+     Site Address
+  ========================= */
+
   if (
     siteAddress !== undefined &&
     siteAddress !== null &&
     siteAddress !== "" &&
     typeof siteAddress !== "string"
   ) {
-    errors.push("Site address must be a string");
+    errors.push(
+      "Site address must be a string"
+    );
   }
 
-  // Location
+  /* =========================
+     Location
+  ========================= */
+
   if (
     location !== undefined &&
     location !== null &&
     location !== "" &&
     typeof location !== "string"
   ) {
-    errors.push("Location must be a string");
+    errors.push(
+      "Location must be a string"
+    );
   }
 
-  // Connection Type
+  /* =========================
+     Connection Type
+  ========================= */
+
   if (
     connectionType !== undefined &&
     connectionType !== null &&
     connectionType !== "" &&
     typeof connectionType !== "string"
   ) {
-    errors.push("Connection type must be a string");
+    errors.push(
+      "Connection type must be a string"
+    );
   }
 
-  // Sanctioned Load
+  /* =========================
+     Sanctioned Load
+  ========================= */
+
   if (
     sanctionedLoad !== undefined &&
     !isNonNegativeNumber(sanctionedLoad)
@@ -140,11 +231,21 @@ const validateSolarRequirement = (req, res, next) => {
     );
   }
 
-  // System Type
-  if (!systemType || typeof systemType !== "string") {
-    errors.push("System type is required");
+  /* =========================
+     System Type
+  ========================= */
+
+  if (
+    !systemType ||
+    typeof systemType !== "string"
+  ) {
+    errors.push(
+      "System type is required"
+    );
   } else if (
-    !Object.values(SYSTEM_TYPE).includes(systemType)
+    !Object.values(SYSTEM_TYPE).includes(
+      systemType
+    )
   ) {
     errors.push(
       `Invalid system type. Allowed types: ${Object.values(
@@ -153,15 +254,37 @@ const validateSolarRequirement = (req, res, next) => {
     );
   }
 
-  // Battery Required
+  /* =========================
+     Status
+  ========================= */
+
+  if (status !== undefined) {
+    if (!isValidStatus(status)) {
+      errors.push(
+        `Invalid status. Allowed statuses: ${SOLAR_REQUIREMENT_STATUS.join(
+          ", "
+        )}`
+      );
+    }
+  }
+
+  /* =========================
+     Battery Required
+  ========================= */
+
   if (
     batteryRequired !== undefined &&
     typeof batteryRequired !== "boolean"
   ) {
-    errors.push("Battery required must be a boolean");
+    errors.push(
+      "Battery required must be a boolean"
+    );
   }
 
-  // Battery Capacity
+  /* =========================
+     Battery Capacity
+  ========================= */
+
   if (
     batteryCapacity !== undefined &&
     !isNonNegativeNumber(batteryCapacity)
@@ -171,7 +294,10 @@ const validateSolarRequirement = (req, res, next) => {
     );
   }
 
-  // Site Survey Required
+  /* =========================
+     Site Survey Required
+  ========================= */
+
   if (
     siteSurveyRequired !== undefined &&
     typeof siteSurveyRequired !== "boolean"
@@ -181,7 +307,10 @@ const validateSolarRequirement = (req, res, next) => {
     );
   }
 
-  // Site Survey Completed
+  /* =========================
+     Site Survey Completed
+  ========================= */
+
   if (
     siteSurveyCompleted !== undefined &&
     typeof siteSurveyCompleted !== "boolean"
@@ -191,50 +320,82 @@ const validateSolarRequirement = (req, res, next) => {
     );
   }
 
-  // Photos
+  /* =========================
+     Photos
+  ========================= */
+
   if (photos !== undefined) {
     if (!Array.isArray(photos)) {
-      errors.push("Photos must be an array");
+      errors.push(
+        "Photos must be an array"
+      );
     } else if (
-      photos.some((photo) => typeof photo !== "string")
-    ) {
-      errors.push("Each photo must be a string");
-    }
-  }
-
-  // Documents
-  if (documents !== undefined) {
-    if (!Array.isArray(documents)) {
-      errors.push("Documents must be an array");
-    } else if (
-      documents.some(
-        (document) => typeof document !== "string"
+      photos.some(
+        (photo) =>
+          typeof photo !== "string"
       )
     ) {
-      errors.push("Each document must be a string");
+      errors.push(
+        "Each photo must be a string"
+      );
     }
   }
 
-  // Notes
+  /* =========================
+     Documents
+  ========================= */
+
+  if (documents !== undefined) {
+    if (!Array.isArray(documents)) {
+      errors.push(
+        "Documents must be an array"
+      );
+    } else if (
+      documents.some(
+        (document) =>
+          typeof document !== "string"
+      )
+    ) {
+      errors.push(
+        "Each document must be a string"
+      );
+    }
+  }
+
+  /* =========================
+     Notes
+  ========================= */
+
   if (
     notes !== undefined &&
     notes !== null &&
     notes !== "" &&
     typeof notes !== "string"
   ) {
-    errors.push("Notes must be a string");
+    errors.push(
+      "Notes must be a string"
+    );
   }
+
+  /* =========================
+     RESPONSE
+  ========================= */
 
   if (errors.length > 0) {
     return res.status(400).json({
       success: false,
-      message: "Solar requirement validation failed",
+      message:
+        "Solar requirement validation failed",
       errors,
     });
   }
 
   next();
 };
+
+/* =========================================================
+   UPDATE VALIDATION
+========================================================= */
 
 const validateSolarRequirementUpdate = (
   req,
@@ -254,6 +415,7 @@ const validateSolarRequirementUpdate = (
     connectionType,
     sanctionedLoad,
     systemType,
+    status,
     batteryRequired,
     batteryCapacity,
     siteSurveyRequired,
@@ -265,14 +427,24 @@ const validateSolarRequirementUpdate = (
 
   const errors = [];
 
+  /* =========================
+     Lead
+  ========================= */
+
   if (lead !== undefined) {
     if (
       typeof lead !== "string" ||
       !isValidObjectId(lead)
     ) {
-      errors.push("Lead reference must be a valid ID");
+      errors.push(
+        "Lead reference must be a valid ID"
+      );
     }
   }
+
+  /* =========================
+     Customer
+  ========================= */
 
   if (
     customer !== undefined &&
@@ -283,30 +455,54 @@ const validateSolarRequirementUpdate = (
       typeof customer !== "string" ||
       !isValidObjectId(customer)
     ) {
-      errors.push("Customer reference must be a valid ID");
+      errors.push(
+        "Customer reference must be a valid ID"
+      );
     }
   }
+
+  /* =========================
+     Required kW
+  ========================= */
 
   if (
     requiredKw !== undefined &&
     !isNonNegativeNumber(requiredKw)
   ) {
-    errors.push("Required kW must be a non-negative number");
+    errors.push(
+      "Required kW must be a non-negative number"
+    );
   }
+
+  /* =========================
+     Monthly Bill
+  ========================= */
 
   if (
     monthlyBill !== undefined &&
     !isNonNegativeNumber(monthlyBill)
   ) {
-    errors.push("Monthly bill must be a non-negative number");
+    errors.push(
+      "Monthly bill must be a non-negative number"
+    );
   }
+
+  /* =========================
+     Monthly Units
+  ========================= */
 
   if (
     monthlyUnits !== undefined &&
     !isNonNegativeNumber(monthlyUnits)
   ) {
-    errors.push("Monthly units must be a non-negative number");
+    errors.push(
+      "Monthly units must be a non-negative number"
+    );
   }
+
+  /* =========================
+     Roof Type
+  ========================= */
 
   if (
     roofType !== undefined &&
@@ -314,15 +510,27 @@ const validateSolarRequirementUpdate = (
     roofType !== "" &&
     typeof roofType !== "string"
   ) {
-    errors.push("Roof type must be a string");
+    errors.push(
+      "Roof type must be a string"
+    );
   }
+
+  /* =========================
+     Roof Area
+  ========================= */
 
   if (
     roofArea !== undefined &&
     !isNonNegativeNumber(roofArea)
   ) {
-    errors.push("Roof area must be a non-negative number");
+    errors.push(
+      "Roof area must be a non-negative number"
+    );
   }
+
+  /* =========================
+     Site Address
+  ========================= */
 
   if (
     siteAddress !== undefined &&
@@ -330,8 +538,14 @@ const validateSolarRequirementUpdate = (
     siteAddress !== "" &&
     typeof siteAddress !== "string"
   ) {
-    errors.push("Site address must be a string");
+    errors.push(
+      "Site address must be a string"
+    );
   }
+
+  /* =========================
+     Location
+  ========================= */
 
   if (
     location !== undefined &&
@@ -339,8 +553,14 @@ const validateSolarRequirementUpdate = (
     location !== "" &&
     typeof location !== "string"
   ) {
-    errors.push("Location must be a string");
+    errors.push(
+      "Location must be a string"
+    );
   }
+
+  /* =========================
+     Connection Type
+  ========================= */
 
   if (
     connectionType !== undefined &&
@@ -348,8 +568,14 @@ const validateSolarRequirementUpdate = (
     connectionType !== "" &&
     typeof connectionType !== "string"
   ) {
-    errors.push("Connection type must be a string");
+    errors.push(
+      "Connection type must be a string"
+    );
   }
+
+  /* =========================
+     Sanctioned Load
+  ========================= */
 
   if (
     sanctionedLoad !== undefined &&
@@ -360,10 +586,16 @@ const validateSolarRequirementUpdate = (
     );
   }
 
+  /* =========================
+     System Type
+  ========================= */
+
   if (systemType !== undefined) {
     if (
       typeof systemType !== "string" ||
-      !Object.values(SYSTEM_TYPE).includes(systemType)
+      !Object.values(SYSTEM_TYPE).includes(
+        systemType
+      )
     ) {
       errors.push(
         `Invalid system type. Allowed types: ${Object.values(
@@ -373,12 +605,36 @@ const validateSolarRequirementUpdate = (
     }
   }
 
+  /* =========================
+     STATUS
+  ========================= */
+
+  if (status !== undefined) {
+    if (!isValidStatus(status)) {
+      errors.push(
+        `Invalid status. Allowed statuses: ${SOLAR_REQUIREMENT_STATUS.join(
+          ", "
+        )}`
+      );
+    }
+  }
+
+  /* =========================
+     Battery Required
+  ========================= */
+
   if (
     batteryRequired !== undefined &&
     typeof batteryRequired !== "boolean"
   ) {
-    errors.push("Battery required must be a boolean");
+    errors.push(
+      "Battery required must be a boolean"
+    );
   }
+
+  /* =========================
+     Battery Capacity
+  ========================= */
 
   if (
     batteryCapacity !== undefined &&
@@ -389,6 +645,10 @@ const validateSolarRequirementUpdate = (
     );
   }
 
+  /* =========================
+     Site Survey Required
+  ========================= */
+
   if (
     siteSurveyRequired !== undefined &&
     typeof siteSurveyRequired !== "boolean"
@@ -397,6 +657,10 @@ const validateSolarRequirementUpdate = (
       "Site survey required must be a boolean"
     );
   }
+
+  /* =========================
+     Site Survey Completed
+  ========================= */
 
   if (
     siteSurveyCompleted !== undefined &&
@@ -407,27 +671,51 @@ const validateSolarRequirementUpdate = (
     );
   }
 
+  /* =========================
+     Photos
+  ========================= */
+
   if (photos !== undefined) {
     if (!Array.isArray(photos)) {
-      errors.push("Photos must be an array");
+      errors.push(
+        "Photos must be an array"
+      );
     } else if (
-      photos.some((photo) => typeof photo !== "string")
+      photos.some(
+        (photo) =>
+          typeof photo !== "string"
+      )
     ) {
-      errors.push("Each photo must be a string");
+      errors.push(
+        "Each photo must be a string"
+      );
     }
   }
 
+  /* =========================
+     Documents
+  ========================= */
+
   if (documents !== undefined) {
     if (!Array.isArray(documents)) {
-      errors.push("Documents must be an array");
+      errors.push(
+        "Documents must be an array"
+      );
     } else if (
       documents.some(
-        (document) => typeof document !== "string"
+        (document) =>
+          typeof document !== "string"
       )
     ) {
-      errors.push("Each document must be a string");
+      errors.push(
+        "Each document must be a string"
+      );
     }
   }
+
+  /* =========================
+     Notes
+  ========================= */
 
   if (
     notes !== undefined &&
@@ -435,13 +723,20 @@ const validateSolarRequirementUpdate = (
     notes !== "" &&
     typeof notes !== "string"
   ) {
-    errors.push("Notes must be a string");
+    errors.push(
+      "Notes must be a string"
+    );
   }
+
+  /* =========================
+     RESPONSE
+  ========================= */
 
   if (errors.length > 0) {
     return res.status(400).json({
       success: false,
-      message: "Solar requirement update validation failed",
+      message:
+        "Solar requirement update validation failed",
       errors,
     });
   }
@@ -449,7 +744,12 @@ const validateSolarRequirementUpdate = (
   next();
 };
 
+/* =========================================================
+   EXPORTS
+========================================================= */
+
 module.exports = {
   validateSolarRequirement,
   validateSolarRequirementUpdate,
+  SOLAR_REQUIREMENT_STATUS,
 };

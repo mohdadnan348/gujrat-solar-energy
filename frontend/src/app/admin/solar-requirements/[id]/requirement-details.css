@@ -1,3 +1,7 @@
+/* =========================================================
+   ADMIN SOLAR REQUIREMENT DETAILS
+========================================================= */
+
 .admin-requirement-details-page {
   width: 100%;
   min-height: 100%;
@@ -5,6 +9,10 @@
   background: #f7f9fc;
   color: #172033;
 }
+
+/* =========================================================
+   LOADING
+========================================================= */
 
 .admin-requirement-details-loading {
   min-height: 70vh;
@@ -14,14 +22,16 @@
   background: #f7f9fc;
 }
 
-/* Header */
+/* =========================================================
+   HEADER
+========================================================= */
 
 .admin-requirement-details-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .admin-requirement-back {
@@ -54,10 +64,16 @@
   align-items: center;
   justify-content: center;
   border-radius: 15px;
-  background: linear-gradient(135deg, #16a34a, #22c55e);
+  background: linear-gradient(
+    135deg,
+    #16a34a,
+    #22c55e
+  );
   color: #ffffff;
   font-size: 25px;
-  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.2);
+  box-shadow:
+    0 8px 20px
+      rgba(34, 197, 94, 0.2);
 }
 
 .admin-requirement-title-line {
@@ -82,17 +98,117 @@
   font-size: 13px;
 }
 
+/* =========================================================
+   HEADER ACTIONS
+========================================================= */
+
 .admin-requirement-header-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
-/* Summary */
+/* =========================================================
+   STATUS EDITOR
+========================================================= */
+
+.admin-requirement-status-editor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  background: #ffffff;
+  box-shadow:
+    0 4px 14px
+      rgba(15, 23, 42, 0.04);
+}
+
+.admin-requirement-status-select {
+  min-width: 145px;
+  height: 38px;
+  padding: 0 32px 0 11px;
+  border: 0;
+  border-radius: 8px;
+  outline: none;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-requirement-status-select:focus {
+  background: #f8fafc;
+}
+
+.admin-requirement-status-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   STATUS SUCCESS / ERROR
+========================================================= */
+
+.admin-status-success,
+.admin-status-error {
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 12px 15px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 650;
+  box-sizing: border-box;
+}
+
+.admin-status-success {
+  border: 1px solid #b7e4c4;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.admin-status-error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.admin-status-success span,
+.admin-status-error span {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.admin-status-success span {
+  background: #dcfce7;
+}
+
+.admin-status-error span {
+  background: #fee2e2;
+}
+
+/* =========================================================
+   SUMMARY
+========================================================= */
 
 .admin-requirement-summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -103,7 +219,9 @@
   border: 1px solid #e7ebf0;
   border-radius: 16px;
   background: #ffffff;
-  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+  box-shadow:
+    0 4px 18px
+      rgba(15, 23, 42, 0.04);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -123,11 +241,14 @@
   font-weight: 750;
 }
 
-/* Main Layout */
+/* =========================================================
+   MAIN LAYOUT
+========================================================= */
 
 .admin-requirement-details-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
+  grid-template-columns:
+    minmax(0, 1fr) 330px;
   gap: 20px;
   align-items: start;
 }
@@ -149,13 +270,17 @@
   gap: 20px;
 }
 
-/* Cards */
+/* =========================================================
+   CARDS
+========================================================= */
 
 .admin-requirement-detail-card {
   border: 1px solid #e7ebf0;
   border-radius: 17px;
   background: #ffffff;
-  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.035);
+  box-shadow:
+    0 4px 18px
+      rgba(15, 23, 42, 0.035);
   overflow: hidden;
 }
 
@@ -182,12 +307,15 @@
   line-height: 1.5;
 }
 
-/* Detail Grid */
+/* =========================================================
+   DETAIL GRID
+========================================================= */
 
 .admin-requirement-detail-grid {
   padding: 4px 22px 20px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
   column-gap: 34px;
 }
 
@@ -200,7 +328,8 @@
   gap: 7px;
 }
 
-.admin-requirement-detail-grid > div:nth-last-child(-n + 2) {
+.admin-requirement-detail-grid
+  > div:nth-last-child(-n + 2) {
   border-bottom: 0;
 }
 
@@ -226,11 +355,14 @@
   grid-column: 1 / -1;
 }
 
-.admin-requirement-detail-grid > .admin-requirement-detail-full:last-child {
+.admin-requirement-detail-grid
+  > .admin-requirement-detail-full:last-child {
   border-bottom: 0;
 }
 
-/* Notes */
+/* =========================================================
+   NOTES
+========================================================= */
 
 .admin-requirement-notes {
   padding: 21px 22px;
@@ -250,9 +382,12 @@
   font-size: 13px;
 }
 
-/* Sidebar */
+/* =========================================================
+   SIDEBAR
+========================================================= */
 
-.admin-requirement-sidebar .admin-requirement-detail-card {
+.admin-requirement-sidebar
+  .admin-requirement-detail-card {
   width: 100%;
 }
 
@@ -269,7 +404,8 @@
   gap: 6px;
 }
 
-.admin-requirement-summary-list > div:last-child {
+.admin-requirement-summary-list
+  > div:last-child {
   border-bottom: 0;
 }
 
@@ -281,7 +417,13 @@
   word-break: break-word;
 }
 
-/* Linked Lead */
+.admin-current-status {
+  color: #15803d !important;
+}
+
+/* =========================================================
+   LINKED LEAD
+========================================================= */
 
 .admin-linked-lead {
   padding: 20px;
@@ -304,7 +446,8 @@
   font-weight: 800;
 }
 
-.admin-linked-lead > div:last-child {
+.admin-linked-lead
+  > div:last-child {
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -332,7 +475,9 @@
   overflow-wrap: anywhere;
 }
 
-/* Record Information */
+/* =========================================================
+   RECORD INFORMATION
+========================================================= */
 
 .admin-record-info {
   padding: 5px 20px 16px;
@@ -346,7 +491,8 @@
   gap: 6px;
 }
 
-.admin-record-info > div:last-child {
+.admin-record-info
+  > div:last-child {
   border-bottom: 0;
 }
 
@@ -357,7 +503,9 @@
   overflow-wrap: anywhere;
 }
 
-/* Error */
+/* =========================================================
+   ERROR
+========================================================= */
 
 .admin-requirement-details-error {
   max-width: 650px;
@@ -366,7 +514,9 @@
   border: 1px solid #e7ebf0;
   border-radius: 18px;
   background: #ffffff;
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
+  box-shadow:
+    0 8px 30px
+      rgba(15, 23, 42, 0.05);
   text-align: center;
 }
 
@@ -407,7 +557,9 @@
   flex-wrap: wrap;
 }
 
-/* Bottom */
+/* =========================================================
+   BOTTOM
+========================================================= */
 
 .admin-requirement-bottom-actions {
   margin-top: 22px;
@@ -415,15 +567,19 @@
   justify-content: flex-end;
 }
 
-/* Responsive */
+/* =========================================================
+   RESPONSIVE
+========================================================= */
 
 @media (max-width: 1180px) {
   .admin-requirement-details-layout {
-    grid-template-columns: minmax(0, 1fr) 290px;
+    grid-template-columns:
+      minmax(0, 1fr) 290px;
   }
 
   .admin-requirement-summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -447,7 +603,8 @@
 
   .admin-requirement-sidebar {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
     align-items: start;
   }
 }
@@ -481,11 +638,13 @@
     column-gap: 0;
   }
 
-  .admin-requirement-detail-grid > div {
+  .admin-requirement-detail-grid
+    > div {
     border-bottom: 1px solid #f0f2f5 !important;
   }
 
-  .admin-requirement-detail-grid > div:last-child {
+  .admin-requirement-detail-grid
+    > div:last-child {
     border-bottom: 0 !important;
   }
 
@@ -524,6 +683,21 @@
     margin: 40px auto;
     padding: 30px 20px;
   }
+
+  .admin-requirement-header-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-requirement-status-editor {
+    width: 100%;
+  }
+
+  .admin-requirement-status-select {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 @media (max-width: 430px) {
@@ -544,6 +718,25 @@
 
   .admin-requirement-summary-card strong {
     font-size: 19px;
+  }
+
+  .admin-requirement-status-editor {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 4px;
+  }
+
+  .admin-requirement-status-select {
+    width: 100%;
+    height: 40px;
+  }
+
+  .admin-requirement-status-editor button {
+    width: 100%;
+  }
+
+  .admin-requirement-header-actions > button {
+    width: 100%;
   }
 
   .admin-requirement-error-actions {
