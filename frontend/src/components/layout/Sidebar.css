@@ -297,6 +297,22 @@
 
   flex-shrink: 0;
 }
+.gse-sidebar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.gse-sidebar-logo-image {
+  display: block;
+  width: 150px;
+  height: 64px;
+  object-fit: contain;
+  object-position: left center;
+}
 
 .gse-sidebar-link-icon svg {
   width: 18px;

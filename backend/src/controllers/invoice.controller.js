@@ -4,7 +4,7 @@ const createInvoice = async (req, res, next) => {
   try {
     const invoice = await invoiceService.createInvoice(
       req.body,
-      req.user._id
+      req.user.userId
     );
 
     return res.status(201).json({

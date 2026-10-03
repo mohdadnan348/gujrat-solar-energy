@@ -10,7 +10,7 @@ import Select from "@/components/common/Select";
 import Textarea from "@/components/common/Textarea";
 import Loader from "@/components/common/Loader";
 
-import { invoiceService } from "@/services/invoice.service";
+import invoiceService from "@/services/invoice.service";
 import { customerService } from "@/services/customer.service";
 
 import "./create-invoice.css";
@@ -563,6 +563,13 @@ const CreateInvoicePage = () => {
   const buildPayload = () => {
     return {
       customerId: form.customerId,
+      customerDetails: {
+  name: getValue(
+    selectedCustomer,
+    ["name", "fullName", "customerName", "companyName"],
+    ""
+  ),
+},
       invoiceDate: form.invoiceDate,
       ...(form.dueDate
         ? {
@@ -572,8 +579,7 @@ const CreateInvoicePage = () => {
       title: form.title,
       items: form.items.map(
         (item) => ({
-          description:
-            item.description.trim(),
+          itemName: item.description.trim(),
           quantity:
             Number(
               item.quantity
@@ -1129,6 +1135,7 @@ const CreateInvoicePage = () => {
                       : ""}
                   </span>
                 </div>
+                
 
                 <div className="admin-create-invoice-summary-row">
                   <span>

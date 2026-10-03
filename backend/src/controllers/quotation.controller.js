@@ -232,8 +232,9 @@ const markExpiredQuotations = async (
 ) => {
   try {
     const result =
-      await quotationService.markExpiredQuotations();
-
+      await quotationService.markExpiredQuotations(
+  req.user.userId
+);
     return res.status(200).json({
       success: true,
       message:

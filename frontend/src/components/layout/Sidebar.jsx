@@ -411,7 +411,7 @@ const Sidebar = ({
       <div className="gse-sidebar-brand">
         <Link href="/" className="gse-sidebar-logo">
           <span className="gse-sidebar-logo-icon">
-            ☀
+            ☀  
           </span>
 
           {!collapsed && (
