@@ -27,7 +27,7 @@ const createInvoiceFromQuotation = async (
       await invoiceService.createInvoiceFromQuotation(
         req.params.quotationId,
         req.body || {},
-        req.user._id
+        req.user.userId
       );
 
     return res.status(201).json({
@@ -107,7 +107,7 @@ const updateInvoice = async (
       await invoiceService.updateInvoice(
         req.params.id,
         req.body,
-        req.user._id
+        req.user.userId
       );
 
     return res.status(200).json({
@@ -129,7 +129,7 @@ const issueInvoice = async (
     const invoice =
       await invoiceService.issueInvoice(
         req.params.id,
-        req.user._id
+        req.user.userId
       );
 
     return res.status(200).json({
@@ -152,7 +152,7 @@ const cancelInvoice = async (
       await invoiceService.cancelInvoice(
         req.params.id,
         req.body?.reason,
-        req.user._id
+        req.user.userId
       );
 
     return res.status(200).json({
