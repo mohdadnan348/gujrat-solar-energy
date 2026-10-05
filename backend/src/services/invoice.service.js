@@ -280,6 +280,17 @@ const buildCustomerSnapshot = (
   };
 };
 
+/*
+|--------------------------------------------------------------------------
+| Prepare Invoice Items
+|--------------------------------------------------------------------------
+| ✅ FIX:
+| InvoiceItem model me itemName REQUIRED hai.
+| Quotation items me itemName nahi hota (sirf name / description hota hai),
+| isliye hum yahan fallback laga rahe hain.
+|--------------------------------------------------------------------------
+*/
+
 const prepareInvoiceItems = (
   items,
   createdBy
@@ -287,13 +298,37 @@ const prepareInvoiceItems = (
   items.map((item, index) => {
     const calculated = calculateItem(item);
 
+    const itemName = String(
+      item?.itemName ||
+        item?.name ||
+        item?.description ||
+        item?.title ||
+        "Item"
+    ).trim();
+
+    const description = String(
+      item?.description ||
+        item?.itemName ||
+        item?.name ||
+        item?.title ||
+        itemName ||
+        ""
+    ).trim();
+
     return {
       ...item,
+
+      // ✅ Required field — guaranteed non-empty
+      itemName: itemName || "Item",
+
+      // ✅ Description guaranteed
+      description,
+
       taxableAmount: calculated.taxableAmount,
       taxAmount: calculated.taxAmount,
       amount: calculated.amount,
       sortOrder:
-        item.sortOrder !== undefined
+        item?.sortOrder !== undefined
           ? item.sortOrder
           : index,
       createdBy,

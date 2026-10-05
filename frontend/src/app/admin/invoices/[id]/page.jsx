@@ -9,8 +9,8 @@ import Badge from "@/components/common/Badge";
 import Loader from "@/components/common/Loader";
 import Modal from "@/components/common/Modal";
 
-import { invoiceService } from "@/services/invoice.service";
-import { pdfService } from "@/services/pdf.service";
+import invoiceService from "@/services/invoice.service";
+import  pdfService from "@/services/pdf.service";
 
 import "./invoice-details.css";
 
@@ -498,39 +498,35 @@ const InvoiceDetailsPage = () => {
     return quantity * rate;
   };
 
-  const handleDownloadPDF =
-    async () => {
-      try {
-        setDownloading(true);
-        setError("");
+  const handleDownloadPDF = async () => {
+  try {
+    setDownloading(true);
+    setError("");
 
-        if (
-          typeof pdfService.downloadInvoicePDF !==
-          "function"
-        ) {
-          throw new Error(
-            "Invoice PDF service is not available."
-          );
-        }
+    if (
+      typeof pdfService.downloadInvoicePdf !== "function"
+    ) {
+      throw new Error(
+        "Invoice PDF service is not available."
+      );
+    }
 
-        await pdfService.downloadInvoicePDF(
-          invoiceId
-        );
-      } catch (err) {
-        console.error(
-          "Failed to download invoice PDF:",
-          err
-        );
+    await pdfService.downloadInvoicePdf(invoiceId);
+  } catch (err) {
+    console.error(
+      "Error downloading invoice PDF:",
+      err
+    );
 
-        setError(
-          err?.message ||
-            "Failed to download invoice PDF."
-        );
-      } finally {
-        setDownloading(false);
-      }
-    };
-
+    setError(
+      err?.response?.data?.message ||
+        err?.message ||
+        "Failed to download invoice PDF."
+    );
+  } finally {
+    setDownloading(false);
+  }
+};
   const handleDelete = async () => {
     try {
       setDeleting(true);

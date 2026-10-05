@@ -129,8 +129,6 @@ const getValue = (
 
 /* =========================================================
    NORMALIZE QUOTATION
-   IMPORTANT:
-   Customer object ko API response level par string bana raha hai.
 ========================================================= */
 
 const normalizeQuotation = (
@@ -166,11 +164,6 @@ const normalizeQuotation = (
   return {
     ...quotation,
 
-    /*
-     * IMPORTANT:
-     * Customer object ko direct React child
-     * banne se rokne ke liye string.
-     */
     customer:
       typeof customer === "object"
         ? customerName
@@ -390,6 +383,12 @@ const QuotationsPage = () => {
   const [
     pdfLoadingId,
     setPdfLoadingId,
+  ] = useState(null);
+
+  // ✅ NEW: Accept loading state
+  const [
+    acceptingId,
+    setAcceptingId,
   ] = useState(null);
 
   /* =======================================================
@@ -767,6 +766,91 @@ const QuotationsPage = () => {
       );
 
       setModalOpen(false);
+    };
+
+  /* =======================================================
+     ACCEPT QUOTATION  ✅ NEW
+  ======================================================= */
+
+  const handleAcceptQuotation =
+    async (quotation) => {
+      const id =
+        getId(quotation);
+
+      if (!id) {
+        alert(
+          "Quotation ID missing hai."
+        );
+        return;
+      }
+
+      const number = safeText(
+        getValue(
+          quotation,
+          [
+            "quotationNumber",
+            "quotationNo",
+            "quoteNumber",
+          ],
+          id
+        )
+      );
+
+      const confirmed =
+        window.confirm(
+          `Quotation "${number}" ko accept karna chahte ho?`
+        );
+
+      if (!confirmed) return;
+
+      try {
+        setAcceptingId(id);
+        setError("");
+
+        await quotationService.acceptQuotation(
+          id
+        );
+
+        // ✅ Local state update — turant UI update
+        setQuotations(
+          (previous) =>
+            previous.map(
+              (q) =>
+                getId(q) === id
+                  ? {
+                      ...q,
+                      status:
+                        "accepted",
+                    }
+                  : q
+            )
+        );
+
+        alert(
+          "✅ Quotation accepted successfully!"
+        );
+
+        // Background refresh
+        loadQuotations(true);
+      } catch (err) {
+        console.error(
+          "Failed to accept quotation:",
+          err
+        );
+
+        const message =
+          err?.response?.data
+            ?.message ||
+          err?.response?.data
+            ?.error ||
+          err?.message ||
+          "Failed to accept quotation.";
+
+        alert(`❌ ${message}`);
+        setError(message);
+      } finally {
+        setAcceptingId(null);
+      }
     };
 
   /* =======================================================
@@ -1301,10 +1385,6 @@ const QuotationsPage = () => {
                           )}`
                         );
 
-                      /*
-                       * Ab customer already normalized
-                       * string hai.
-                       */
                       const customer =
                         safeText(
                           quotation.customer
@@ -1362,6 +1442,15 @@ const QuotationsPage = () => {
                           quotation?.status,
                           "—"
                         );
+
+                      // ✅ Check for accept button visibility
+                      const isAccepted =
+                        String(status || "")
+                          .toUpperCase() ===
+                          "ACCEPTED" ||
+                        String(status || "")
+                          .toUpperCase() ===
+                          "APPROVED";
 
                       return (
 
@@ -1524,6 +1613,29 @@ const QuotationsPage = () => {
                                   id
                                     ? "..."
                                     : "PDF"}
+                                </Button>
+                              )}
+
+                              {/* ✅ ACCEPT BUTTON — sirf jab accepted na ho */}
+                              {id && !isAccepted && (
+                                <Button
+                                  type="button"
+                                  variant="primary"
+                                  size="small"
+                                  disabled={
+                                    acceptingId ===
+                                    id
+                                  }
+                                  onClick={() =>
+                                    handleAcceptQuotation(
+                                      quotation
+                                    )
+                                  }
+                                >
+                                  {acceptingId ===
+                                  id
+                                    ? "Accepting..."
+                                    : "Accept"}
                                 </Button>
                               )}
 

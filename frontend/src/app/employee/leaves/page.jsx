@@ -333,22 +333,7 @@ const EmployeeLeavesPage = () => {
         reason: form.reason.trim(),
       };
 
-      if (
-        typeof leaveService.createLeave ===
-        "function"
-      ) {
-        await leaveService.createLeave(payload);
-      } else if (
-        typeof leaveService.applyLeave ===
-        "function"
-      ) {
-        await leaveService.applyLeave(payload);
-      } else {
-        throw new Error(
-          "Leave application service is not available."
-        );
-      }
-
+      await leaveService.createLeaveRequest(payload);
       setShowModal(false);
       resetForm();
 
