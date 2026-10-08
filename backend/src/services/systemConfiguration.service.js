@@ -24,6 +24,223 @@ const createError = (message, statusCode = 400) => {
 };
 
 /* =========================================================
+   CUSTOMER RELATION HELPERS
+========================================================= */
+
+const CUSTOMER_SELECT =
+  "customerId name companyName mobile email status lead";
+
+const getReferenceId = (value) => {
+  if (!value) return undefined;
+
+  if (typeof value === "object") {
+    return value._id || value.id;
+  }
+
+  return value;
+};
+
+/**
+ * Resolve Customer MongoDB _id.
+ *
+ * Priority:
+ * 1. Explicit customer reference.
+ * 2. Customer linked to the Lead.
+ */
+
+const resolveCustomerId = async ({
+  customer,
+  lead,
+}) => {
+  const explicitCustomerId =
+    getReferenceId(customer);
+
+  if (explicitCustomerId) {
+    const exists =
+      await Customer.exists({
+        _id: explicitCustomerId,
+      });
+
+    if (exists) {
+      return explicitCustomerId;
+    }
+  }
+
+  const leadId =
+    getReferenceId(lead);
+
+  if (!leadId) {
+    return undefined;
+  }
+
+  const customerRecord =
+    await Customer.findOne({
+      lead: leadId,
+    })
+      .sort({
+        createdAt: -1,
+      })
+      .select("_id")
+      .lean();
+
+  return customerRecord?._id;
+};
+/**
+ * For old configurations where customer is null,
+ * resolve the Customer through the Lead.
+ *
+ * This does NOT mutate the database during GET.
+ */
+const attachCustomerFallback = async (
+  configuration
+) => {
+  if (!configuration) {
+    return configuration;
+  }
+
+  const currentCustomer =
+    configuration.customer;
+
+  if (currentCustomer) {
+    return configuration;
+  }
+
+  const leadId =
+    getReferenceId(
+      configuration.lead
+    );
+
+  if (!leadId) {
+    return configuration;
+  }
+
+  const customer =
+    await Customer.findOne({
+      lead: leadId,
+    })
+      .sort({
+        createdAt: -1,
+      })
+      .select(
+        CUSTOMER_SELECT
+      )
+      .lean();
+
+  if (customer) {
+    configuration.customer =
+      customer;
+  }
+
+  return configuration;
+};
+
+const attachCustomerFallbacks = async (
+  configurations = []
+) => {
+  if (!Array.isArray(configurations)) {
+    return configurations;
+  }
+
+  const missing =
+    configurations.filter(
+      (configuration) =>
+        configuration &&
+        !configuration.customer &&
+        getReferenceId(
+          configuration.lead
+        )
+    );
+
+  if (!missing.length) {
+    return configurations;
+  }
+
+  const leadIds = [
+    ...new Set(
+      missing.map(
+        (configuration) =>
+          String(
+            getReferenceId(
+              configuration.lead
+            )
+          )
+      )
+    ),
+  ];
+
+  const customers =
+    await Customer.find({
+      lead: {
+        $in: leadIds,
+      },
+    })
+      .sort({
+        createdAt: -1,
+      })
+      .select(
+        CUSTOMER_SELECT
+      )
+      .lean();
+
+  const customerByLead =
+    new Map();
+
+  customers.forEach(
+    (customer) => {
+      const leadId =
+        customer?.lead
+          ? String(
+              getReferenceId(
+                customer.lead
+              )
+            )
+          : "";
+
+      if (
+        leadId &&
+        !customerByLead.has(
+          leadId
+        )
+      ) {
+        customerByLead.set(
+          leadId,
+          customer
+        );
+      }
+    }
+  );
+
+  return configurations.map(
+    (configuration) => {
+      if (
+        configuration?.customer
+      ) {
+        return configuration;
+      }
+
+      const leadId =
+        getReferenceId(
+          configuration?.lead
+        );
+
+      const customer =
+        leadId
+          ? customerByLead.get(
+              String(leadId)
+            )
+          : undefined;
+
+      return customer
+        ? {
+            ...configuration,
+            customer,
+          }
+        : configuration;
+    }
+  );
+};
+
+/* =========================================================
    FRONTEND -> BACKEND COMPONENT NORMALIZATION
 ========================================================= */
 
@@ -350,9 +567,7 @@ const calculateTotals = ({
         )
       ),
   };
-};
-
-/* =========================================================
+};/* =========================================================
    VALIDATE REFERENCES
 ========================================================= */
 
@@ -482,11 +697,25 @@ const createConfiguration = async (
     );
   }
 
+  /*
+   * CUSTOMER FIX
+   *
+   * Frontend may send only Lead.
+   * In that case automatically resolve
+   * the Customer linked with that Lead.
+   */
+  const resolvedCustomerId =
+    await resolveCustomerId({
+      customer: data.customer,
+      lead: data.lead,
+    });
+
   await validateReferences({
     lead: data.lead,
     solarRequirement:
       data.solarRequirement,
-    customer: data.customer,
+    customer:
+      resolvedCustomerId,
   });
 
   const version =
@@ -639,8 +868,14 @@ const createConfiguration = async (
     solarRequirement:
       data.solarRequirement,
 
+    /*
+     * CUSTOMER FIX
+     *
+     * Save the actual Customer MongoDB _id,
+     * not the human-readable customerId.
+     */
     customer:
-      data.customer ||
+      resolvedCustomerId ||
       undefined,
 
     version,
@@ -793,11 +1028,6 @@ const getConfigurations = async ({
   /**
    * Search across configuration
    * number and related IDs.
-   *
-   * Since related documents are populated,
-   * direct text search on their fields is
-   * handled below using aggregation-like
-   * lookup IDs.
    */
   if (search) {
     const searchText =
@@ -953,8 +1183,20 @@ const getConfigurations = async ({
     ),
   ]);
 
+  /*
+   * CUSTOMER FIX
+   *
+   * Old records may have customer=null.
+   * Resolve those records through Lead.
+   */
+  const enrichedConfigurations =
+    await attachCustomerFallbacks(
+      configurations
+    );
+
   return {
-    configurations,
+    configurations:
+      enrichedConfigurations,
 
     pagination: {
       page: pageNumber,
@@ -998,7 +1240,8 @@ const getConfigurationById =
         .populate(
           "updatedBy",
           "username email role"
-        );
+        )
+        .lean();
 
     if (!configuration) {
       throw createError(
@@ -1007,10 +1250,16 @@ const getConfigurationById =
       );
     }
 
-    return configuration;
-  };
-
-/* =========================================================
+    /*
+     * CUSTOMER FIX
+     *
+     * If old configuration has no customer
+     * relation, find customer through lead.
+     */
+    return attachCustomerFallback(
+      configuration
+    );
+  };/* =========================================================
    UPDATE CONFIGURATION
 ========================================================= */
 
@@ -1032,13 +1281,37 @@ const updateConfiguration =
       );
     }
 
+    /*
+     * CUSTOMER FIX
+     *
+     * If frontend does not send customer,
+     * use existing customer first.
+     *
+     * If existing customer is also missing,
+     * resolve Customer through Lead.
+     */
+    const resolvedCustomerId =
+      await resolveCustomerId({
+        customer:
+          data.customer ||
+          configuration.customer,
+
+        lead:
+          data.lead ||
+          configuration.lead,
+      });
+
     await validateReferences({
       lead:
-        data.lead,
+        data.lead ||
+        configuration.lead,
+
       solarRequirement:
-        data.solarRequirement,
+        data.solarRequirement ||
+        configuration.solarRequirement,
+
       customer:
-        data.customer,
+        resolvedCustomerId,
     });
 
     /**
@@ -1047,7 +1320,6 @@ const updateConfiguration =
     const referenceFields = [
       "lead",
       "solarRequirement",
-      "customer",
       "systemCapacity",
       "capacityUnit",
       "systemType",
@@ -1073,6 +1345,17 @@ const updateConfiguration =
         }
       }
     );
+
+    /*
+     * CUSTOMER FIX
+     *
+     * Always preserve/fill the real
+     * Customer MongoDB reference.
+     */
+    if (resolvedCustomerId) {
+      configuration.customer =
+        resolvedCustomerId;
+    }
 
     /**
      * Components:
@@ -1313,6 +1596,21 @@ const createNewVersion =
     const configurationNumber =
       await generateConfigurationNumber();
 
+    /*
+     * CUSTOMER FIX
+     *
+     * Existing old configuration may have
+     * customer=null. Resolve it from Lead.
+     */
+    const resolvedCustomerId =
+      await resolveCustomerId({
+        customer:
+          existing.customer,
+
+        lead:
+          existing.lead,
+      });
+
     const newConfiguration = {
       configurationNumber,
 
@@ -1323,7 +1621,8 @@ const createNewVersion =
         existing.solarRequirement,
 
       customer:
-        existing.customer,
+        resolvedCustomerId ||
+        undefined,
 
       version,
 
@@ -1478,7 +1777,15 @@ const getLatestConfiguration =
       );
     }
 
-    return configuration;
+    /*
+     * CUSTOMER FIX
+     *
+     * Old record fallback:
+     * Configuration → Lead → Customer
+     */
+    return attachCustomerFallback(
+      configuration
+    );
   };
 
 /* =========================================================
@@ -1487,21 +1794,32 @@ const getLatestConfiguration =
 
 const getConfigurationsByLead =
   async (leadId) => {
-    return SystemConfiguration.find({
-      lead: leadId,
-    })
-      .populate(
-        "solarRequirement",
-        "requiredKw monthlyBill systemType siteAddress"
-      )
-      .populate(
-        "customer",
-        "customerId name companyName mobile email status"
-      )
-      .sort({
-        version: -1,
+    const configurations =
+      await SystemConfiguration.find({
+        lead: leadId,
       })
-      .lean();
+        .populate(
+          "solarRequirement",
+          "requiredKw monthlyBill systemType siteAddress"
+        )
+        .populate(
+          "customer",
+          "customerId name companyName mobile email status"
+        )
+        .sort({
+          version: -1,
+        })
+        .lean();
+
+    /*
+     * CUSTOMER FIX
+     *
+     * Old records without customer relation
+     * are resolved through Lead.
+     */
+    return attachCustomerFallbacks(
+      configurations
+    );
   };
 
 /* =========================================================
@@ -1512,22 +1830,30 @@ const getConfigurationsByRequirement =
   async (
     solarRequirementId
   ) => {
-    return SystemConfiguration.find({
-      solarRequirement:
-        solarRequirementId,
-    })
-      .populate(
-        "lead",
-        "leadId customerName companyName mobile email status"
-      )
-      .populate(
-        "customer",
-        "customerId name companyName mobile email status"
-      )
-      .sort({
-        version: -1,
+    const configurations =
+      await SystemConfiguration.find({
+        solarRequirement:
+          solarRequirementId,
       })
-      .lean();
+        .populate(
+          "lead",
+          "leadId customerName companyName mobile email status"
+        )
+        .populate(
+          "customer",
+          "customerId name companyName mobile email status"
+        )
+        .sort({
+          version: -1,
+        })
+        .lean();
+
+    /*
+     * CUSTOMER FIX
+     */
+    return attachCustomerFallbacks(
+      configurations
+    );
   };
 
 /* =========================================================
@@ -1572,9 +1898,7 @@ const generateConfigurationNumber =
     return `SC-${String(
       nextNumber
     ).padStart(5, "0")}`;
-  };
-
-/* =========================================================
+  };/* =========================================================
    EXPORTS
 ========================================================= */
 

@@ -16,6 +16,8 @@ import Loader from "@/components/common/Loader";
 import Modal from "@/components/common/Modal";
 
 import systemConfigurationService from "@/services/systemConfiguration.service";
+import { customerService } from "@/services/customer.service";
+import solarRequirementService from "@/services/solarRequirement.service";
 
 import "./configurations.css";
 
@@ -28,8 +30,11 @@ const PAGE_SIZE = 10;
 const getId = (item) => {
   if (!item) return "";
 
-  if (typeof item === "string") {
-    return item;
+  if (
+    typeof item === "string" ||
+    typeof item === "number"
+  ) {
+    return String(item);
   }
 
   return (
@@ -37,26 +42,56 @@ const getId = (item) => {
     item?.id ||
     item?.configurationId ||
     item?.configurationID ||
+    item?.customerId ||
+    item?.customerID ||
+    item?.requirementId ||
+    item?.requirementID ||
+    item?.solarRequirementId ||
+    item?.solarRequirementID ||
+    item?.leadId ||
+    item?.leadID ||
     ""
   );
 };
 
-/*
- * Normal object -> readable text
- *
- * Backend se agar:
- * customer: {
- *   _id,
- *   customerId,
- *   name,
- *   companyName,
- *   mobile,
- *   email,
- *   status
- * }
- *
- * aaye to React object ko directly render nahi karega.
- */
+const getEntityId = (value) => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return "";
+  }
+
+  if (
+    typeof value === "string" ||
+    typeof value === "number"
+  ) {
+    return String(value);
+  }
+
+  return String(
+    value?._id ||
+    value?.id ||
+    value?.customerId ||
+    value?.customerID ||
+    value?.requirementId ||
+    value?.requirementID ||
+    value?.solarRequirementId ||
+    value?.solarRequirementID ||
+    value?.leadId ||
+    value?.leadID ||
+    ""
+  );
+};
+
+const normalizeId = (value) =>
+  String(
+    getEntityId(value) || ""
+  )
+    .trim()
+    .toLowerCase();
+
 const displayValue = (
   value,
   fallback = "—"
@@ -81,6 +116,7 @@ const displayValue = (
       value?.name ||
       value?.fullName ||
       value?.customerName ||
+      value?.displayName ||
       value?.companyName ||
       value?.leadName ||
       value?.configurationNumber ||
@@ -93,6 +129,46 @@ const displayValue = (
   }
 
   return String(value);
+};
+
+const isMeaningful = (
+  value
+) => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return false;
+  }
+
+  const text = displayValue(
+    value,
+    ""
+  ).trim();
+
+  return (
+    text !== "" &&
+    text !== "—" &&
+    text.toLowerCase() !== "null" &&
+    text.toLowerCase() !== "undefined"
+  );
+};
+
+const firstMeaningful = (
+  values,
+  fallback = ""
+) => {
+  for (const value of values) {
+    if (isMeaningful(value)) {
+      return displayValue(
+        value,
+        fallback
+      );
+    }
+  }
+
+  return fallback;
 };
 
 const getValue = (
@@ -139,63 +215,331 @@ const safeValue = (
 ========================================================= */
 
 const normalizeList = (
-  response
+  response,
+  preferredKeys = []
 ) => {
-  let list = [];
-
   if (Array.isArray(response)) {
-    list = response;
-  } else if (
-    Array.isArray(response?.data)
-  ) {
-    list = response.data;
-  } else if (
-    Array.isArray(
-      response?.data?.data
-    )
-  ) {
-    list =
-      response.data.data;
-  } else if (
-    Array.isArray(
-      response?.data?.configurations
-    )
-  ) {
-    list =
-      response.data.configurations;
-  } else if (
-    Array.isArray(
-      response?.configurations
-    )
-  ) {
-    list =
-      response.configurations;
-  } else if (
-    Array.isArray(
-      response?.results
-    )
-  ) {
-    list =
-      response.results;
-  } else if (
-    Array.isArray(
-      response?.data?.results
-    )
-  ) {
-    list =
-      response.data.results;
+    return response;
   }
 
-  return list;
+  const candidates = [
+    response?.data,
+    response?.data?.data,
+    ...preferredKeys.map(
+      (key) => response?.[key]
+    ),
+    ...preferredKeys.map(
+      (key) => response?.data?.[key]
+    ),
+    response?.results,
+    response?.data?.results,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate;
+    }
+  }
+
+  return [];
 };
 
-/*
- * Important:
- * API object ko frontend ke render-safe object
- * mein normalize kar rahe hain.
- */
-const normalizeConfiguration = (
+const getCustomerName = (
+  customer
+) => {
+  if (!customer) {
+    return "";
+  }
+
+  return firstMeaningful(
+    [
+      customer?.customerName,
+      customer?.fullName,
+      customer?.name,
+      customer?.displayName,
+      customer?.companyName,
+      customer?.contactPersonName,
+      customer?.customer?.customerName,
+      customer?.customer?.fullName,
+      customer?.customer?.name,
+      customer?.customer?.displayName,
+      customer?.customer?.companyName,
+      customer?.user?.fullName,
+      customer?.user?.name,
+    ],
+    ""
+  );
+};
+
+const getLeadName = (
+  lead
+) => {
+  return firstMeaningful(
+    [
+      lead?.leadName,
+      lead?.customerName,
+      lead?.fullName,
+      lead?.name,
+      lead?.displayName,
+      lead?.contactPersonName,
+      lead?.customer?.fullName,
+      lead?.customer?.name,
+      lead?.customer?.customerName,
+    ],
+    ""
+  );
+};
+
+const findById = (
+  list,
+  id
+) => {
+  const normalizedTarget =
+    normalizeId(id);
+
+  if (
+    !normalizedTarget ||
+    !Array.isArray(list)
+  ) {
+    return null;
+  }
+
+  return (
+    list.find(
+      (item) =>
+        normalizeId(item) ===
+          normalizedTarget ||
+        normalizeId(
+          item?._id
+        ) === normalizedTarget ||
+        normalizeId(
+          item?.id
+        ) === normalizedTarget ||
+        normalizeId(
+          item?.customerId
+        ) === normalizedTarget ||
+        normalizeId(
+          item?.customerID
+        ) === normalizedTarget ||
+        normalizeId(
+          item?.requirementId
+        ) === normalizedTarget ||
+        normalizeId(
+          item?.requirementID
+        ) === normalizedTarget ||
+        normalizeId(
+          item?.solarRequirementId
+        ) === normalizedTarget ||
+        normalizeId(
+          item?.solarRequirementID
+        ) === normalizedTarget
+    ) || null
+  );
+};
+
+const getRequirementId = (
   configuration
+) => {
+  const nestedRequirement =
+    configuration?.solarRequirement ||
+    configuration?.requirement;
+
+  return firstMeaningful(
+    [
+      configuration?.solarRequirementId,
+      configuration?.solarRequirementID,
+      configuration?.requirementId,
+      configuration?.requirementID,
+      nestedRequirement,
+      nestedRequirement?._id,
+      nestedRequirement?.id,
+      nestedRequirement?.requirementId,
+      nestedRequirement?.requirementID,
+      nestedRequirement?.solarRequirementId,
+      nestedRequirement?.solarRequirementID,
+    ],
+    ""
+  );
+};
+
+const resolveCustomer = (
+  configuration,
+  requirements,
+  customers
+) => {
+  const nestedCustomer =
+    configuration?.customer;
+
+  const nestedRequirement =
+    configuration?.solarRequirement ||
+    configuration?.requirement;
+
+  const requirementId =
+    getRequirementId(
+      configuration
+    );
+
+  const requirementFromList =
+    findById(
+      requirements,
+      requirementId
+    );
+
+  const requirement =
+    requirementFromList ||
+    nestedRequirement ||
+    null;
+
+  const directCustomerId =
+    firstMeaningful(
+      [
+        configuration?.customerId,
+        configuration?.customerID,
+        nestedCustomer,
+        nestedCustomer?._id,
+        nestedCustomer?.id,
+        nestedCustomer?.customerId,
+        nestedCustomer?.customerID,
+      ],
+      ""
+    );
+
+  const requirementCustomer =
+    requirement?.customer;
+
+  const requirementCustomerId =
+    firstMeaningful(
+      [
+        requirement?.customerId,
+        requirement?.customerID,
+        requirementCustomer,
+        requirementCustomer?._id,
+        requirementCustomer?.id,
+        requirementCustomer?.customerId,
+        requirementCustomer?.customerID,
+      ],
+      ""
+    );
+
+  const customerFromList =
+    findById(
+      customers,
+      directCustomerId
+    ) ||
+    findById(
+      customers,
+      requirementCustomerId
+    );
+
+  const customerName =
+    firstMeaningful(
+      [
+        configuration?.customerName,
+        getCustomerName(
+          nestedCustomer
+        ),
+
+        /*
+         * IMPORTANT:
+         * Current backend response mein configuration.customer
+         * har record ke liye populated nahi hai.
+         * Lekin configuration.lead populated hai aur us lead
+         * ke andar customerName/name available hai.
+         * Isliye Customer column ko Lead -> Customer relation
+         * se bhi resolve karna zaroori hai.
+         */
+        getCustomerName(
+          configuration?.lead
+        ),
+        configuration?.lead?.customerName,
+        configuration?.lead?.fullName,
+        configuration?.lead?.name,
+        configuration?.lead?.contactPersonName,
+        getCustomerName(
+          configuration?.lead?.customer
+        ),
+
+        requirement?.customerName,
+        getCustomerName(
+          requirementCustomer
+        ),
+        getCustomerName(
+          requirement?.lead
+        ),
+        requirement?.lead?.customerName,
+        requirement?.lead?.fullName,
+        requirement?.lead?.name,
+        getCustomerName(
+          requirement?.lead?.customer
+        ),
+
+        getCustomerName(
+          customerFromList
+        ),
+        configuration?.customer?.user,
+      ],
+      ""
+    );
+
+  const customerId =
+    firstMeaningful(
+      [
+        configuration?.customerId,
+        configuration?.customerID,
+        nestedCustomer?.customerId,
+        nestedCustomer?.customerID,
+        nestedCustomer?._id,
+        nestedCustomer?.id,
+        requirementCustomer?.customerId,
+        requirementCustomer?.customerID,
+        requirementCustomer?._id,
+        requirementCustomer?.id,
+        customerFromList?.customerId,
+        customerFromList?.customerID,
+        customerFromList?._id,
+        customerFromList?.id,
+      ],
+      ""
+    );
+
+  return {
+    customerName,
+    customerId,
+    requirementId,
+    requirement,
+    customer:
+      customerFromList ||
+      nestedCustomer ||
+      requirementCustomer ||
+      null,
+  };
+};
+
+const resolveLeadName = (
+  configuration,
+  requirement
+) => {
+  return firstMeaningful(
+    [
+      configuration?.leadName,
+      getLeadName(
+        configuration?.lead
+      ),
+      requirement?.leadName,
+      getLeadName(
+        requirement?.lead
+      ),
+      configuration?.lead?.customerName,
+      requirement?.lead?.customerName,
+    ],
+    ""
+  );
+};
+
+const normalizeConfiguration = (
+  configuration,
+  requirements = [],
+  customers = []
 ) => {
   if (
     !configuration ||
@@ -205,11 +549,15 @@ const normalizeConfiguration = (
     return configuration;
   }
 
-  const customer =
-    configuration.customer;
+  const resolved =
+    resolveCustomer(
+      configuration,
+      requirements,
+      customers
+    );
 
-  const lead =
-    configuration.lead;
+  const requirement =
+    resolved.requirement;
 
   const systemType =
     configuration.systemType;
@@ -220,29 +568,58 @@ const normalizeConfiguration = (
   return {
     ...configuration,
 
-    customerName: displayValue(
-      configuration.customerName ||
-        customer,
-      "—"
-    ),
+    customerName:
+      resolved.customerName ||
+      "—",
 
-    leadName: displayValue(
-      configuration.leadName ||
-        lead,
-      ""
-    ),
+    customerId:
+      resolved.customerId ||
+      "",
 
-    systemType: displayValue(
-      systemType,
-      "—"
-    ),
+    requirementId:
+      resolved.requirementId ||
+      "",
 
-    inverterCapacity: displayValue(
-      configuration.inverterCapacity ||
-        configuration.inverterSize ||
-        inverter,
-      "—"
-    ),
+    requirement:
+      configuration.requirement ||
+      configuration.solarRequirement ||
+      requirement ||
+      null,
+
+    leadName:
+      resolveLeadName(
+        configuration,
+        requirement
+      ),
+
+    leadId:
+      firstMeaningful(
+        [
+          configuration?.leadId,
+          configuration?.leadID,
+          configuration?.lead?._id,
+          configuration?.lead?.id,
+          requirement?.leadId,
+          requirement?.leadID,
+          requirement?.lead?._id,
+          requirement?.lead?.id,
+        ],
+        ""
+      ),
+
+    systemType:
+      displayValue(
+        systemType,
+        "—"
+      ),
+
+    inverterCapacity:
+      displayValue(
+        configuration.inverterCapacity ||
+          configuration.inverterSize ||
+          inverter,
+        "—"
+      ),
 
     configurationNumber:
       displayValue(
@@ -252,10 +629,11 @@ const normalizeConfiguration = (
         ""
       ),
 
-    status: displayValue(
-      configuration.status,
-      "—"
-    ),
+    status:
+      displayValue(
+        configuration.status,
+        "—"
+      ),
   };
 };
 
@@ -393,6 +771,16 @@ const SystemConfigurationsPage =
     ] = useState([]);
 
     const [
+      customers,
+      setCustomers,
+    ] = useState([]);
+
+    const [
+      requirements,
+      setRequirements,
+    ] = useState([]);
+
+    const [
       loading,
       setLoading,
     ] = useState(true);
@@ -454,22 +842,114 @@ const SystemConfigurationsPage =
             setLoading(true);
           }
 
-          const response =
-            await systemConfigurationService.getSystemConfigurations();
+          /*
+           * Configuration ke saath customer aur solar
+           * requirement data bhi load kar rahe hain.
+           *
+           * API mein customerName directly na ho tab:
+           * Configuration -> Requirement -> Customer
+           * relation se name resolve hoga.
+           */
+          const [
+            configurationResult,
+            customerResult,
+            requirementResult,
+          ] = await Promise.allSettled([
+            systemConfigurationService.getSystemConfigurations(),
+            customerService.getCustomers({
+              page: 1,
+              limit: 100,
+            }),
+            solarRequirementService.getSolarRequirements({
+              page: 1,
+              limit: 100,
+            }),
+          ]);
 
-          const list =
+          if (
+            configurationResult.status ===
+            "rejected"
+          ) {
+            throw configurationResult.reason;
+          }
+
+          const configurationList =
             normalizeList(
-              response
+              configurationResult.value,
+              [
+                "configurations",
+              ]
             );
+
+          const customerList =
+            customerResult.status ===
+            "fulfilled"
+              ? normalizeList(
+                  customerResult.value,
+                  [
+                    "customers",
+                  ]
+                )
+              : [];
+
+          const requirementList =
+            requirementResult.status ===
+            "fulfilled"
+              ? normalizeList(
+                  requirementResult.value,
+                  [
+                    "requirements",
+                    "solarRequirements",
+                  ]
+                )
+              : [];
 
           const normalized =
-            list.map(
-              normalizeConfiguration
+            configurationList.map(
+              (configuration) =>
+                normalizeConfiguration(
+                  configuration,
+                  requirementList,
+                  customerList
+                )
             );
+
+          setCustomers(
+            customerList
+          );
+
+          setRequirements(
+            requirementList
+          );
 
           setConfigurations(
             normalized
           );
+
+          /*
+           * Customer/Requirement API fail hone par
+           * configurations ko hide nahi karna.
+           * Sirf console warning rahegi.
+           */
+          if (
+            customerResult.status ===
+            "rejected"
+          ) {
+            console.warn(
+              "Customer data load failed. Configuration customer fallback data will be used.",
+              customerResult.reason
+            );
+          }
+
+          if (
+            requirementResult.status ===
+            "rejected"
+          ) {
+            console.warn(
+              "Solar requirement data load failed. Configuration requirement fallback data will be used.",
+              requirementResult.reason
+            );
+          }
         } catch (err) {
           console.error(
             "System configuration load error:",
@@ -477,6 +957,14 @@ const SystemConfigurationsPage =
           );
 
           setConfigurations(
+            []
+          );
+
+          setCustomers(
+            []
+          );
+
+          setRequirements(
             []
           );
 
@@ -551,38 +1039,60 @@ const SystemConfigurationsPage =
     const filteredConfigurations =
       useMemo(() => {
         const query =
-          search
+          String(
+            search ?? ""
+          )
             .trim()
             .toLowerCase();
 
         return configurations.filter(
           (item) => {
             const customerName =
-              displayValue(
-                item?.customerName,
-                ""
+              String(
+                item?.customerName ||
+                  ""
+              ).toLowerCase();
+
+            const customerId =
+              String(
+                item?.customerId ||
+                  ""
               ).toLowerCase();
 
             const configurationNumber =
-              displayValue(
-                item?.configurationNumber,
-                ""
+              String(
+                item?.configurationNumber ||
+                  ""
               ).toLowerCase();
 
             const leadName =
-              displayValue(
-                item?.leadName,
-                ""
+              String(
+                item?.leadName ||
+                  ""
+              ).toLowerCase();
+
+            const leadId =
+              String(
+                item?.leadId ||
+                  ""
+              ).toLowerCase();
+
+            const requirementId =
+              String(
+                item?.requirementId ||
+                  ""
               ).toLowerCase();
 
             const systemType =
-              displayValue(
-                item?.systemType,
-                ""
+              String(
+                displayValue(
+                  item?.systemType,
+                  ""
+                )
               ).toLowerCase();
 
             const capacity =
-              displayValue(
+              String(
                 getValue(
                   item,
                   [
@@ -592,15 +1102,17 @@ const SystemConfigurationsPage =
                     "systemCapacity",
                   ],
                   ""
-                ),
-                ""
+                )
               ).toLowerCase();
 
             const searchableText =
               [
                 customerName,
+                customerId,
                 configurationNumber,
                 leadName,
+                leadId,
+                requirementId,
                 systemType,
                 capacity,
               ].join(" ");
@@ -612,22 +1124,28 @@ const SystemConfigurationsPage =
               );
 
             const status =
-              displayValue(
-                item?.status,
-                ""
+              String(
+                displayValue(
+                  item?.status,
+                  ""
+                )
               );
 
             const matchesStatus =
               statusFilter ===
                 "ALL" ||
               status.toUpperCase() ===
-                statusFilter.toUpperCase();
+                String(
+                  statusFilter
+                ).toUpperCase();
 
             const matchesSystemType =
               systemTypeFilter ===
                 "ALL" ||
               systemType ===
-                systemTypeFilter.toLowerCase();
+                String(
+                  systemTypeFilter
+                ).toLowerCase();
 
             return (
               matchesSearch &&
@@ -1047,8 +1565,12 @@ const SystemConfigurationsPage =
 
             <SearchBox
               value={search}
-              onChange={
-                setSearch
+              onChange={(value) =>
+                setSearch(
+                  String(
+                    value ?? ""
+                  )
+                )
               }
               placeholder="Search customer, configuration, lead..."
             />
@@ -1286,6 +1808,18 @@ const SystemConfigurationsPage =
                             ""
                           );
 
+                        const customerId =
+                          displayValue(
+                            configuration?.customerId,
+                            ""
+                          );
+
+                        const requirementId =
+                          displayValue(
+                            configuration?.requirementId,
+                            ""
+                          );
+
                         const systemType =
                           displayValue(
                             configuration?.systemType,
@@ -1316,11 +1850,99 @@ const SystemConfigurationsPage =
                             "—"
                           );
 
-                        const inverter =
-                          displayValue(
-                            configuration?.inverterCapacity,
-                            "—"
+                        /* -----------------------------------------
+                           INVERTER
+                           Backend may expose inverter quantity in:
+                           - inverterCount
+                           - inverterQuantity
+                           - inverterQty
+                           - inverter.quantity
+                           - components[].quantity for INVERTER
+                        ----------------------------------------- */
+
+                        const inverterCountValue =
+                          getValue(
+                            configuration,
+                            [
+                              "inverterCount",
+                              "inverterQuantity",
+                              "inverterQty",
+                              "numberOfInverters",
+                              "invertersCount",
+                              "inverter.quantity",
+                              "inverter.qty",
+                              "inverter.count",
+                            ],
+                            ""
                           );
+
+                        const inverterComponents =
+                          Array.isArray(
+                            configuration?.components
+                          )
+                            ? configuration.components
+                            : [];
+
+                        const inverterComponent =
+                          inverterComponents.find(
+                            (component) => {
+                              const type =
+                                String(
+                                  component?.componentType ||
+                                    component?.type ||
+                                    component?.category ||
+                                    ""
+                                ).toUpperCase();
+
+                              return (
+                                type === "INVERTER" ||
+                                type.includes("INVERTER")
+                              );
+                            }
+                          );
+
+                        const resolvedInverterCount =
+                          inverterCountValue !== ""
+                            ? inverterCountValue
+                            : getValue(
+                                inverterComponent,
+                                [
+                                  "quantity",
+                                  "qty",
+                                  "count",
+                                ],
+                                ""
+                              );
+
+                        const inverterCapacity =
+                          displayValue(
+                            getValue(
+                              configuration,
+                              [
+                                "inverterCapacity",
+                                "inverterSize",
+                                "inverter.capacity",
+                                "inverter.capacityKW",
+                                "inverterCapacityKW",
+                              ],
+                              getValue(
+                                inverterComponent,
+                                [
+                                  "capacity",
+                                  "capacityKW",
+                                ],
+                                ""
+                              )
+                            ),
+                            ""
+                          );
+
+                        const inverter =
+                          resolvedInverterCount !== ""
+                            ? String(
+                                resolvedInverterCount
+                              )
+                            : inverterCapacity || "—";
 
                         const status =
                           displayValue(
@@ -1389,6 +2011,27 @@ const SystemConfigurationsPage =
                                   </small>
                                 )}
 
+                                {!leadName &&
+                                  customerId && (
+                                    <small>
+                                      ID:{" "}
+                                      {
+                                        customerId
+                                      }
+                                    </small>
+                                  )}
+
+                                {!leadName &&
+                                  !customerId &&
+                                  requirementId && (
+                                    <small>
+                                      Requirement:{" "}
+                                      {
+                                        requirementId
+                                      }
+                                    </small>
+                                  )}
+
                               </div>
 
                             </td>
@@ -1431,9 +2074,18 @@ const SystemConfigurationsPage =
                             {/* INVERTER */}
 
                             <td>
-                              {
-                                inverter
-                              }
+                              <div className="admin-configuration-inverter">
+                                <strong>
+                                  {inverter}
+                                </strong>
+
+                                {resolvedInverterCount !== "" &&
+                                  inverterCapacity && (
+                                    <small>
+                                      {inverterCapacity} kW
+                                    </small>
+                                  )}
+                              </div>
                             </td>
 
                             {/* STATUS */}
@@ -1608,6 +2260,22 @@ const SystemConfigurationsPage =
                 <div>
 
                   <span>
+                    Customer ID
+                  </span>
+
+                  <strong>
+                    {
+                      displayValue(
+                        selectedConfiguration?.customerId
+                      )
+                    }
+                  </strong>
+
+                </div>
+
+                <div>
+
+                  <span>
                     Lead
                   </span>
 
@@ -1615,6 +2283,22 @@ const SystemConfigurationsPage =
                     {
                       displayValue(
                         selectedConfiguration?.leadName
+                      )
+                    }
+                  </strong>
+
+                </div>
+
+                <div>
+
+                  <span>
+                    Requirement ID
+                  </span>
+
+                  <strong>
+                    {
+                      displayValue(
+                        selectedConfiguration?.requirementId
                       )
                     }
                   </strong>

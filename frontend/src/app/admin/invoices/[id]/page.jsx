@@ -69,19 +69,77 @@ const InvoiceDetailsPage = () => {
   const normalizeInvoice = (response) => {
     if (!response) return null;
 
+    // Backend returns:
+    // {
+    //   invoice: {...},
+    //   items: [...]
+    // }
+    // Axios may wrap it as:
+    // {
+    //   data: {
+    //     invoice: {...},
+    //     items: [...]
+    //   }
+    // }
+    //
+    // Keep the invoice and items together so the UI can render
+    // the items table correctly.
+
     if (response?.data?.invoice) {
-      return response.data.invoice;
+      const invoiceData = response.data.invoice;
+
+      return {
+        ...invoiceData,
+        items: Array.isArray(response.data.items)
+          ? response.data.items
+          : Array.isArray(response.data.invoiceItems)
+          ? response.data.invoiceItems
+          : Array.isArray(invoiceData?.items)
+          ? invoiceData.items
+          : [],
+      };
     }
 
     if (response?.invoice) {
-      return response.invoice;
+      const invoiceData = response.invoice;
+
+      return {
+        ...invoiceData,
+        items: Array.isArray(response.items)
+          ? response.items
+          : Array.isArray(response.invoiceItems)
+          ? response.invoiceItems
+          : Array.isArray(invoiceData?.items)
+          ? invoiceData.items
+          : [],
+      };
     }
 
     if (
       response?.data &&
       !Array.isArray(response.data)
     ) {
-      return response.data;
+      const invoiceData = response.data;
+
+      return {
+        ...invoiceData,
+        items: Array.isArray(invoiceData?.items)
+          ? invoiceData.items
+          : Array.isArray(invoiceData?.invoiceItems)
+          ? invoiceData.invoiceItems
+          : [],
+      };
+    }
+
+    if (response && typeof response === "object") {
+      return {
+        ...response,
+        items: Array.isArray(response?.items)
+          ? response.items
+          : Array.isArray(response?.invoiceItems)
+          ? response.invoiceItems
+          : [],
+      };
     }
 
     return response;

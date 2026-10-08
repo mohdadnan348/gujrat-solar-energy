@@ -13,6 +13,7 @@ import Badge from "@/components/common/Badge";
 import Loader from "@/components/common/Loader";
 
 import systemConfigurationService from "@/services/systemConfiguration.service";
+import { customerService } from "@/services/customer.service";
 
 import "./configuration-details.css";
 
@@ -387,6 +388,17 @@ const SystemConfigurationDetailsPage = () => {
     setConfiguration,
   ] = useState(null);
 
+  /*
+   * Customer is a separate entity in the backend.
+   * The configuration response currently contains the Lead,
+   * but the Customer relation may not be populated.
+   * We therefore resolve the Customer from the Lead as a fallback.
+   */
+  const [
+    linkedCustomer,
+    setLinkedCustomer,
+  ] = useState(null);
+
   const [
     loading,
     setLoading,
@@ -424,6 +436,336 @@ const SystemConfigurationDetailsPage = () => {
         );
       }
 
+      /*
+       * Resolve customer robustly.
+       *
+       * Priority:
+       * 1. Populated configuration.customer
+       * 2. configuration.customer as a Mongo ObjectId/string
+       * 3. configuration.customerId
+       * 4. lead.convertedCustomer
+       * 5. Customer linked to the Lead
+       *
+       * This also handles old configurations where the customer
+       * relation was not saved in systemConfigurations.
+       */
+      let resolvedCustomer = null;
+
+      const directCustomer =
+        data?.customer;
+
+      const getObjectId = (value) => {
+        if (!value) {
+          return "";
+        }
+
+        if (typeof value === "string") {
+          return value;
+        }
+
+        if (typeof value === "object") {
+          return (
+            value?._id ||
+            value?.id ||
+            value?.customerId ||
+            ""
+          );
+        }
+
+        return "";
+      };
+
+      const hasCustomerDetails = (customer) => {
+        if (!customer || typeof customer !== "object") {
+          return false;
+        }
+
+        return Boolean(
+          customer?.name ||
+          customer?.fullName ||
+          customer?.customerName ||
+          customer?.customerId ||
+          customer?._id ||
+          customer?.id
+        );
+      };
+
+      if (
+        directCustomer &&
+        typeof directCustomer === "object" &&
+        hasCustomerDetails(directCustomer)
+      ) {
+        resolvedCustomer = directCustomer;
+      }
+
+      /*
+       * If configuration.customer is only an ObjectId/string,
+       * fetch the actual Customer document.
+       */
+      if (!resolvedCustomer) {
+        const directCustomerId =
+          getObjectId(directCustomer) ||
+          getObjectId(data?.customerId);
+
+        if (directCustomerId) {
+          try {
+            const customerResponse =
+              await customerService.getCustomerById(
+                directCustomerId
+              );
+
+            const customerData =
+              unwrapResponse(
+                customerResponse
+              );
+
+            if (
+              customerData &&
+              hasCustomerDetails(customerData)
+            ) {
+              resolvedCustomer =
+                customerData;
+            }
+          } catch (customerLookupError) {
+            console.warn(
+              "Direct customer lookup failed:",
+              customerLookupError
+            );
+          }
+        }
+      }
+
+      /*
+       * Some Lead documents may expose convertedCustomer.
+       * Try it before the lead/customer relation endpoint.
+       */
+      if (!resolvedCustomer) {
+        try {
+          const convertedCustomer =
+            data?.lead?.convertedCustomer;
+
+          const convertedCustomerId =
+            getObjectId(
+              convertedCustomer
+            );
+
+          if (convertedCustomerId) {
+            const customerResponse =
+              await customerService.getCustomerById(
+                convertedCustomerId
+              );
+
+            const customerData =
+              unwrapResponse(
+                customerResponse
+              );
+
+            if (
+              customerData &&
+              hasCustomerDetails(customerData)
+            ) {
+              resolvedCustomer =
+                customerData;
+            }
+          }
+        } catch (convertedCustomerLookupError) {
+          console.warn(
+            "Converted customer lookup failed:",
+            convertedCustomerLookupError
+          );
+        }
+      }
+
+      /*
+       * Main fallback:
+       * Configuration -> Lead -> Customer
+       *
+       * IMPORTANT:
+       * Do NOT use the normal customer list here. The list API is
+       * paginated and may return only the first page, so the linked
+       * customer can easily be missing from that response.
+       *
+       * The backend already exposes the exact relation:
+       * GET /customers/lead/:leadId
+       */
+      if (!resolvedCustomer) {
+        try {
+          const leadObject =
+            data?.lead;
+
+          const configurationLeadMongoId =
+            typeof leadObject === "object"
+              ? (
+                  leadObject?._id ||
+                  leadObject?.id ||
+                  ""
+                )
+              : "";
+
+          if (configurationLeadMongoId) {
+            const customerResponse =
+              await customerService.getCustomerByLead(
+                configurationLeadMongoId
+              );
+
+            let customerList = [];
+
+            if (Array.isArray(customerResponse)) {
+              customerList =
+                customerResponse;
+            } else if (
+              Array.isArray(
+                customerResponse?.data
+              )
+            ) {
+              customerList =
+                customerResponse.data;
+            } else if (
+              Array.isArray(
+                customerResponse?.data?.data
+              )
+            ) {
+              customerList =
+                customerResponse.data.data;
+            } else if (
+              Array.isArray(
+                customerResponse?.data?.customers
+              )
+            ) {
+              customerList =
+                customerResponse.data.customers;
+            } else if (
+              Array.isArray(
+                customerResponse?.customers
+              )
+            ) {
+              customerList =
+                customerResponse.customers;
+            }
+
+            /*
+             * getCustomerByLead returns an array because the backend
+             * supports multiple customer records for a lead.
+             * For the configuration detail page, use the newest
+             * linked customer.
+             */
+            if (customerList.length > 0) {
+              resolvedCustomer =
+                customerList[0];
+            }
+          }
+        } catch (customerLookupError) {
+          console.warn(
+            "Customer-by-lead lookup failed:",
+            customerLookupError
+          );
+        }
+      }
+
+      /*
+       * Last fallback:
+       * If the configuration contains only a human-readable Lead ID,
+       * try the customer list with a larger page size and match the
+       * populated lead.leadId. This is only a fallback; the direct
+       * getCustomerByLead() call above is preferred.
+       */
+      if (!resolvedCustomer) {
+        try {
+          const leadObject =
+            data?.lead;
+
+          const configurationLeadNumber =
+            typeof leadObject === "object"
+              ? String(
+                  leadObject?.leadId ||
+                    ""
+                )
+              : String(
+                  data?.leadId ||
+                    leadObject ||
+                    ""
+                );
+
+          if (configurationLeadNumber) {
+            const customerResponse =
+              await customerService.getCustomers({
+                page: 1,
+                limit: 100,
+              });
+
+            let customerList = [];
+
+            if (Array.isArray(customerResponse)) {
+              customerList =
+                customerResponse;
+            } else if (
+              Array.isArray(
+                customerResponse?.data
+              )
+            ) {
+              customerList =
+                customerResponse.data;
+            } else if (
+              Array.isArray(
+                customerResponse?.data?.data
+              )
+            ) {
+              customerList =
+                customerResponse.data.data;
+            } else if (
+              Array.isArray(
+                customerResponse?.data?.customers
+              )
+            ) {
+              customerList =
+                customerResponse.data.customers;
+            } else if (
+              Array.isArray(
+                customerResponse?.customers
+              )
+            ) {
+              customerList =
+                customerResponse.customers;
+            }
+
+            resolvedCustomer =
+              customerList.find(
+                (customer) => {
+                  const customerLead =
+                    customer?.lead;
+
+                  const customerLeadNumber =
+                    typeof customerLead ===
+                    "object"
+                      ? String(
+                          customerLead?.leadId ||
+                            ""
+                        )
+                      : String(
+                          customerLead ||
+                            ""
+                        );
+
+                  return (
+                    customerLeadNumber &&
+                    customerLeadNumber ===
+                      configurationLeadNumber
+                  );
+                }
+              ) || null;
+          }
+        } catch (customerListLookupError) {
+          console.warn(
+            "Customer list fallback failed:",
+            customerListLookupError
+          );
+        }
+      }
+
+      setLinkedCustomer(
+        resolvedCustomer
+      );
+
       setConfiguration(data);
     } catch (err) {
       console.error(
@@ -432,6 +774,7 @@ const SystemConfigurationDetailsPage = () => {
       );
 
       setConfiguration(null);
+      setLinkedCustomer(null);
 
       setError(
         err?.response?.data?.message ||
@@ -643,31 +986,173 @@ const SystemConfigurationDetailsPage = () => {
   const customerObject =
     data?.customer;
 
-  const customerName =
-    displayValue(
-      getValue(
-        data,
-        [
-          "customerName",
-          "customer",
-          "customerId",
-          "name",
-        ],
-        null
+  /*
+   * CUSTOMER RESOLUTION
+   * ---------------------------------------------------------
+   * Customer ID ko sirf top-level data.customerId se nahi,
+   * balki har possible API response shape se resolve karo.
+   *
+   * Supported:
+   *   customer.customerId
+   *   customer.customerID
+   *   customer.customerCode
+   *   customer.data.customerId
+   *   customer.data.customer.customerId
+   *   customer.data.customers[0].customerId
+   *   linkedCustomer.customerId
+   *   lead.convertedCustomer.customerId
+   *
+   * Mongo _id ko CUSTOMER ID ke fallback ke roop me use
+   * nahi kar rahe, kyunki business/customer ID alag field hai.
+   */
+
+  const findCustomerRecord = (
+    value,
+    depth = 0
+  ) => {
+    if (
+      !value ||
+      depth > 6
+    ) {
+      return null;
+    }
+
+    if (
+      typeof value !==
+        "object" ||
+      Array.isArray(value)
+    ) {
+      return null;
+    }
+
+    const hasBusinessCustomerId =
+      value?.customerId ||
+      value?.customerID ||
+      value?.customerCode;
+
+    const hasCustomerName =
+      value?.name ||
+      value?.fullName ||
+      value?.customerName;
+
+    if (
+      hasBusinessCustomerId ||
+      hasCustomerName
+    ) {
+      return value;
+    }
+
+    if (value?.customer) {
+      const nestedCustomer =
+        findCustomerRecord(
+          value.customer,
+          depth + 1
+        );
+
+      if (nestedCustomer) {
+        return nestedCustomer;
+      }
+    }
+
+    if (value?.data) {
+      const nestedData =
+        findCustomerRecord(
+          value.data,
+          depth + 1
+        );
+
+      if (nestedData) {
+        return nestedData;
+      }
+    }
+
+    if (
+      Array.isArray(
+        value?.customers
       )
+    ) {
+      for (
+        const customer of
+          value.customers
+      ) {
+        const found =
+          findCustomerRecord(
+            customer,
+            depth + 1
+          );
+
+        if (found) {
+          return found;
+        }
+      }
+    }
+
+    if (
+      Array.isArray(value)
+    ) {
+      for (
+        const customer of value
+      ) {
+        const found =
+          findCustomerRecord(
+            customer,
+            depth + 1
+          );
+
+        if (found) {
+          return found;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const resolvedCustomer =
+    findCustomerRecord(
+      linkedCustomer
+    ) ||
+    findCustomerRecord(
+      customerObject
+    ) ||
+    findCustomerRecord(
+      data?.customer
+    ) ||
+    findCustomerRecord(
+      data?.lead?.convertedCustomer
     );
 
+  const customerName =
+    displayValue(
+      data?.customerName ||
+        resolvedCustomer?.name ||
+        resolvedCustomer?.fullName ||
+        resolvedCustomer?.customerName ||
+        resolvedCustomer?.companyName ||
+        data?.lead?.customerName ||
+        data?.lead?.name ||
+        data?.lead?.fullName ||
+        data?.lead?.companyName ||
+        "—"
+    );
+
+  /*
+   * IMPORTANT:
+   * Customer ID must be the business/customerId field.
+   * Do NOT show Mongo _id here.
+   */
   const customerId =
     displayValue(
-      getValue(
-        data,
-        [
-          "customerId",
-        ],
-        customerObject?.customerId ||
-          customerObject?._id ||
-          null
-      )
+      resolvedCustomer?.customerId ||
+        resolvedCustomer?.customerID ||
+        resolvedCustomer?.customerCode ||
+        data?.customerId ||
+        data?.customerID ||
+        data?.customerCode ||
+        data?.lead?.convertedCustomer?.customerId ||
+        data?.lead?.convertedCustomer?.customerID ||
+        data?.lead?.convertedCustomer?.customerCode ||
+        "—"
     );
 
   /* =======================================================
@@ -685,7 +1170,16 @@ const SystemConfigurationDetailsPage = () => {
           "lead",
           "leadId",
         ],
-        null
+        getValue(
+          resolvedCustomer?.lead,
+          [
+            "customerName",
+            "name",
+            "fullName",
+            "leadId",
+          ],
+          "—"
+        )
       )
     );
 
@@ -694,8 +1188,17 @@ const SystemConfigurationDetailsPage = () => {
       getValue(
         data,
         ["leadId"],
-        leadObject?.leadId ||
-          leadObject?._id ||
+        (
+          typeof leadObject ===
+          "object"
+            ? (
+                leadObject?.leadId ||
+                leadObject?._id
+              )
+            : leadObject
+        ) ||
+          resolvedCustomer?.lead?.leadId ||
+          resolvedCustomer?.lead?._id ||
           null
       )
     );

@@ -16,6 +16,7 @@ import Loader from "@/components/common/Loader";
 
 import systemConfigurationService from "@/services/systemConfiguration.service";
 import solarRequirementService from "@/services/solarRequirement.service";
+import { customerService } from "@/services/customer.service";
 
 import "./create-configuration.css";
 
@@ -33,8 +34,12 @@ const getId = (item) => {
   return (
     item?._id ||
     item?.id ||
+    item?.customerId ||
+    item?.customerID ||
     item?.requirementId ||
     item?.requirementID ||
+    item?.leadId ||
+    item?.leadID ||
     ""
   );
 };
@@ -217,6 +222,8 @@ const CreateSystemConfigurationPage = () => {
 
   const [requirements, setRequirements] = useState([]);
 
+  const [customers, setCustomers] = useState([]);
+
   const [
     loadingRequirements,
     setLoadingRequirements,
@@ -239,25 +246,53 @@ const CreateSystemConfigurationPage = () => {
       setLoadingRequirements(true);
       setError("");
 
-      const response =
-        await solarRequirementService.getSolarRequirements();
+      const [
+        requirementsResponse,
+        customersResponse,
+      ] = await Promise.all([
+        solarRequirementService.getSolarRequirements(),
+        customerService.getCustomers(),
+      ]);
 
-      const list =
-        normalizeList(response);
+      const requirementList =
+        normalizeList(requirementsResponse);
 
-      setRequirements(list);
+      const customerList =
+        Array.isArray(customersResponse)
+          ? customersResponse
+          : Array.isArray(customersResponse?.data)
+          ? customersResponse.data
+          : Array.isArray(customersResponse?.data?.data)
+          ? customersResponse.data.data
+          : Array.isArray(customersResponse?.customers)
+          ? customersResponse.customers
+          : Array.isArray(
+              customersResponse?.data?.customers
+            )
+          ? customersResponse.data.customers
+          : Array.isArray(customersResponse?.results)
+          ? customersResponse.results
+          : Array.isArray(
+              customersResponse?.data?.results
+            )
+          ? customersResponse.data.results
+          : [];
+
+      setRequirements(requirementList);
+      setCustomers(customerList);
     } catch (err) {
       console.error(
-        "Solar requirements load error:",
+        "Solar requirements/customer load error:",
         err
       );
 
       setRequirements([]);
+      setCustomers([]);
 
       setError(
         err?.response?.data?.message ||
           err?.message ||
-          "Unable to load solar requirements."
+          "Unable to load solar requirements and customers."
       );
     } finally {
       setLoadingRequirements(false);
@@ -267,6 +302,148 @@ const CreateSystemConfigurationPage = () => {
   useEffect(() => {
     loadRequirements();
   }, []);
+
+  const getCustomerNameFromAnySource = (
+    requirement,
+    customerList = []
+  ) => {
+    if (!requirement) {
+      return "Customer";
+    }
+
+    const directName = getValue(
+      requirement,
+      [
+        "customerName",
+        "fullName",
+        "name",
+        "customerDetails.name",
+        "customer.fullName",
+        "customer.name",
+        "customer.customerName",
+        "customerDetails.fullName",
+        "customerDetails.customerName",
+      ],
+      ""
+    );
+
+    if (
+      directName &&
+      typeof directName !== "object"
+    ) {
+      const name = String(directName).trim();
+
+      if (
+        name &&
+        name.toLowerCase() !== "customer"
+      ) {
+        return name;
+      }
+    }
+
+    const customerObject =
+      requirement?.customer;
+
+    if (
+      customerObject &&
+      typeof customerObject === "object"
+    ) {
+      const objectName =
+        customerObject?.name ||
+        customerObject?.fullName ||
+        customerObject?.customerName ||
+        customerObject?.companyName ||
+        customerObject?.user?.name ||
+        customerObject?.user?.fullName ||
+        customerObject?.contact?.name ||
+        customerObject?.contact?.fullName;
+
+      if (objectName) {
+        return String(objectName);
+      }
+    }
+
+    const customerReference =
+      requirement?.customerId ||
+      requirement?.customer ||
+      requirement?.customerDetails?._id ||
+      requirement?.customerDetails?.id;
+
+    const customerId =
+      getId(customerReference);
+
+    if (customerId) {
+      const matchedCustomer =
+        customerList.find(
+          (customer) =>
+            String(getId(customer)) ===
+            String(customerId)
+        );
+
+      if (matchedCustomer) {
+        const matchedName =
+          matchedCustomer?.name ||
+          matchedCustomer?.fullName ||
+          matchedCustomer?.customerName ||
+          matchedCustomer?.companyName ||
+          matchedCustomer?.user?.name ||
+          matchedCustomer?.user?.fullName ||
+          matchedCustomer?.contact?.name ||
+          matchedCustomer?.contact?.fullName;
+
+        if (matchedName) {
+          return String(matchedName);
+        }
+      }
+    }
+
+    const leadObject = requirement?.lead;
+
+    if (
+      leadObject &&
+      typeof leadObject === "object"
+    ) {
+      const leadObjectName =
+        leadObject?.customerName ||
+        leadObject?.fullName ||
+        leadObject?.name ||
+        leadObject?.customer?.name ||
+        leadObject?.customer?.fullName ||
+        leadObject?.customer?.customerName;
+
+      if (leadObjectName) {
+        return String(leadObjectName);
+      }
+    }
+
+    const leadName = getValue(
+      requirement,
+      [
+        "lead.customerName",
+        "lead.fullName",
+        "lead.name",
+        "lead.customer.name",
+        "lead.customer.fullName",
+        "leadDetails.customerName",
+        "leadDetails.fullName",
+        "leadDetails.name",
+      ],
+      ""
+    );
+
+    if (
+      leadName &&
+      typeof leadName !== "object"
+    ) {
+      const name = String(leadName).trim();
+
+      if (name) {
+        return name;
+      }
+    }
+
+    return "Customer";
+  };
 
   /* =======================================================
      REQUIREMENT OPTIONS
@@ -282,21 +459,10 @@ const CreateSystemConfigurationPage = () => {
       ...requirements.map((requirement) => {
         const id = getId(requirement);
 
-        const customer = getValue(
-          requirement,
-          [
-            "customerName",
-            "customer",
-            "customerId",
-            "name",
-          ],
-          ""
-        );
-
         const customerName =
-          displayValue(
-            customer,
-            "Customer"
+          getCustomerNameFromAnySource(
+            requirement,
+            customers
           );
 
         const requiredKW = getValue(
@@ -304,8 +470,12 @@ const CreateSystemConfigurationPage = () => {
           [
             "requiredKw",
             "requiredKW",
+            "requiredKWP",
             "systemSizeKW",
             "capacityKW",
+            "requiredCapacity",
+            "solarCapacity",
+            "capacity",
           ],
           ""
         );
@@ -319,27 +489,41 @@ const CreateSystemConfigurationPage = () => {
                 "requirementNo",
                 "solarRequirementId",
                 "requirementId",
+                "requirementCode",
               ],
               ""
             ),
             ""
           );
 
+        const parts = [];
+
+        if (requirementNumber) {
+          parts.push(requirementNumber);
+        }
+
+        if (customerName) {
+          parts.push(customerName);
+        }
+
+        if (
+          requiredKW !== "" &&
+          requiredKW !== null &&
+          requiredKW !== undefined
+        ) {
+          parts.push(`${requiredKW} kW`);
+        }
+
         return {
           value: id || "",
-          label: [
-            requirementNumber,
-            customerName,
-            requiredKW
-              ? `${requiredKW} kW`
-              : "",
-          ]
-            .filter(Boolean)
-            .join(" • "),
+          label:
+            parts.length > 0
+              ? parts.join(" • ")
+              : "Unnamed Customer",
         };
       }),
     ];
-  }, [requirements]);
+  }, [requirements, customers]);
 
   /* =======================================================
      UPDATE FIELD
@@ -382,36 +566,36 @@ const CreateSystemConfigurationPage = () => {
       return;
     }
 
-    const customerValue =
-      getValue(
-        selected,
-        [
-          "customerName",
-          "customer",
-          "customerId",
-          "name",
-        ],
-        ""
-      );
-
     const customerName =
-      displayValue(
-        customerValue,
-        ""
+      getCustomerNameFromAnySource(
+        selected,
+        customers
       );
 
     const customerObject =
       selected?.customer;
 
-    const customerId =
-      typeof customerObject ===
-      "object"
+    let customerId =
+      typeof customerObject === "object"
         ? getId(customerObject)
         : getValue(
             selected,
-            ["customerId"],
+            [
+              "customerId",
+              "customerID",
+            ],
             ""
           );
+
+    if (!customerId) {
+      const customerReference =
+        selected?.customerId ||
+        selected?.customer ||
+        selected?.customerDetails;
+
+      customerId =
+        getId(customerReference);
+    }
 
     const leadValue =
       getValue(

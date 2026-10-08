@@ -49,6 +49,80 @@ export const getCustomerByLead = async (leadId) => {
  *   lead: leadId
  * }
  */
+
+/**
+ * Get the primary customer linked to a lead.
+ *
+ * The backend endpoint returns a collection because a lead can
+ * theoretically have more than one linked customer record.
+ * This helper normalizes supported response wrappers and
+ * returns the newest/first customer object.
+ */
+export const getPrimaryCustomerByLead = async (leadId) => {
+  if (!leadId) {
+    throw new Error("Lead ID is required.");
+  }
+
+  const response = await getCustomerByLead(leadId);
+  const payload = response?.data ?? response;
+
+  if (Array.isArray(payload)) {
+    return payload[0] || null;
+  }
+
+  if (Array.isArray(payload?.data)) {
+    return payload.data[0] || null;
+  }
+
+  if (Array.isArray(payload?.customers)) {
+    return payload.customers[0] || null;
+  }
+
+  if (payload?.customer) {
+    return payload.customer;
+  }
+
+  if (
+    payload &&
+    typeof payload === "object" &&
+    (payload.customerId || payload._id || payload.id)
+  ) {
+    return payload;
+  }
+
+  return null;
+};
+
+/**
+ * Normalize customer fields used by detail pages.
+ * Existing API methods remain unchanged.
+ */
+export const normalizeCustomer = (customer) => {
+  if (!customer || typeof customer !== "object") {
+    return null;
+  }
+
+  return {
+    ...customer,
+    customerId:
+      customer.customerId ||
+      customer.customerID ||
+      customer.code ||
+      customer.customerCode ||
+      "",
+    name:
+      customer.name ||
+      customer.fullName ||
+      customer.customerName ||
+      customer.companyName ||
+      "",
+    _id:
+      customer._id ||
+      customer.id ||
+      "",
+  };
+};
+
 export const createCustomer = async (customerData) => {
   if (!customerData || typeof customerData !== "object") {
     throw new Error("Customer data is required.");
@@ -235,6 +309,8 @@ const customerService = {
   getCustomers,
   getCustomerById,
   getCustomerByLead,
+  getPrimaryCustomerByLead,
+  normalizeCustomer,
   createCustomer,
   convertLeadToCustomer,
   updateCustomer,
