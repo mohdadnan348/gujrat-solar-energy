@@ -34,7 +34,7 @@ const validateEmployee = (req, res, next) => {
   const errors = [];
 
   // Employee ID
- 
+
   // User reference
   if (user !== undefined && user !== null && user !== "") {
     if (typeof user !== "string") {
@@ -118,22 +118,21 @@ const validateEmployee = (req, res, next) => {
   }
 
   // Status
-  // Status
-if (status !== undefined && status !== null && status !== "") {
-  const normalizedStatus = String(status).trim().toLowerCase();
+  if (status !== undefined && status !== null && status !== "") {
+    const normalizedStatus = String(status).trim().toLowerCase();
 
-  const isValidStatus = Object.values(USER_STATUS).some(
-    (value) => String(value).trim().toLowerCase() === normalizedStatus
-  );
-
-  if (!isValidStatus) {
-    errors.push(
-      `Invalid status. Allowed statuses: ${Object.values(USER_STATUS).join(
-        ", "
-      )}`
+    const isValidStatus = Object.values(USER_STATUS).some(
+      (value) => String(value).trim().toLowerCase() === normalizedStatus
     );
+
+    if (!isValidStatus) {
+      errors.push(
+        `Invalid status. Allowed statuses: ${Object.values(USER_STATUS).join(
+          ", "
+        )}`
+      );
+    }
   }
-}
 
   // Profile image
   if (
@@ -168,20 +167,21 @@ if (status !== undefined && status !== null && status !== "") {
   }
 
   if (errors.length > 0) {
-  console.log("EMPLOYEE VALIDATION ERRORS:", errors);
+    console.log("EMPLOYEE VALIDATION ERRORS:", errors);
 
-  return res.status(400).json({
-    success: false,
-    message: "Employee validation failed",
-    errors,
-  });
-}
+    return res.status(400).json({
+      success: false,
+      message: "Employee validation failed",
+      errors,
+    });
+  }
+
   next();
 };
 
 const validateEmployeeUpdate = (req, res, next) => {
   const {
-    
+    employeeId,
     name,
     email,
     mobile,
@@ -229,7 +229,7 @@ const validateEmployeeUpdate = (req, res, next) => {
   }
 
   // Email
-  if (email !== undefined) {
+  if (email !== undefined && email !== null && email !== "") {
     if (
       typeof email !== "string" ||
       !isValidEmail(email.trim())
@@ -273,11 +273,14 @@ const validateEmployeeUpdate = (req, res, next) => {
   }
 
   // Role
-  if (role !== undefined) {
-    if (
-      typeof role !== "string" ||
-      !Object.values(ROLES).includes(role.toUpperCase())
-    ) {
+  if (role !== undefined && role !== null && role !== "") {
+    const normalizedRole = String(role).trim().toLowerCase();
+
+    const isValidRole = Object.values(ROLES).some(
+      (value) => String(value).trim().toLowerCase() === normalizedRole
+    );
+
+    if (!isValidRole) {
       errors.push(
         `Invalid role. Allowed roles: ${Object.values(ROLES).join(", ")}`
       );
@@ -300,10 +303,13 @@ const validateEmployeeUpdate = (req, res, next) => {
 
   // Status
   if (status !== undefined && status !== null && status !== "") {
-    if (
-      typeof status !== "string" ||
-      !Object.values(USER_STATUS).includes(status.toUpperCase())
-    ) {
+    const normalizedStatus = String(status).trim().toLowerCase();
+
+    const isValidStatus = Object.values(USER_STATUS).some(
+      (value) => String(value).trim().toLowerCase() === normalizedStatus
+    );
+
+    if (!isValidStatus) {
       errors.push(
         `Invalid status. Allowed statuses: ${Object.values(USER_STATUS).join(
           ", "

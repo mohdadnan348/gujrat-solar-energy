@@ -84,6 +84,21 @@ export const deactivateEmployee = async (employeeId) => {
   return response.data;
 };
 
+/**
+ * Delete employee permanently.
+ */
+export const deleteEmployee = async (employeeId) => {
+  if (!employeeId) {
+    throw new Error("Employee ID is required.");
+  }
+
+  const response = await api.delete(
+    `${BASE_URL}/${employeeId}`
+  );
+
+  return response.data;
+};
+
 export const getEmployeesByRole = async (
   role,
   params = {}
@@ -141,6 +156,7 @@ const employeeService = {
   updateEmployee,
   updateEmployeeStatus,
   deactivateEmployee,
+  deleteEmployee,
   getEmployeesByRole,
   getEmployeesByDepartment,
   searchEmployees,

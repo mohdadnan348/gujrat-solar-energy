@@ -220,6 +220,21 @@ export const deactivateCustomer = async (customerId) => {
 };
 
 /**
+ * Delete customer permanently.
+ */
+export const deleteCustomer = async (customerId) => {
+  if (!customerId) {
+    throw new Error("Customer ID is required.");
+  }
+
+  const response = await api.delete(
+    `${BASE_URL}/${customerId}`
+  );
+
+  return response.data;
+};
+
+/**
  * Search customers.
  */
 export const searchCustomers = async (
@@ -316,6 +331,7 @@ const customerService = {
   updateCustomer,
   updateCustomerStatus,
   deactivateCustomer,
+  deleteCustomer,
   searchCustomers,
   getCustomersByStatus,
   getCustomerStats,

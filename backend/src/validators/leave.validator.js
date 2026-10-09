@@ -22,6 +22,49 @@ const validateDateRange = (startDate, endDate) => {
   return true;
 };
 
+/* -----------------------------------------
+   Leave type validation
+
+   Accepts:
+   - MongoDB ObjectId  : "68a3f2c1b4e5d6a7b8c9d0e1"
+   - String code/name  : "SICK", "CASUAL", "Sick Leave"
+
+   Service will resolve the string to its _id.
+----------------------------------------- */
+
+const isValidLeaveTypeValue = (value) => {
+  if (!value) return false;
+
+  if (typeof value !== "string") return false;
+
+  const trimmed = value.trim();
+
+  if (!trimmed) return false;
+
+  // ObjectId OR non-empty string (code / name)
+  return true;
+};
+
+/* -----------------------------------------
+   Case-insensitive leave status check
+----------------------------------------- */
+
+const isValidLeaveStatus = (value) => {
+  if (value === undefined || value === null || value === "") {
+    return true; // optional field
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+
+  return Object.values(LEAVE_STATUS).some(
+    (status) => String(status).trim().toLowerCase() === normalized
+  );
+};
+
+/* -----------------------------------------
+   Create validator
+----------------------------------------- */
+
 const validateLeave = (req, res, next) => {
   const {
     employee,
@@ -55,10 +98,11 @@ const validateLeave = (req, res, next) => {
     });
   }
 
-  if (!isValidObjectId(leaveType)) {
+  /* ✅ Accept both ObjectId AND string code/name */
+  if (!isValidLeaveTypeValue(leaveType)) {
     return res.status(400).json({
       success: false,
-      message: "Invalid leave type ID",
+      message: "Invalid leave type",
     });
   }
 
@@ -97,24 +141,17 @@ const validateLeave = (req, res, next) => {
     });
   }
 
-  if (
-    totalDays === undefined ||
-    totalDays === null
-  ) {
+  if (totalDays === undefined || totalDays === null) {
     return res.status(400).json({
       success: false,
       message: "Total leave days are required",
     });
   }
 
-  if (
-    typeof totalDays !== "number" ||
-    totalDays < 0.5
-  ) {
+  if (typeof totalDays !== "number" || totalDays < 0.5) {
     return res.status(400).json({
       success: false,
-      message:
-        "Total leave days must be at least 0.5",
+      message: "Total leave days must be at least 0.5",
     });
   }
 
@@ -125,20 +162,14 @@ const validateLeave = (req, res, next) => {
     });
   }
 
-  if (
-    status !== undefined &&
-    !Object.values(LEAVE_STATUS).includes(status)
-  ) {
+  if (!isValidLeaveStatus(status)) {
     return res.status(400).json({
       success: false,
       message: "Invalid leave status",
     });
   }
 
-  if (
-    notes !== undefined &&
-    typeof notes !== "string"
-  ) {
+  if (notes !== undefined && typeof notes !== "string") {
     return res.status(400).json({
       success: false,
       message: "Notes must be a string",
@@ -148,11 +179,11 @@ const validateLeave = (req, res, next) => {
   return next();
 };
 
-const validateLeaveUpdate = (
-  req,
-  res,
-  next
-) => {
+/* -----------------------------------------
+   Update validator
+----------------------------------------- */
+
+const validateLeaveUpdate = (req, res, next) => {
   const {
     employee,
     leaveType,
@@ -166,54 +197,41 @@ const validateLeaveUpdate = (
     notes,
   } = req.body;
 
-  if (
-    employee !== undefined &&
-    !isValidObjectId(employee)
-  ) {
+  if (employee !== undefined && !isValidObjectId(employee)) {
     return res.status(400).json({
       success: false,
       message: "Invalid employee ID",
     });
   }
 
+  /* ✅ Accept both ObjectId AND string code/name */
   if (
     leaveType !== undefined &&
-    !isValidObjectId(leaveType)
+    leaveType !== null &&
+    leaveType !== "" &&
+    !isValidLeaveTypeValue(leaveType)
   ) {
     return res.status(400).json({
       success: false,
-      message: "Invalid leave type ID",
+      message: "Invalid leave type",
     });
   }
 
-  if (
-    startDate !== undefined &&
-    !isValidDate(startDate)
-  ) {
+  if (startDate !== undefined && !isValidDate(startDate)) {
     return res.status(400).json({
       success: false,
       message: "Invalid start date",
     });
   }
 
-  if (
-    endDate !== undefined &&
-    !isValidDate(endDate)
-  ) {
+  if (endDate !== undefined && !isValidDate(endDate)) {
     return res.status(400).json({
       success: false,
       message: "Invalid end date",
     });
   }
 
-  if (
-    startDate &&
-    endDate &&
-    !validateDateRange(
-      startDate,
-      endDate
-    )
-  ) {
+  if (startDate && endDate && !validateDateRange(startDate, endDate)) {
     return res.status(400).json({
       success: false,
       message: "End date cannot be before start date",
@@ -222,21 +240,16 @@ const validateLeaveUpdate = (
 
   if (
     totalDays !== undefined &&
-    (typeof totalDays !== "number" ||
-      totalDays < 0.5)
+    (typeof totalDays !== "number" || totalDays < 0.5)
   ) {
     return res.status(400).json({
       success: false,
-      message:
-        "Total leave days must be at least 0.5",
+      message: "Total leave days must be at least 0.5",
     });
   }
 
   if (reason !== undefined) {
-    if (
-      typeof reason !== "string" ||
-      !reason.trim()
-    ) {
+    if (typeof reason !== "string" || !reason.trim()) {
       return res.status(400).json({
         success: false,
         message: "Leave reason cannot be empty",
@@ -244,10 +257,7 @@ const validateLeaveUpdate = (
     }
   }
 
-  if (
-    status !== undefined &&
-    !Object.values(LEAVE_STATUS).includes(status)
-  ) {
+  if (!isValidLeaveStatus(status)) {
     return res.status(400).json({
       success: false,
       message: "Invalid leave status",
@@ -260,8 +270,7 @@ const validateLeaveUpdate = (
   ) {
     return res.status(400).json({
       success: false,
-      message:
-        "Rejection reason must be a string",
+      message: "Rejection reason must be a string",
     });
   }
 
@@ -271,15 +280,11 @@ const validateLeaveUpdate = (
   ) {
     return res.status(400).json({
       success: false,
-      message:
-        "Cancellation reason must be a string",
+      message: "Cancellation reason must be a string",
     });
   }
 
-  if (
-    notes !== undefined &&
-    typeof notes !== "string"
-  ) {
+  if (notes !== undefined && typeof notes !== "string") {
     return res.status(400).json({
       success: false,
       message: "Notes must be a string",
@@ -289,17 +294,14 @@ const validateLeaveUpdate = (
   return next();
 };
 
-const validateLeaveAction = (
-  req,
-  res,
-  next
-) => {
+/* -----------------------------------------
+   Action validator
+----------------------------------------- */
+
+const validateLeaveAction = (req, res, next) => {
   const { reason } = req.body;
 
-  if (
-    reason !== undefined &&
-    typeof reason !== "string"
-  ) {
+  if (reason !== undefined && typeof reason !== "string") {
     return res.status(400).json({
       success: false,
       message: "Reason must be a string",

@@ -25,27 +25,26 @@ const STATUS_OPTIONS = [
     label: "All Statuses",
   },
   {
-    value: "PRESENT",
+    value: "Present",
     label: "Present",
   },
   {
-    value: "ABSENT",
+    value: "Absent",
     label: "Absent",
   },
   {
-    value: "LATE",
+    value: "Late",
     label: "Late",
   },
   {
-    value: "HALF_DAY",
+    value: "Half Day",
     label: "Half Day",
   },
   {
-    value: "LEAVE",
+    value: "Leave",
     label: "Leave",
   },
 ];
-
 const PAGE_SIZE = 10;
 
 const getInitials = (name = "") =>
@@ -347,19 +346,20 @@ const AdminAttendancePage = () => {
       setLoading(true);
       setError("");
 
-      const params = {
-        page: 1,
-        limit: 1000,
-      };
+    const params = {
+  page: 1,
+  limit: 1000,
+};
 
-      if (status) {
-        params.status = status;
-      }
+if (status) {
+  params.status = status;
+}
 
-      if (date) {
-        params.date = date;
-      }
-
+if (date) {
+  // Backend ko startDate/endDate dono chahiye
+  params.startDate = date;
+  params.endDate = date;
+}
       const response =
         await attendanceService.getAttendance(
           params

@@ -21,10 +21,10 @@ const LEAVE_TYPES = [
 ];
 
 const STATUS_OPTIONS = [
-  { value: "PENDING", label: "Pending" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "REJECTED", label: "Rejected" },
-  { value: "CANCELLED", label: "Cancelled" },
+  { value: "Pending", label: "Pending" },
+  { value: "Approved", label: "Approved" },
+  { value: "Rejected", label: "Rejected" },
+  { value: "Cancelled", label: "Cancelled" },
 ];
 
 const extractEmployees = (response) => {
@@ -116,7 +116,7 @@ const AdminCreateLeavePage = () => {
     endDate: "",
     totalDays: "",
     reason: "",
-    status: "PENDING",
+    status: "Pending",
     notes: "",
   });
 
@@ -253,7 +253,7 @@ const AdminCreateLeavePage = () => {
           leave.numberOfDays ??
           calculateDays(startDate, endDate),
         reason: leave.reason || leave.description || "",
-        status: leave.status || "PENDING",
+        status: leave.status || "Pending",
         notes: leave.notes || "",
       });
     } catch (err) {
