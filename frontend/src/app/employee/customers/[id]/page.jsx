@@ -1,30 +1,146 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  useParams,
+  useRouter,
+} from "next/navigation";
 
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import Loader from "@/components/common/Loader";
-import customerService from "@/services/customer.service";
+import Modal from "@/components/common/Modal";
 
-const EmployeeCustomerDetailsPage = () => {
+import { customerService } from "@/services/customer.service";
+
+import "./customer-details.css";
+
+const CustomerDetailsPage = () => {
   const params = useParams();
   const router = useRouter();
 
   const customerId = params?.id;
 
-  const [customer, setCustomer] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [customer, setCustomer] =
+    useState(null);
 
-  const loadCustomer = useCallback(async () => {
+  const [loading, setLoading] =
+    useState(true);
+
+  const [refreshing, setRefreshing] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const [showDeleteModal, setShowDeleteModal] =
+    useState(false);
+
+  const [deleting, setDeleting] =
+    useState(false);
+
+  /* ----------------------------------
+     Helpers
+  ---------------------------------- */
+
+  const getValue = (
+    object,
+    keys,
+    fallback = ""
+  ) => {
+    if (!object) {
+      return fallback;
+    }
+
+    for (const key of keys) {
+      const value =
+        object?.[key];
+
+      if (
+        value !== undefined &&
+        value !== null &&
+        value !== ""
+      ) {
+        return value;
+      }
+    }
+
+    return fallback;
+  };
+
+  const getId = (object) => {
+    if (!object) {
+      return "";
+    }
+
+    if (typeof object === "string") {
+      return object;
+    }
+
+    return (
+      object?._id ||
+      object?.id ||
+      object?.customerId ||
+      ""
+    );
+  };
+
+  /* ----------------------------------
+     Normalize Customer
+  ---------------------------------- */
+
+  const normalizeCustomer = (
+    response
+  ) => {
+    if (!response) {
+      return null;
+    }
+
+    if (
+      response?.data &&
+      !Array.isArray(response.data)
+    ) {
+      if (
+        response.data?.customer
+      ) {
+        return response.data.customer;
+      }
+
+      return response.data;
+    }
+
+    if (
+      response?.customer
+    ) {
+      return response.customer;
+    }
+
+    return response;
+  };
+
+  /* ----------------------------------
+     Load Customer
+  ---------------------------------- */
+
+  const loadCustomer = async (
+    showRefresh = false
+  ) => {
     if (!customerId) {
       return;
     }
 
     try {
-      setLoading(true);
+      if (showRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
       setError("");
 
       const response =
@@ -32,24 +148,12 @@ const EmployeeCustomerDetailsPage = () => {
           customerId
         );
 
-      /*
-       * Expected backend response:
-       *
-       * {
-       *   success: true,
-       *   message: "Customer fetched successfully",
-       *   data: {...}
-       * }
-       */
+      const normalized =
+        normalizeCustomer(
+          response
+        );
 
-      const data =
-        response?.data?.data ||
-        response?.data?.customer ||
-        response?.customer ||
-        response?.data ||
-        null;
-
-      setCustomer(data);
+      setCustomer(normalized);
     } catch (err) {
       console.error(
         "Failed to load customer:",
@@ -58,121 +162,246 @@ const EmployeeCustomerDetailsPage = () => {
 
       setError(
         err?.response?.data?.message ||
+          err?.response?.data?.error ||
           err?.message ||
-          "Unable to load customer details."
+          "Customer details load nahi ho paaye."
       );
-
-      setCustomer(null);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [customerId]);
+  };
 
   useEffect(() => {
     loadCustomer();
-  }, [loadCustomer]);
+  }, [customerId]);
 
-  const getCustomerName = () =>
-    customer?.name ||
-    customer?.customerName ||
-    customer?.companyName ||
-    "Unnamed Customer";
+  /* ----------------------------------
+     Customer Fields
+  ---------------------------------- */
 
-  const getPhone = () =>
-    customer?.phone ||
-    customer?.mobile ||
-    customer?.contactNumber ||
-    "—";
-
-  const getEmail = () =>
-    customer?.email || "—";
-
-  const getStatus = () =>
-    customer?.status ||
-    customer?.customerStatus ||
-    "ACTIVE";
-
-  const getStatusVariant = (status) => {
-    const value = String(status)
-      .toLowerCase()
-      .trim();
-
-    if (
-      ["active", "converted", "completed"].includes(
-        value
-      )
-    ) {
-      return "success";
-    }
-
-    if (
+  const customerName =
+    getValue(
+      customer,
       [
-        "inactive",
-        "cancelled",
-        "closed",
-      ].includes(value)
-    ) {
-      return "danger";
-    }
+        "name",
+        "fullName",
+        "customerName",
+      ],
+      "Customer"
+    );
 
-    if (
+  const companyName =
+    getValue(
+      customer,
+      ["companyName"],
+      ""
+    );
+
+  const phone =
+    getValue(
+      customer,
       [
-        "pending",
-        "prospect",
-        "follow_up",
-      ].includes(value)
-    ) {
-      return "warning";
-    }
+        "phone",
+        "mobile",
+        "contactNumber",
+        "phoneNumber",
+      ],
+      ""
+    );
 
-    return "default";
-  };
+  const alternatePhone =
+    getValue(
+      customer,
+      [
+        "alternatePhone",
+        "alternateMobile",
+        "secondaryPhone",
+      ],
+      ""
+    );
 
-  const getLocation = () => {
-    if (
-      customer?.city &&
-      customer?.state
-    ) {
-      return `${customer.city}, ${customer.state}`;
-    }
+  const email =
+    getValue(
+      customer,
+      [
+        "email",
+        "emailAddress",
+      ],
+      ""
+    );
 
-    return (
-      customer?.city ||
-      customer?.location ||
-      customer?.state ||
+  const address =
+    getValue(
+      customer,
+      [
+        "address",
+        "fullAddress",
+      ],
+      ""
+    );
+
+  const city =
+    getValue(
+      customer,
+      [
+        "city",
+        "location",
+      ],
+      ""
+    );
+
+  const state =
+    getValue(
+      customer,
+      ["state"],
+      ""
+    );
+
+  const pincode =
+    getValue(
+      customer,
+      [
+        "pincode",
+        "pinCode",
+        "postalCode",
+      ],
+      ""
+    );
+
+  const customerType =
+    getValue(
+      customer,
+      [
+        "customerType",
+        "type",
+      ],
+      "INDIVIDUAL"
+    );
+
+  const source =
+    getValue(
+      customer,
+      [
+        "source",
+        "customerSource",
+      ],
       "—"
     );
-  };
 
-  const getSystemType = () =>
-    customer?.systemType ||
-    customer?.solarSystemType ||
-    "—";
+  const status =
+    getValue(
+      customer,
+      ["status"],
+      "ACTIVE"
+    );
 
-  const getCapacity = () => {
+  const notes =
+    getValue(
+      customer,
+      [
+        "notes",
+        "additionalNotes",
+      ],
+      ""
+    );
+
+  /* ----------------------------------
+     Related Data
+  ---------------------------------- */
+
+  const lead = useMemo(() => {
+    const value =
+      getValue(
+        customer,
+        [
+          "lead",
+          "convertedLead",
+        ],
+        null
+      );
+
+    return value &&
+      typeof value ===
+        "object"
+      ? value
+      : null;
+  }, [customer]);
+
+  const requirements =
+    useMemo(() => {
+      const value =
+        getValue(
+          customer,
+          [
+            "solarRequirements",
+            "requirements",
+          ],
+          []
+        );
+
+      return Array.isArray(
+        value
+      )
+        ? value
+        : [];
+    }, [customer]);
+
+  const quotations =
+    useMemo(() => {
+      const value =
+        getValue(
+          customer,
+          ["quotations"],
+          []
+        );
+
+      return Array.isArray(
+        value
+      )
+        ? value
+        : [];
+    }, [customer]);
+
+  const invoices =
+    useMemo(() => {
+      const value =
+        getValue(
+          customer,
+          ["invoices"],
+          []
+        );
+
+      return Array.isArray(
+        value
+      )
+        ? value
+        : [];
+    }, [customer]);
+
+  /* ----------------------------------
+     Formatters
+  ---------------------------------- */
+
+  const formatDate = (
+    value
+  ) => {
+    if (!value) {
+      return "—";
+    }
+
+    const date =
+      new Date(value);
+
     if (
-      customer?.capacity === undefined ||
-      customer?.capacity === null ||
-      customer?.capacity === ""
+      Number.isNaN(
+        date.getTime()
+      )
     ) {
-      return "—";
+      return String(value);
     }
 
-    return `${customer.capacity} kW`;
-  };
-
-  const formatDate = (date) => {
-    if (!date) {
-      return "—";
-    }
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-      return "—";
-    }
-
-    return parsedDate.toLocaleDateString(
+    return date.toLocaleDateString(
       "en-IN",
       {
         day: "2-digit",
@@ -182,472 +411,1176 @@ const EmployeeCustomerDetailsPage = () => {
     );
   };
 
-  const formatDateTime = (date) => {
-    if (!date) {
-      return "—";
-    }
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-      return "—";
-    }
-
-    return parsedDate.toLocaleString(
+  const formatCurrency = (
+    value
+  ) => {
+    return `₹${Number(
+      value || 0
+    ).toLocaleString(
       "en-IN",
       {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
       }
+    )}`;
+  };
+
+  const getStatusVariant = (
+    currentStatus
+  ) => {
+    switch (
+      String(
+        currentStatus || ""
+      ).toUpperCase()
+    ) {
+      case "ACTIVE":
+        return "success";
+
+      case "INACTIVE":
+        return "danger";
+
+      case "PROSPECT":
+        return "warning";
+
+      case "CONVERTED":
+        return "success";
+
+      default:
+        return "default";
+    }
+  };
+
+  const getNameFromObject = (
+    object,
+    fallback = "—"
+  ) => {
+    return getValue(
+      object,
+      [
+        "name",
+        "fullName",
+        "customerName",
+        "title",
+        "quotationNumber",
+        "invoiceNumber",
+      ],
+      fallback
     );
   };
 
-  const getCreatedBy = () => {
-    if (
-      typeof customer?.createdBy ===
-      "object"
-    ) {
-      return (
-        customer.createdBy?.username ||
-        customer.createdBy?.name ||
-        customer.createdBy?.email ||
-        "—"
-      );
-    }
-
-    return customer?.createdBy || "—";
+  const getAmount = (
+    object
+  ) => {
+    return Number(
+      getValue(
+        object,
+        [
+          "grandTotal",
+          "totalAmount",
+          "total",
+          "finalAmount",
+          "amount",
+        ],
+        0
+      )
+    );
   };
 
-  const getUpdatedBy = () => {
-    if (
-      typeof customer?.updatedBy ===
-      "object"
-    ) {
-      return (
-        customer.updatedBy?.username ||
-        customer.updatedBy?.name ||
-        customer.updatedBy?.email ||
-        "—"
-      );
-    }
+  /* ----------------------------------
+     Actions
+  ---------------------------------- */
 
-    return customer?.updatedBy || "—";
+  const handleEdit = () => {
+    router.push(
+      `/admin/customers/create?edit=${customerId}`
+    );
   };
+
+  const handleDelete = async () => {
+    try {
+      setDeleting(true);
+      setError("");
+
+      if (
+        typeof customerService.deleteCustomer !==
+        "function"
+      ) {
+        throw new Error(
+          "Customer delete service available nahi hai."
+        );
+      }
+
+      await customerService.deleteCustomer(
+        customerId
+      );
+
+      router.push(
+        "/admin/customers"
+      );
+    } catch (err) {
+      console.error(
+        "Failed to delete customer:",
+        err
+      );
+
+      setError(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.message ||
+          "Customer delete nahi ho paaya."
+      );
+    } finally {
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  /* ----------------------------------
+     Loading
+  ---------------------------------- */
 
   if (loading) {
     return (
-      <div className="employee-customer-details-loading">
+      <div className="admin-customer-details-loading">
         <Loader />
+
+        <p>
+          Customer details load ho rahi hain...
+        </p>
       </div>
     );
   }
 
-  if (error) {
+  /* ----------------------------------
+     Error
+  ---------------------------------- */
+
+  if (error && !customer) {
     return (
-      <div className="employee-customer-details-page">
-        <div className="employee-customer-details-header">
-          <div>
-            <span className="employee-customer-details-eyebrow">
-              Customer Management
-            </span>
+      <div className="admin-customer-details-error-state">
+        <div className="admin-customer-error-icon">
+          !
+        </div>
 
-            <h1>Customer Details</h1>
-          </div>
+        <h2>
+          Customer load nahi hua
+        </h2>
 
+        <p>{error}</p>
+
+        <div>
           <Button
             type="button"
             variant="secondary"
             onClick={() =>
               router.push(
-                "/employee/customers"
-              )
-            }
-          >
-            Back
-          </Button>
-        </div>
-
-        <div className="employee-customer-details-error">
-          <div>
-            <strong>
-              Unable to load customer
-            </strong>
-
-            <p>{error}</p>
-          </div>
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={loadCustomer}
-          >
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!customer) {
-    return (
-      <div className="employee-customer-details-page">
-        <div className="employee-customer-details-header">
-          <div>
-            <span className="employee-customer-details-eyebrow">
-              Customer Management
-            </span>
-
-            <h1>Customer Not Found</h1>
-
-            <p>
-              The requested customer could not
-              be found.
-            </p>
-          </div>
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() =>
-              router.push(
-                "/employee/customers"
+                "/admin/customers"
               )
             }
           >
             Back to Customers
           </Button>
+
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() =>
+              loadCustomer()
+            }
+          >
+            Try Again
+          </Button>
         </div>
       </div>
     );
   }
 
-  const customerStatus = getStatus();
+  /* ----------------------------------
+     Not Found
+  ---------------------------------- */
+
+  if (!customer) {
+    return (
+      <div className="admin-customer-details-error-state">
+        <h2>
+          Customer not found
+        </h2>
+
+        <Button
+          type="button"
+          variant="primary"
+          onClick={() =>
+            router.push(
+              "/admin/customers"
+            )
+          }
+        >
+          Back to Customers
+        </Button>
+      </div>
+    );
+  }
+
+  /* ----------------------------------
+     Main UI
+  ---------------------------------- */
 
   return (
-    <div className="employee-customer-details-page">
+    <div className="admin-customer-details-page">
+      {/* Header */}
 
-      {/* =================================================
-          Header
-      ================================================= */}
-      <div className="employee-customer-details-header">
+      <div className="admin-customer-details-header">
         <div>
-          <span className="employee-customer-details-eyebrow">
-            Customer Management
-          </span>
+          <button
+            type="button"
+            className="admin-customer-back-button"
+            onClick={() =>
+              router.push(
+                "/admin/customers"
+              )
+            }
+          >
+            ← Back to Customers
+          </button>
 
-          <h1>{getCustomerName()}</h1>
+          <div className="admin-customer-heading">
+            <div className="admin-customer-heading-avatar">
+              {String(
+                customerName
+              )
+                .charAt(0)
+                .toUpperCase()}
+            </div>
 
-          <p>
-            View customer information and solar
-            system details.
-          </p>
+            <div>
+              <div className="admin-customer-heading-top">
+                <h1>
+                  {customerName}
+                </h1>
+
+                <Badge
+                  variant={getStatusVariant(
+                    status
+                  )}
+                >
+                  {String(
+                    status
+                  ).replaceAll(
+                    "_",
+                    " "
+                  )}
+                </Badge>
+              </div>
+
+              <p>
+                {companyName ||
+                  "Customer Profile"}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="employee-customer-details-actions">
+        <div className="admin-customer-header-actions">
           <Button
             type="button"
             variant="secondary"
             onClick={() =>
-              router.push(
-                "/employee/customers"
-              )
+              loadCustomer(true)
+            }
+            disabled={refreshing}
+          >
+            {refreshing
+              ? "Refreshing..."
+              : "↻ Refresh"}
+          </Button>
+
+          <Button
+            type="button"
+            variant="primary"
+            onClick={
+              handleEdit
             }
           >
-            Back
+            Edit Customer
           </Button>
         </div>
       </div>
 
-      {/* =================================================
-          Customer Summary
-      ================================================= */}
-      <div className="employee-customer-summary-card">
-        <div className="employee-customer-summary-main">
-          <div className="employee-customer-avatar">
-            {getCustomerName()
-              .charAt(0)
-              .toUpperCase()}
-          </div>
+      {error && (
+        <div className="admin-customer-inline-error">
+          {error}
+        </div>
+      )}
 
-          <div>
-            <h2>{getCustomerName()}</h2>
+      {/* Summary */}
 
-            {customer?.customerId && (
-              <span className="employee-customer-id">
-                Customer ID:{" "}
-                {customer.customerId}
-              </span>
+      <div className="admin-customer-summary-grid">
+        <div className="admin-customer-summary-card">
+          <span>
+            Customer Type
+          </span>
+
+          <strong>
+            {String(
+              customerType
+            ).replaceAll(
+              "_",
+              " "
             )}
-          </div>
+          </strong>
         </div>
 
-        <Badge
-          variant={getStatusVariant(
-            customerStatus
-          )}
-        >
-          {String(customerStatus).replaceAll(
-            "_",
-            " "
-          )}
-        </Badge>
+        <div className="admin-customer-summary-card">
+          <span>
+            Phone
+          </span>
+
+          <strong>
+            {phone || "—"}
+          </strong>
+        </div>
+
+        <div className="admin-customer-summary-card">
+          <span>
+            Location
+          </span>
+
+          <strong>
+            {city || "—"}
+          </strong>
+        </div>
+
+        <div className="admin-customer-summary-card admin-customer-summary-highlight">
+          <span>
+            Customer Since
+          </span>
+
+          <strong>
+            {formatDate(
+              customer?.createdAt
+            )}
+          </strong>
+        </div>
       </div>
 
-      {/* =================================================
-          Contact Information
-      ================================================= */}
-      <section className="employee-customer-details-card">
-        <div className="employee-customer-details-card-header">
-          <div>
-            <h2>Contact Information</h2>
+      <div className="admin-customer-details-layout">
+        <main className="admin-customer-details-main">
+          {/* Customer Information */}
 
-            <p>
-              Customer contact and location
-              details.
-            </p>
-          </div>
-        </div>
+          <section className="admin-customer-detail-card">
+            <div className="admin-customer-detail-card-header">
+              <div>
+                <h2>
+                  Customer Information
+                </h2>
 
-        <div className="employee-customer-details-grid">
-          <div className="employee-customer-detail-item">
-            <span>Name</span>
-            <strong>
-              {getCustomerName()}
-            </strong>
-          </div>
-
-          <div className="employee-customer-detail-item">
-            <span>Phone</span>
-            <strong>
-              {getPhone()}
-            </strong>
-          </div>
-
-          <div className="employee-customer-detail-item">
-            <span>Email</span>
-            <strong>
-              {getEmail()}
-            </strong>
-          </div>
-
-          <div className="employee-customer-detail-item">
-            <span>Location</span>
-            <strong>
-              {getLocation()}
-            </strong>
-          </div>
-
-          {customer?.address && (
-            <div className="employee-customer-detail-item employee-customer-detail-item-wide">
-              <span>Address</span>
-              <strong>
-                {customer.address}
-              </strong>
+                <p>
+                  Customer ki primary
+                  profile aur contact
+                  information.
+                </p>
+              </div>
             </div>
-          )}
-        </div>
-      </section>
 
-      {/* =================================================
-          Solar System
-      ================================================= */}
-      <section className="employee-customer-details-card">
-        <div className="employee-customer-details-card-header">
-          <div>
-            <h2>Solar System</h2>
+            <div className="admin-customer-info-grid">
+              <div>
+                <span>
+                  Full Name
+                </span>
 
-            <p>
-              Customer's solar installation
-              requirements.
-            </p>
-          </div>
-        </div>
-
-        <div className="employee-customer-details-grid">
-          <div className="employee-customer-detail-item">
-            <span>System Type</span>
-            <strong>
-              {getSystemType()}
-            </strong>
-          </div>
-
-          <div className="employee-customer-detail-item">
-            <span>Capacity</span>
-            <strong>
-              {getCapacity()}
-            </strong>
-          </div>
-
-          {customer?.panelType && (
-            <div className="employee-customer-detail-item">
-              <span>Panel Type</span>
-              <strong>
-                {customer.panelType}
-              </strong>
-            </div>
-          )}
-
-          {customer?.inverterType && (
-            <div className="employee-customer-detail-item">
-              <span>Inverter Type</span>
-              <strong>
-                {customer.inverterType}
-              </strong>
-            </div>
-          )}
-
-          {customer?.systemCost !==
-            undefined &&
-            customer?.systemCost !==
-              null && (
-              <div className="employee-customer-detail-item">
-                <span>System Cost</span>
                 <strong>
-                  ₹
-                  {Number(
-                    customer.systemCost
-                  ).toLocaleString("en-IN")}
+                  {customerName}
                 </strong>
               </div>
-            )}
-        </div>
-      </section>
 
-      {/* =================================================
-          Lead Information
-      ================================================= */}
-      {customer?.lead && (
-        <section className="employee-customer-details-card">
-          <div className="employee-customer-details-card-header">
-            <div>
-              <h2>Lead Information</h2>
+              <div>
+                <span>
+                  Company Name
+                </span>
 
-              <p>
-                Lead from which this customer
-                was converted.
-              </p>
+                <strong>
+                  {companyName ||
+                    "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Mobile Number
+                </span>
+
+                <strong>
+                  {phone || "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Alternate Mobile
+                </span>
+
+                <strong>
+                  {alternatePhone ||
+                    "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Email Address
+                </span>
+
+                <strong>
+                  {email || "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Customer Type
+                </span>
+
+                <strong>
+                  {String(
+                    customerType
+                  ).replaceAll(
+                    "_",
+                    " "
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Source
+                </span>
+
+                <strong>
+                  {String(
+                    source
+                  ).replaceAll(
+                    "_",
+                    " "
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Status
+                </span>
+
+                <Badge
+                  variant={getStatusVariant(
+                    status
+                  )}
+                >
+                  {String(
+                    status
+                  ).replaceAll(
+                    "_",
+                    " "
+                  )}
+                </Badge>
+              </div>
             </div>
-          </div>
+          </section>
 
-          <div className="employee-customer-details-grid">
-            <div className="employee-customer-detail-item">
-              <span>Lead ID</span>
+          {/* Address */}
 
-              <strong>
-                {typeof customer.lead ===
-                "object"
-                  ? customer.lead?._id ||
-                    customer.lead?.leadId ||
-                    "—"
-                  : customer.lead}
-              </strong>
+          <section className="admin-customer-detail-card">
+            <div className="admin-customer-detail-card-header">
+              <div>
+                <h2>
+                  Address Details
+                </h2>
+
+                <p>
+                  Customer installation /
+                  contact address.
+                </p>
+              </div>
             </div>
 
-            {typeof customer.lead ===
-              "object" && (
-              <>
-                <div className="employee-customer-detail-item">
-                  <span>Lead Name</span>
+            <div className="admin-customer-address-box">
+              <div className="admin-customer-address-icon">
+                ⌖
+              </div>
 
-                  <strong>
-                    {customer.lead?.name ||
-                      customer.lead
-                        ?.customerName ||
-                      "—"}
-                  </strong>
+              <div>
+                <strong>
+                  {address ||
+                    "Address not available"}
+                </strong>
+
+                <p>
+                  {[
+                    city,
+                    state,
+                    pincode,
+                  ]
+                    .filter(Boolean)
+                    .join(", ") ||
+                    "Location details not available"}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Source Lead */}
+
+          {lead && (
+            <section className="admin-customer-detail-card">
+              <div className="admin-customer-detail-card-header">
+                <div>
+                  <h2>
+                    Source Lead
+                  </h2>
+
+                  <p>
+                    Customer conversion se
+                    related lead information.
+                  </p>
                 </div>
+              </div>
 
-                <div className="employee-customer-detail-item">
-                  <span>Lead Status</span>
-
-                  <strong>
-                    {customer.lead?.status
-                      ? String(
-                          customer.lead.status
-                        ).replaceAll(
-                          "_",
-                          " "
-                        )
-                      : "—"}
-                  </strong>
-                </div>
-
-                <div className="employee-customer-detail-item">
-                  <span>Lead Created</span>
+              <div className="admin-customer-linked-card">
+                <div>
+                  <span>
+                    Lead
+                  </span>
 
                   <strong>
-                    {formatDate(
-                      customer.lead
-                        ?.createdAt
+                    {getNameFromObject(
+                      lead
                     )}
                   </strong>
                 </div>
-              </>
-            )}
+
+                <div>
+                  <span>
+                    Lead Status
+                  </span>
+
+                  <Badge
+                    variant={getStatusVariant(
+                      getValue(
+                        lead,
+                        ["status"],
+                        "—"
+                      )
+                    )}
+                  >
+                    {String(
+                      getValue(
+                        lead,
+                        ["status"],
+                        "—"
+                      )
+                    ).replaceAll(
+                      "_",
+                      " "
+                    )}
+                  </Badge>
+                </div>
+
+                <div>
+                  <span>
+                    Created On
+                  </span>
+
+                  <strong>
+                    {formatDate(
+                      getValue(
+                        lead,
+                        [
+                          "createdAt",
+                          "date",
+                        ]
+                      )
+                    )}
+                  </strong>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Solar Requirements */}
+
+          {requirements.length >
+            0 && (
+            <section className="admin-customer-detail-card">
+              <div className="admin-customer-detail-card-header">
+                <div>
+                  <h2>
+                    Solar Requirements
+                  </h2>
+
+                  <p>
+                    Customer ki solar
+                    requirements history.
+                  </p>
+                </div>
+              </div>
+
+              <div className="admin-customer-related-list">
+                {requirements.map(
+                  (
+                    requirement,
+                    index
+                  ) => {
+                    const kw =
+                      getValue(
+                        requirement,
+                        [
+                          "systemSizeKW",
+                          "requiredKW",
+                          "requiredKw",
+                          "capacityKW",
+                        ],
+                        ""
+                      );
+
+                    return (
+                      <div
+                        className="admin-customer-related-item"
+                        key={
+                          getId(
+                            requirement
+                          ) ||
+                          index
+                        }
+                      >
+                        <div>
+                          <strong>
+                            {getNameFromObject(
+                              requirement,
+                              `Requirement #${
+                                index + 1
+                              }`
+                            )}
+                          </strong>
+
+                          <span>
+                            {getValue(
+                              requirement,
+                              [
+                                "systemType",
+                                "type",
+                              ],
+                              "Solar Requirement"
+                            )}
+                          </span>
+                        </div>
+
+                        <div>
+                          <strong>
+                            {kw
+                              ? `${kw} kW`
+                              : "—"}
+                          </strong>
+
+                          <span>
+                            {formatDate(
+                              getValue(
+                                requirement,
+                                [
+                                  "createdAt",
+                                  "date",
+                                ]
+                              )
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Quotations */}
+
+          {quotations.length >
+            0 && (
+            <section className="admin-customer-detail-card">
+              <div className="admin-customer-detail-card-header">
+                <div>
+                  <h2>
+                    Quotations
+                  </h2>
+
+                  <p>
+                    Customer ke liye generated
+                    quotations.
+                  </p>
+                </div>
+              </div>
+
+              <div className="admin-customer-related-list">
+                {quotations.map(
+                  (
+                    quotation,
+                    index
+                  ) => {
+                    const quotationId =
+                      getId(
+                        quotation
+                      );
+
+                    return (
+                      <div
+                        className="admin-customer-related-item"
+                        key={
+                          quotationId ||
+                          index
+                        }
+                      >
+                        <div>
+                          <strong>
+                            {getValue(
+                              quotation,
+                              [
+                                "quotationNumber",
+                                "quotationNo",
+                                "estimateId",
+                              ],
+                              `Quotation #${
+                                index + 1
+                              }`
+                            )}
+                          </strong>
+
+                          <span>
+                            {formatDate(
+                              getValue(
+                                quotation,
+                                [
+                                  "quotationDate",
+                                  "createdAt",
+                                ]
+                              )
+                            )}
+                          </span>
+                        </div>
+
+                        <div className="admin-customer-related-right">
+                          <strong>
+                            {formatCurrency(
+                              getAmount(
+                                quotation
+                              )
+                            )}
+                          </strong>
+
+                          {quotationId && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                router.push(
+                                  `/admin/quotations/${quotationId}`
+                                )
+                              }
+                            >
+                              View
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Invoices */}
+
+          {invoices.length >
+            0 && (
+            <section className="admin-customer-detail-card">
+              <div className="admin-customer-detail-card-header">
+                <div>
+                  <h2>
+                    Invoices
+                  </h2>
+
+                  <p>
+                    Customer ke liye generated
+                    invoices.
+                  </p>
+                </div>
+              </div>
+
+              <div className="admin-customer-related-list">
+                {invoices.map(
+                  (
+                    invoice,
+                    index
+                  ) => {
+                    const invoiceId =
+                      getId(
+                        invoice
+                      );
+
+                    return (
+                      <div
+                        className="admin-customer-related-item"
+                        key={
+                          invoiceId ||
+                          index
+                        }
+                      >
+                        <div>
+                          <strong>
+                            {getValue(
+                              invoice,
+                              [
+                                "invoiceNumber",
+                                "invoiceNo",
+                              ],
+                              `Invoice #${
+                                index + 1
+                              }`
+                            )}
+                          </strong>
+
+                          <span>
+                            {formatDate(
+                              getValue(
+                                invoice,
+                                [
+                                  "invoiceDate",
+                                  "createdAt",
+                                ]
+                              )
+                            )}
+                          </span>
+                        </div>
+
+                        <div className="admin-customer-related-right">
+                          <strong>
+                            {formatCurrency(
+                              getAmount(
+                                invoice
+                              )
+                            )}
+                          </strong>
+
+                          {invoiceId && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                router.push(
+                                  `/admin/invoices/${invoiceId}`
+                                )
+                              }
+                            >
+                              View
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Notes */}
+
+          {notes && (
+            <section className="admin-customer-detail-card">
+              <div className="admin-customer-detail-card-header">
+                <div>
+                  <h2>
+                    Notes
+                  </h2>
+
+                  <p>
+                    Additional customer
+                    information.
+                  </p>
+                </div>
+              </div>
+
+              <div className="admin-customer-notes">
+                {notes}
+              </div>
+            </section>
+          )}
+        </main>
+
+        {/* Sidebar */}
+
+        <aside className="admin-customer-details-sidebar">
+          <section className="admin-customer-sidebar-card">
+            <div className="admin-customer-sidebar-profile">
+              <div className="admin-customer-sidebar-avatar">
+                {String(
+                  customerName
+                )
+                  .charAt(0)
+                  .toUpperCase()}
+              </div>
+
+              <h2>
+                {customerName}
+              </h2>
+
+              {companyName && (
+                <p>
+                  {companyName}
+                </p>
+              )}
+
+              <Badge
+                variant={getStatusVariant(
+                  status
+                )}
+              >
+                {String(
+                  status
+                ).replaceAll(
+                  "_",
+                  " "
+                )}
+              </Badge>
+            </div>
+          </section>
+
+          {/* Quick Contact */}
+
+          <section className="admin-customer-sidebar-card">
+            <div className="admin-customer-sidebar-heading">
+              <h2>
+                Quick Contact
+              </h2>
+            </div>
+
+            <div className="admin-customer-quick-contact">
+              {phone && (
+                <a
+                  href={`tel:${phone}`}
+                >
+                  <span>
+                    ☎
+                  </span>
+
+                  <div>
+                    <small>
+                      Phone
+                    </small>
+
+                    <strong>
+                      {phone}
+                    </strong>
+                  </div>
+                </a>
+              )}
+
+              {email && (
+                <a
+                  href={`mailto:${email}`}
+                >
+                  <span>
+                    ✉
+                  </span>
+
+                  <div>
+                    <small>
+                      Email
+                    </small>
+
+                    <strong>
+                      {email}
+                    </strong>
+                  </div>
+                </a>
+              )}
+
+              {!phone &&
+                !email && (
+                  <div
+                    style={{
+                      padding:
+                        "16px 18px",
+                      color:
+                        "#64748b",
+                      fontSize:
+                        "13px",
+                    }}
+                  >
+                    Contact information
+                    not available.
+                  </div>
+                )}
+            </div>
+          </section>
+
+          {/* Record Information */}
+
+          <section className="admin-customer-sidebar-card">
+            <div className="admin-customer-sidebar-heading">
+              <h2>
+                Record Information
+              </h2>
+            </div>
+
+            <div className="admin-customer-record-list">
+              <div>
+                <span>
+                  Customer ID
+                </span>
+
+                <strong>
+                  {getId(
+                    customer
+                  ) || "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Created On
+                </span>
+
+                <strong>
+                  {formatDate(
+                    customer?.createdAt
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Updated On
+                </span>
+
+                <strong>
+                  {formatDate(
+                    customer?.updatedAt
+                  )}
+                </strong>
+              </div>
+            </div>
+          </section>
+
+          {/* Actions */}
+
+          <section className="admin-customer-sidebar-card admin-customer-sidebar-actions">
+            <Button
+              type="button"
+              variant="primary"
+              onClick={
+                handleEdit
+              }
+            >
+              Edit Customer
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                router.push(
+                  `/admin/quotations/create?customerId=${customerId}`
+                )
+              }
+            >
+              Create Quotation
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                router.push(
+                  "/admin/customers"
+                )
+              }
+            >
+              Back to Customers
+            </Button>
+
+            <button
+              type="button"
+              className="admin-customer-delete-button"
+              onClick={() =>
+                setShowDeleteModal(
+                  true
+                )
+              }
+            >
+              Delete Customer
+            </button>
+          </section>
+        </aside>
+      </div>
+
+      {/* Delete Modal */}
+
+      <Modal
+        isOpen={
+          showDeleteModal
+        }
+        onClose={() =>
+          !deleting &&
+          setShowDeleteModal(
+            false
+          )
+        }
+        title="Delete Customer"
+      >
+        <div className="admin-customer-delete-modal">
+          <div className="admin-customer-delete-modal-icon">
+            !
           </div>
-        </section>
-      )}
 
-      {/* =================================================
-          Record Information
-      ================================================= */}
-      <section className="employee-customer-details-card">
-        <div className="employee-customer-details-card-header">
-          <div>
-            <h2>Record Information</h2>
+          <h3>
+            Delete this customer?
+          </h3>
 
-            <p>
-              Customer record and activity
-              timestamps.
-            </p>
+          <p>
+            Customer record permanently
+            delete ho sakta hai. Is
+            action ko undo nahi kiya
+            ja sakta.
+          </p>
+
+          <div className="admin-customer-delete-modal-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={deleting}
+              onClick={() =>
+                setShowDeleteModal(
+                  false
+                )
+              }
+            >
+              Cancel
+            </Button>
+
+            <Button
+              type="button"
+              variant="danger"
+              disabled={deleting}
+              onClick={
+                handleDelete
+              }
+            >
+              {deleting
+                ? "Deleting..."
+                : "Delete Customer"}
+            </Button>
           </div>
         </div>
-
-        <div className="employee-customer-details-grid">
-          <div className="employee-customer-detail-item">
-            <span>Created On</span>
-
-            <strong>
-              {formatDateTime(
-                customer?.createdAt ||
-                  customer?.createdDate
-              )}
-            </strong>
-          </div>
-
-          <div className="employee-customer-detail-item">
-            <span>Created By</span>
-
-            <strong>
-              {getCreatedBy()}
-            </strong>
-          </div>
-
-          <div className="employee-customer-detail-item">
-            <span>Last Updated</span>
-
-            <strong>
-              {formatDateTime(
-                customer?.updatedAt
-              )}
-            </strong>
-          </div>
-
-          <div className="employee-customer-detail-item">
-            <span>Updated By</span>
-
-            <strong>
-              {getUpdatedBy()}
-            </strong>
-          </div>
-        </div>
-      </section>
-
+      </Modal>
     </div>
   );
 };
 
-export default EmployeeCustomerDetailsPage;
+export default CustomerDetailsPage;

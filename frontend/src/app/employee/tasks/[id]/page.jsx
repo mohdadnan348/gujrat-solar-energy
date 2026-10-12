@@ -1,27 +1,131 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  useParams,
+  useRouter,
+} from "next/navigation";
 
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import Loader from "@/components/common/Loader";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 
-import { useAuth } from "@/hooks/useAuth";
 import taskService from "@/services/task.service";
+import employeeService from "@/services/employee.service";
 
 import "./task-details.css";
 
-const EmployeeTaskDetailsPage = () => {
-  const { user, loading: authLoading } = useAuth();
+const TaskDetailsPage = () => {
+  const router = useRouter();
   const params = useParams();
 
   const taskId = params?.id;
 
   const [task, setTask] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [employees, setEmployees] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [deleting, setDeleting] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const [deleteOpen, setDeleteOpen] =
+    useState(false);
+
+  const getValue = (
+    object,
+    keys,
+    fallback = ""
+  ) => {
+    if (!object) return fallback;
+
+    for (const key of keys) {
+      const value =
+        object?.[key];
+
+      if (
+        value !== undefined &&
+        value !== null &&
+        value !== ""
+      ) {
+        return value;
+      }
+    }
+
+    return fallback;
+  };
+
+  const getId = (object) => {
+    if (!object) return "";
+
+    if (typeof object === "string") {
+      return object;
+    }
+
+    return (
+      object?._id ||
+      object?.id ||
+      object?.employeeId ||
+      object?.taskId ||
+      ""
+    );
+  };
+
+  const normalizeList = (
+    response,
+    key
+  ) => {
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (
+      Array.isArray(
+        response?.data
+      )
+    ) {
+      return response.data;
+    }
+
+    if (
+      key &&
+      Array.isArray(
+        response?.data?.[key]
+      )
+    ) {
+      return response.data[key];
+    }
+
+    if (
+      key &&
+      Array.isArray(
+        response?.[key]
+      )
+    ) {
+      return response[key];
+    }
+
+    if (
+      Array.isArray(
+        response?.results
+      )
+    ) {
+      return response.results;
+    }
+
+    return [];
+  };
 
   const loadTask = async () => {
     if (!taskId) return;
@@ -30,16 +134,38 @@ const EmployeeTaskDetailsPage = () => {
       setLoading(true);
       setError("");
 
-      const response =
-        await taskService.getTaskById(taskId);
+      if (
+        typeof taskService.getTaskById !==
+        "function"
+      ) {
+        throw new Error(
+          "Task details service is not available."
+        );
+      }
 
-      const data =
-        response?.data?.data ??
-        response?.data ??
-        response?.task ??
-        null;
+      const [
+        taskResponse,
+        employeesResponse,
+      ] = await Promise.all([
+        taskService.getTaskById(
+          taskId
+        ),
+        employeeService.getEmployees(),
+      ]);
 
-      setTask(data);
+      const taskData =
+        taskResponse?.data ||
+        taskResponse?.task ||
+        taskResponse;
+
+      setTask(taskData);
+
+      setEmployees(
+        normalizeList(
+          employeesResponse,
+          "employees"
+        )
+      );
     } catch (err) {
       console.error(
         "Failed to load task:",
@@ -47,39 +173,210 @@ const EmployeeTaskDetailsPage = () => {
       );
 
       setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Unable to load task details."
+        err?.message ||
+          "Failed to load task details."
       );
-
-      setTask(null);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!authLoading && user && taskId) {
-      loadTask();
+    loadTask();
+  }, [taskId]);
+
+  const title = getValue(
+    task,
+    [
+      "title",
+      "taskTitle",
+      "name",
+      "subject",
+    ],
+    "Untitled Task"
+  );
+
+  const description = getValue(
+    task,
+    [
+      "description",
+      "details",
+    ],
+    ""
+  );
+
+  const status = String(
+    getValue(
+      task,
+      ["status"],
+      "PENDING"
+    )
+  ).toUpperCase();
+
+  const priority = String(
+    getValue(
+      task,
+      ["priority"],
+      "MEDIUM"
+    )
+  ).toUpperCase();
+
+  const dueDate = getValue(
+    task,
+    [
+      "dueDate",
+      "deadline",
+      "endDate",
+    ],
+    ""
+  );
+
+  const createdAt = getValue(
+    task,
+    [
+      "createdAt",
+      "createdDate",
+    ],
+    ""
+  );
+
+  const updatedAt = getValue(
+    task,
+    [
+      "updatedAt",
+      "updatedDate",
+    ],
+    ""
+  );
+
+  const notes = getValue(
+    task,
+    [
+      "notes",
+      "remarks",
+    ],
+    ""
+  );
+
+  const assignedTo = getValue(
+    task,
+    [
+      "assignedTo",
+      "assignee",
+      "employee",
+    ],
+    null
+  );
+
+  const assignedToId =
+    typeof assignedTo === "object"
+      ? getId(assignedTo)
+      : assignedTo ||
+        getValue(
+          task,
+          [
+            "assignedToId",
+            "employeeId",
+          ],
+          ""
+        );
+
+  const assignee = useMemo(() => {
+    if (
+      assignedTo &&
+      typeof assignedTo ===
+        "object"
+    ) {
+      return assignedTo;
     }
-  }, [authLoading, user, taskId]);
 
-  const formatLabel = (value) => {
-    if (!value) return "—";
+    if (!assignedToId) {
+      return null;
+    }
 
-    return String(value)
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (letter) =>
-        letter.toUpperCase()
-      );
-  };
+    return (
+      employees.find(
+        (employee) =>
+          getId(employee) ===
+          assignedToId
+      ) || null
+    );
+  }, [
+    assignedTo,
+    assignedToId,
+    employees,
+  ]);
+
+  const assigneeName = getValue(
+    assignee,
+    [
+      "name",
+      "fullName",
+      "employeeName",
+    ],
+    "Unassigned"
+  );
+
+  const assigneeEmail =
+    getValue(
+      assignee,
+      [
+        "email",
+        "emailAddress",
+      ],
+      ""
+    );
+
+  const assigneePhone =
+    getValue(
+      assignee,
+      [
+        "phone",
+        "mobile",
+        "mobileNumber",
+      ],
+      ""
+    );
+
+  const taskNumber = getValue(
+    task,
+    [
+      "taskNumber",
+      "taskCode",
+      "referenceNumber",
+    ],
+    ""
+  );
+
+  const relatedLead = getValue(
+    task,
+    [
+      "lead",
+      "leadId",
+    ],
+    null
+  );
+
+  const relatedCustomer =
+    getValue(
+      task,
+      [
+        "customer",
+        "customerId",
+      ],
+      null
+    );
 
   const formatDate = (value) => {
     if (!value) return "—";
 
     const date = new Date(value);
 
-    if (Number.isNaN(date.getTime())) {
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
       return "—";
     }
 
@@ -93,12 +390,18 @@ const EmployeeTaskDetailsPage = () => {
     );
   };
 
-  const formatDateTime = (value) => {
+  const formatDateTime = (
+    value
+  ) => {
     if (!value) return "—";
 
     const date = new Date(value);
 
-    if (Number.isNaN(date.getTime())) {
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
       return "—";
     }
 
@@ -114,200 +417,222 @@ const EmployeeTaskDetailsPage = () => {
     );
   };
 
-  const getStatusVariant = (status) => {
-    const value = String(
-      status || ""
-    ).toLowerCase();
+  const getStatusVariant = (
+    value
+  ) => {
+    switch (value) {
+      case "COMPLETED":
+      case "DONE":
+        return "success";
 
-    if (
-      [
-        "completed",
-        "done",
-        "closed",
-      ].includes(value)
-    ) {
-      return "success";
+      case "IN_PROGRESS":
+      case "IN PROGRESS":
+        return "info";
+
+      case "PENDING":
+      case "TODO":
+        return "warning";
+
+      case "CANCELLED":
+        return "danger";
+
+      default:
+        return "default";
     }
-
-    if (
-      [
-        "cancelled",
-        "failed",
-      ].includes(value)
-    ) {
-      return "danger";
-    }
-
-    if (
-      [
-        "in_progress",
-        "ongoing",
-        "started",
-      ].includes(value)
-    ) {
-      return "warning";
-    }
-
-    return "default";
   };
 
-  const getPriorityVariant = (priority) => {
-    const value = String(
-      priority || ""
-    ).toLowerCase();
+  const getPriorityVariant = (
+    value
+  ) => {
+    switch (value) {
+      case "URGENT":
+      case "HIGH":
+        return "danger";
 
-    if (
-      [
-        "high",
-        "urgent",
-        "critical",
-      ].includes(value)
-    ) {
-      return "danger";
+      case "MEDIUM":
+        return "warning";
+
+      case "LOW":
+        return "success";
+
+      default:
+        return "default";
     }
-
-    if (
-      [
-        "medium",
-        "normal",
-      ].includes(value)
-    ) {
-      return "warning";
-    }
-
-    return "default";
   };
 
-  if (authLoading || loading) {
+  const isOverdue = useMemo(() => {
+    if (!dueDate) return false;
+
+    const due = new Date(
+      dueDate
+    );
+
+    if (
+      Number.isNaN(
+        due.getTime()
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      [
+        "COMPLETED",
+        "DONE",
+        "CANCELLED",
+      ].includes(status)
+    ) {
+      return false;
+    }
+
+    return due < new Date();
+  }, [
+    dueDate,
+    status,
+  ]);
+
+  const handleDelete = async () => {
+    try {
+      setDeleting(true);
+      setError("");
+
+      if (
+        typeof taskService.deleteTask !==
+        "function"
+      ) {
+        throw new Error(
+          "Task delete service is not available."
+        );
+      }
+
+      await taskService.deleteTask(
+        taskId
+      );
+
+      router.push(
+        "/admin/tasks"
+      );
+    } catch (err) {
+      console.error(
+        "Failed to delete task:",
+        err
+      );
+
+      setError(
+        err?.message ||
+          "Failed to delete task."
+      );
+
+      setDeleteOpen(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  /* =========================================================
+     LOADING
+     AdminLayout removed to prevent duplicate layout.
+  ========================================================= */
+
+  if (loading) {
     return (
-      <div className="employee-task-details-loading">
+      <div className="admin-task-details-loading">
         <Loader />
+
+        <p>
+          Loading task details...
+        </p>
       </div>
     );
   }
 
-  if (error || !task) {
+  /* =========================================================
+     NOT FOUND
+  ========================================================= */
+
+  if (!task) {
     return (
-      <div className="employee-task-details-page">
-        <div className="employee-task-details-error">
-          <div className="employee-task-details-error-icon">
-            !
-          </div>
+      <div className="admin-task-details-page">
+
+        <div className="admin-task-details-error-state">
 
           <h2>
-            Unable to load task
+            Task Not Found
           </h2>
 
           <p>
-            {error ||
-              "The requested task could not be found."}
+            The requested task could not
+            be found.
           </p>
 
-          <div className="employee-task-details-error-actions">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={loadTask}
-            >
-              Retry
-            </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() =>
+              router.push(
+                "/admin/tasks"
+              )
+            }
+          >
+            Back to Tasks
+          </Button>
 
-            <Link
-              href="/employee/tasks"
-              className="employee-task-back-button"
-            >
-              Back to Tasks
-            </Link>
-          </div>
         </div>
+
       </div>
     );
   }
 
-  const title =
-    task?.title ||
-    task?.taskName ||
-    "Untitled Task";
-
-  const taskNumber =
-    task?.taskNumber ||
-    task?.taskId ||
-    "Task";
-
-  const status =
-    task?.status ||
-    task?.taskStatus ||
-    "Pending";
-
-  const priority =
-    task?.priority ||
-    "Normal";
-
-  const description =
-    task?.description ||
-    "No description available.";
-
-  const relatedCustomer =
-    task?.customer?.name ||
-    task?.customerName ||
-    "—";
-
-  const relatedLead =
-    task?.lead?.name ||
-    task?.leadName ||
-    "—";
-
-  const quotationNumber =
-    task?.quotation?.quotationNumber ||
-    task?.quotationNumber ||
-    "—";
-
-  const dueDate =
-    task?.dueDate ||
-    task?.deadline ||
-    task?.endDate;
-
-  const assignedEmployee =
-    task?.assignedTo?.name ||
-    task?.assignedTo?.employeeId ||
-    task?.assignedTo?.username ||
-    "You";
+  /* =========================================================
+     PAGE
+  ========================================================= */
 
   return (
-    <div className="employee-task-details-page">
+    <div className="admin-task-details-page">
 
-      {/* Header */}
-      <div className="employee-task-details-header">
+      <div className="admin-task-details-header">
 
         <div>
-          <Link
-            href="/employee/tasks"
-            className="employee-task-details-back"
+
+          <button
+            type="button"
+            className="admin-task-details-back"
+            onClick={() =>
+              router.push(
+                "/admin/tasks"
+              )
+            }
           >
-            <span>←</span>
-            Back to Tasks
-          </Link>
+            ← Back to Tasks
+          </button>
 
-          <span className="employee-task-details-eyebrow">
-            Work Management
-          </span>
+          <div className="admin-task-details-title-row">
 
-          <div className="employee-task-details-title-row">
             <div>
-              <h1>{title}</h1>
 
-              <p>
-                #{taskNumber}
-              </p>
+              <h1>
+                {title}
+              </h1>
+
+              {taskNumber && (
+                <span className="admin-task-reference">
+                  {taskNumber}
+                </span>
+              )}
+
             </div>
 
-            <div className="employee-task-details-badges">
+            <div className="admin-task-details-statuses">
+
               <Badge
                 variant={getPriorityVariant(
                   priority
                 )}
               >
-                {formatLabel(priority)}
+                {priority.replaceAll(
+                  "_",
+                  " "
+                )}
               </Badge>
 
               <Badge
@@ -315,260 +640,445 @@ const EmployeeTaskDetailsPage = () => {
                   status
                 )}
               >
-                {formatLabel(status)}
+                {status.replaceAll(
+                  "_",
+                  " "
+                )}
               </Badge>
+
             </div>
+
           </div>
+
         </div>
 
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={loadTask}
-        >
-          Refresh
-        </Button>
+        <div className="admin-task-details-actions">
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() =>
+              router.push(
+                `/admin/tasks/create?edit=${taskId}`
+              )
+            }
+          >
+            Edit Task
+          </Button>
+
+          <Button
+            type="button"
+            variant="danger"
+            onClick={() =>
+              setDeleteOpen(true)
+            }
+          >
+            Delete
+          </Button>
+
+        </div>
+
       </div>
 
-      {/* Main Grid */}
-      <div className="employee-task-details-grid">
+      {error && (
+        <div className="admin-task-details-error">
+          {error}
+        </div>
+      )}
 
-        {/* Main Information */}
-        <div className="employee-task-details-main">
+      <div className="admin-task-details-grid">
 
-          <section className="employee-task-details-card">
-            <div className="employee-task-details-card-header">
+        <div className="admin-task-details-main">
+
+          <section className="admin-task-details-card">
+
+            <div className="admin-task-details-card-header">
+
               <div>
+
                 <h2>
-                  Task Details
+                  Task Information
                 </h2>
 
                 <p>
-                  Information about this assigned task.
+                  Task description and
+                  operational details.
                 </p>
+
               </div>
+
             </div>
 
-            <div className="employee-task-description">
-              <span>
-                Description
-              </span>
+            <div className="admin-task-details-card-body">
 
-              <p>
-                {description}
-              </p>
-            </div>
+              <div className="admin-task-info-block">
 
-            {task?.comments && (
-              <div className="employee-task-description">
                 <span>
-                  Comments
+                  Description
                 </span>
 
                 <p>
-                  {task.comments}
+                  {description ||
+                    "No description provided."}
                 </p>
-              </div>
-            )}
-          </section>
 
-          {/* Related Records */}
-          <section className="employee-task-details-card">
-            <div className="employee-task-details-card-header">
-              <div>
-                <h2>
-                  Related Records
-                </h2>
-
-                <p>
-                  Business records connected with this task.
-                </p>
-              </div>
-            </div>
-
-            <div className="employee-task-related-grid">
-
-              <div className="employee-task-related-item">
-                <span>
-                  Customer
-                </span>
-
-                <strong>
-                  {relatedCustomer}
-                </strong>
               </div>
 
-              <div className="employee-task-related-item">
-                <span>
-                  Lead
-                </span>
+              <div className="admin-task-info-grid">
 
-                <strong>
-                  {relatedLead}
-                </strong>
-              </div>
-
-              <div className="employee-task-related-item">
-                <span>
-                  Quotation
-                </span>
-
-                <strong>
-                  {quotationNumber}
-                </strong>
-              </div>
-
-              <div className="employee-task-related-item">
-                <span>
-                  Category
-                </span>
-
-                <strong>
-                  {task?.category ||
-                    task?.type ||
-                    "—"}
-                </strong>
-              </div>
-
-            </div>
-          </section>
-
-          {/* Activity */}
-          <section className="employee-task-details-card">
-
-            <div className="employee-task-details-card-header">
-              <div>
-                <h2>
-                  Task Timeline
-                </h2>
-
-                <p>
-                  Important task dates.
-                </p>
-              </div>
-            </div>
-
-            <div className="employee-task-timeline">
-
-              <div className="employee-task-timeline-item">
-                <div className="employee-task-timeline-dot" />
-
-                <div>
-                  <strong>
-                    Task Created
-                  </strong>
+                <div className="admin-task-info-item">
 
                   <span>
-                    {formatDateTime(
-                      task?.createdAt ||
-                        task?.createdDate
-                    )}
+                    Priority
                   </span>
+
+                  <div>
+
+                    <Badge
+                      variant={getPriorityVariant(
+                        priority
+                      )}
+                    >
+                      {priority.replaceAll(
+                        "_",
+                        " "
+                      )}
+                    </Badge>
+
+                  </div>
+
                 </div>
-              </div>
 
-              <div className="employee-task-timeline-item">
-                <div className="employee-task-timeline-dot" />
-
-                <div>
-                  <strong>
-                    Due Date
-                  </strong>
+                <div className="admin-task-info-item">
 
                   <span>
+                    Status
+                  </span>
+
+                  <div>
+
+                    <Badge
+                      variant={getStatusVariant(
+                        status
+                      )}
+                    >
+                      {status.replaceAll(
+                        "_",
+                        " "
+                      )}
+                    </Badge>
+
+                  </div>
+
+                </div>
+
+                <div className="admin-task-info-item">
+
+                  <span>
+                    Due Date
+                  </span>
+
+                  <strong
+                    className={
+                      isOverdue
+                        ? "overdue"
+                        : ""
+                    }
+                  >
                     {formatDate(
                       dueDate
                     )}
-                  </span>
+                  </strong>
+
+                  {isOverdue && (
+                    <small className="admin-task-overdue-label">
+                      Overdue
+                    </small>
+                  )}
+
                 </div>
+
+                <div className="admin-task-info-item">
+
+                  <span>
+                    Created
+                  </span>
+
+                  <strong>
+                    {formatDate(
+                      createdAt
+                    )}
+                  </strong>
+
+                </div>
+
+                <div className="admin-task-info-item">
+
+                  <span>
+                    Last Updated
+                  </span>
+
+                  <strong>
+                    {formatDate(
+                      updatedAt
+                    )}
+                  </strong>
+
+                </div>
+
               </div>
 
-              {task?.completedAt && (
-                <div className="employee-task-timeline-item">
-                  <div className="employee-task-timeline-dot completed" />
+            </div>
 
-                  <div>
-                    <strong>
-                      Completed
-                    </strong>
+          </section>
 
-                    <span>
-                      {formatDateTime(
-                        task.completedAt
-                      )}
-                    </span>
-                  </div>
+          <section className="admin-task-details-card">
+
+            <div className="admin-task-details-card-header">
+
+              <div>
+
+                <h2>
+                  Notes
+                </h2>
+
+                <p>
+                  Additional information
+                  related to this task.
+                </p>
+
+              </div>
+
+            </div>
+
+            <div className="admin-task-details-card-body">
+
+              <div className="admin-task-notes">
+
+                {notes ? (
+                  <p>
+                    {notes}
+                  </p>
+                ) : (
+                  <span>
+                    No additional notes
+                    available.
+                  </span>
+                )}
+
+              </div>
+
+            </div>
+
+          </section>
+
+          {(relatedLead ||
+            relatedCustomer) && (
+            <section className="admin-task-details-card">
+
+              <div className="admin-task-details-card-header">
+
+                <div>
+
+                  <h2>
+                    Related Records
+                  </h2>
+
+                  <p>
+                    Records connected to
+                    this task.
+                  </p>
+
+                </div>
+
+              </div>
+
+              <div className="admin-task-details-card-body">
+
+                <div className="admin-task-related-grid">
+
+                  {relatedLead && (
+                    <div className="admin-task-related-item">
+
+                      <span>
+                        Lead
+                      </span>
+
+                      <strong>
+                        {typeof relatedLead ===
+                        "object"
+                          ? getValue(
+                              relatedLead,
+                              [
+                                "name",
+                                "leadNumber",
+                                "_id",
+                              ],
+                              "Related Lead"
+                            )
+                          : String(
+                              relatedLead
+                            )}
+                      </strong>
+
+                    </div>
+                  )}
+
+                  {relatedCustomer && (
+                    <div className="admin-task-related-item">
+
+                      <span>
+                        Customer
+                      </span>
+
+                      <strong>
+                        {typeof relatedCustomer ===
+                        "object"
+                          ? getValue(
+                              relatedCustomer,
+                              [
+                                "name",
+                                "customerNumber",
+                                "_id",
+                              ],
+                              "Related Customer"
+                            )
+                          : String(
+                              relatedCustomer
+                            )}
+                      </strong>
+
+                    </div>
+                  )}
+
+                </div>
+
+              </div>
+
+            </section>
+          )}
+
+        </div>
+
+        <aside className="admin-task-details-sidebar">
+
+          <section className="admin-task-details-card">
+
+            <div className="admin-task-details-card-header">
+
+              <div>
+
+                <h2>
+                  Assigned Employee
+                </h2>
+
+                <p>
+                  Current task assignee.
+                </p>
+
+              </div>
+
+            </div>
+
+            <div className="admin-task-details-card-body">
+
+              <div className="admin-task-assignee-profile">
+
+                <div className="admin-task-profile-avatar">
+
+                  {assigneeName
+                    .charAt(0)
+                    .toUpperCase()}
+
+                </div>
+
+                <div>
+
+                  <h3>
+                    {assigneeName}
+                  </h3>
+
+                  {assigneeEmail && (
+                    <a
+                      href={`mailto:${assigneeEmail}`}
+                    >
+                      {assigneeEmail}
+                    </a>
+                  )}
+
+                  {assigneePhone && (
+                    <a
+                      href={`tel:${assigneePhone}`}
+                    >
+                      {assigneePhone}
+                    </a>
+                  )}
+
+                </div>
+
+              </div>
+
+              {!assignee && (
+                <div className="admin-task-unassigned">
+                  This task is currently
+                  unassigned.
                 </div>
               )}
 
             </div>
+
           </section>
-        </div>
 
-        {/* Sidebar */}
-        <aside className="employee-task-details-sidebar">
+          <section className="admin-task-details-card">
 
-          <section className="employee-task-details-card">
+            <div className="admin-task-details-card-header">
 
-            <div className="employee-task-details-card-header">
               <div>
+
                 <h2>
                   Task Summary
                 </h2>
+
+                <p>
+                  Quick overview of this
+                  task.
+                </p>
+
               </div>
+
             </div>
 
-            <div className="employee-task-summary-list">
+            <div className="admin-task-summary">
 
               <div>
-                <span>
-                  Task ID
-                </span>
 
-                <strong>
-                  #{taskNumber}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Assigned To
-                </span>
-
-                <strong>
-                  {assignedEmployee}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Priority
-                </span>
-
-                <Badge
-                  variant={getPriorityVariant(
-                    priority
-                  )}
-                >
-                  {formatLabel(priority)}
-                </Badge>
-              </div>
-
-              <div>
                 <span>
                   Status
                 </span>
 
-                <Badge
-                  variant={getStatusVariant(
-                    status
+                <strong>
+                  {status.replaceAll(
+                    "_",
+                    " "
                   )}
-                >
-                  {formatLabel(status)}
-                </Badge>
+                </strong>
+
               </div>
 
               <div>
+
+                <span>
+                  Priority
+                </span>
+
+                <strong>
+                  {priority}
+                </strong>
+
+              </div>
+
+              <div>
+
                 <span>
                   Due Date
                 </span>
@@ -578,46 +1088,54 @@ const EmployeeTaskDetailsPage = () => {
                     dueDate
                   )}
                 </strong>
+
               </div>
 
               <div>
+
                 <span>
                   Created
                 </span>
 
                 <strong>
-                  {formatDate(
-                    task?.createdAt ||
-                      task?.createdDate
+                  {formatDateTime(
+                    createdAt
                   )}
                 </strong>
+
               </div>
 
             </div>
-          </section>
-
-          <section className="employee-task-details-card employee-task-help-card">
-
-            <div className="employee-task-help-icon">
-              ?
-            </div>
-
-            <h3>
-              Need help?
-            </h3>
-
-            <p>
-              If you have any issue with this task,
-              contact your manager or administrator.
-            </p>
 
           </section>
 
         </aside>
 
       </div>
+
+      <ConfirmDialog
+        isOpen={deleteOpen}
+        onClose={() =>
+          !deleting &&
+          setDeleteOpen(false)
+        }
+        onConfirm={
+          handleDelete
+        }
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        confirmText={
+          deleting
+            ? "Deleting..."
+            : "Delete Task"
+        }
+        cancelText="Cancel"
+        loading={deleting}
+        danger
+      />
+
     </div>
   );
 };
 
-export default EmployeeTaskDetailsPage;
+export default TaskDetailsPage;

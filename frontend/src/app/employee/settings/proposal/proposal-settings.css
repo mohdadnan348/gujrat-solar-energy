@@ -1,0 +1,277 @@
+.proposal-settings-page {
+  width: 100%;
+  padding: 24px;
+}
+
+.proposal-settings-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.proposal-settings-header h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.proposal-settings-header p {
+  margin: 7px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.proposal-settings-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Alerts */
+
+.proposal-settings-alert {
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.proposal-settings-error {
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.proposal-settings-success {
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+/* Form */
+
+.proposal-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Cards */
+
+.proposal-settings-card {
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+}
+
+.proposal-settings-card-header {
+  padding: 20px 22px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.proposal-settings-card-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.proposal-settings-card-header p {
+  margin: 5px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Grid */
+
+.proposal-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  padding: 22px;
+}
+
+.proposal-settings-field {
+  min-width: 0;
+}
+
+.proposal-settings-full {
+  grid-column: 1 / -1;
+}
+
+/* Textarea refinement */
+
+.proposal-settings-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+/* Bottom Actions */
+
+.proposal-settings-bottom-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+/* Loading */
+
+.proposal-settings-loading {
+  width: 100%;
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Focus accessibility */
+
+.proposal-settings-field input:focus,
+.proposal-settings-field textarea:focus,
+.proposal-settings-field select:focus {
+  outline: none;
+}
+
+/* Tablet */
+
+@media (max-width: 900px) {
+  .proposal-settings-page {
+    padding: 20px;
+  }
+
+  .proposal-settings-header {
+    gap: 18px;
+  }
+
+  .proposal-settings-grid {
+    gap: 18px;
+    padding: 20px;
+  }
+}
+
+/* Mobile */
+
+@media (max-width: 700px) {
+  .proposal-settings-page {
+    padding: 16px;
+  }
+
+  .proposal-settings-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .proposal-settings-header h1 {
+    font-size: 24px;
+  }
+
+  .proposal-settings-header-actions {
+    justify-content: flex-start;
+  }
+
+  .proposal-settings-grid {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .proposal-settings-full {
+    grid-column: auto;
+  }
+
+  .proposal-settings-card-header {
+    padding: 18px;
+  }
+
+  .proposal-settings-bottom-actions {
+    justify-content: stretch;
+  }
+
+  .proposal-settings-bottom-actions > * {
+    flex: 1;
+  }
+}
+
+/* Small Mobile */
+
+@media (max-width: 480px) {
+  .proposal-settings-page {
+    padding: 12px;
+  }
+
+  .proposal-settings-header h1 {
+    font-size: 22px;
+  }
+
+  .proposal-settings-header p {
+    font-size: 13px;
+  }
+
+  .proposal-settings-header-actions {
+    width: 100%;
+  }
+
+  .proposal-settings-header-actions > * {
+    flex: 1;
+  }
+
+  .proposal-settings-grid {
+    padding: 15px;
+    gap: 16px;
+  }
+
+  .proposal-settings-card-header {
+    padding: 16px 15px;
+  }
+
+  .proposal-settings-card-header h2 {
+    font-size: 16px;
+  }
+
+  .proposal-settings-card-header p {
+    font-size: 12px;
+  }
+
+  .proposal-settings-alert {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .proposal-settings-bottom-actions {
+    flex-direction: column-reverse;
+  }
+
+  .proposal-settings-bottom-actions > * {
+    width: 100%;
+  }
+}
+
+/* Print */
+
+@media print {
+  .proposal-settings-page {
+    padding: 0;
+  }
+
+  .proposal-settings-header-actions,
+  .proposal-settings-bottom-actions {
+    display: none;
+  }
+
+  .proposal-settings-card {
+    border: 1px solid #d1d5db;
+    break-inside: avoid;
+  }
+}

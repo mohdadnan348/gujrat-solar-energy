@@ -1,10 +1,12 @@
+// frontend/src/app/admin/layout.jsx
+
 "use client";
 
 import React from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAuth } from "@/hooks/useAuth";
 
-const EmployeeLayout = ({ children }) => {
+const AdminLayout = ({ children }) => {
   const { user, logout, loading } = useAuth();
 
   const handleLogout = async () => {
@@ -12,26 +14,26 @@ const EmployeeLayout = ({ children }) => {
   };
 
   const handleSearch = (value) => {
-    console.log("Global search:", value);
+    console.log("Admin global search:", value);
   };
 
   if (loading) {
     return (
-      <div className="employee-layout-loading">
+      <div className="admin-layout-loading">
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="employee-layout">
+    <div className="admin-layout">
       <MainLayout
         user={user}
         onLogout={handleLogout}
         onSearch={handleSearch}
         notificationCount={0}
       >
-        <div className="employee-layout-content">
+        <div className="admin-layout-content">
           {children}
         </div>
       </MainLayout>
@@ -39,4 +41,4 @@ const EmployeeLayout = ({ children }) => {
   );
 };
 
-export default EmployeeLayout;
+export default AdminLayout;

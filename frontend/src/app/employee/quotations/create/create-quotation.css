@@ -1,0 +1,546 @@
+.admin-create-quotation-page {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 24px;
+  color: #172033;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.admin-create-quotation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.admin-create-quotation-back {
+  border: 0;
+  background: transparent;
+  color: #16803c;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 0;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.admin-create-quotation-back:hover {
+  color: #0d642e;
+  transform: translateX(-2px);
+}
+
+.admin-create-quotation-title {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.admin-create-quotation-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #16803c, #27a957);
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 800;
+  box-shadow: 0 10px 25px rgba(22, 128, 60, 0.18);
+}
+
+.admin-create-quotation-title h1 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.admin-create-quotation-title p {
+  margin: 7px 0 0;
+  color: #697386;
+  font-size: 14px;
+}
+
+/* =========================
+   ERROR
+========================= */
+
+.admin-create-quotation-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 17px;
+  margin-bottom: 20px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fff7f7;
+  color: #991b1b;
+}
+
+.admin-create-quotation-error-icon {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-create-quotation-error strong {
+  display: block;
+  font-size: 14px;
+}
+
+.admin-create-quotation-error p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* =========================
+   LOADING
+========================= */
+
+.admin-create-quotation-loading,
+.admin-create-quotation-loading-card {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-create-quotation-loading-card {
+  background: #ffffff;
+  border: 1px solid #e7eaf0;
+  border-radius: 16px;
+  box-shadow: 0 5px 25px rgba(15, 23, 42, 0.04);
+}
+
+.admin-create-quotation-loading-card p {
+  margin: 0;
+  color: #697386;
+  font-size: 14px;
+}
+
+/* =========================
+   FORM CARD
+========================= */
+
+.admin-quotation-form-card {
+  background: #ffffff;
+  border: 1px solid #e7eaf0;
+  border-radius: 17px;
+  margin-bottom: 20px;
+  padding: 24px;
+  box-shadow: 0 6px 25px rgba(15, 23, 42, 0.035);
+}
+
+.admin-quotation-form-card-header {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 24px;
+}
+
+.admin-quotation-form-card-header > button {
+  margin-left: auto;
+}
+
+.admin-quotation-section-number {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: #ecfdf3;
+  color: #16803c;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.admin-quotation-form-card-header h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.admin-quotation-form-card-header p {
+  margin: 4px 0 0;
+  color: #7b8495;
+  font-size: 13px;
+}
+
+/* =========================
+   BASIC FORM
+========================= */
+
+.admin-quotation-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+/* =========================
+   ITEMS TABLE
+========================= */
+
+.admin-quotation-items-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.admin-quotation-items-table {
+  min-width: 1050px;
+  border: 1px solid #e8ebf0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.admin-quotation-item-head,
+.admin-quotation-item-row {
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 2.4fr)
+    85px
+    100px
+    135px
+    90px
+    140px
+    42px;
+  align-items: center;
+  column-gap: 10px;
+  padding: 12px 14px;
+}
+
+.admin-quotation-item-head {
+  background: #f7f9fb;
+  border-bottom: 1px solid #e6e9ee;
+  color: #697386;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-quotation-item-row {
+  min-height: 78px;
+  border-bottom: 1px solid #edf0f3;
+  background: #ffffff;
+}
+
+.admin-quotation-item-row:last-child {
+  border-bottom: 0;
+}
+
+.admin-quotation-item-row > div {
+  min-width: 0;
+}
+
+.admin-quotation-line-total {
+  padding: 0 5px;
+  color: #172033;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-quotation-remove-item {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #dc2626;
+  font-size: 21px;
+  line-height: 1;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.admin-quotation-remove-item:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.admin-quotation-remove-item:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* =========================
+   PRICING
+========================= */
+
+.admin-quotation-pricing-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 410px;
+  gap: 30px;
+  align-items: start;
+}
+
+.admin-quotation-pricing-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.admin-quotation-total-box {
+  border: 1px solid #e3e8e5;
+  border-radius: 14px;
+  background: #f9fcfa;
+  overflow: hidden;
+}
+
+.admin-quotation-total-box > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 13px 17px;
+  border-bottom: 1px solid #e9eee9;
+}
+
+.admin-quotation-total-box span {
+  color: #697386;
+  font-size: 13px;
+}
+
+.admin-quotation-total-box strong {
+  color: #273143;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.admin-quotation-grand-total {
+  padding: 18px 17px !important;
+  background: #16803c;
+  border-bottom: 0 !important;
+}
+
+.admin-quotation-grand-total span,
+.admin-quotation-grand-total strong {
+  color: #ffffff;
+}
+
+.admin-quotation-grand-total span {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-quotation-grand-total strong {
+  font-size: 21px;
+  font-weight: 800;
+}
+
+/* =========================
+   TERMS
+========================= */
+
+.admin-quotation-form-textareas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.admin-quotation-form-textareas > :last-child {
+  grid-column: 1 / -1;
+}
+
+/* =========================
+   ACTIONS
+========================= */
+
+.admin-create-quotation-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 15px 18px;
+  margin-top: 10px;
+  border: 1px solid #e2e7e3;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -8px 30px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.admin-create-quotation-final {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admin-create-quotation-final span {
+  color: #737d8e;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-create-quotation-final strong {
+  color: #16803c;
+  font-size: 22px;
+  font-weight: 850;
+}
+
+.admin-create-quotation-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1200px) {
+  .admin-quotation-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-quotation-pricing-layout {
+    grid-template-columns: 1fr 360px;
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-create-quotation-page {
+    padding: 18px;
+  }
+
+  .admin-quotation-pricing-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-quotation-total-box {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-create-quotation-page {
+    padding: 14px;
+  }
+
+  .admin-create-quotation-title {
+    align-items: flex-start;
+  }
+
+  .admin-create-quotation-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 12px;
+    font-size: 18px;
+  }
+
+  .admin-create-quotation-title h1 {
+    font-size: 22px;
+  }
+
+  .admin-create-quotation-title p {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .admin-quotation-form-card {
+    padding: 17px;
+    border-radius: 14px;
+  }
+
+  .admin-quotation-form-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .admin-quotation-pricing-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-quotation-form-textareas {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-quotation-form-textareas > :last-child {
+    grid-column: auto;
+  }
+
+  .admin-quotation-form-card-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .admin-quotation-form-card-header > button {
+    width: 100%;
+    margin-left: 53px;
+    margin-top: -5px;
+  }
+
+  .admin-create-quotation-actions {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 14px;
+  }
+
+  .admin-create-quotation-final {
+    align-items: center;
+  }
+
+  .admin-create-quotation-buttons {
+    width: 100%;
+  }
+
+  .admin-create-quotation-buttons > button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-create-quotation-page {
+    padding: 10px;
+  }
+
+  .admin-create-quotation-title {
+    gap: 10px;
+  }
+
+  .admin-create-quotation-title h1 {
+    font-size: 20px;
+  }
+
+  .admin-create-quotation-form-card {
+    margin-bottom: 14px;
+  }
+
+  .admin-create-quotation-back {
+    font-size: 13px;
+  }
+
+  .admin-create-quotation-final strong {
+    font-size: 20px;
+  }
+}

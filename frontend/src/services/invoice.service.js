@@ -1,3 +1,4 @@
+
 import api from "@/services/api";
 
 const BASE_URL = "/invoices";
@@ -33,11 +34,7 @@ export const createInvoice = async (invoiceData) => {
     throw new Error("Invoice data is required.");
   }
 
-  const response = await api.post(
-    BASE_URL,
-    invoiceData
-  );
-
+  const response = await api.post(BASE_URL, invoiceData);
   return response.data;
 };
 
@@ -57,10 +54,7 @@ export const createInvoiceFromQuotation = async (
   return response.data;
 };
 
-export const updateInvoice = async (
-  invoiceId,
-  invoiceData
-) => {
+export const updateInvoice = async (invoiceId, invoiceData) => {
   if (!invoiceId) {
     throw new Error("Invoice ID is required.");
   }
@@ -99,9 +93,20 @@ export const cancelInvoice = async (
 
   const response = await api.patch(
     `${BASE_URL}/${invoiceId}/cancel`,
-    {
-      cancellationReason,
-    }
+    { cancellationReason }
+  );
+
+  return response.data;
+};
+
+// Permanently delete an invoice.
+export const deleteInvoice = async (invoiceId) => {
+  if (!invoiceId) {
+    throw new Error("Invoice ID is required.");
+  }
+
+  const response = await api.delete(
+    `${BASE_URL}/${invoiceId}`
   );
 
   return response.data;
@@ -115,10 +120,7 @@ export const markInvoicesOverdue = async () => {
   return response.data;
 };
 
-export const searchInvoices = async (
-  search,
-  params = {}
-) => {
+export const searchInvoices = async (search, params = {}) => {
   const response = await api.get(BASE_URL, {
     params: {
       ...params,
@@ -152,6 +154,7 @@ const invoiceService = {
   updateInvoice,
   issueInvoice,
   cancelInvoice,
+  deleteInvoice,
   markInvoicesOverdue,
   searchInvoices,
   getInvoicesByStatus,

@@ -165,6 +165,25 @@ const cancelInvoice = async (
   }
 };
 
+
+const deleteInvoice = async (req, res, next) => {
+  try {
+    const result = await invoiceService.deleteInvoice(
+      req.params.id,
+      req.user?.userId
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Invoice deleted successfully",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 const markInvoicesOverdue = async (
   req,
   res,
@@ -190,6 +209,7 @@ const markInvoicesOverdue = async (
   }
 };
 
+
 module.exports = {
   createInvoice,
   createInvoiceFromQuotation,
@@ -199,5 +219,6 @@ module.exports = {
   updateInvoice,
   issueInvoice,
   cancelInvoice,
+  deleteInvoice,
   markInvoicesOverdue,
 };

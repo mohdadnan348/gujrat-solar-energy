@@ -1,0 +1,303 @@
+.admin-create-requirement-page {
+  width: 100%;
+  min-height: calc(100vh - 72px);
+  padding: 24px;
+  background: #f6f8fb;
+}
+
+/* =========================
+   Loading
+========================= */
+
+.admin-create-requirement-loading {
+  min-height: 65vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* =========================
+   Header
+========================= */
+
+.admin-create-requirement-header {
+  margin-bottom: 22px;
+}
+
+.admin-create-requirement-back {
+  display: block;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #16803c;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.admin-create-requirement-back:hover {
+  color: #0f612d;
+  transform: translateX(-2px);
+}
+
+.admin-page-eyebrow {
+  display: inline-block;
+  margin-bottom: 7px;
+  color: #16803c;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.admin-create-requirement-header h1 {
+  margin: 0;
+  color: #182131;
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 750;
+}
+
+.admin-create-requirement-header p {
+  margin: 7px 0 0;
+  color: #858e9e;
+  font-size: 13px;
+}
+
+/* =========================
+   Error
+========================= */
+
+.admin-create-requirement-error {
+  margin-bottom: 20px;
+  padding: 15px 17px;
+  border: 1px solid #f0caca;
+  border-radius: 13px;
+  background: #fff7f7;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.admin-create-error-icon {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 50%;
+  background: #ffe5e5;
+  color: #c92c39;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.admin-create-requirement-error strong {
+  display: block;
+  margin: 1px 0 4px;
+  color: #b4232f;
+  font-size: 13px;
+}
+
+.admin-create-requirement-error p {
+  margin: 0;
+  color: #8d6268;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* =========================
+   Form
+========================= */
+
+.admin-create-requirement-form {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.admin-create-requirement-card {
+  margin-bottom: 18px;
+  border: 1px solid #e6ebef;
+  border-radius: 16px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 5px 20px rgba(18, 28, 45, 0.035);
+}
+
+/* =========================
+   Section Header
+========================= */
+
+.admin-form-section-header {
+  padding: 19px 21px;
+  border-bottom: 1px solid #edf0f4;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.admin-form-section-number {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 11px;
+  background: #eaf8ef;
+  color: #16803c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.admin-form-section-header h2 {
+  margin: 0;
+  color: #252f40;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.admin-form-section-header p {
+  margin: 4px 0 0;
+  color: #9098a7;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* =========================
+   Form Grid
+========================= */
+
+.admin-form-grid {
+  padding: 7px 21px 21px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 22px;
+  row-gap: 4px;
+}
+
+.admin-form-field {
+  min-width: 0;
+  padding-top: 12px;
+}
+
+.admin-form-full {
+  grid-column: 1 / -1;
+}
+
+/* =========================
+   Inputs / Selects
+========================= */
+
+.admin-form-field input,
+.admin-form-field select,
+.admin-form-field textarea {
+  max-width: 100%;
+}
+
+.admin-form-field input:focus,
+.admin-form-field select:focus,
+.admin-form-field textarea:focus {
+  border-color: #42a765;
+}
+
+/* =========================
+   Actions
+========================= */
+
+.admin-create-requirement-actions {
+  padding: 5px 0 28px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+
+/* =========================
+   Mobile
+========================= */
+
+@media (max-width: 800px) {
+  .admin-create-requirement-page {
+    padding: 18px;
+  }
+
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .admin-form-full {
+    grid-column: auto;
+  }
+
+  .admin-form-section-header {
+    padding: 17px 18px;
+  }
+
+  .admin-create-requirement-header h1 {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-create-requirement-page {
+    padding: 13px;
+  }
+
+  .admin-create-requirement-header {
+    margin-bottom: 17px;
+  }
+
+  .admin-create-requirement-header h1 {
+    font-size: 22px;
+  }
+
+  .admin-create-requirement-header p {
+    font-size: 12px;
+  }
+
+  .admin-create-requirement-card {
+    border-radius: 13px;
+  }
+
+  .admin-form-section-header {
+    align-items: flex-start;
+    padding: 15px;
+  }
+
+  .admin-form-section-number {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+  }
+
+  .admin-form-section-header h2 {
+    font-size: 15px;
+  }
+
+  .admin-form-grid {
+    padding: 5px 15px 16px;
+  }
+
+  .admin-create-requirement-actions {
+    padding-bottom: 20px;
+    flex-direction: column-reverse;
+  }
+
+  .admin-create-requirement-actions > * {
+    width: 100%;
+  }
+
+  .admin-create-requirement-error {
+    padding: 13px;
+  }
+}

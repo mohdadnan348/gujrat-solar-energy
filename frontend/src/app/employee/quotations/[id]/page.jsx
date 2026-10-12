@@ -1,472 +1,917 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import Loader from "@/components/common/Loader";
+
 import quotationService from "@/services/quotation.service";
+import pdfService from "@/services/pdf.service";
+import systemConfigurationService from "@/services/systemConfiguration.service";
 
-import "./page.css";
+import "./quotation-details.css";
 
-const EmployeeQuotationDetailsPage = () => {
+/* =========================================================
+   HELPERS
+========================================================= */
+
+const firstValue = (object, keys = [], fallback = "") => {
+  if (!object) return fallback;
+
+  for (const key of keys) {
+    const value = object?.[key];
+
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== ""
+    ) {
+      return value;
+    }
+  }
+
+  return fallback;
+};
+
+const objectValue = (object, keys = []) => {
+  if (!object) return null;
+
+  for (const key of keys) {
+    const value = object?.[key];
+
+    if (value && typeof value === "object") {
+      return value;
+    }
+  }
+
+  return null;
+};
+
+const idOf = (value) => {
+  if (!value) return "";
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return value?._id || value?.id || "";
+};
+
+const unwrap = (response) => {
+  if (!response) return null;
+
+  if (response?.data?.quotation) {
+    return response.data.quotation;
+  }
+
+  if (response?.quotation) {
+    return response.quotation;
+  }
+
+  if (response?.data && !Array.isArray(response.data)) {
+    return response.data;
+  }
+
+  return response;
+};
+
+const normalizeQuotationResponse = (response) => {
+  if (!response) {
+    return {
+      quotation: null,
+      items: [],
+      bom: [],
+    };
+  }
+
+  const root =
+    response?.data && !Array.isArray(response.data)
+      ? response.data
+      : response;
+
+  const quotation =
+    root?.quotation ||
+    response?.quotation ||
+    unwrap(response);
+
+  const items =
+    root?.items ||
+    response?.items ||
+    quotation?.items ||
+    quotation?.quotationItems ||
+    [];
+
+  const bom =
+    root?.bom ||
+    response?.bom ||
+    quotation?.bom ||
+    quotation?.quotationBOM ||
+    [];
+
+  return {
+    quotation,
+    items: Array.isArray(items) ? items : [],
+    bom: Array.isArray(bom) ? bom : [],
+  };
+};
+
+const normalizeConfigurationResponse = (response) => {
+  if (!response) return null;
+
+  if (response?.data?.configuration) {
+    return response.data.configuration;
+  }
+
+  if (response?.configuration) {
+    return response.configuration;
+  }
+
+  if (response?.data && !Array.isArray(response.data)) {
+    return response.data;
+  }
+
+  return response;
+};
+
+const money = (value) =>
+  `₹${Number(value || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
+const numberValue = (value, fallback = 0) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+};
+
+const formatDate = (value) => {
+  if (!value) return "—";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "—";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const readable = (value) => {
+  if (!value) return "—";
+
+  return String(value)
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+
+const statusVariant = (status) => {
+  const value = String(status || "").toUpperCase();
+
+  if (["ACCEPTED", "SENT", "APPROVED"].includes(value)) {
+    return "success";
+  }
+
+  if (["REJECTED", "CANCELLED"].includes(value)) {
+    return "danger";
+  }
+
+  if (["EXPIRED", "PENDING"].includes(value)) {
+    return "warning";
+  }
+
+  return "default";
+};
+
+const parseNotes = (notes) => {
+  const text = String(notes || "");
+
+  const getLine = (label) => {
+    const match = text.match(
+      new RegExp(`^${label}:\\s*(.+)$`, "im")
+    );
+
+    return match?.[1]?.trim() || "";
+  };
+
+  return {
+    installationType: getLine("Installation Type"),
+    generationEstimate: getLine("Generation Estimate"),
+    annualGeneration: getLine("Annual Generation"),
+    raw: text,
+  };
+};
+
+const componentByType = (components, type) =>
+  components.find(
+    (component) =>
+      String(component?.componentType || "").toUpperCase() === type
+  );
+
+const accessoryText = (accessories, keywords = []) => {
+  for (const accessory of accessories) {
+    const haystack = [
+      accessory?.name,
+      accessory?.brand,
+      accessory?.model,
+      accessory?.notes,
+      JSON.stringify(accessory?.specifications || {}),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    if (keywords.some((keyword) => haystack.includes(keyword))) {
+      const specs = accessory?.specifications || {};
+
+      return (
+        specs?.value ||
+        specs?.description ||
+        accessory?.name ||
+        accessory?.notes ||
+        "—"
+      );
+    }
+  }
+
+  return "—";
+};
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+const QuotationDetailsPage = () => {
   const params = useParams();
   const router = useRouter();
 
   const quotationId = params?.id;
 
   const [quotation, setQuotation] = useState(null);
+  const [items, setItems] = useState([]);
+  const [bom, setBom] = useState([]);
+  const [configuration, setConfiguration] = useState(null);
+
   const [loading, setLoading] = useState(true);
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState("");
 
-  const loadQuotation = useCallback(async () => {
-    if (!quotationId) {
-      return;
-    }
+  /* =========================================================
+     LOAD
+  ========================================================= */
+
+  const loadQuotation = async () => {
+    if (!quotationId) return;
 
     try {
       setLoading(true);
       setError("");
 
       const response =
-        await quotationService.getQuotationById(
-          quotationId
-        );
+        await quotationService.getQuotationById(quotationId);
+
+      const normalized =
+        normalizeQuotationResponse(response);
+
+      if (!normalized.quotation) {
+        throw new Error("Quotation not found");
+      }
+
+      setQuotation(normalized.quotation);
+      setItems(normalized.items);
+      setBom(normalized.bom);
 
       /*
-       * Expected backend response:
-       *
-       * {
-       *   success: true,
-       *   message: "Quotation fetched successfully",
-       *   data: {...}
-       * }
+       * Backend quotation detail only populates a summary of
+       * systemConfiguration. Fetch the full configuration so
+       * panel/inverter/battery/technical data is shown correctly.
        */
+      const configurationId =
+        idOf(normalized.quotation?.systemConfiguration);
 
-      const data =
-        response?.data?.data ||
-        response?.data?.quotation ||
-        response?.quotation ||
-        response?.data ||
-        null;
+      if (configurationId) {
+        try {
+          const configurationResponse =
+            await systemConfigurationService.getSystemConfigurationById(
+              configurationId
+            );
 
-      setQuotation(data);
+          setConfiguration(
+            normalizeConfigurationResponse(
+              configurationResponse
+            )
+          );
+        } catch (configurationError) {
+          console.warn(
+            "Full system configuration could not be loaded:",
+            configurationError
+          );
+
+          setConfiguration(
+            normalized.quotation?.systemConfiguration || null
+          );
+        }
+      } else {
+        setConfiguration(
+          normalized.quotation?.systemConfiguration || null
+        );
+      }
     } catch (err) {
-      console.error(
-        "Failed to load quotation:",
-        err
-      );
+      console.error("Failed to load quotation:", err);
 
       setError(
         err?.response?.data?.message ||
           err?.message ||
-          "Unable to load quotation details."
+          "Quotation details load nahi ho paaye."
       );
-
-      setQuotation(null);
     } finally {
       setLoading(false);
     }
-  }, [quotationId]);
+  };
 
   useEffect(() => {
     loadQuotation();
-  }, [loadQuotation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quotationId]);
 
-  const getQuotationNumber = () =>
-    quotation?.quotationNumber ||
-    quotation?.quoteNumber ||
-    quotation?.estimateNumber ||
-    "—";
+  /* =========================================================
+     DERIVED DATA
+  ========================================================= */
 
-  const getCustomerName = () =>
-    quotation?.customerName ||
-    quotation?.customer?.name ||
-    quotation?.customer?.customerName ||
-    quotation?.leadName ||
-    quotation?.lead?.name ||
-    "Unnamed Customer";
+  const customer =
+    objectValue(quotation, ["customer"]) ||
+    objectValue(quotation, ["customerDetails"]) ||
+    null;
 
-  const getCustomerPhone = () =>
-    quotation?.phone ||
-    quotation?.customer?.phone ||
-    quotation?.mobile ||
-    quotation?.customer?.mobile ||
-    "—";
+  const lead =
+    objectValue(quotation, ["lead"]) ||
+    null;
 
-  const getCustomerEmail = () =>
-    quotation?.email ||
-    quotation?.customer?.email ||
-    "—";
+  const solarRequirement =
+    objectValue(quotation, ["solarRequirement"]) ||
+    null;
 
-  const getStatus = () =>
-    quotation?.status ||
-    quotation?.quotationStatus ||
-    "DRAFT";
+  const createdBy =
+    objectValue(quotation, ["createdBy"]) ||
+    null;
 
-  const getStatusVariant = (status) => {
-    const value = String(status)
-      .toLowerCase()
-      .trim();
+  const quotationNumber = firstValue(
+    quotation,
+    [
+      "quotationNumber",
+      "quotationNo",
+      "estimateId",
+      "referenceNumber",
+      "number",
+    ],
+    "Quotation"
+  );
 
-    if (
-      [
-        "approved",
-        "accepted",
-        "converted",
-        "sent",
-      ].includes(value)
-    ) {
-      return "success";
-    }
+  const status = firstValue(
+    quotation,
+    ["status"],
+    "DRAFT"
+  );
 
-    if (
-      [
-        "rejected",
-        "cancelled",
-        "expired",
-      ].includes(value)
-    ) {
-      return "danger";
-    }
+  const title = firstValue(
+    quotation,
+    ["title", "quotationTitle"],
+    "Solar Power System Proposal"
+  );
 
-    if (
-      [
-        "pending",
-        "under_review",
-        "follow_up",
-      ].includes(value)
-    ) {
-      return "warning";
-    }
+  const quotationDate = firstValue(
+    quotation,
+    ["quotationDate", "date", "createdAt"],
+    ""
+  );
 
-    return "default";
-  };
+  const validUntil = firstValue(
+    quotation,
+    ["validUntil", "validTill", "expiryDate"],
+    ""
+  );
 
-  const formatDate = (date) => {
-    if (!date) {
-      return "—";
-    }
+  /* =========================================================
+     CUSTOMER
+  ========================================================= */
 
-    const parsedDate = new Date(date);
-
-    if (
-      Number.isNaN(
-        parsedDate.getTime()
-      )
-    ) {
-      return "—";
-    }
-
-    return parsedDate.toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }
+  const customerName =
+    firstValue(
+      quotation,
+      ["customerName"],
+      ""
+    ) ||
+    firstValue(
+      customer,
+      ["name", "fullName", "customerName"],
+      ""
+    ) ||
+    firstValue(
+      lead,
+      ["customerName", "name"],
+      "Customer"
     );
-  };
 
-  const formatDateTime = (date) => {
-    if (!date) {
-      return "—";
-    }
-
-    const parsedDate = new Date(date);
-
-    if (
-      Number.isNaN(
-        parsedDate.getTime()
-      )
-    ) {
-      return "—";
-    }
-
-    return parsedDate.toLocaleString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }
+  const customerCompany =
+    firstValue(
+      quotation,
+      ["companyName", "customerCompany"],
+      ""
+    ) ||
+    firstValue(
+      customer,
+      ["companyName"],
+      ""
+    ) ||
+    firstValue(
+      lead,
+      ["companyName"],
+      ""
     );
-  };
 
-  const formatCurrency = (amount) => {
-    if (
-      amount === undefined ||
-      amount === null ||
-      amount === ""
-    ) {
-      return "₹0";
-    }
+  const customerPhone =
+    firstValue(
+      quotation,
+      ["phone", "mobile", "contactNumber"],
+      ""
+    ) ||
+    firstValue(
+      customer,
+      ["mobile", "phone", "contactNumber"],
+      ""
+    ) ||
+    firstValue(
+      lead,
+      ["mobile", "phone"],
+      ""
+    );
 
-    const numericAmount = Number(amount);
+  const customerEmail =
+    firstValue(
+      quotation,
+      ["email", "customerEmail"],
+      ""
+    ) ||
+    firstValue(
+      customer,
+      ["email"],
+      ""
+    ) ||
+    firstValue(
+      lead,
+      ["email"],
+      ""
+    );
 
-    if (
-      Number.isNaN(numericAmount)
-    ) {
-      return "₹0";
-    }
+  const customerAddress =
+    firstValue(
+      quotation,
+      ["address", "customerAddress", "siteAddress"],
+      ""
+    ) ||
+    firstValue(
+      customer,
+      ["address", "siteAddress"],
+      ""
+    ) ||
+    firstValue(
+      lead,
+      ["address"],
+      ""
+    ) ||
+    firstValue(
+      solarRequirement,
+      ["siteAddress"],
+      ""
+    );
 
-    return new Intl.NumberFormat(
-      "en-IN",
-      {
-        style: "currency",
-        currency: "INR",
-        maximumFractionDigits: 2,
-      }
-    ).format(numericAmount);
-  };
+  const customerCity =
+    firstValue(
+      quotation,
+      ["city", "customerCity"],
+      ""
+    ) ||
+    firstValue(
+      customer,
+      ["city", "location"],
+      ""
+    ) ||
+    firstValue(
+      solarRequirement,
+      ["location"],
+      ""
+    );
 
-  const getSystemType = () =>
-    quotation?.systemType ||
-    quotation?.solarSystemType ||
-    quotation?.systemConfiguration
-      ?.systemType ||
-    "—";
+  /* =========================================================
+     SYSTEM CONFIGURATION
+  ========================================================= */
 
-  const getCapacity = () => {
-    const capacity =
-      quotation?.capacity ??
-      quotation?.systemConfiguration
-        ?.capacity;
+  const components = Array.isArray(
+    configuration?.components
+  )
+    ? configuration.components
+    : [];
 
-    if (
-      capacity === undefined ||
-      capacity === null ||
-      capacity === ""
-    ) {
-      return "—";
-    }
+  const panel = componentByType(
+    components,
+    "SOLAR_PANEL"
+  );
 
-    return `${capacity} kW`;
-  };
+  const inverter = componentByType(
+    components,
+    "INVERTER"
+  );
 
-  const getCreatedBy = () => {
-    const createdBy =
-      quotation?.createdBy;
+  const battery = componentByType(
+    components,
+    "BATTERY"
+  );
 
-    if (
-      createdBy &&
-      typeof createdBy === "object"
-    ) {
-      return (
-        createdBy.username ||
-        createdBy.name ||
-        createdBy.email ||
-        "—"
-      );
-    }
+  const structure = componentByType(
+    components,
+    "STRUCTURE"
+  );
 
-    return createdBy || "—";
-  };
+  const accessories = components.filter(
+    (component) =>
+      String(component?.componentType || "").toUpperCase() ===
+      "ACCESSORY"
+  );
 
-  const getUpdatedBy = () => {
-    const updatedBy =
-      quotation?.updatedBy;
-
-    if (
-      updatedBy &&
-      typeof updatedBy === "object"
-    ) {
-      return (
-        updatedBy.username ||
-        updatedBy.name ||
-        updatedBy.email ||
-        "—"
-      );
-    }
-
-    return updatedBy || "—";
-  };
-
-  const getItems = () => {
-    if (
-      Array.isArray(
-        quotation?.items
+  const panelWattage = numberValue(
+    firstValue(
+      panel?.specifications,
+      ["wattage"],
+      firstValue(
+        panel,
+        ["capacity"],
+        0
       )
-    ) {
-      return quotation.items;
-    }
+    )
+  );
 
-    if (
-      Array.isArray(
-        quotation?.quotationItems
+  const panelCount = numberValue(
+    firstValue(
+      configuration,
+      ["panelCount"],
+      firstValue(panel, ["quantity"], 0)
+    )
+  );
+
+  const panelCapacity =
+    panelWattage && panelCount
+      ? (panelWattage * panelCount) / 1000
+      : 0;
+
+  const panelMake =
+    firstValue(
+      panel,
+      ["brand", "name"],
+      ""
+    ) ||
+    firstValue(
+      configuration,
+      ["panelMake", "panelBrand"],
+      ""
+    );
+
+  const panelModel =
+    firstValue(
+      panel,
+      ["model"],
+      ""
+    ) ||
+    firstValue(
+      configuration,
+      ["panelModel"],
+      ""
+    );
+
+  const inverterCapacity = numberValue(
+    firstValue(
+      inverter?.specifications,
+      ["capacity"],
+      firstValue(
+        inverter,
+        ["capacity"],
+        0
       )
-    ) {
-      return quotation.quotationItems;
-    }
+    )
+  );
 
-    return [];
-  };
+  const inverterCount = numberValue(
+    firstValue(
+      configuration,
+      ["inverterCount"],
+      firstValue(inverter, ["quantity"], 0)
+    )
+  );
 
-  const getItemName = (item) =>
-    item?.name ||
-    item?.productName ||
-    item?.itemName ||
-    item?.description ||
-    "Item";
+  const inverterMake =
+    firstValue(
+      inverter,
+      ["brand", "name"],
+      ""
+    ) ||
+    firstValue(
+      configuration,
+      ["inverterMake", "inverterBrand"],
+      ""
+    );
 
-  const getItemDescription = (item) =>
-    item?.description ||
-    item?.details ||
-    "";
+  const inverterModel =
+    firstValue(
+      inverter,
+      ["model"],
+      ""
+    ) ||
+    firstValue(
+      configuration,
+      ["inverterModel"],
+      ""
+    );
 
-  const getItemQuantity = (item) =>
-    item?.quantity ??
-    item?.qty ??
-    1;
+  const batteryCount = numberValue(
+    firstValue(
+      configuration,
+      ["batteryCount"],
+      firstValue(battery, ["quantity"], 0)
+    )
+  );
 
-  const getItemRate = (item) =>
-    item?.unitPrice ??
-    item?.price ??
-    item?.rate ??
-    0;
+  const batteryRequired =
+    batteryCount > 0 || Boolean(battery);
 
-  const getItemAmount = (item) => {
-    const amount =
-      item?.amount ??
-      item?.total ??
-      item?.totalAmount ??
-      item?.lineTotal;
+  const batteryCapacity = numberValue(
+    firstValue(
+      battery,
+      ["capacity"],
+      firstValue(
+        battery?.specifications,
+        ["capacity"],
+        0
+      )
+    )
+  );
 
-    if (
-      amount !== undefined &&
-      amount !== null &&
-      amount !== ""
-    ) {
-      return amount;
-    }
+  const batteryUnit =
+    firstValue(
+      battery,
+      ["capacityUnit"],
+      "KWH"
+    );
 
-    return (
-      Number(
-        getItemQuantity(item)
-      ) *
-      Number(
-        getItemRate(item)
+  const systemType =
+    firstValue(
+      configuration,
+      ["systemType"],
+      firstValue(
+        quotation,
+        ["systemType"],
+        firstValue(
+          solarRequirement,
+          ["systemType"],
+          "—"
+        )
       )
     );
-  };
 
-  const handleOpenPdf = async () => {
-    if (!quotationId) {
-      return;
-    }
+  const systemSize =
+    numberValue(
+      firstValue(
+        configuration,
+        ["systemCapacity", "systemSizeKW"],
+        firstValue(
+          quotation,
+          ["systemSizeKW", "systemSize", "capacityKW"],
+          0
+        )
+      )
+    );
 
-    try {
-      setPdfLoading(true);
-      setError("");
+  const phase =
+    firstValue(
+      configuration,
+      ["phase"],
+      ""
+    );
 
-      const response =
-        await quotationService.getQuotationPdf(
-          quotationId
-        );
+  const configurationNumber =
+    firstValue(
+      configuration,
+      ["configurationNumber", "configurationId"],
+      ""
+    );
 
-      const blob =
-        response instanceof Blob
-          ? response
-          : response?.data instanceof Blob
-          ? response.data
-          : null;
+  const notesData = parseNotes(
+    firstValue(
+      configuration,
+      ["notes"],
+      ""
+    )
+  );
 
-      if (!blob) {
-        throw new Error(
-          "Quotation PDF could not be generated."
-        );
-      }
+  const mountingStructure =
+    firstValue(
+      structure,
+      ["name", "brand", "model"],
+      ""
+    ) ||
+    firstValue(
+      configuration,
+      ["mountingStructure"],
+      ""
+    );
 
-      const url =
-        window.URL.createObjectURL(
-          blob
-        );
+  const cable = accessoryText(
+    accessories,
+    ["cable", "wire"]
+  );
 
-      window.open(
-        url,
-        "_blank",
-        "noopener,noreferrer"
-      );
+  const earthing = accessoryText(
+    accessories,
+    ["earthing", "earth"]
+  );
 
-      setTimeout(() => {
-        window.URL.revokeObjectURL(
-          url
-        );
-      }, 60000);
-    } catch (err) {
-      console.error(
-        "Failed to open quotation PDF:",
-        err
-      );
+  const protection = accessoryText(
+    accessories,
+    ["protection", "spd", "mc4", "ac db", "dc db"]
+  );
 
-      setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Unable to open quotation PDF."
-      );
-    } finally {
-      setPdfLoading(false);
-    }
-  };
+  /* =========================================================
+     AMOUNTS
+  ========================================================= */
+
+  const subtotal = numberValue(
+    firstValue(
+      quotation,
+      ["subtotal", "subTotal"],
+      0
+    )
+  );
+
+  const discount = numberValue(
+    firstValue(
+      quotation,
+      ["discount"],
+      0
+    )
+  );
+
+  const taxTotal = numberValue(
+    firstValue(
+      quotation,
+      ["taxTotal", "totalTax", "taxAmount"],
+      0
+    )
+  );
+
+  const additionalCharges = numberValue(
+    firstValue(
+      quotation,
+      ["additionalCharges", "otherCharges"],
+      0
+    )
+  );
+
+  const grandTotal = numberValue(
+    firstValue(
+      quotation,
+      ["grandTotal", "totalAmount", "total", "finalAmount"],
+      subtotal - discount + taxTotal + additionalCharges
+    )
+  );
+
+  /* =========================================================
+     TERMS
+  ========================================================= */
+
+  const paymentTerms = firstValue(
+    quotation,
+    ["paymentTerms", "terms"],
+    ""
+  );
+
+  const warranty = firstValue(
+    quotation,
+    ["warranty", "warrantyTerms"],
+    ""
+  );
+
+  const notes = firstValue(
+    quotation,
+    ["notes", "additionalNotes"],
+    ""
+  );
+
+  const revisionNumber = firstValue(
+    quotation,
+    ["revisionNumber", "revision"],
+    ""
+  );
+
+  const createdByName =
+    firstValue(
+      quotation,
+      ["createdByName"],
+      ""
+    ) ||
+    firstValue(
+      createdBy,
+      ["username", "name", "fullName"],
+      "Admin"
+    );
+
+  /* =========================================================
+     PDF
+  ========================================================= */
+
+const handleDownloadPDF = async () => {
+  if (!quotationId) return;
+
+  try {
+    setDownloading(true);
+    setError("");
+
+    await pdfService.downloadQuotationPdf(quotationId);
+  } catch (err) {
+    console.error(
+      "Failed to download quotation PDF:",
+      err
+    );
+
+    setError(
+      err?.response?.data?.message ||
+        err?.message ||
+        "Quotation PDF download nahi ho paayi."
+    );
+  } finally {
+    setDownloading(false);
+  }
+};
+
+  /* =========================================================
+     STATES
+  ========================================================= */
 
   if (loading) {
     return (
-      <div className="employee-quotation-details-loading">
+      <div className="admin-quotation-details-loading">
         <Loader />
+        <p>Quotation details load ho rahi hain...</p>
       </div>
     );
   }
 
   if (error && !quotation) {
     return (
-      <div className="employee-quotation-details-page">
-        <div className="employee-quotation-details-header">
-          <div>
-            <span className="employee-quotation-details-eyebrow">
-              Sales Management
-            </span>
-
-            <h1>
-              Quotation Details
-            </h1>
-          </div>
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() =>
-              router.push(
-                "/employee/quotations"
-              )
-            }
-          >
-            Back
-          </Button>
+      <div className="admin-quotation-details-error-state">
+        <div className="admin-quotation-error-icon">
+          !
         </div>
 
-        <div className="employee-quotation-details-error">
-          <div>
-            <strong>
-              Unable to load quotation
-            </strong>
+        <h2>Quotation load nahi hui</h2>
 
-            <p>{error}</p>
-          </div>
+        <p>{error}</p>
+
+        <div>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              router.push("/admin/quotations")
+            }
+          >
+            Back to Quotations
+          </Button>
 
           <Button
-            type="button"
-            variant="secondary"
+            variant="primary"
             onClick={loadQuotation}
           >
-            Retry
+            Try Again
           </Button>
         </div>
       </div>
@@ -475,638 +920,869 @@ const EmployeeQuotationDetailsPage = () => {
 
   if (!quotation) {
     return (
-      <div className="employee-quotation-details-page">
-        <div className="employee-quotation-details-header">
-          <div>
-            <span className="employee-quotation-details-eyebrow">
-              Sales Management
-            </span>
+      <div className="admin-quotation-details-error-state">
+        <h2>Quotation not found</h2>
 
-            <h1>
-              Quotation Not Found
-            </h1>
-
-            <p>
-              The requested quotation could
-              not be found.
-            </p>
-          </div>
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() =>
-              router.push(
-                "/employee/quotations"
-              )
-            }
-          >
-            Back to Quotations
-          </Button>
-        </div>
+        <Button
+          variant="primary"
+          onClick={() =>
+            router.push("/admin/quotations")
+          }
+        >
+          Back to Quotations
+        </Button>
       </div>
     );
   }
 
-  const quotationStatus =
-    getStatus();
-
-  const items = getItems();
-
-  const subtotal =
-    quotation?.subtotal ??
-    quotation?.subTotal ??
-    quotation?.totalBeforeTax ??
-    quotation?.amountBeforeTax ??
-    0;
-
-  const discount =
-    quotation?.discount ??
-    quotation?.discountAmount ??
-    0;
-
-  const tax =
-    quotation?.tax ??
-    quotation?.taxAmount ??
-    quotation?.gstAmount ??
-    0;
-
-  const grandTotal =
-    quotation?.grandTotal ??
-    quotation?.totalAmount ??
-    quotation?.total ??
-    quotation?.netAmount ??
-    0;
-
   return (
-    <div className="employee-quotation-details-page">
+    <div className="admin-quotation-details-page">
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
-      {/* =================================================
-          Header
-      ================================================= */}
-
-      <div className="employee-quotation-details-header">
+      <div className="admin-quotation-details-header">
         <div>
-          <span className="employee-quotation-details-eyebrow">
-            Sales Management
-          </span>
+          <button
+            type="button"
+            className="admin-quotation-back-button"
+            onClick={() =>
+              router.push("/admin/quotations")
+            }
+          >
+            ← Back to Quotations
+          </button>
 
-          <h1>
-            {getQuotationNumber()}
-          </h1>
+          <div className="admin-quotation-heading">
+            <div className="admin-quotation-heading-icon">
+              ₹
+            </div>
 
-          <p>
-            View quotation details,
-            customer information and
-            pricing.
-          </p>
+            <div>
+              <div className="admin-quotation-heading-top">
+                <h1>{quotationNumber}</h1>
+
+                <Badge
+                  variant={statusVariant(status)}
+                >
+                  {readable(status)}
+                </Badge>
+              </div>
+
+              <p>{title}</p>
+            </div>
+          </div>
         </div>
 
-        <div className="employee-quotation-details-actions">
+        <div className="admin-quotation-header-actions">
           <Button
             type="button"
             variant="secondary"
-            onClick={() =>
-              router.push(
-                "/employee/quotations"
-              )
-            }
+            onClick={handleDownloadPDF}
+            disabled={downloading}
           >
-            Back
+            {downloading
+              ? "Downloading..."
+              : "↓ Download PDF"}
           </Button>
 
           <Button
             type="button"
-            variant="secondary"
-            onClick={
-              handleOpenPdf
+            variant="primary"
+            onClick={() =>
+              router.push("/admin/quotations")
             }
-            disabled={pdfLoading}
           >
-            {pdfLoading
-              ? "Opening..."
-              : "PDF"}
+            Quotations
           </Button>
         </div>
       </div>
 
-      {/* =================================================
-          Error Banner
-      ================================================= */}
-
       {error && (
-        <div className="employee-quotation-details-error employee-quotation-details-error-inline">
-          <span>{error}</span>
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() =>
-              setError("")
-            }
-          >
-            Dismiss
-          </Button>
+        <div className="admin-quotation-inline-error">
+          {error}
         </div>
       )}
 
-      {/* =================================================
-          Quotation Summary
-      ================================================= */}
+      {/* =====================================================
+          SUMMARY
+      ===================================================== */}
 
-      <div className="employee-quotation-summary-card">
-        <div className="employee-quotation-summary-main">
-          <div className="employee-quotation-summary-icon">
-            ₹
-          </div>
-
-          <div>
-            <span>
-              Quotation
-            </span>
-
-            <h2>
-              {getQuotationNumber()}
-            </h2>
-
-            <p>
-              Created{" "}
-              {formatDate(
-                quotation?.quotationDate ||
-                  quotation?.createdAt
-              )}
-            </p>
-          </div>
+      <div className="admin-quotation-summary-grid">
+        <div className="admin-quotation-summary-card">
+          <span>Quotation Date</span>
+          <strong>
+            {formatDate(quotationDate)}
+          </strong>
         </div>
 
-        <div className="employee-quotation-summary-right">
-          <Badge
-            variant={getStatusVariant(
-              quotationStatus
-            )}
-          >
-            {String(
-              quotationStatus
-            ).replaceAll(
-              "_",
-              " "
-            )}
-          </Badge>
-
+        <div className="admin-quotation-summary-card">
+          <span>Valid Until</span>
           <strong>
-            {formatCurrency(
-              grandTotal
-            )}
+            {formatDate(validUntil)}
+          </strong>
+        </div>
+
+        <div className="admin-quotation-summary-card">
+          <span>System Size</span>
+          <strong>
+            {systemSize
+              ? `${systemSize} kW`
+              : "—"}
+          </strong>
+        </div>
+
+        <div className="admin-quotation-summary-card admin-quotation-summary-total">
+          <span>Grand Total</span>
+          <strong>
+            {money(grandTotal)}
           </strong>
         </div>
       </div>
 
-      {/* =================================================
-          Customer Information
-      ================================================= */}
+      {/* =====================================================
+          CONTENT
+      ===================================================== */}
 
-      <section className="employee-quotation-details-card">
-        <div className="employee-quotation-details-card-header">
-          <div>
-            <h2>
-              Customer Information
-            </h2>
+      <div className="admin-quotation-details-layout">
+        <main className="admin-quotation-details-main">
+          {/* CUSTOMER */}
 
-            <p>
-              Customer associated with
-              this quotation.
-            </p>
-          </div>
-        </div>
-
-        <div className="employee-quotation-details-grid">
-          <div className="employee-quotation-detail-item">
-            <span>
-              Customer Name
-            </span>
-
-            <strong>
-              {getCustomerName()}
-            </strong>
-          </div>
-
-          <div className="employee-quotation-detail-item">
-            <span>
-              Phone
-            </span>
-
-            <strong>
-              {getCustomerPhone()}
-            </strong>
-          </div>
-
-          <div className="employee-quotation-detail-item">
-            <span>
-              Email
-            </span>
-
-            <strong>
-              {getCustomerEmail()}
-            </strong>
-          </div>
-
-          <div className="employee-quotation-detail-item">
-            <span>
-              City
-            </span>
-
-            <strong>
-              {quotation?.city ||
-                quotation?.customer
-                  ?.city ||
-                "—"}
-            </strong>
-          </div>
-
-          {quotation?.customer?.address && (
-            <div className="employee-quotation-detail-item employee-quotation-detail-item-wide">
-              <span>
-                Address
-              </span>
-
-              <strong>
-                {
-                  quotation
-                    .customer
-                    .address
-                }
-              </strong>
+          <section className="admin-quotation-detail-card">
+            <div className="admin-quotation-detail-card-header">
+              <div>
+                <h2>Customer Information</h2>
+                <p>
+                  Quotation kis customer ke liye create ki gayi hai.
+                </p>
+              </div>
             </div>
-          )}
-        </div>
-      </section>
 
-      {/* =================================================
-          Solar System
-      ================================================= */}
+            <div className="admin-quotation-customer-box">
+              <div className="admin-quotation-customer-avatar">
+                {String(customerName || "C")
+                  .charAt(0)
+                  .toUpperCase()}
+              </div>
 
-      <section className="employee-quotation-details-card">
-        <div className="employee-quotation-details-card-header">
-          <div>
-            <h2>
-              Solar System
-            </h2>
+              <div className="admin-quotation-customer-info">
+                <h3>{customerName}</h3>
 
-            <p>
-              Solar system information
-              included in this quotation.
-            </p>
-          </div>
-        </div>
-
-        <div className="employee-quotation-details-grid">
-          <div className="employee-quotation-detail-item">
-            <span>
-              System Type
-            </span>
-
-            <strong>
-              {getSystemType()}
-            </strong>
-          </div>
-
-          <div className="employee-quotation-detail-item">
-            <span>
-              Capacity
-            </span>
-
-            <strong>
-              {getCapacity()}
-            </strong>
-          </div>
-
-          {quotation?.panelType && (
-            <div className="employee-quotation-detail-item">
-              <span>
-                Panel Type
-              </span>
-
-              <strong>
-                {quotation.panelType}
-              </strong>
-            </div>
-          )}
-
-          {quotation?.inverterType && (
-            <div className="employee-quotation-detail-item">
-              <span>
-                Inverter Type
-              </span>
-
-              <strong>
-                {quotation.inverterType}
-              </strong>
-            </div>
-          )}
-
-          {quotation?.systemConfiguration?.name && (
-            <div className="employee-quotation-detail-item">
-              <span>
-                Configuration
-              </span>
-
-              <strong>
-                {
-                  quotation
-                    .systemConfiguration
-                    .name
-                }
-              </strong>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* =================================================
-          Quotation Items
-      ================================================= */}
-
-      <section className="employee-quotation-details-card">
-        <div className="employee-quotation-details-card-header">
-          <div>
-            <h2>
-              Quotation Items
-            </h2>
-
-            <p>
-              Products and services included
-              in this quotation.
-            </p>
-          </div>
-        </div>
-
-        {items.length === 0 ? (
-          <div className="employee-quotation-items-empty">
-            <span>
-              No quotation items available.
-            </span>
-          </div>
-        ) : (
-          <div className="employee-quotation-items-wrapper">
-            <table className="employee-quotation-items-table">
-              <thead>
-                <tr>
-                  <th>
-                    Item
-                  </th>
-
-                  <th>
-                    Description
-                  </th>
-
-                  <th>
-                    Qty
-                  </th>
-
-                  <th>
-                    Rate
-                  </th>
-
-                  <th>
-                    Amount
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {items.map(
-                  (item, index) => (
-                    <tr
-                      key={
-                        item?._id ||
-                        item?.id ||
-                        `item-${index}`
-                      }
-                    >
-                      <td>
-                        <strong>
-                          {getItemName(
-                            item
-                          )}
-                        </strong>
-                      </td>
-
-                      <td>
-                        {getItemDescription(
-                          item
-                        ) || "—"}
-                      </td>
-
-                      <td>
-                        {getItemQuantity(
-                          item
-                        )}
-                      </td>
-
-                      <td>
-                        {formatCurrency(
-                          getItemRate(
-                            item
-                          )
-                        )}
-                      </td>
-
-                      <td className="employee-quotation-item-amount">
-                        {formatCurrency(
-                          getItemAmount(
-                            item
-                          )
-                        )}
-                      </td>
-                    </tr>
-                  )
+                {customerCompany && (
+                  <p>{customerCompany}</p>
                 )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
 
-      {/* =================================================
-          Pricing Summary
-      ================================================= */}
+                <div className="admin-quotation-contact-grid">
+                  <div>
+                    <span>Phone</span>
+                    <strong>
+                      {customerPhone || "—"}
+                    </strong>
+                  </div>
 
-      <section className="employee-quotation-pricing-card">
-        <div>
-          <h2>
-            Pricing Summary
-          </h2>
+                  <div>
+                    <span>Email</span>
+                    <strong>
+                      {customerEmail || "—"}
+                    </strong>
+                  </div>
 
-          <p>
-            Final quotation amount.
-          </p>
-        </div>
+                  <div>
+                    <span>Address</span>
+                    <strong>
+                      {[
+                        customerAddress,
+                        customerCity,
+                      ]
+                        .filter(Boolean)
+                        .join(", ") || "—"}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
 
-        <div className="employee-quotation-pricing-values">
-          <div>
-            <span>
-              Subtotal
-            </span>
+          {/* LEAD / REQUIREMENT */}
 
-            <strong>
-              {formatCurrency(
-                subtotal
+          <section className="admin-quotation-detail-card">
+            <div className="admin-quotation-detail-card-header">
+              <div>
+                <h2>Business References</h2>
+                <p>
+                  Lead, solar requirement aur configuration relationship.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-quotation-system-grid">
+              <div>
+                <span>Lead ID</span>
+                <strong>
+                  {firstValue(
+                    lead,
+                    ["leadId"],
+                    firstValue(
+                      quotation,
+                      ["leadId"],
+                      "—"
+                    )
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>Solar Requirement</span>
+                <strong>
+                  {idOf(solarRequirement) ||
+                    firstValue(
+                      quotation,
+                      [
+                        "solarRequirementId",
+                        "requirementId",
+                      ],
+                      "—"
+                    )}
+                </strong>
+              </div>
+
+              <div>
+                <span>Configuration</span>
+                <strong>
+                  {configurationNumber ||
+                    idOf(
+                      quotation?.systemConfiguration
+                    ) ||
+                    "—"}
+                </strong>
+              </div>
+            </div>
+          </section>
+
+          {/* SOLAR SYSTEM */}
+
+          <section className="admin-quotation-detail-card">
+            <div className="admin-quotation-detail-card-header">
+              <div>
+                <h2>Solar System Configuration</h2>
+                <p>
+                  Backend ke actual system configuration components se technical data.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-quotation-system-grid">
+              <div>
+                <span>System Type</span>
+                <strong>
+                  {readable(systemType)}
+                </strong>
+              </div>
+
+              <div>
+                <span>System Capacity</span>
+                <strong>
+                  {systemSize
+                    ? `${systemSize} kW`
+                    : "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Phase</span>
+                <strong>
+                  {readable(phase)}
+                </strong>
+              </div>
+
+              <div>
+                <span>Panel Make</span>
+                <strong>
+                  {panelMake || "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Panel Model</span>
+                <strong>
+                  {panelModel || "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Panel Wattage</span>
+                <strong>
+                  {panelWattage
+                    ? `${panelWattage} W`
+                    : "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Total Panels</span>
+                <strong>
+                  {panelCount || "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Panel Capacity</span>
+                <strong>
+                  {panelCapacity
+                    ? `${panelCapacity.toFixed(2)} kW`
+                    : "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Inverter Make</span>
+                <strong>
+                  {inverterMake || "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Inverter Model</span>
+                <strong>
+                  {inverterModel || "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Inverter Capacity</span>
+                <strong>
+                  {inverterCapacity
+                    ? `${inverterCapacity} ${
+                        firstValue(
+                          inverter,
+                          ["capacityUnit"],
+                          "KW"
+                        )
+                      }`
+                    : "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Inverter Count</span>
+                <strong>
+                  {inverterCount || "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Battery Required</span>
+                <strong>
+                  {batteryRequired
+                    ? "Yes"
+                    : "No"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Battery Capacity</span>
+                <strong>
+                  {batteryCapacity
+                    ? `${batteryCapacity} ${batteryUnit}`
+                    : "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Battery Count</span>
+                <strong>
+                  {batteryCount || 0}
+                </strong>
+              </div>
+
+              <div>
+                <span>Mounting Structure</span>
+                <strong>
+                  {mountingStructure || "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Cable</span>
+                <strong>{cable}</strong>
+              </div>
+
+              <div>
+                <span>Earthing</span>
+                <strong>{earthing}</strong>
+              </div>
+
+              <div>
+                <span>Protection</span>
+                <strong>{protection}</strong>
+              </div>
+            </div>
+          </section>
+
+          {/* INSTALLATION / GENERATION */}
+
+          <section className="admin-quotation-detail-card">
+            <div className="admin-quotation-detail-card-header">
+              <div>
+                <h2>Installation & Generation</h2>
+                <p>
+                  Configuration notes se saved installation/generation information.
+                </p>
+              </div>
+            </div>
+
+            <div className="admin-quotation-system-grid">
+              <div>
+                <span>Installation Type</span>
+                <strong>
+                  {notesData.installationType || "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Generation Estimate</span>
+                <strong>
+                  {notesData.generationEstimate || "—"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Annual Generation</span>
+                <strong>
+                  {notesData.annualGeneration || "—"}
+                </strong>
+              </div>
+            </div>
+          </section>
+
+          {/* ITEMS */}
+
+          <section className="admin-quotation-detail-card">
+            <div className="admin-quotation-detail-card-header">
+              <div>
+                <h2>Quotation Items</h2>
+                <p>
+                  Quotation ke actual line items.
+                </p>
+              </div>
+            </div>
+
+            {items.length === 0 ? (
+              <div className="admin-quotation-empty-items">
+                No quotation items available.
+              </div>
+            ) : (
+              <div className="admin-quotation-detail-items-wrapper">
+                <table className="admin-quotation-detail-items-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Category</th>
+                      <th>Description</th>
+                      <th>Qty</th>
+                      <th>Unit</th>
+                      <th>Rate</th>
+                      <th>Discount</th>
+                      <th>Tax</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {items.map((item, index) => {
+                      const quantity =
+                        numberValue(
+                          firstValue(
+                            item,
+                            ["quantity", "qty"],
+                            0
+                          )
+                        );
+
+                      const rate =
+                        numberValue(
+                          firstValue(
+                            item,
+                            [
+                              "rate",
+                              "unitPrice",
+                              "price",
+                            ],
+                            0
+                          )
+                        );
+
+                      const discountValue =
+                        numberValue(
+                          firstValue(
+                            item,
+                            [
+                              "discount",
+                              "discountAmount",
+                            ],
+                            0
+                          )
+                        );
+
+                      const taxRate =
+                        numberValue(
+                          firstValue(
+                            item,
+                            ["taxRate", "tax"],
+                            0
+                          )
+                        );
+
+                      const lineTotal =
+                        numberValue(
+                          firstValue(
+                            item,
+                            [
+                              "total",
+                              "amount",
+                              "lineTotal",
+                              "totalAmount",
+                            ],
+                            quantity * rate -
+                              discountValue
+                          )
+                        );
+
+                      return (
+                        <tr
+                          key={
+                            idOf(item) ||
+                            `${quotationId}-${index}`
+                          }
+                        >
+                          <td>{index + 1}</td>
+
+                          <td>
+                            {readable(
+                              firstValue(
+                                item,
+                                ["category", "type"],
+                                "—"
+                              )
+                            )}
+                          </td>
+
+                          <td>
+                            <strong>
+                              {firstValue(
+                                item,
+                                [
+                                  "description",
+                                  "name",
+                                  "itemName",
+                                ],
+                                "—"
+                              )}
+                            </strong>
+                          </td>
+
+                          <td>{quantity}</td>
+
+                          <td>
+                            {firstValue(
+                              item,
+                              ["unit"],
+                              "—"
+                            )}
+                          </td>
+
+                          <td>
+                            {money(rate)}
+                          </td>
+
+                          <td>
+                            {money(discountValue)}
+                          </td>
+
+                          <td>
+                            {taxRate}%
+                          </td>
+
+                          <td>
+                            <strong>
+                              {money(lineTotal)}
+                            </strong>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          {/* BOM */}
+
+          {bom.length > 0 && (
+            <section className="admin-quotation-detail-card">
+              <div className="admin-quotation-detail-card-header">
+                <div>
+                  <h2>Bill of Materials</h2>
+                  <p>
+                    System configuration ke BOM components.
+                  </p>
+                </div>
+              </div>
+
+              <div className="admin-quotation-detail-items-wrapper">
+                <table className="admin-quotation-detail-items-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Component</th>
+                      <th>Qty</th>
+                      <th>Unit</th>
+                      <th>Rate</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {bom.map((row, index) => {
+                      const quantity =
+                        numberValue(
+                          firstValue(
+                            row,
+                            ["quantity", "qty"],
+                            0
+                          )
+                        );
+
+                      const rate =
+                        numberValue(
+                          firstValue(
+                            row,
+                            ["rate", "unitPrice", "price"],
+                            0
+                          )
+                        );
+
+                      const total =
+                        numberValue(
+                          firstValue(
+                            row,
+                            [
+                              "total",
+                              "amount",
+                              "totalPrice",
+                            ],
+                            quantity * rate
+                          )
+                        );
+
+                      return (
+                        <tr
+                          key={
+                            idOf(row) ||
+                            `bom-${index}`
+                          }
+                        >
+                          <td>{index + 1}</td>
+                          <td>
+                            <strong>
+                              {firstValue(
+                                row,
+                                [
+                                  "componentName",
+                                  "name",
+                                  "description",
+                                ],
+                                "—"
+                              )}
+                            </strong>
+                          </td>
+                          <td>{quantity}</td>
+                          <td>
+                            {firstValue(
+                              row,
+                              ["unit"],
+                              "—"
+                            )}
+                          </td>
+                          <td>{money(rate)}</td>
+                          <td>
+                            <strong>
+                              {money(total)}
+                            </strong>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          {/* TERMS */}
+
+          {(paymentTerms ||
+            warranty ||
+            notes ||
+            revisionNumber) && (
+            <section className="admin-quotation-detail-card">
+              <div className="admin-quotation-detail-card-header">
+                <div>
+                  <h2>Terms & Notes</h2>
+                  <p>
+                    Quotation ke additional commercial information.
+                  </p>
+                </div>
+              </div>
+
+              <div className="admin-quotation-terms-grid">
+                {paymentTerms && (
+                  <div className="admin-quotation-term-box">
+                    <h3>Payment Terms</h3>
+                    <p>{paymentTerms}</p>
+                  </div>
+                )}
+
+                {warranty && (
+                  <div className="admin-quotation-term-box">
+                    <h3>Warranty</h3>
+                    <p>{warranty}</p>
+                  </div>
+                )}
+
+                {revisionNumber && (
+                  <div className="admin-quotation-term-box">
+                    <h3>Revision</h3>
+                    <p>{revisionNumber}</p>
+                  </div>
+                )}
+
+                {notes && (
+                  <div className="admin-quotation-term-box admin-quotation-term-full">
+                    <h3>Additional Notes</h3>
+                    <p>{notes}</p>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+        </main>
+
+        {/* ===================================================
+            SIDEBAR
+        =================================================== */}
+
+        <aside className="admin-quotation-details-sidebar">
+          {/* AMOUNT */}
+
+          <section className="admin-quotation-sidebar-card">
+            <div className="admin-quotation-sidebar-heading">
+              <h2>Amount Summary</h2>
+            </div>
+
+            <div className="admin-quotation-amount-list">
+              <div>
+                <span>Subtotal</span>
+                <strong>{money(subtotal)}</strong>
+              </div>
+
+              <div>
+                <span>Discount</span>
+                <strong>
+                  - {money(discount)}
+                </strong>
+              </div>
+
+              <div>
+                <span>Tax</span>
+                <strong>{money(taxTotal)}</strong>
+              </div>
+
+              <div>
+                <span>Additional</span>
+                <strong>
+                  {money(additionalCharges)}
+                </strong>
+              </div>
+
+              <div className="admin-quotation-sidebar-total">
+                <span>Grand Total</span>
+                <strong>{money(grandTotal)}</strong>
+              </div>
+            </div>
+          </section>
+
+          {/* RECORD */}
+
+          <section className="admin-quotation-sidebar-card">
+            <div className="admin-quotation-sidebar-heading">
+              <h2>Record Information</h2>
+            </div>
+
+            <div className="admin-quotation-record-list">
+              <div>
+                <span>Created By</span>
+                <strong>{createdByName}</strong>
+              </div>
+
+              <div>
+                <span>Created On</span>
+                <strong>
+                  {formatDateTime(
+                    quotation?.createdAt
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>Updated On</span>
+                <strong>
+                  {formatDateTime(
+                    quotation?.updatedAt
+                  )}
+                </strong>
+              </div>
+
+              {configuration?.configurationNumber && (
+                <div>
+                  <span>Configuration</span>
+                  <strong>
+                    {configuration.configurationNumber}
+                  </strong>
+                </div>
               )}
-            </strong>
-          </div>
+            </div>
+          </section>
 
-          <div>
-            <span>
-              Discount
-            </span>
+          {/* ACTIONS */}
 
-            <strong>
-              {formatCurrency(
-                discount
-              )}
-            </strong>
-          </div>
+          <section className="admin-quotation-sidebar-card admin-quotation-sidebar-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleDownloadPDF}
+              disabled={downloading}
+            >
+              {downloading
+                ? "Preparing PDF..."
+                : "↓ Download Quotation"}
+            </Button>
 
-          <div>
-            <span>
-              Tax / GST
-            </span>
-
-            <strong>
-              {formatCurrency(
-                tax
-              )}
-            </strong>
-          </div>
-
-          <div className="employee-quotation-grand-total">
-            <span>
-              Grand Total
-            </span>
-
-            <strong>
-              {formatCurrency(
-                grandTotal
-              )}
-            </strong>
-          </div>
-        </div>
-      </section>
-
-      {/* =================================================
-          Validity
-      ================================================= */}
-
-      <section className="employee-quotation-details-card">
-        <div className="employee-quotation-details-card-header">
-          <div>
-            <h2>
-              Quotation Validity
-            </h2>
-
-            <p>
-              Quotation date and validity
-              information.
-            </p>
-          </div>
-        </div>
-
-        <div className="employee-quotation-details-grid">
-          <div className="employee-quotation-detail-item">
-            <span>
-              Quotation Date
-            </span>
-
-            <strong>
-              {formatDate(
-                quotation?.quotationDate ||
-                  quotation?.createdAt
-              )}
-            </strong>
-          </div>
-
-          <div className="employee-quotation-detail-item">
-            <span>
-              Valid Until
-            </span>
-
-            <strong>
-              {formatDate(
-                quotation?.validUntil ||
-                  quotation?.expiryDate
-              )}
-            </strong>
-          </div>
-        </div>
-      </section>
-
-      {/* =================================================
-          Record Information
-      ================================================= */}
-
-      <section className="employee-quotation-details-card">
-        <div className="employee-quotation-details-card-header">
-          <div>
-            <h2>
-              Record Information
-            </h2>
-
-            <p>
-              Quotation record timestamps
-              and ownership.
-            </p>
-          </div>
-        </div>
-
-        <div className="employee-quotation-details-grid">
-          <div className="employee-quotation-detail-item">
-            <span>
-              Created On
-            </span>
-
-            <strong>
-              {formatDateTime(
-                quotation?.createdAt
-              )}
-            </strong>
-          </div>
-
-          <div className="employee-quotation-detail-item">
-            <span>
-              Created By
-            </span>
-
-            <strong>
-              {getCreatedBy()}
-            </strong>
-          </div>
-
-          <div className="employee-quotation-detail-item">
-            <span>
-              Last Updated
-            </span>
-
-            <strong>
-              {formatDateTime(
-                quotation?.updatedAt
-              )}
-            </strong>
-          </div>
-
-          <div className="employee-quotation-detail-item">
-            <span>
-              Updated By
-            </span>
-
-            <strong>
-              {getUpdatedBy()}
-            </strong>
-          </div>
-        </div>
-      </section>
-
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                router.push("/admin/quotations")
+              }
+            >
+              Back to List
+            </Button>
+          </section>
+        </aside>
+      </div>
     </div>
   );
 };
 
-export default EmployeeQuotationDetailsPage;
+export default QuotationDetailsPage;

@@ -1,0 +1,236 @@
+.bank-settings-page {
+  width: 100%;
+  padding: 24px;
+}
+
+.bank-settings-header {
+  margin-bottom: 24px;
+}
+
+.bank-settings-header h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.bank-settings-header p {
+  margin: 7px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Alerts */
+
+.bank-settings-alert {
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.bank-settings-error {
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.bank-settings-success {
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+/* Form */
+
+.bank-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.bank-settings-card {
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+}
+
+.bank-settings-card-header {
+  padding: 20px 22px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.bank-settings-card-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.bank-settings-card-header p {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.bank-settings-card-body {
+  padding: 22px;
+}
+
+/* Fields */
+
+.bank-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.bank-settings-field {
+  min-width: 0;
+}
+
+/* Document Preview */
+
+.bank-document-preview {
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.bank-document-preview-heading {
+  padding: 15px 18px;
+  color: #166534;
+  background: #f0fdf4;
+  border-bottom: 1px solid #dcfce7;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.bank-document-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+}
+
+.bank-document-preview-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 17px 18px;
+  border-bottom: 1px solid #f0f1f3;
+}
+
+.bank-document-preview-grid > div:nth-last-child(-n + 2) {
+  border-bottom: none;
+}
+
+.bank-document-preview-grid > div:nth-child(odd) {
+  border-right: 1px solid #f0f1f3;
+}
+
+.bank-document-preview-grid span {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.bank-document-preview-grid strong {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* Actions */
+
+.bank-settings-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Loading */
+
+.bank-settings-loading {
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive */
+
+@media (max-width: 760px) {
+  .bank-settings-page {
+    padding: 18px;
+  }
+
+  .bank-settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .bank-settings-page {
+    padding: 14px;
+  }
+
+  .bank-settings-header h1 {
+    font-size: 23px;
+  }
+
+  .bank-settings-header p {
+    font-size: 13px;
+  }
+
+  .bank-settings-card-header {
+    padding: 17px;
+  }
+
+  .bank-settings-card-body {
+    padding: 17px;
+  }
+
+  .bank-document-preview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bank-document-preview-grid > div {
+    border-right: none !important;
+    border-bottom: 1px solid #f0f1f3 !important;
+  }
+
+  .bank-document-preview-grid > div:last-child {
+    border-bottom: none !important;
+  }
+
+  .bank-settings-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
+
+@media print {
+  .bank-settings-page {
+    padding: 0;
+  }
+
+  .bank-settings-actions {
+    display: none;
+  }
+
+  .bank-settings-card {
+    break-inside: avoid;
+  }
+}

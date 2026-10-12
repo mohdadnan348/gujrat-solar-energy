@@ -112,6 +112,20 @@ router.patch(
   invoiceController.issueInvoice
 );
 
+
+/*
+|--------------------------------------------------------------------------
+| Permanently Delete Invoice (Admin only)
+|--------------------------------------------------------------------------
+*/
+router.delete(
+  "/:id",
+  validate([invoiceIdValidator]),
+  allowRoles("ADMIN"),
+  invoiceController.deleteInvoice
+);
+
+
 /*
 |--------------------------------------------------------------------------
 | Cancel Invoice

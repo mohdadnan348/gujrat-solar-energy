@@ -1,248 +1,245 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import Button from "@/components/common/Button";
-import SearchBox from "@/components/common/SearchBox";
-import Select from "@/components/common/Select";
 import Badge from "@/components/common/Badge";
+import SearchBox from "@/components/common/SearchBox";
 import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
+import Select from "@/components/common/Select";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 
-import { useAuth } from "@/hooks/useAuth";
 import invoiceService from "@/services/invoice.service";
 
 import "./invoices.css";
 
-const EmployeeInvoicesPage = () => {
-  const { user, loading: authLoading } = useAuth();
+const AdminInvoicesPage = () => {
+  const router = useRouter();
 
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
-  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [dateFilter, setDateFilter] = useState("ALL");
 
-  const limit = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const loadInvoices = async () => {
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [statusDrafts, setStatusDrafts] = useState({});
+  const [statusSavingId, setStatusSavingId] = useState(null);
+
+  const getValue = (object, keys, fallback = "") => {
+    if (!object) return fallback;
+
+    for (const key of keys) {
+      const value = object?.[key];
+
+      if (
+        value !== undefined &&
+        value !== null &&
+        value !== ""
+      ) {
+        return value;
+      }
+    }
+
+    return fallback;
+  };
+
+  const getId = (object) => {
+    if (!object) return "";
+
+    if (typeof object === "string") {
+      return object;
+    }
+
+    return object?._id || object?.id || "";
+  };
+
+  const normalizeList = (response) => {
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (Array.isArray(response?.data)) {
+      return response.data;
+    }
+
+    if (Array.isArray(response?.data?.invoices)) {
+      return response.data.invoices;
+    }
+
+    if (Array.isArray(response?.invoices)) {
+      return response.invoices;
+    }
+
+    if (Array.isArray(response?.results)) {
+      return response.results;
+    }
+
+    return [];
+  };
+
+  const loadInvoices = async (showRefresh = false) => {
     try {
-      setLoading(true);
+      if (showRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
       setError("");
 
-      const response = await invoiceService.getInvoices();
+      const response =
+        await invoiceService.getInvoices();
 
-      const items =
-        response?.data?.invoices ??
-        response?.data?.items ??
-        response?.invoices ??
-        response?.items ??
-        response?.data ??
-        [];
-
-      setInvoices(Array.isArray(items) ? items : []);
+      setInvoices(normalizeList(response));
     } catch (err) {
-      console.error("Failed to load invoices:", err);
+      console.error(
+        "Failed to load invoices:",
+        err
+      );
 
       setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Unable to load invoices. Please try again."
+        err?.message ||
+          "Invoices load nahi ho paaye."
       );
-
-      setInvoices([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    if (!authLoading && user) {
-      loadInvoices();
-    }
-  }, [authLoading, user]);
-
-  const filteredInvoices = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    return invoices.filter((invoice) => {
-      const invoiceStatus = String(
-        invoice?.status ||
-          invoice?.invoiceStatus ||
-          ""
-      ).toLowerCase();
-
-      const searchableText = [
-        invoice?.invoiceNumber,
-        invoice?.number,
-        invoice?.customerName,
-        invoice?.customer?.name,
-        invoice?.customer?.companyName,
-        invoice?.quotationNumber,
-        invoice?.quotation?.quotationNumber,
-        invoice?.phone,
-        invoice?.email,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      const matchesSearch =
-        !query || searchableText.includes(query);
-
-      const matchesStatus =
-        !status ||
-        invoiceStatus === status.toLowerCase();
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [invoices, search, status]);
+    loadInvoices();
+  }, []);
 
   useEffect(() => {
-    setPage(1);
-  }, [search, status]);
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredInvoices.length / limit)
-  );
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
-
-  const paginatedInvoices = useMemo(() => {
-    const start = (page - 1) * limit;
-
-    return filteredInvoices.slice(
-      start,
-      start + limit
-    );
-  }, [filteredInvoices, page]);
-
-  const getInvoiceId = (invoice) =>
-    invoice?._id || invoice?.id;
+    setCurrentPage(1);
+  }, [
+    search,
+    statusFilter,
+    dateFilter,
+    itemsPerPage,
+  ]);
 
   const getInvoiceNumber = (invoice) =>
-    invoice?.invoiceNumber ||
-    invoice?.number ||
-    "Invoice";
+    getValue(
+      invoice,
+      [
+        "invoiceNumber",
+        "invoiceNo",
+        "number",
+        "invoiceId",
+      ],
+      "—"
+    );
 
-  const getCustomerName = (invoice) =>
-    invoice?.customerName ||
-    invoice?.customer?.name ||
-    invoice?.customer?.companyName ||
-    "Unnamed Customer";
+  const getCustomer = (invoice) => {
+    const customer = getValue(
+      invoice,
+      ["customer"],
+      null
+    );
 
-  const getQuotationNumber = (invoice) =>
-    invoice?.quotationNumber ||
-    invoice?.quotation?.quotationNumber ||
-    "—";
+    if (
+      customer &&
+      typeof customer === "object"
+    ) {
+      return customer;
+    }
+
+    return null;
+  };
+
+  const getCustomerName = (invoice) => {
+    const customer = getCustomer(invoice);
+
+    if (customer) {
+      return getValue(
+        customer,
+        [
+          "name",
+          "fullName",
+          "customerName",
+          "companyName",
+        ],
+        "—"
+      );
+    }
+
+    return getValue(
+      invoice,
+      [
+        "customerName",
+        "name",
+      ],
+      "—"
+    );
+  };
+
+  const getInvoiceDate = (invoice) =>
+    getValue(
+      invoice,
+      [
+        "invoiceDate",
+        "date",
+        "createdAt",
+      ],
+      ""
+    );
+
+  const getDueDate = (invoice) =>
+    getValue(
+      invoice,
+      [
+        "dueDate",
+        "paymentDueDate",
+      ],
+      ""
+    );
+
+  const getTotal = (invoice) =>
+    Number(
+      getValue(
+        invoice,
+        [
+          "grandTotal",
+          "totalAmount",
+          "total",
+          "finalAmount",
+          "amount",
+        ],
+        0
+      )
+    );
 
   const getStatus = (invoice) =>
-    invoice?.status ||
-    invoice?.invoiceStatus ||
-    "DRAFT";
+    String(
+      getValue(
+        invoice,
+        ["status"],
+        "DRAFT"
+      )
+    ).toUpperCase();
 
-  const getStatusVariant = (invoiceStatus) => {
-    const value = String(
-      invoiceStatus || ""
-    ).toLowerCase();
+  const formatDate = (value) => {
+    if (!value) return "—";
 
-    if (
-      [
-        "issued",
-        "approved",
-        "sent",
-        "paid",
-        "completed",
-      ].includes(value)
-    ) {
-      return "success";
-    }
+    const date = new Date(value);
 
-    if (
-      [
-        "cancelled",
-        "rejected",
-        "void",
-        "overdue",
-      ].includes(value)
-    ) {
-      return "danger";
-    }
-
-    if (
-      [
-        "draft",
-        "pending",
-        "processing",
-      ].includes(value)
-    ) {
-      return "warning";
-    }
-
-    return "default";
-  };
-
-  const getStatusLabel = (statusValue) => {
-    if (!statusValue) return "Draft";
-
-    return String(statusValue)
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (letter) =>
-        letter.toUpperCase()
-      );
-  };
-
-  const formatAmount = (invoice) => {
-    const amount =
-      invoice?.grandTotal ??
-      invoice?.totalAmount ??
-      invoice?.total ??
-      invoice?.netAmount;
-
-    if (
-      amount === undefined ||
-      amount === null ||
-      amount === ""
-    ) {
+    if (Number.isNaN(date.getTime())) {
       return "—";
     }
 
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(Number(amount));
-  };
-
-  const getNumericAmount = (invoice) => {
-    const amount =
-      invoice?.grandTotal ??
-      invoice?.totalAmount ??
-      invoice?.total ??
-      invoice?.netAmount ??
-      0;
-
-    return Number(amount) || 0;
-  };
-
-  const formatDate = (date) => {
-    if (!date) return "—";
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-      return "—";
-    }
-
-    return parsedDate.toLocaleDateString(
+    return date.toLocaleDateString(
       "en-IN",
       {
         day: "2-digit",
@@ -252,591 +249,931 @@ const EmployeeInvoicesPage = () => {
     );
   };
 
-  const handleOpenPdf = async (invoice) => {
-    const id = getInvoiceId(invoice);
+  const formatCurrency = (value) => {
+    return `₹${Number(
+      value || 0
+    ).toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
 
-    if (!id) return;
+  const getStatusVariant = (status) => {
+    switch (status) {
+      case "DRAFT":
+        return "default";
 
-    try {
-      const response =
-        await invoiceService.getInvoicePdf(id);
+      case "SENT":
+        return "info";
 
-      const blob =
-        response instanceof Blob
-          ? response
-          : response?.data instanceof Blob
-            ? response.data
-            : null;
+      case "ISSUED":
+        return "info";
 
-      if (!blob) {
-        setError("Unable to generate invoice PDF.");
-        return;
-      }
+      case "CANCELLED":
+        return "danger";
 
-      const url =
-        window.URL.createObjectURL(blob);
+      case "OVERDUE":
+        return "warning";
 
-      window.open(
-        url,
-        "_blank",
-        "noopener,noreferrer"
-      );
+      case "ACTIVE":
+        return "success";
 
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-      }, 60000);
-    } catch (err) {
-      console.error(
-        "Failed to open invoice PDF:",
-        err
-      );
-
-      setError(
-        err?.response?.data?.message ||
-          "Unable to open invoice PDF."
-      );
+      default:
+        return "default";
     }
   };
 
-  const totalAmount = useMemo(() => {
-    return invoices.reduce(
-      (sum, invoice) =>
-        sum + getNumericAmount(invoice),
-      0
+  const isWithinDateFilter = (
+    invoice,
+    filter
+  ) => {
+    if (filter === "ALL") return true;
+
+    const rawDate =
+      getInvoiceDate(invoice);
+
+    if (!rawDate) return false;
+
+    const invoiceDate = new Date(
+      rawDate
     );
-  }, [invoices]);
 
-  const issuedCount = useMemo(() => {
-    return invoices.filter((invoice) =>
-      [
-        "issued",
-        "approved",
-        "sent",
-        "paid",
-        "completed",
-      ].includes(
-        String(getStatus(invoice)).toLowerCase()
+    if (
+      Number.isNaN(
+        invoiceDate.getTime()
       )
+    ) {
+      return false;
+    }
+
+    const now = new Date();
+
+    if (filter === "TODAY") {
+      return (
+        invoiceDate.toDateString() ===
+        now.toDateString()
+      );
+    }
+
+    if (filter === "THIS_MONTH") {
+      return (
+        invoiceDate.getMonth() ===
+          now.getMonth() &&
+        invoiceDate.getFullYear() ===
+          now.getFullYear()
+      );
+    }
+
+    if (filter === "LAST_30_DAYS") {
+      const fromDate = new Date();
+
+      fromDate.setDate(
+        fromDate.getDate() - 30
+      );
+
+      return invoiceDate >= fromDate;
+    }
+
+    return true;
+  };
+
+  const filteredInvoices = useMemo(() => {
+    const query = String(search ?? "")
+      .trim()
+      .toLowerCase();
+
+    return invoices.filter((invoice) => {
+      const status =
+        getStatus(invoice);
+
+      if (
+        statusFilter !== "ALL" &&
+        status !== statusFilter
+      ) {
+        return false;
+      }
+
+      if (
+        !isWithinDateFilter(
+          invoice,
+          dateFilter
+        )
+      ) {
+        return false;
+      }
+
+      if (!query) return true;
+
+      const searchableText = [
+        getInvoiceNumber(invoice),
+        getCustomerName(invoice),
+        getValue(invoice, [
+          "customerEmail",
+          "email",
+        ]),
+        getValue(invoice, [
+          "customerPhone",
+          "phone",
+        ]),
+        getValue(invoice, [
+          "title",
+          "description",
+        ]),
+        status,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchableText.includes(
+        query
+      );
+    });
+  }, [
+    invoices,
+    search,
+    statusFilter,
+    dateFilter,
+  ]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      filteredInvoices.length /
+        itemsPerPage
+    )
+  );
+
+  const paginatedInvoices =
+    useMemo(() => {
+      const start =
+        (currentPage - 1) *
+        itemsPerPage;
+
+      return filteredInvoices.slice(
+        start,
+        start + itemsPerPage
+      );
+    }, [
+      filteredInvoices,
+      currentPage,
+      itemsPerPage,
+    ]);
+
+  const stats = useMemo(() => {
+    const total = invoices.length;
+
+    const totalValue =
+      invoices.reduce(
+        (sum, invoice) =>
+          sum + getTotal(invoice),
+        0
+      );
+
+    const draft = invoices.filter(
+      (invoice) =>
+        getStatus(invoice) ===
+        "DRAFT"
     ).length;
+
+    const issued = invoices.filter(
+      (invoice) =>
+        ["ISSUED", "SENT", "ACTIVE"].includes(
+          getStatus(invoice)
+        )
+    ).length;
+
+    const cancelled =
+      invoices.filter(
+        (invoice) =>
+          getStatus(invoice) ===
+          "CANCELLED"
+      ).length;
+
+    return {
+      total,
+      totalValue,
+      draft,
+      issued,
+      cancelled,
+    };
   }, [invoices]);
 
-  const pendingCount = useMemo(() => {
-    return invoices.filter((invoice) =>
-      [
-        "draft",
-        "pending",
-        "processing",
-      ].includes(
-        String(getStatus(invoice)).toLowerCase()
+
+const handleDelete = async () => {
+  if (!deleteId) return;
+
+  try {
+    setDeleting(true);
+    setError("");
+
+    if (typeof invoiceService.deleteInvoice !== "function") {
+      throw new Error(
+        "Invoice delete API available nahi hai. invoice.service.js check karo."
+      );
+    }
+
+    await invoiceService.deleteInvoice(deleteId);
+
+    // Immediately remove it from the current UI.
+    setInvoices((previous) =>
+      previous.filter(
+        (invoice) => String(getId(invoice)) !== String(deleteId)
       )
-    ).length;
-  }, [invoices]);
+    );
 
-  if (authLoading) {
+    setDeleteId(null);
+
+    // Reload the list and update totals from the backend.
+    await loadInvoices(true);
+  } catch (err) {
+    console.error("Failed to delete invoice:", err);
+
+    setError(
+      err?.response?.data?.message ||
+        err?.message ||
+        "Invoice delete nahi ho paaya."
+    );
+  } finally {
+    setDeleting(false);
+  }
+};
+
+
+  const handleStatusChange = (invoiceId, nextStatus) => {
+    setStatusDrafts((previous) => ({
+      ...previous,
+      [invoiceId]: nextStatus,
+    }));
+  };
+
+  const handleSaveStatus = async (invoice) => {
+    const invoiceId = getId(invoice);
+    if (!invoiceId) {
+      setError("Invoice ID nahi mila.");
+      return;
+    }
+
+    const currentStatus = getStatus(invoice);
+    const nextStatus = String(
+      statusDrafts[invoiceId] || currentStatus
+    ).toUpperCase();
+
+    if (nextStatus === currentStatus) return;
+
+    try {
+      setStatusSavingId(invoiceId);
+      setError("");
+
+      if (nextStatus === "CANCELLED") {
+        if (typeof invoiceService.cancelInvoice !== "function") {
+          throw new Error("Invoice cancel API available nahi hai.");
+        }
+        await invoiceService.cancelInvoice(
+          invoiceId,
+          "Cancelled by Admin"
+        );
+      } else if (nextStatus === "ISSUED") {
+        if (typeof invoiceService.issueInvoice !== "function") {
+          throw new Error("Invoice issue API available nahi hai.");
+        }
+        await invoiceService.issueInvoice(invoiceId);
+      } else if (["DRAFT", "SENT", "OVERDUE"].includes(nextStatus)) {
+        if (typeof invoiceService.updateInvoice !== "function") {
+          throw new Error("Invoice update API available nahi hai.");
+        }
+        await invoiceService.updateInvoice(invoiceId, {
+          status: nextStatus,
+        });
+      } else {
+        throw new Error("Selected status supported nahi hai.");
+      }
+
+      await loadInvoices(true);
+      setStatusDrafts((previous) => {
+        const updated = { ...previous };
+        delete updated[invoiceId];
+        return updated;
+      });
+    } catch (err) {
+      console.error("Invoice status update failed:", err);
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Invoice status update nahi ho paaya."
+      );
+    } finally {
+      setStatusSavingId(null);
+    }
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  if (loading) {
     return (
-      <div className="employee-invoices-loading">
+      <div className="admin-invoices-loading">
         <Loader />
+        <p>
+          Invoices load ho rahi hain...
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="employee-invoices-page">
+    <div className="admin-invoices-page">
+        {/* Page Header */}
+        <div className="admin-invoices-page-header">
+          <div>
+            <h1>
+              Invoices
+            </h1>
 
-      {/* Page Header */}
-      <div className="employee-invoices-header">
-        <div>
-          <span className="employee-invoices-eyebrow">
-            Billing Management
-          </span>
+            <p>
+              Manage customer invoices and
+              billing documents.
+            </p>
+          </div>
 
-          <h1>Invoices</h1>
+          <div className="admin-invoices-header-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                loadInvoices(true)
+              }
+              disabled={refreshing}
+            >
+              {refreshing
+                ? "Refreshing..."
+                : "↻ Refresh"}
+            </Button>
 
-          <p>
-            View invoices generated for your assigned
-            customers.
-          </p>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() =>
+                router.push(
+                  "/admin/invoices/create"
+                )
+              }
+            >
+              + Create Invoice
+            </Button>
+          </div>
         </div>
 
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={loadInvoices}
-          disabled={loading}
-        >
-          {loading ? "Refreshing..." : "Refresh"}
-        </Button>
-      </div>
+        {error && (
+          <div className="admin-invoices-error">
+            {error}
+          </div>
+        )}
 
-      {/* Summary */}
-      {!loading && !error && (
-        <div className="employee-invoices-summary">
-
-          <div className="employee-invoice-summary-card">
-            <div className="employee-invoice-summary-icon">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <path d="M6 2h9l4 4v16H6z" />
-                <path d="M14 2v5h5" />
-                <path d="M9 12h6M9 16h6" />
-              </svg>
+        {/* Stats */}
+        <div className="admin-invoices-stats">
+          <div className="admin-invoice-stat-card">
+            <div className="admin-invoice-stat-icon">
+              IN
             </div>
 
             <div>
-              <span>Total Invoices</span>
-              <strong>{invoices.length}</strong>
+              <span>
+                Total Invoices
+              </span>
+
+              <strong>
+                {stats.total}
+              </strong>
             </div>
           </div>
 
-          <div className="employee-invoice-summary-card">
-            <div className="employee-invoice-summary-icon success">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <path d="m5 12 4 4L19 6" />
-              </svg>
-            </div>
-
-            <div>
-              <span>Issued</span>
-              <strong>{issuedCount}</strong>
-            </div>
-          </div>
-
-          <div className="employee-invoice-summary-card">
-            <div className="employee-invoice-summary-icon warning">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <circle cx="12" cy="12" r="9" />
-                <path d="M12 7v5l3 2" />
-              </svg>
-            </div>
-
-            <div>
-              <span>Pending</span>
-              <strong>{pendingCount}</strong>
-            </div>
-          </div>
-
-          <div className="employee-invoice-summary-card">
-            <div className="employee-invoice-summary-icon amount">
+          <div className="admin-invoice-stat-card">
+            <div className="admin-invoice-stat-icon value">
               ₹
             </div>
 
             <div>
-              <span>Total Value</span>
+              <span>
+                Invoice Value
+              </span>
+
               <strong>
-                ₹
-                {totalAmount.toLocaleString(
-                  "en-IN",
-                  {
-                    maximumFractionDigits: 0,
-                  }
+                {formatCurrency(
+                  stats.totalValue
                 )}
               </strong>
             </div>
           </div>
 
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="employee-invoices-toolbar">
-
-        <div className="employee-invoices-search">
-          <SearchBox
-            value={search}
-            onChange={setSearch}
-            placeholder="Search invoice, customer, quotation..."
-          />
-        </div>
-
-        <div className="employee-invoices-filter">
-          <Select
-            value={status}
-            onChange={(event) =>
-              setStatus(event.target.value)
-            }
-            options={[
-              {
-                value: "",
-                label: "All Statuses",
-              },
-              {
-                value: "DRAFT",
-                label: "Draft",
-              },
-              {
-                value: "PENDING",
-                label: "Pending",
-              },
-              {
-                value: "ISSUED",
-                label: "Issued",
-              },
-              {
-                value: "SENT",
-                label: "Sent",
-              },
-              {
-                value: "APPROVED",
-                label: "Approved",
-              },
-              {
-                value: "PAID",
-                label: "Paid",
-              },
-              {
-                value: "CANCELLED",
-                label: "Cancelled",
-              },
-            ]}
-          />
-        </div>
-
-        {(search || status) && (
-          <button
-            type="button"
-            className="employee-invoices-clear"
-            onClick={() => {
-              setSearch("");
-              setStatus("");
-            }}
-          >
-            Clear Filters
-          </button>
-        )}
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="employee-invoices-error">
-          <div>
-            <strong>
-              Unable to load invoices
-            </strong>
-
-            <span>{error}</span>
-          </div>
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={loadInvoices}
-          >
-            Retry
-          </Button>
-        </div>
-      )}
-
-      {/* Invoice Card */}
-      <div className="employee-invoices-card">
-
-        {loading ? (
-          <div className="employee-invoices-loader">
-            <Loader />
-          </div>
-        ) : paginatedInvoices.length === 0 ? (
-
-          <div className="employee-invoices-empty">
-
-            <div className="employee-invoices-empty-icon">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <path d="M6 2h9l4 4v16H6z" />
-                <path d="M14 2v5h5" />
-                <path d="M9 12h6M9 16h4" />
-              </svg>
+          <div className="admin-invoice-stat-card">
+            <div className="admin-invoice-stat-icon draft">
+              DR
             </div>
 
-            <h3>
-              {search || status
-                ? "No matching invoices"
-                : "No invoices found"}
-            </h3>
+            <div>
+              <span>
+                Draft
+              </span>
 
-            <p>
-              {search || status
-                ? "Try changing your search or filter."
-                : "Invoices generated for your assigned customers will appear here."}
-            </p>
-
-            {(search || status) && (
-              <button
-                type="button"
-                className="employee-invoices-empty-button"
-                onClick={() => {
-                  setSearch("");
-                  setStatus("");
-                }}
-              >
-                Clear Filters
-              </button>
-            )}
-
+              <strong>
+                {stats.draft}
+              </strong>
+            </div>
           </div>
 
-        ) : (
+          <div className="admin-invoice-stat-card">
+            <div className="admin-invoice-stat-icon issued">
+              ✓
+            </div>
 
-          <>
-            <div className="employee-invoices-card-header">
-              <div>
-                <h2>
-                  Assigned Invoices
-                </h2>
+            <div>
+              <span>
+                Issued
+              </span>
 
-                <p>
-                  {filteredInvoices.length} invoice
-                  {filteredInvoices.length !== 1
-                    ? "s"
-                    : ""}{" "}
-                  found
-                </p>
+              <strong>
+                {stats.issued}
+              </strong>
+            </div>
+          </div>
+
+          <div className="admin-invoice-stat-card">
+            <div className="admin-invoice-stat-icon cancelled">
+              ×
+            </div>
+
+            <div>
+              <span>
+                Cancelled
+              </span>
+
+              <strong>
+                {stats.cancelled}
+              </strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="admin-invoices-toolbar">
+          <div className="admin-invoices-search">
+            <SearchBox
+              value={search}
+              onChange={(value) =>
+                setSearch(
+                  typeof value === "string"
+                    ? value
+                    : String(value?.target?.value ?? "")
+                )
+              }
+              placeholder="Search invoice, customer..."
+            />
+          </div>
+
+          <div className="admin-invoices-filters">
+            <Select
+              value={statusFilter}
+              onChange={(event) =>
+                setStatusFilter(
+                  event?.target
+                    ? event.target.value
+                    : event
+                )
+              }
+              options={[
+                {
+                  label: "All Status",
+                  value: "ALL",
+                },
+                {
+                  label: "Draft",
+                  value: "DRAFT",
+                },
+                {
+                  label: "Sent",
+                  value: "SENT",
+                },
+                {
+                  label: "Issued",
+                  value: "ISSUED",
+                },
+                {
+                  label: "Overdue",
+                  value: "OVERDUE",
+                },
+                {
+                  label: "Cancelled",
+                  value: "CANCELLED",
+                },
+              ]}
+            />
+
+            <Select
+              value={dateFilter}
+              onChange={(event) =>
+                setDateFilter(
+                  event?.target
+                    ? event.target.value
+                    : event
+                )
+              }
+              options={[
+                {
+                  label: "All Dates",
+                  value: "ALL",
+                },
+                {
+                  label: "Today",
+                  value: "TODAY",
+                },
+                {
+                  label: "This Month",
+                  value: "THIS_MONTH",
+                },
+                {
+                  label: "Last 30 Days",
+                  value: "LAST_30_DAYS",
+                },
+              ]}
+            />
+
+            <Select
+              value={String(
+                itemsPerPage
+              )}
+              onChange={(event) =>
+                setItemsPerPage(
+                  Number(
+                    event?.target
+                      ? event.target.value
+                      : event
+                  )
+                )
+              }
+              options={[
+                {
+                  label: "10 / page",
+                  value: "10",
+                },
+                {
+                  label: "25 / page",
+                  value: "25",
+                },
+                {
+                  label: "50 / page",
+                  value: "50",
+                },
+              ]}
+            />
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="admin-invoices-card">
+          <div className="admin-invoices-card-header">
+            <div>
+              <h2>
+                Invoice Records
+              </h2>
+
+              <p>
+                {filteredInvoices.length}{" "}
+                invoice
+                {filteredInvoices.length !==
+                1
+                  ? "s"
+                  : ""}{" "}
+                found
+              </p>
+            </div>
+          </div>
+
+          {paginatedInvoices.length ===
+          0 ? (
+            <div className="admin-invoices-empty">
+              <div className="admin-invoices-empty-icon">
+                IN
               </div>
 
-              <span className="employee-invoices-count">
-                {filteredInvoices.length} Total
-              </span>
+              <h3>
+                No invoices found
+              </h3>
+
+              <p>
+                {search ||
+                statusFilter !==
+                  "ALL" ||
+                dateFilter !==
+                  "ALL"
+                  ? "Try changing your filters or search."
+                  : "Create your first invoice to get started."}
+              </p>
+
+              {!search &&
+                statusFilter ===
+                  "ALL" &&
+                dateFilter ===
+                  "ALL" && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={() =>
+                      router.push(
+                        "/admin/invoices/create"
+                      )
+                    }
+                  >
+                    + Create Invoice
+                  </Button>
+                )}
             </div>
+          ) : (
+            <>
+              <div className="admin-invoices-table-wrapper">
+                <table className="admin-invoices-table">
+                  <thead>
+                    <tr>
+                      <th>
+                        Invoice
+                      </th>
 
-            <div className="employee-invoices-table-wrapper">
+                      <th>
+                        Customer
+                      </th>
 
-              <table className="employee-invoices-table">
+                      <th>
+                        Invoice Date
+                      </th>
 
-                <thead>
-                  <tr>
-                    <th>Invoice</th>
-                    <th>Customer</th>
-                    <th>Quotation</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Invoice Date</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
+                      <th>
+                        Due Date
+                      </th>
 
-                <tbody>
-                  {paginatedInvoices.map(
-                    (invoice, index) => {
-                      const id =
-                        getInvoiceId(invoice) ||
-                        index;
+                      <th>
+                        Total
+                      </th>
 
-                      const invoiceStatus =
-                        getStatus(invoice);
+                      <th>
+                        Status
+                      </th>
 
-                      return (
-                        <tr key={id}>
+                      <th>
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
 
-                          {/* Invoice */}
-                          <td>
-                            <div className="employee-invoice-main">
+                  <tbody>
+                    {paginatedInvoices.map(
+                      (
+                        invoice,
+                        index
+                      ) => {
+                        const id =
+                          getId(
+                            invoice
+                          );
 
-                              <div className="employee-invoice-icon">
-                                <svg
-                                  width="18"
-                                  height="18"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="1.8"
-                                >
-                                  <path d="M6 2h9l4 4v16H6z" />
-                                  <path d="M14 2v5h5" />
-                                  <path d="M9 12h6M9 16h5" />
-                                </svg>
-                              </div>
+                        const status =
+                          getStatus(
+                            invoice
+                          );
 
-                              <div>
-                                <div className="employee-invoice-number">
+                        return (
+                          <tr
+                            key={
+                              id ||
+                              `${getInvoiceNumber(
+                                invoice
+                              )}-${index}`
+                            }
+                          >
+                            <td>
+                              <div className="admin-invoice-number">
+                                <strong>
                                   {getInvoiceNumber(
                                     invoice
                                   )}
-                                </div>
+                                </strong>
 
-                                {invoice?.dueDate && (
-                                  <div className="employee-invoice-subtext">
-                                    Due{" "}
-                                    {formatDate(
-                                      invoice.dueDate
-                                    )}
-                                  </div>
-                                )}
+                                <span>
+                                  {getValue(
+                                    invoice,
+                                    [
+                                      "title",
+                                      "description",
+                                    ],
+                                    "Invoice"
+                                  )}
+                                </span>
                               </div>
+                            </td>
 
-                            </div>
-                          </td>
-
-                          {/* Customer */}
-                          <td>
-                            <div className="employee-invoice-customer">
-                              {getCustomerName(
-                                invoice
-                              )}
-                            </div>
-
-                            {(invoice?.phone ||
-                              invoice?.customer
-                                ?.phone) && (
-                              <div className="employee-invoice-subtext">
-                                {invoice?.phone ||
-                                  invoice?.customer
-                                    ?.phone}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Quotation */}
-                          <td>
-                            <span className="employee-invoice-quotation">
-                              {getQuotationNumber(
-                                invoice
-                              )}
-                            </span>
-                          </td>
-
-                          {/* Amount */}
-                          <td>
-                            <span className="employee-invoice-amount">
-                              {formatAmount(
-                                invoice
-                              )}
-                            </span>
-                          </td>
-
-                          {/* Status */}
-                          <td>
-                            <Badge
-                              variant={getStatusVariant(
-                                invoiceStatus
-                              )}
-                            >
-                              {getStatusLabel(
-                                invoiceStatus
-                              )}
-                            </Badge>
-                          </td>
-
-                          {/* Date */}
-                          <td>
-                            <span className="employee-invoice-date">
-                              {formatDate(
-                                invoice?.invoiceDate ||
-                                  invoice?.date ||
-                                  invoice?.createdAt
-                              )}
-                            </span>
-                          </td>
-
-                          {/* Actions */}
-                          <td>
-                            <div className="employee-invoice-actions">
-
-                              {getInvoiceId(
-                                invoice
-                              ) ? (
-                                <Link
-                                  href={`/employee/invoices/${getInvoiceId(
-                                    invoice
-                                  )}`}
-                                  className="employee-invoice-view-button"
-                                >
-                                  View
-                                  <svg
-                                    width="15"
-                                    height="15"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                  >
-                                    <path d="m9 18 6-6-6-6" />
-                                  </svg>
-                                </Link>
-                              ) : (
-                                <span>—</span>
-                              )}
-
-                              {getInvoiceId(
-                                invoice
-                              ) && (
-                                <button
-                                  type="button"
-                                  className="employee-invoice-pdf-button"
-                                  onClick={() =>
-                                    handleOpenPdf(
+                            <td>
+                              <div className="admin-invoice-customer">
+                                <div className="admin-invoice-customer-avatar">
+                                  {String(
+                                    getCustomerName(
                                       invoice
                                     )
+                                  )
+                                    .charAt(
+                                      0
+                                    )
+                                    .toUpperCase()}
+                                </div>
+
+                                <div>
+                                  <strong>
+                                    {getCustomerName(
+                                      invoice
+                                    )}
+                                  </strong>
+
+                                  <span>
+                                    {getValue(
+                                      getCustomer(
+                                        invoice
+                                      ),
+                                      [
+                                        "companyName",
+                                      ],
+                                      getValue(
+                                        invoice,
+                                        [
+                                          "customerEmail",
+                                          "email",
+                                        ],
+                                        ""
+                                      )
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td>
+                              <span className="admin-invoice-date">
+                                {formatDate(
+                                  getInvoiceDate(
+                                    invoice
+                                  )
+                                )}
+                              </span>
+                            </td>
+
+                            <td>
+                              <span className="admin-invoice-date">
+                                {formatDate(
+                                  getDueDate(
+                                    invoice
+                                  )
+                                )}
+                              </span>
+                            </td>
+
+                            <td>
+                              <strong className="admin-invoice-total">
+                                {formatCurrency(
+                                  getTotal(
+                                    invoice
+                                  )
+                                )}
+                              </strong>
+                            </td>
+
+                            <td>
+                              <div className="admin-invoice-status-editor">
+                                <Badge
+                                  variant={getStatusVariant(status)}
+                                >
+                                  {status.replaceAll("_", " ")}
+                                </Badge>
+
+                                <select
+                                  className="admin-invoice-status-select"
+                                  aria-label={`Change status for ${getInvoiceNumber(invoice)}`}
+                                  value={statusDrafts[id] || status}
+                                  disabled={!id || statusSavingId === id}
+                                  onChange={(event) =>
+                                    handleStatusChange(id, event.target.value)
                                   }
                                 >
-                                  PDF
+                                  <option value="DRAFT">Draft</option>
+                                  <option value="SENT">Sent</option>
+                                  <option value="ISSUED">Issued</option>
+                                  <option value="OVERDUE">Overdue</option>
+                                  <option value="CANCELLED">Cancelled</option>
+                                </select>
+
+                                {(statusDrafts[id] || status) !== status && (
+                                  <button
+                                    type="button"
+                                    className="admin-invoice-status-save"
+                                    onClick={() => handleSaveStatus(invoice)}
+                                    disabled={statusSavingId === id}
+                                  >
+                                    {statusSavingId === id ? "Saving..." : "Save"}
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+
+                            <td>
+                              <div className="admin-invoice-actions">
+                                <button
+                                  type="button"
+                                  className="admin-invoice-action-button view"
+                                  onClick={() =>
+                                    router.push(
+                                      `/admin/invoices/${id}`
+                                    )
+                                  }
+                                  disabled={!id}
+                                  title="View Invoice"
+                                >
+                                  View
                                 </button>
-                              )}
 
-                            </div>
-                          </td>
+                                <button
+                                  type="button"
+                                  className="admin-invoice-action-button edit"
+                                  onClick={() =>
+                                    router.push(
+                                      `/admin/invoices/create?edit=${id}`
+                                    )
+                                  }
+                                  disabled={!id}
+                                  title="Edit Invoice"
+                                >
+                                  Edit
+                                </button>
 
-                        </tr>
-                      );
-                    }
-                  )}
-                </tbody>
+                                <button
+                                  type="button"
+                                  className="admin-invoice-action-button delete"
+                                  onClick={() =>
+                                    setDeleteId(
+                                      id
+                                    )
+                                  }
+                                  disabled={!id}
+                                  title="Cancel Invoice"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-              </table>
+              <div className="admin-invoices-pagination">
+                <Pagination
+                  currentPage={
+                    currentPage
+                  }
+                  totalPages={
+                    totalPages
+                  }
+                  onPageChange={
+                    handlePageChange
+                  }
+                />
+              </div>
+            </>
+          )}
+        </div>
 
-            </div>
-
-            <div className="employee-invoices-footer">
-
-              <span>
-                Showing{" "}
-                {filteredInvoices.length === 0
-                  ? 0
-                  : (page - 1) * limit + 1}{" "}
-                -{" "}
-                {Math.min(
-                  page * limit,
-                  filteredInvoices.length
-                )}{" "}
-                of {filteredInvoices.length} invoices
-              </span>
-
-              <Pagination
-                currentPage={page}
-                totalPages={totalPages}
-                onPageChange={setPage}
-              />
-
-            </div>
-          </>
-        )}
-
-      </div>
+        <ConfirmDialog
+          isOpen={Boolean(
+            deleteId
+          )}
+          onClose={() =>
+            !deleting &&
+            setDeleteId(null)
+          }
+          onConfirm={
+            handleDelete
+          }
+          title="Cancel Invoice"
+          message="Are you sure you want to delete this invoice? This action cannot be undone."
+          confirmText={
+            deleting
+              ? "Cancelling..."
+              : "Cancel Invoice"
+          }
+          cancelText="Cancel"
+          loading={deleting}
+          danger
+        />
     </div>
   );
 };
 
-export default EmployeeInvoicesPage;
+export default AdminInvoicesPage;

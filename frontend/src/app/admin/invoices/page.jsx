@@ -32,6 +32,8 @@ const AdminInvoicesPage = () => {
 
   const [deleteId, setDeleteId] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [statusDrafts, setStatusDrafts] = useState({});
+  const [statusSavingId, setStatusSavingId] = useState(null);
 
   const getValue = (object, keys, fallback = "") => {
     if (!object) return fallback;
@@ -336,7 +338,7 @@ const AdminInvoicesPage = () => {
   };
 
   const filteredInvoices = useMemo(() => {
-    const query = search
+    const query = String(search ?? "")
       .trim()
       .toLowerCase();
 
@@ -456,48 +458,111 @@ const AdminInvoicesPage = () => {
     };
   }, [invoices]);
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
+
+const handleDelete = async () => {
+  if (!deleteId) return;
+
+  try {
+    setDeleting(true);
+    setError("");
+
+    if (typeof invoiceService.deleteInvoice !== "function") {
+      throw new Error(
+        "Invoice delete API available nahi hai. invoice.service.js check karo."
+      );
+    }
+
+    await invoiceService.deleteInvoice(deleteId);
+
+    // Immediately remove it from the current UI.
+    setInvoices((previous) =>
+      previous.filter(
+        (invoice) => String(getId(invoice)) !== String(deleteId)
+      )
+    );
+
+    setDeleteId(null);
+
+    // Reload the list and update totals from the backend.
+    await loadInvoices(true);
+  } catch (err) {
+    console.error("Failed to delete invoice:", err);
+
+    setError(
+      err?.response?.data?.message ||
+        err?.message ||
+        "Invoice delete nahi ho paaya."
+    );
+  } finally {
+    setDeleting(false);
+  }
+};
+
+
+  const handleStatusChange = (invoiceId, nextStatus) => {
+    setStatusDrafts((previous) => ({
+      ...previous,
+      [invoiceId]: nextStatus,
+    }));
+  };
+
+  const handleSaveStatus = async (invoice) => {
+    const invoiceId = getId(invoice);
+    if (!invoiceId) {
+      setError("Invoice ID nahi mila.");
+      return;
+    }
+
+    const currentStatus = getStatus(invoice);
+    const nextStatus = String(
+      statusDrafts[invoiceId] || currentStatus
+    ).toUpperCase();
+
+    if (nextStatus === currentStatus) return;
 
     try {
-      setDeleting(true);
+      setStatusSavingId(invoiceId);
       setError("");
 
-      if (
-        typeof invoiceService.cancelInvoice !==
-        "function"
-      ) {
-        throw new Error(
-          "Invoice cancel service available nahi hai."
+      if (nextStatus === "CANCELLED") {
+        if (typeof invoiceService.cancelInvoice !== "function") {
+          throw new Error("Invoice cancel API available nahi hai.");
+        }
+        await invoiceService.cancelInvoice(
+          invoiceId,
+          "Cancelled by Admin"
         );
+      } else if (nextStatus === "ISSUED") {
+        if (typeof invoiceService.issueInvoice !== "function") {
+          throw new Error("Invoice issue API available nahi hai.");
+        }
+        await invoiceService.issueInvoice(invoiceId);
+      } else if (["DRAFT", "SENT", "OVERDUE"].includes(nextStatus)) {
+        if (typeof invoiceService.updateInvoice !== "function") {
+          throw new Error("Invoice update API available nahi hai.");
+        }
+        await invoiceService.updateInvoice(invoiceId, {
+          status: nextStatus,
+        });
+      } else {
+        throw new Error("Selected status supported nahi hai.");
       }
 
-      await invoiceService.cancelInvoice(
-        deleteId,
-        "Cancelled by Admin"
-      );
-
-      setInvoices((previous) =>
-        previous.filter(
-          (invoice) =>
-            getId(invoice) !==
-            deleteId
-        )
-      );
-
-      setDeleteId(null);
+      await loadInvoices(true);
+      setStatusDrafts((previous) => {
+        const updated = { ...previous };
+        delete updated[invoiceId];
+        return updated;
+      });
     } catch (err) {
-      console.error(
-        "Failed to delete invoice:",
-        err
-      );
-
+      console.error("Invoice status update failed:", err);
       setError(
-        err?.message ||
-          "Invoice delete nahi ho paaya."
+        err?.response?.data?.message ||
+          err?.message ||
+          "Invoice status update nahi ho paaya."
       );
     } finally {
-      setDeleting(false);
+      setStatusSavingId(null);
     }
   };
 
@@ -655,7 +720,13 @@ const AdminInvoicesPage = () => {
           <div className="admin-invoices-search">
             <SearchBox
               value={search}
-              onChange={setSearch}
+              onChange={(value) =>
+                setSearch(
+                  typeof value === "string"
+                    ? value
+                    : String(value?.target?.value ?? "")
+                )
+              }
               placeholder="Search invoice, customer..."
             />
           </div>
@@ -973,16 +1044,40 @@ const AdminInvoicesPage = () => {
                             </td>
 
                             <td>
-                              <Badge
-                                variant={getStatusVariant(
-                                  status
+                              <div className="admin-invoice-status-editor">
+                                <Badge
+                                  variant={getStatusVariant(status)}
+                                >
+                                  {status.replaceAll("_", " ")}
+                                </Badge>
+
+                                <select
+                                  className="admin-invoice-status-select"
+                                  aria-label={`Change status for ${getInvoiceNumber(invoice)}`}
+                                  value={statusDrafts[id] || status}
+                                  disabled={!id || statusSavingId === id}
+                                  onChange={(event) =>
+                                    handleStatusChange(id, event.target.value)
+                                  }
+                                >
+                                  <option value="DRAFT">Draft</option>
+                                  <option value="SENT">Sent</option>
+                                  <option value="ISSUED">Issued</option>
+                                  <option value="OVERDUE">Overdue</option>
+                                  <option value="CANCELLED">Cancelled</option>
+                                </select>
+
+                                {(statusDrafts[id] || status) !== status && (
+                                  <button
+                                    type="button"
+                                    className="admin-invoice-status-save"
+                                    onClick={() => handleSaveStatus(invoice)}
+                                    disabled={statusSavingId === id}
+                                  >
+                                    {statusSavingId === id ? "Saving..." : "Save"}
+                                  </button>
                                 )}
-                              >
-                                {status.replaceAll(
-                                  "_",
-                                  " "
-                                )}
-                              </Badge>
+                              </div>
                             </td>
 
                             <td>

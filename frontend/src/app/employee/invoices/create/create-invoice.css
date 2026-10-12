@@ -1,0 +1,478 @@
+.admin-create-invoice-page {
+  min-height: 100vh;
+  padding: 28px;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.admin-create-invoice-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.admin-create-invoice-header h1 {
+  margin: 8px 0 6px;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-create-invoice-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.admin-create-invoice-back {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #15803d;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-create-invoice-back:hover {
+  text-decoration: underline;
+}
+
+.admin-create-invoice-alert {
+  margin-bottom: 20px;
+  padding: 13px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.admin-create-invoice-alert.error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.admin-create-invoice-alert.success {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.admin-create-invoice-form {
+  width: 100%;
+}
+
+.admin-create-invoice-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.admin-create-invoice-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-create-invoice-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.admin-create-invoice-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-create-invoice-card-header h2 {
+  margin: 0 0 5px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-create-invoice-card-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-create-invoice-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+/* Customer information preview */
+
+.admin-create-invoice-customer-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  background: #f0fdf4;
+}
+
+.admin-create-invoice-customer-avatar {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.admin-create-invoice-customer-preview strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #14532d;
+  font-size: 15px;
+}
+
+.admin-create-invoice-customer-preview span {
+  display: block;
+  color: #166534;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/*
+ * Auto-filled customer fields.
+ * These fields are read-only and populated
+ * from the selected customer's backend data.
+ */
+
+.admin-create-invoice-customer-preview
+  + .admin-create-invoice-fields {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Invoice items */
+
+.admin-create-invoice-items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-create-invoice-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 28px;
+  gap: 12px;
+  align-items: start;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.admin-create-invoice-item-number {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-create-invoice-item-fields {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) repeat(4, minmax(90px, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+.admin-create-invoice-item-description {
+  min-width: 0;
+}
+
+.admin-create-invoice-line-total {
+  min-height: 42px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.admin-create-invoice-line-total span {
+  margin-bottom: 3px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.admin-create-invoice-line-total strong {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-create-invoice-remove-item {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #dc2626;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.admin-create-invoice-remove-item:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+/* Notes */
+
+.admin-create-invoice-notes {
+  width: 100%;
+}
+
+/* Sidebar */
+
+.admin-create-invoice-sidebar {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.admin-create-invoice-summary-card,
+.admin-create-invoice-actions-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.admin-create-invoice-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.admin-create-invoice-summary-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-create-invoice-summary-header span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-create-invoice-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.admin-create-invoice-summary-row span {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.admin-create-invoice-summary-row strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.admin-create-invoice-summary-field {
+  margin-top: 16px;
+}
+
+.admin-create-invoice-summary-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 2px solid #e2e8f0;
+}
+
+.admin-create-invoice-summary-total span {
+  color: #334155;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.admin-create-invoice-summary-total strong {
+  color: #15803d;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+/* Actions */
+
+.admin-create-invoice-actions-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-create-invoice-actions-card button {
+  width: 100%;
+}
+
+.admin-create-invoice-note {
+  padding: 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #eff6ff;
+}
+
+.admin-create-invoice-note strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #1e3a8a;
+  font-size: 13px;
+}
+
+.admin-create-invoice-note p {
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Loading */
+
+.admin-create-invoice-page
+  > .loader,
+.admin-create-invoice-page
+  > div:has(> .loader) {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tablet */
+
+@media (max-width: 1100px) {
+  .admin-create-invoice-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-create-invoice-sidebar {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .admin-create-invoice-note {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 850px) {
+  .admin-create-invoice-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-create-invoice-item {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .admin-create-invoice-item-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-create-invoice-remove-item {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+  }
+}
+
+/* Mobile */
+
+@media (max-width: 640px) {
+  .admin-create-invoice-page {
+    padding: 16px;
+  }
+
+  .admin-create-invoice-header h1 {
+    font-size: 24px;
+  }
+
+  .admin-create-invoice-card,
+  .admin-create-invoice-summary-card,
+  .admin-create-invoice-actions-card {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .admin-create-invoice-card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-create-invoice-sidebar {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .admin-create-invoice-item {
+    padding: 14px;
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .admin-create-invoice-item-fields {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .admin-create-invoice-customer-preview {
+    align-items: flex-start;
+  }
+
+  .admin-create-invoice-summary-total strong {
+    font-size: 18px;
+  }
+}

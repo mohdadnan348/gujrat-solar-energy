@@ -11,6 +11,15 @@ const { INVOICE_STATUS } = require("../config/constants");
 const round = (value) =>
   Number(Number(value || 0).toFixed(2));
 
+const normalizeInvoiceStatus = (value) => {
+  if (value === undefined || value === null) return undefined;
+
+  return Object.values(INVOICE_STATUS).find(
+    (status) =>
+      status.toLowerCase() === String(value).trim().toLowerCase()
+  );
+};
+
 const numberToWords = (amount) => {
   const number = Math.round(Number(amount) || 0);
 
@@ -395,7 +404,7 @@ const createInvoice = async (
     dueDate: data.dueDate,
 
     status:
-      data.status || INVOICE_STATUS.DRAFT,
+      normalizeInvoiceStatus(data.status) || INVOICE_STATUS.DRAFT,
 
     customerDetails:
       data.customerDetails ||
@@ -532,7 +541,7 @@ const createInvoiceFromQuotation = async (
       dueDate: data.dueDate,
 
       status:
-        data.status || INVOICE_STATUS.DRAFT,
+        normalizeInvoiceStatus(data.status) || INVOICE_STATUS.DRAFT,
 
       customerDetails:
         data.customerDetails ||
@@ -803,19 +812,25 @@ const updateInvoice = async (
   });
 
   if (data.status !== undefined) {
-    if (
-      !Object.values(
-        INVOICE_STATUS
-      ).includes(data.status)
-    ) {
-      const error = new Error(
-        "Invalid invoice status"
-      );
+    const normalizedStatus = normalizeInvoiceStatus(data.status);
+
+    if (!normalizedStatus) {
+      const error = new Error("Invalid invoice status");
       error.statusCode = 400;
       throw error;
     }
 
-    invoice.status = data.status;
+    invoice.status = normalizedStatus;
+
+    if (normalizedStatus === INVOICE_STATUS.ISSUED && !invoice.issuedAt) {
+      invoice.issuedAt = new Date();
+    }
+
+    if (normalizedStatus === INVOICE_STATUS.CANCELLED) {
+      invoice.cancelledAt = invoice.cancelledAt || new Date();
+      invoice.cancellationReason =
+        invoice.cancellationReason || "Invoice cancelled";
+    }
   }
 
   if (Array.isArray(data.items)) {
@@ -885,14 +900,10 @@ const updateInvoiceStatus = async (
   updatedBy,
   cancellationReason
 ) => {
-  if (
-    !Object.values(
-      INVOICE_STATUS
-    ).includes(status)
-  ) {
-    const error = new Error(
-      "Invalid invoice status"
-    );
+  status = normalizeInvoiceStatus(status);
+
+  if (!status) {
+    const error = new Error("Invalid invoice status");
     error.statusCode = 400;
     throw error;
   }
@@ -1034,44 +1045,29 @@ const getInvoicesByQuotation =
       })
       .lean();
 
-const deleteInvoice = async (
-  invoiceId,
-  updatedBy
-) => {
-  const invoice =
-    await Invoice.findById(
-      invoiceId
-    );
+
+
+
+const deleteInvoice = async (invoiceId, deletedBy) => {
+  const invoice = await Invoice.findById(invoiceId);
 
   if (!invoice) {
-    const error = new Error(
-      "Invoice not found"
-    );
+    const error = new Error("Invoice not found");
     error.statusCode = 404;
     throw error;
   }
 
-  if (
-    invoice.status !==
-    INVOICE_STATUS.CANCELLED
-  ) {
-    invoice.status =
-      INVOICE_STATUS.CANCELLED;
+  await InvoiceItem.deleteMany({ invoice: invoice._id });
+  await Invoice.deleteOne({ _id: invoice._id });
 
-    invoice.cancelledAt =
-      new Date();
-
-    invoice.cancellationReason =
-      "Invoice cancelled";
-
-    invoice.updatedBy =
-      updatedBy;
-
-    await invoice.save();
-  }
-
-  return invoice;
+  return {
+    _id: String(invoice._id),
+    invoiceNumber: invoice.invoiceNumber,
+    deleted: true,
+    deletedBy: deletedBy || undefined,
+  };
 };
+
 
 const markInvoicesOverdue = async () => {
   const today = new Date();
@@ -1090,6 +1086,7 @@ const markInvoicesOverdue = async () => {
     }
   );
 };
+
 
 module.exports = {
   createInvoice,

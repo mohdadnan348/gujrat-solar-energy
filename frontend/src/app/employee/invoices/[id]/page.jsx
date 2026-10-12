@@ -3,16 +3,18 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
+
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import Loader from "@/components/common/Loader";
+import Modal from "@/components/common/Modal";
 
 import invoiceService from "@/services/invoice.service";
-import pdfService from "@/services/pdf.service";
+import  pdfService from "@/services/pdf.service";
 
 import "./invoice-details.css";
 
-const EmployeeInvoiceDetailsPage = () => {
+const InvoiceDetailsPage = () => {
   const params = useParams();
   const router = useRouter();
 
@@ -22,7 +24,11 @@ const EmployeeInvoiceDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const [error, setError] = useState("");
+  const [showDeleteModal, setShowDeleteModal] =
+    useState(false);
 
   const getValue = (
     object,
@@ -53,34 +59,32 @@ const EmployeeInvoiceDetailsPage = () => {
       return object;
     }
 
-    return object?._id || object?.id || "";
+    return (
+      object?._id ||
+      object?.id ||
+      ""
+    );
   };
 
-  /*
-   * IMPORTANT:
-   * Backend response is:
-   *
-   * {
-   *   invoice: {...},
-   *   items: [...]
-   * }
-   *
-   * Axios may wrap it:
-   *
-   * {
-   *   data: {
-   *     invoice: {...},
-   *     items: [...]
-   *   }
-   * }
-   *
-   * So items are explicitly merged into invoice.
-   */
   const normalizeInvoice = (response) => {
     if (!response) return null;
 
-    // Axios response:
-    // response.data.invoice + response.data.items
+    // Backend returns:
+    // {
+    //   invoice: {...},
+    //   items: [...]
+    // }
+    // Axios may wrap it as:
+    // {
+    //   data: {
+    //     invoice: {...},
+    //     items: [...]
+    //   }
+    // }
+    //
+    // Keep the invoice and items together so the UI can render
+    // the items table correctly.
+
     if (response?.data?.invoice) {
       const invoiceData = response.data.invoice;
 
@@ -88,16 +92,14 @@ const EmployeeInvoiceDetailsPage = () => {
         ...invoiceData,
         items: Array.isArray(response.data.items)
           ? response.data.items
-          : Array.isArray(invoiceData.items)
-            ? invoiceData.items
-            : Array.isArray(invoiceData.invoiceItems)
-              ? invoiceData.invoiceItems
-              : [],
+          : Array.isArray(response.data.invoiceItems)
+          ? response.data.invoiceItems
+          : Array.isArray(invoiceData?.items)
+          ? invoiceData.items
+          : [],
       };
     }
 
-    // Direct:
-    // response.invoice + response.items
     if (response?.invoice) {
       const invoiceData = response.invoice;
 
@@ -105,26 +107,47 @@ const EmployeeInvoiceDetailsPage = () => {
         ...invoiceData,
         items: Array.isArray(response.items)
           ? response.items
-          : Array.isArray(invoiceData.items)
-            ? invoiceData.items
-            : Array.isArray(invoiceData.invoiceItems)
-              ? invoiceData.invoiceItems
-              : [],
+          : Array.isArray(response.invoiceItems)
+          ? response.invoiceItems
+          : Array.isArray(invoiceData?.items)
+          ? invoiceData.items
+          : [],
       };
     }
 
-    // Direct invoice object
     if (
       response?.data &&
       !Array.isArray(response.data)
     ) {
-      return response.data;
+      const invoiceData = response.data;
+
+      return {
+        ...invoiceData,
+        items: Array.isArray(invoiceData?.items)
+          ? invoiceData.items
+          : Array.isArray(invoiceData?.invoiceItems)
+          ? invoiceData.invoiceItems
+          : [],
+      };
+    }
+
+    if (response && typeof response === "object") {
+      return {
+        ...response,
+        items: Array.isArray(response?.items)
+          ? response.items
+          : Array.isArray(response?.invoiceItems)
+          ? response.invoiceItems
+          : [],
+      };
     }
 
     return response;
   };
 
-  const loadInvoice = async (showRefresh = false) => {
+  const loadInvoice = async (
+    showRefresh = false
+  ) => {
     if (!invoiceId) return;
 
     try {
@@ -137,21 +160,21 @@ const EmployeeInvoiceDetailsPage = () => {
       setError("");
 
       const response =
-        await invoiceService.getInvoiceById(invoiceId);
+        await invoiceService.getInvoiceById(
+          invoiceId
+        );
 
-      const normalized =
-        normalizeInvoice(response);
-
-      setInvoice(normalized);
+      setInvoice(
+        normalizeInvoice(response)
+      );
     } catch (err) {
       console.error(
-        "Failed to load employee invoice:",
+        "Failed to load invoice:",
         err
       );
 
       setError(
-        err?.response?.data?.message ||
-          err?.message ||
+        err?.message ||
           "Failed to load invoice details."
       );
     } finally {
@@ -236,10 +259,7 @@ const EmployeeInvoiceDetailsPage = () => {
 
   const customerEmail = getValue(
     customer,
-    [
-      "email",
-      "emailAddress",
-    ],
+    ["email", "emailAddress"],
     getValue(
       invoice,
       ["customerEmail", "email"],
@@ -249,36 +269,12 @@ const EmployeeInvoiceDetailsPage = () => {
 
   const customerAddress = getValue(
     customer,
-    [
-      "address",
-      "fullAddress",
-    ],
+    ["address", "fullAddress"],
     getValue(
       invoice,
       ["customerAddress"],
       ""
     )
-  );
-
-  const customerCity = getValue(
-    customer,
-    ["city"],
-    ""
-  );
-
-  const customerState = getValue(
-    customer,
-    ["state"],
-    ""
-  );
-
-  const customerPincode = getValue(
-    customer,
-    [
-      "pincode",
-      "pinCode",
-    ],
-    ""
   );
 
   const invoiceDate = getValue(
@@ -317,96 +313,35 @@ const EmployeeInvoiceDetailsPage = () => {
     ""
   );
 
-  /*
-   * Backend should be the source of truth.
-   * If a backend total is unavailable, calculate from items.
-   */
-
-  const calculatedSubtotal = useMemo(() => {
-    return items.reduce(
-      (sum, item) => {
-        const quantity =
-          Number(
-            getValue(
-              item,
-              ["quantity"],
-              0
-            )
-          ) || 0;
-
-        const rate =
-          Number(
-            getValue(
-              item,
-              [
-                "rate",
-                "unitPrice",
-                "price",
-              ],
-              0
-            )
-          ) || 0;
-
-        return sum + quantity * rate;
-      },
-      0
-    );
-  }, [items]);
-
-  const calculatedTax = useMemo(() => {
-    return items.reduce(
-      (sum, item) => {
-        const quantity =
-          Number(
-            getValue(
-              item,
-              ["quantity"],
-              0
-            )
-          ) || 0;
-
-        const rate =
-          Number(
-            getValue(
-              item,
-              [
-                "rate",
-                "unitPrice",
-                "price",
-              ],
-              0
-            )
-          ) || 0;
-
-        const taxRate =
-          Number(
-            getValue(
-              item,
-              [
-                "taxRate",
-                "tax",
-              ],
-              0
-            )
-          ) || 0;
-
-        return (
-          sum +
-          (quantity * rate * taxRate) /
-            100
-        );
-      },
-      0
-    );
-  }, [items]);
-
   const subtotal = Number(
     getValue(
       invoice,
       ["subtotal"],
-      calculatedSubtotal
+      items.reduce(
+        (sum, item) =>
+          sum +
+          (Number(
+            getValue(
+              item,
+              ["quantity"],
+              0
+            )
+          ) || 0) *
+            (Number(
+              getValue(
+                item,
+                [
+                  "rate",
+                  "unitPrice",
+                  "price",
+                ],
+                0
+              )
+            ) || 0),
+        0
+      )
     )
-  ) || 0;
+  );
 
   const taxTotal = Number(
     getValue(
@@ -416,20 +351,62 @@ const EmployeeInvoiceDetailsPage = () => {
         "totalTax",
         "taxAmount",
       ],
-      calculatedTax
+      items.reduce(
+        (sum, item) => {
+          const quantity =
+            Number(
+              getValue(
+                item,
+                ["quantity"],
+                0
+              )
+            ) || 0;
+
+          const rate =
+            Number(
+              getValue(
+                item,
+                [
+                  "rate",
+                  "unitPrice",
+                  "price",
+                ],
+                0
+              )
+            ) || 0;
+
+          const taxRate =
+            Number(
+              getValue(
+                item,
+                [
+                  "taxRate",
+                  "tax",
+                ],
+                0
+              )
+            ) || 0;
+
+          return (
+            sum +
+            (quantity *
+              rate *
+              taxRate) /
+              100
+          );
+        },
+        0
+      )
     )
-  ) || 0;
+  );
 
   const discount = Number(
     getValue(
       invoice,
-      [
-        "discount",
-        "totalDiscount",
-      ],
+      ["discount"],
       0
     )
-  ) || 0;
+  );
 
   const additionalCharges =
     Number(
@@ -441,7 +418,7 @@ const EmployeeInvoiceDetailsPage = () => {
         ],
         0
       )
-    ) || 0;
+    );
 
   const grandTotal = Number(
     getValue(
@@ -457,7 +434,7 @@ const EmployeeInvoiceDetailsPage = () => {
         discount +
         additionalCharges
     )
-  ) || 0;
+  );
 
   const formatDate = (value) => {
     if (!value) return "—";
@@ -502,22 +479,15 @@ const EmployeeInvoiceDetailsPage = () => {
       case "ISSUED":
       case "SENT":
       case "ACTIVE":
-      case "APPROVED":
-      case "PAID":
-      case "COMPLETED":
         return "success";
 
       case "DRAFT":
-      case "PENDING":
-      case "PROCESSING":
         return "default";
 
       case "OVERDUE":
         return "warning";
 
       case "CANCELLED":
-      case "REJECTED":
-      case "VOID":
         return "danger";
 
       default:
@@ -527,41 +497,30 @@ const EmployeeInvoiceDetailsPage = () => {
 
   const getItemDescription = (
     item
-  ) => {
-    return getValue(
+  ) =>
+    getValue(
       item,
       [
         "description",
-        "itemName",
         "name",
         "productName",
       ],
       "Invoice Item"
     );
-  };
 
   const getItemQuantity = (
     item
-  ) => {
-    return Number(
+  ) =>
+    Number(
       getValue(
         item,
         ["quantity"],
         0
       )
-    ) || 0;
-  };
-
-  const getItemUnit = (item) => {
-    return getValue(
-      item,
-      ["unit"],
-      "Unit"
     );
-  };
 
-  const getItemRate = (item) => {
-    return Number(
+  const getItemRate = (item) =>
+    Number(
       getValue(
         item,
         [
@@ -571,13 +530,12 @@ const EmployeeInvoiceDetailsPage = () => {
         ],
         0
       )
-    ) || 0;
-  };
+    );
 
   const getItemTaxRate = (
     item
-  ) => {
-    return Number(
+  ) =>
+    Number(
       getValue(
         item,
         [
@@ -586,8 +544,7 @@ const EmployeeInvoiceDetailsPage = () => {
         ],
         0
       )
-    ) || 0;
-  };
+    );
 
   const getItemTotal = (item) => {
     const quantity =
@@ -600,60 +557,84 @@ const EmployeeInvoiceDetailsPage = () => {
   };
 
   const handleDownloadPDF = async () => {
+  try {
+    setDownloading(true);
+    setError("");
+
+    if (
+      typeof pdfService.downloadInvoicePdf !== "function"
+    ) {
+      throw new Error(
+        "Invoice PDF service is not available."
+      );
+    }
+
+    await pdfService.downloadInvoicePdf(invoiceId);
+  } catch (err) {
+    console.error(
+      "Error downloading invoice PDF:",
+      err
+    );
+
+    setError(
+      err?.response?.data?.message ||
+        err?.message ||
+        "Failed to download invoice PDF."
+    );
+  } finally {
+    setDownloading(false);
+  }
+};
+  const handleDelete = async () => {
     try {
-      setDownloading(true);
+      setDeleting(true);
       setError("");
 
       if (
-        typeof pdfService.downloadInvoicePdf !==
+        typeof invoiceService.deleteInvoice !==
         "function"
       ) {
         throw new Error(
-          "Invoice PDF service is not available."
+          "Invoice delete service is not available."
         );
       }
 
-      await pdfService.downloadInvoicePdf(
+      await invoiceService.deleteInvoice(
         invoiceId
+      );
+
+      router.push(
+        "/admin/invoices"
       );
     } catch (err) {
       console.error(
-        "Error downloading employee invoice PDF:",
+        "Failed to delete invoice:",
         err
       );
 
       setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Failed to download invoice PDF."
+        err?.message ||
+          "Failed to delete invoice."
       );
     } finally {
-      setDownloading(false);
+      setDeleting(false);
+      setShowDeleteModal(false);
     }
   };
 
   const handleEdit = () => {
     router.push(
-      `/employee/invoices/create?edit=${invoiceId}`
+      `/admin/invoices/create?edit=${invoiceId}`
     );
   };
 
-  if (loading) {
-    return (
-      <div className="employee-invoice-details-loading">
-        <Loader />
-        <p>
-          Loading invoice details...
-        </p>
-      </div>
-    );
-  }
+
 
   if (error && !invoice) {
     return (
-      <div className="employee-invoice-details-page">
-        <div className="employee-invoice-details-error-state">
-          <div className="employee-invoice-error-icon">
+      
+        <div className="admin-invoice-details-error-state">
+          <div className="admin-invoice-error-icon">
             !
           </div>
 
@@ -663,13 +644,13 @@ const EmployeeInvoiceDetailsPage = () => {
 
           <p>{error}</p>
 
-          <div className="employee-invoice-error-actions">
+          <div className="admin-invoice-error-actions">
             <Button
               type="button"
               variant="secondary"
               onClick={() =>
                 router.push(
-                  "/employee/invoices"
+                  "/admin/invoices"
                 )
               }
             >
@@ -687,14 +668,14 @@ const EmployeeInvoiceDetailsPage = () => {
             </Button>
           </div>
         </div>
-      </div>
+     
     );
   }
 
   if (!invoice) {
     return (
-      <div className="employee-invoice-details-page">
-        <div className="employee-invoice-details-error-state">
+     
+        <div className="admin-invoice-details-error-state">
           <h2>
             Invoice not found
           </h2>
@@ -704,51 +685,439 @@ const EmployeeInvoiceDetailsPage = () => {
             variant="primary"
             onClick={() =>
               router.push(
-                "/employee/invoices"
+                "/admin/invoices"
               )
             }
           >
             Back to Invoices
           </Button>
         </div>
-      </div>
+      
     );
   }
 
   return (
-    <div className="employee-invoice-details-page">
+   
+      <div className="admin-invoice-details-page">
+        {/* Header */}
+        <div className="admin-invoice-details-header">
+          <div>
+            <button
+              type="button"
+              className="admin-invoice-back-button"
+              onClick={() =>
+                router.push(
+                  "/admin/invoices"
+                )
+              }
+            >
+              ← Back to Invoices
+            </button>
 
-      {/* =========================
-          HEADER
-      ========================== */}
+            <div className="admin-invoice-title-row">
+              <div className="admin-invoice-title-icon">
+                IN
+              </div>
 
-      <div className="employee-invoice-details-header">
+              <div>
+                <div className="admin-invoice-title-top">
+                  <h1>
+                    {invoiceNumber}
+                  </h1>
 
-        <div>
-          <button
-            type="button"
-            className="employee-invoice-back-button"
-            onClick={() =>
-              router.push(
-                "/employee/invoices"
-              )
-            }
-          >
-            ← Back to Invoices
-          </button>
+                  <Badge
+                    variant={getStatusVariant(
+                      status
+                    )}
+                  >
+                    {status.replaceAll(
+                      "_",
+                      " "
+                    )}
+                  </Badge>
+                </div>
 
-          <div className="employee-invoice-title-row">
-
-            <div className="employee-invoice-title-icon">
-              IN
+                <p>
+                  {title}
+                </p>
+              </div>
             </div>
+          </div>
 
-            <div>
-              <div className="employee-invoice-title-top">
+          <div className="admin-invoice-header-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                loadInvoice(true)
+              }
+              disabled={
+                refreshing
+              }
+            >
+              {refreshing
+                ? "Refreshing..."
+                : "↻ Refresh"}
+            </Button>
 
-                <h1>
-                  {invoiceNumber}
-                </h1>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={
+                handleDownloadPDF
+              }
+              disabled={
+                downloading
+              }
+            >
+              {downloading
+                ? "Preparing PDF..."
+                : "Download PDF"}
+            </Button>
+
+            <Button
+              type="button"
+              variant="primary"
+              onClick={
+                handleEdit
+              }
+            >
+              Edit Invoice
+            </Button>
+          </div>
+        </div>
+
+        {error && (
+          <div className="admin-invoice-inline-error">
+            {error}
+          </div>
+        )}
+
+        {/* Invoice Meta */}
+        <div className="admin-invoice-meta-grid">
+          <div>
+            <span>
+              Invoice Date
+            </span>
+
+            <strong>
+              {formatDate(
+                invoiceDate
+              )}
+            </strong>
+          </div>
+
+          <div>
+            <span>
+              Due Date
+            </span>
+
+            <strong>
+              {formatDate(
+                dueDate
+              )}
+            </strong>
+          </div>
+
+          <div>
+            <span>
+              Items
+            </span>
+
+            <strong>
+              {items.length}
+            </strong>
+          </div>
+
+          <div>
+            <span>
+              Grand Total
+            </span>
+
+            <strong className="admin-invoice-meta-total">
+              {formatCurrency(
+                grandTotal
+              )}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-invoice-details-layout">
+          <main className="admin-invoice-details-main">
+            {/* Customer */}
+            <section className="admin-invoice-detail-card">
+              <div className="admin-invoice-card-header">
+                <div>
+                  <h2>
+                    Bill To
+                  </h2>
+
+                  <p>
+                    Customer information for this
+                    invoice.
+                  </p>
+                </div>
+              </div>
+
+              <div className="admin-invoice-customer-section">
+                <div className="admin-invoice-customer-avatar">
+                  {String(
+                    customerName
+                  )
+                    .charAt(0)
+                    .toUpperCase()}
+                </div>
+
+                <div className="admin-invoice-customer-info">
+                  <h3>
+                    {customerName}
+                  </h3>
+
+                  {customerCompany && (
+                    <p>
+                      {customerCompany}
+                    </p>
+                  )}
+
+                  <div className="admin-invoice-customer-contact">
+                    {customerPhone && (
+                      <span>
+                        ☎{" "}
+                        {customerPhone}
+                      </span>
+                    )}
+
+                    {customerEmail && (
+                      <span>
+                        ✉{" "}
+                        {customerEmail}
+                      </span>
+                    )}
+                  </div>
+
+                  {customerAddress && (
+                    <div className="admin-invoice-customer-address">
+                      {customerAddress}
+
+                      {[
+                        getValue(
+                          customer,
+                          ["city"],
+                          ""
+                        ),
+                        getValue(
+                          customer,
+                          ["state"],
+                          ""
+                        ),
+                        getValue(
+                          customer,
+                          [
+                            "pincode",
+                            "pinCode",
+                          ],
+                          ""
+                        ),
+                      ]
+                        .filter(
+                          Boolean
+                        )
+                        .length >
+                        0 && (
+                        <span>
+                          {[
+                            getValue(
+                              customer,
+                              ["city"],
+                              ""
+                            ),
+                            getValue(
+                              customer,
+                              ["state"],
+                              ""
+                            ),
+                            getValue(
+                              customer,
+                              [
+                                "pincode",
+                                "pinCode",
+                              ],
+                              ""
+                            ),
+                          ]
+                            .filter(
+                              Boolean
+                            )
+                            .join(
+                              ", "
+                            )}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* Items */}
+            <section className="admin-invoice-detail-card">
+              <div className="admin-invoice-card-header">
+                <div>
+                  <h2>
+                    Invoice Items
+                  </h2>
+
+                  <p>
+                    Products and services included in
+                    this invoice.
+                  </p>
+                </div>
+              </div>
+
+              {items.length ===
+              0 ? (
+                <div className="admin-invoice-empty-items">
+                  No invoice items available.
+                </div>
+              ) : (
+                <div className="admin-invoice-items-wrapper">
+                  <table className="admin-invoice-items-table">
+                    <thead>
+                      <tr>
+                        <th>
+                          #
+                        </th>
+
+                        <th>
+                          Description
+                        </th>
+
+                        <th>
+                          Quantity
+                        </th>
+
+                        <th>
+                          Unit
+                        </th>
+
+                        <th>
+                          Rate
+                        </th>
+
+                        <th>
+                          Tax
+                        </th>
+
+                        <th>
+                          Total
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {items.map(
+                        (
+                          item,
+                          index
+                        ) => (
+                          <tr
+                            key={
+                              getId(
+                                item
+                              ) ||
+                              index
+                            }
+                          >
+                            <td>
+                              {index +
+                                1}
+                            </td>
+
+                            <td>
+                              <strong>
+                                {getItemDescription(
+                                  item
+                                )}
+                              </strong>
+                            </td>
+
+                            <td>
+                              {getItemQuantity(
+                                item
+                              )}
+                            </td>
+
+                            <td>
+                              {getValue(
+                                item,
+                                ["unit"],
+                                "Unit"
+                              )}
+                            </td>
+
+                            <td>
+                              {formatCurrency(
+                                getItemRate(
+                                  item
+                                )
+                              )}
+                            </td>
+
+                            <td>
+                              {getItemTaxRate(
+                                item
+                              )}
+                              %
+                            </td>
+
+                            <td>
+                              <strong>
+                                {formatCurrency(
+                                  getItemTotal(
+                                    item
+                                  )
+                                )}
+                              </strong>
+                            </td>
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+
+            {/* Notes */}
+            {notes && (
+              <section className="admin-invoice-detail-card">
+                <div className="admin-invoice-card-header">
+                  <div>
+                    <h2>
+                      Notes
+                    </h2>
+
+                    <p>
+                      Additional information for this
+                      invoice.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="admin-invoice-notes">
+                  {notes}
+                </div>
+              </section>
+            )}
+          </main>
+
+          {/* Summary Sidebar */}
+          <aside className="admin-invoice-details-sidebar">
+            <section className="admin-invoice-summary-card">
+              <div className="admin-invoice-summary-header">
+                <h2>
+                  Invoice Summary
+                </h2>
 
                 <Badge
                   variant={getStatusVariant(
@@ -760,568 +1129,256 @@ const EmployeeInvoiceDetailsPage = () => {
                     " "
                   )}
                 </Badge>
-
               </div>
 
-              <p>
-                {title}
-              </p>
-            </div>
+              <div className="admin-invoice-summary-body">
+                <div className="admin-invoice-summary-row">
+                  <span>
+                    Subtotal
+                  </span>
 
-          </div>
-        </div>
-
-        <div className="employee-invoice-header-actions">
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() =>
-              loadInvoice(true)
-            }
-            disabled={refreshing}
-          >
-            {refreshing
-              ? "Refreshing..."
-              : "↻ Refresh"}
-          </Button>
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={
-              handleDownloadPDF
-            }
-            disabled={downloading}
-          >
-            {downloading
-              ? "Preparing PDF..."
-              : "Download PDF"}
-          </Button>
-
-          <Button
-            type="button"
-            variant="primary"
-            onClick={handleEdit}
-          >
-            Edit Invoice
-          </Button>
-
-        </div>
-      </div>
-
-      {error && (
-        <div className="employee-invoice-inline-error">
-          {error}
-        </div>
-      )}
-
-      {/* =========================
-          META
-      ========================== */}
-
-      <div className="employee-invoice-meta-grid">
-
-        <div>
-          <span>
-            Invoice Date
-          </span>
-
-          <strong>
-            {formatDate(
-              invoiceDate
-            )}
-          </strong>
-        </div>
-
-        <div>
-          <span>
-            Due Date
-          </span>
-
-          <strong>
-            {formatDate(
-              dueDate
-            )}
-          </strong>
-        </div>
-
-        <div>
-          <span>
-            Items
-          </span>
-
-          <strong>
-            {items.length}
-          </strong>
-        </div>
-
-        <div>
-          <span>
-            Grand Total
-          </span>
-
-          <strong className="employee-invoice-meta-total">
-            {formatCurrency(
-              grandTotal
-            )}
-          </strong>
-        </div>
-
-      </div>
-
-      {/* =========================
-          MAIN LAYOUT
-      ========================== */}
-
-      <div className="employee-invoice-details-layout">
-
-        <main className="employee-invoice-details-main">
-
-          {/* =========================
-              CUSTOMER
-          ========================== */}
-
-          <section className="employee-invoice-detail-card">
-
-            <div className="employee-invoice-card-header">
-              <div>
-                <h2>
-                  Bill To
-                </h2>
-
-                <p>
-                  Customer information for this
-                  invoice.
-                </p>
-              </div>
-            </div>
-
-            <div className="employee-invoice-customer-section">
-
-              <div className="employee-invoice-customer-avatar">
-                {String(
-                  customerName
-                )
-                  .charAt(0)
-                  .toUpperCase()}
-              </div>
-
-              <div className="employee-invoice-customer-info">
-
-                <h3>
-                  {customerName}
-                </h3>
-
-                {customerCompany && (
-                  <p>
-                    {customerCompany}
-                  </p>
-                )}
-
-                <div className="employee-invoice-customer-contact">
-
-                  {customerPhone && (
-                    <span>
-                      ☎ {customerPhone}
-                    </span>
-                  )}
-
-                  {customerEmail && (
-                    <span>
-                      ✉ {customerEmail}
-                    </span>
-                  )}
-
+                  <strong>
+                    {formatCurrency(
+                      subtotal
+                    )}
+                  </strong>
                 </div>
 
-                {customerAddress && (
-                  <div className="employee-invoice-customer-address">
+                <div className="admin-invoice-summary-row">
+                  <span>
+                    Tax
+                  </span>
 
-                    <span>
-                      {customerAddress}
-                    </span>
-
-                    {[
-                      customerCity,
-                      customerState,
-                      customerPincode,
-                    ].filter(Boolean)
-                      .length > 0 && (
-                      <span>
-                        {[
-                          customerCity,
-                          customerState,
-                          customerPincode,
-                        ]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </span>
+                  <strong>
+                    {formatCurrency(
+                      taxTotal
                     )}
+                  </strong>
+                </div>
 
-                  </div>
-                )}
+                <div className="admin-invoice-summary-row">
+                  <span>
+                    Discount
+                  </span>
 
-              </div>
-
-            </div>
-          </section>
-
-          {/* =========================
-              INVOICE ITEMS
-          ========================== */}
-
-          <section className="employee-invoice-detail-card">
-
-            <div className="employee-invoice-card-header">
-              <div>
-                <h2>
-                  Invoice Items
-                </h2>
-
-                <p>
-                  Products and services included
-                  in this invoice.
-                </p>
-              </div>
-            </div>
-
-            {items.length === 0 ? (
-              <div className="employee-invoice-empty-items">
-                No invoice items available.
-              </div>
-            ) : (
-              <div className="employee-invoice-items-wrapper">
-
-                <table className="employee-invoice-items-table">
-
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Description</th>
-                      <th>Quantity</th>
-                      <th>Unit</th>
-                      <th>Rate</th>
-                      <th>Tax</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {items.map(
-                      (
-                        item,
-                        index
-                      ) => (
-                        <tr
-                          key={
-                            getId(
-                              item
-                            ) ||
-                            index
-                          }
-                        >
-                          <td>
-                            {index + 1}
-                          </td>
-
-                          <td>
-                            <strong>
-                              {getItemDescription(
-                                item
-                              )}
-                            </strong>
-                          </td>
-
-                          <td>
-                            {getItemQuantity(
-                              item
-                            )}
-                          </td>
-
-                          <td>
-                            {getItemUnit(
-                              item
-                            )}
-                          </td>
-
-                          <td>
-                            {formatCurrency(
-                              getItemRate(
-                                item
-                              )
-                            )}
-                          </td>
-
-                          <td>
-                            {getItemTaxRate(
-                              item
-                            )}
-                            %
-                          </td>
-
-                          <td>
-                            <strong>
-                              {formatCurrency(
-                                getItemTotal(
-                                  item
-                                )
-                              )}
-                            </strong>
-                          </td>
-                        </tr>
-                      )
+                  <strong>
+                    -{" "}
+                    {formatCurrency(
+                      discount
                     )}
-                  </tbody>
+                  </strong>
+                </div>
 
-                </table>
-              </div>
-            )}
-          </section>
+                <div className="admin-invoice-summary-row">
+                  <span>
+                    Additional Charges
+                  </span>
 
-          {/* =========================
-              NOTES
-          ========================== */}
+                  <strong>
+                    {formatCurrency(
+                      additionalCharges
+                    )}
+                  </strong>
+                </div>
 
-          {notes && (
-            <section className="employee-invoice-detail-card">
+                <div className="admin-invoice-summary-total">
+                  <span>
+                    Grand Total
+                  </span>
 
-              <div className="employee-invoice-card-header">
-                <div>
-                  <h2>
-                    Notes
-                  </h2>
-
-                  <p>
-                    Additional information for
-                    this invoice.
-                  </p>
+                  <strong>
+                    {formatCurrency(
+                      grandTotal
+                    )}
+                  </strong>
                 </div>
               </div>
-
-              <div className="employee-invoice-notes">
-                {notes}
-              </div>
-
             </section>
-          )}
 
-        </main>
+            <section className="admin-invoice-sidebar-card">
+              <div className="admin-invoice-sidebar-heading">
+                <h2>
+                  Invoice Information
+                </h2>
+              </div>
 
-        {/* =========================
-            SIDEBAR
-        ========================== */}
+              <div className="admin-invoice-record-list">
+                <div>
+                  <span>
+                    Invoice Number
+                  </span>
 
-        <aside className="employee-invoice-details-sidebar">
+                  <strong>
+                    {invoiceNumber}
+                  </strong>
+                </div>
 
-          {/* Summary */}
+                <div>
+                  <span>
+                    Invoice Date
+                  </span>
 
-          <section className="employee-invoice-summary-card">
+                  <strong>
+                    {formatDate(
+                      invoiceDate
+                    )}
+                  </strong>
+                </div>
 
-            <div className="employee-invoice-summary-header">
+                <div>
+                  <span>
+                    Due Date
+                  </span>
 
-              <h2>
-                Invoice Summary
-              </h2>
+                  <strong>
+                    {formatDate(
+                      dueDate
+                    )}
+                  </strong>
+                </div>
 
-              <Badge
-                variant={getStatusVariant(
-                  status
-                )}
+                <div>
+                  <span>
+                    Created On
+                  </span>
+
+                  <strong>
+                    {formatDate(
+                      invoice?.createdAt
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Last Updated
+                  </span>
+
+                  <strong>
+                    {formatDate(
+                      invoice?.updatedAt
+                    )}
+                  </strong>
+                </div>
+              </div>
+            </section>
+
+            <section className="admin-invoice-sidebar-actions">
+              <Button
+                type="button"
+                variant="primary"
+                onClick={
+                  handleDownloadPDF
+                }
+                disabled={
+                  downloading
+                }
               >
-                {status.replaceAll(
-                  "_",
-                  " "
-                )}
-              </Badge>
+                {downloading
+                  ? "Preparing PDF..."
+                  : "Download Invoice PDF"}
+              </Button>
 
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={
+                  handleEdit
+                }
+              >
+                Edit Invoice
+              </Button>
+
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  router.push(
+                    "/admin/invoices"
+                  )
+                }
+              >
+                Back to Invoices
+              </Button>
+
+              <button
+                type="button"
+                className="admin-invoice-delete-button"
+                onClick={() =>
+                  setShowDeleteModal(
+                    true
+                  )
+                }
+              >
+                Delete Invoice
+              </button>
+            </section>
+          </aside>
+        </div>
+
+        {/* Delete Modal */}
+        <Modal
+          isOpen={
+            showDeleteModal
+          }
+          onClose={() =>
+            !deleting &&
+            setShowDeleteModal(
+              false
+            )
+          }
+          title="Delete Invoice"
+        >
+          <div className="admin-invoice-delete-modal">
+            <div className="admin-invoice-delete-icon">
+              !
             </div>
 
-            <div className="employee-invoice-summary-body">
+            <h3>
+              Delete this invoice?
+            </h3>
 
-              <div className="employee-invoice-summary-row">
-                <span>
-                  Subtotal
-                </span>
+            <p>
+              Are you sure you want to delete this
+              invoice? This action cannot be undone.
+            </p>
 
-                <strong>
-                  {formatCurrency(
-                    subtotal
-                  )}
-                </strong>
-              </div>
+            <div className="admin-invoice-delete-actions">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={
+                  deleting
+                }
+                onClick={() =>
+                  setShowDeleteModal(
+                    false
+                  )
+                }
+              >
+                Cancel
+              </Button>
 
-              <div className="employee-invoice-summary-row">
-                <span>
-                  Tax
-                </span>
-
-                <strong>
-                  {formatCurrency(
-                    taxTotal
-                  )}
-                </strong>
-              </div>
-
-              <div className="employee-invoice-summary-row">
-                <span>
-                  Discount
-                </span>
-
-                <strong>
-                  -{" "}
-                  {formatCurrency(
-                    discount
-                  )}
-                </strong>
-              </div>
-
-              <div className="employee-invoice-summary-row">
-                <span>
-                  Additional Charges
-                </span>
-
-                <strong>
-                  {formatCurrency(
-                    additionalCharges
-                  )}
-                </strong>
-              </div>
-
-              <div className="employee-invoice-summary-total">
-
-                <span>
-                  Grand Total
-                </span>
-
-                <strong>
-                  {formatCurrency(
-                    grandTotal
-                  )}
-                </strong>
-
-              </div>
-
+              <Button
+                type="button"
+                variant="danger"
+                disabled={
+                  deleting
+                }
+                onClick={
+                  handleDelete
+                }
+              >
+                {deleting
+                  ? "Deleting..."
+                  : "Delete Invoice"}
+              </Button>
             </div>
-          </section>
-
-          {/* Invoice Information */}
-
-          <section className="employee-invoice-sidebar-card">
-
-            <div className="employee-invoice-sidebar-heading">
-              <h2>
-                Invoice Information
-              </h2>
-            </div>
-
-            <div className="employee-invoice-record-list">
-
-              <div>
-                <span>
-                  Invoice Number
-                </span>
-
-                <strong>
-                  {invoiceNumber}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Invoice Date
-                </span>
-
-                <strong>
-                  {formatDate(
-                    invoiceDate
-                  )}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Due Date
-                </span>
-
-                <strong>
-                  {formatDate(
-                    dueDate
-                  )}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Created On
-                </span>
-
-                <strong>
-                  {formatDate(
-                    invoice?.createdAt
-                  )}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Last Updated
-                </span>
-
-                <strong>
-                  {formatDate(
-                    invoice?.updatedAt
-                  )}
-                </strong>
-              </div>
-
-            </div>
-          </section>
-
-          {/* Actions */}
-
-          <section className="employee-invoice-sidebar-actions">
-
-            <Button
-              type="button"
-              variant="primary"
-              onClick={
-                handleDownloadPDF
-              }
-              disabled={downloading}
-            >
-              {downloading
-                ? "Preparing PDF..."
-                : "Download Invoice PDF"}
-            </Button>
-
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleEdit}
-            >
-              Edit Invoice
-            </Button>
-
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() =>
-                router.push(
-                  "/employee/invoices"
-                )
-              }
-            >
-              Back to Invoices
-            </Button>
-
-          </section>
-
-        </aside>
-
+          </div>
+        </Modal>
       </div>
-    </div>
+   
   );
 };
 
-export default EmployeeInvoiceDetailsPage;
+export default InvoiceDetailsPage;

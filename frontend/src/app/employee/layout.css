@@ -1,24 +1,22 @@
-.employee-layout {
+/* frontend/src/app/admin/layout.css */
+
+.admin-layout {
+  width: 100%;
   min-height: 100vh;
-  background: #f8fafc;
 }
 
-.employee-layout-loading {
-  min-height: 100vh;
+.admin-layout-content {
+  width: 100%;
+  min-height: 100%;
+}
+
+.admin-layout-loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
-  color: #475569;
-  font-size: 15px;
-}
-
-.employee-layout-content {
   min-height: 100vh;
-}
-
-@media (max-width: 768px) {
-  .employee-layout {
-    overflow-x: hidden;
-  }
+  background: #f7f9fc;
+  color: #4b5565;
+  font-size: 14px;
+  font-weight: 600;
 }

@@ -94,67 +94,64 @@ const AdminDashboardPage = () => {
   }, [loadDashboard]);
 
   /* ----------------------------------
-     Safe Value Helper
+     Safe Data Helpers
   ---------------------------------- */
 
   const getDashboardValue = (...values) => {
     for (const value of values) {
-      if (
-        value !== undefined &&
-        value !== null &&
-        value !== ""
-      ) {
-        return value;
+      if (value !== undefined && value !== null && value !== "") {
+        const numericValue = Number(value);
+        return Number.isFinite(numericValue) ? numericValue : value;
       }
     }
-
     return 0;
   };
 
+  const asArray = (value) => (Array.isArray(value) ? value : []);
+
+  const normalizeStatus = (value) =>
+    String(value ?? "")
+      .trim()
+      .toUpperCase()
+      .replace(/[\s-]+/g, "_");
+
+  const sumBy = (rows, field) =>
+    asArray(rows).reduce((sum, row) => {
+      const amount = Number(row?.[field] ?? 0);
+      return sum + (Number.isFinite(amount) ? amount : 0);
+    }, 0);
+
   /* ----------------------------------
-     Dashboard Sections
+     Backend Dashboard Data
+     Backend response shape:
+     {
+       stats: {...},
+       analytics: {
+         leads: { status, source, priority },
+         quotations: [...],
+         invoices: [...],
+         attendance: [...]
+       },
+       recent: { leads, quotations, invoices, tasks }
+     }
   ---------------------------------- */
 
   const stats = dashboard?.stats || {};
+  const analytics = dashboard?.analytics || {};
+  const recent = dashboard?.recent || {};
 
-  const leadStats =
-    dashboard?.leads ||
-    stats?.leads ||
-    {};
+  const leadStats = stats?.leads || {};
+  const quotationStats = stats?.quotations || {};
+  const customerStats = stats?.customers || {};
+  const invoiceStats = stats?.invoices || {};
+  const taskStats = stats?.tasks || {};
+  const userStats = stats?.users || {};
+  const attendanceStats = stats?.attendance || {};
 
-  const quotationStats =
-    dashboard?.quotations ||
-    stats?.quotations ||
-    {};
-
-  const customerStats =
-    dashboard?.customers ||
-    stats?.customers ||
-    {};
-
-  const invoiceStats =
-    dashboard?.invoices ||
-    stats?.invoices ||
-    {};
-
-  const taskStats =
-    dashboard?.tasks ||
-    stats?.tasks ||
-    {};
-
-  const userStats =
-    dashboard?.users ||
-    stats?.users ||
-    {};
-
-  const attendanceStats =
-    dashboard?.attendance ||
-    stats?.attendance ||
-    {};
-
-  /* ----------------------------------
-     Main Numbers
-  ---------------------------------- */
+  const leadStatusRows = asArray(analytics?.leads?.status);
+  const quotationStatusRows = asArray(analytics?.quotations);
+  const invoiceStatusRows = asArray(analytics?.invoices);
+  const attendanceStatusRows = asArray(analytics?.attendance);
 
   const totalLeads = getDashboardValue(
     leadStats?.total,
@@ -162,124 +159,190 @@ const AdminDashboardPage = () => {
     dashboard?.totalLeads
   );
 
+  // The backend does not return an "active" lead count directly.
+  // Derive it from real status aggregation rather than displaying a fake zero.
+  const activeLeadsFromAnalytics = leadStatusRows.reduce((total, row) => {
+    const status = normalizeStatus(row?._id ?? row?.status);
+    const count = Number(row?.count ?? 0);
+    if (["WON", "LOST", "CLOSED", "CANCELLED", "CONVERTED"].includes(status)) {
+      return total;
+    }
+    return total + (Number.isFinite(count) ? count : 0);
+  }, 0);
+
   const activeLeads = getDashboardValue(
     leadStats?.active,
     leadStats?.activeLeads,
     stats?.activeLeads,
-    dashboard?.activeLeads
+    dashboard?.activeLeads,
+    activeLeadsFromAnalytics
   );
 
-  const totalQuotations =
-    getDashboardValue(
-      quotationStats?.total,
-      stats?.totalQuotations,
-      dashboard?.totalQuotations
-    );
+  const totalQuotations = getDashboardValue(
+    quotationStats?.total,
+    stats?.totalQuotations,
+    dashboard?.totalQuotations
+  );
 
-  const totalCustomers =
-    getDashboardValue(
-      customerStats?.total,
-      stats?.totalCustomers,
-      dashboard?.totalCustomers
-    );
+  const totalCustomers = getDashboardValue(
+    customerStats?.total,
+    stats?.totalCustomers,
+    dashboard?.totalCustomers
+  );
 
-  const totalInvoices =
-    getDashboardValue(
-      invoiceStats?.total,
-      stats?.totalInvoices,
-      dashboard?.totalInvoices
-    );
+  const totalInvoices = getDashboardValue(
+    invoiceStats?.total,
+    stats?.totalInvoices,
+    dashboard?.totalInvoices
+  );
 
-  const totalEmployees =
-    getDashboardValue(
-      userStats?.activeEmployees,
-      userStats?.totalEmployees,
-      stats?.totalEmployees,
-      dashboard?.totalEmployees
-    );
+  const totalEmployees = getDashboardValue(
+    userStats?.activeEmployees,
+    userStats?.totalEmployees,
+    stats?.totalEmployees,
+    dashboard?.totalEmployees
+  );
 
-  const pendingTasks =
-    getDashboardValue(
-      taskStats?.pending,
-      stats?.pendingTasks,
-      dashboard?.pendingTasks
-    );
+  const pendingTasks = getDashboardValue(
+    taskStats?.pending,
+    stats?.pendingTasks,
+    dashboard?.pendingTasks
+  );
 
-  const completedTasks =
-    getDashboardValue(
-      taskStats?.completed,
-      stats?.completedTasks,
-      dashboard?.completedTasks
-    );
+  const completedTasks = getDashboardValue(
+    taskStats?.completed,
+    stats?.completedTasks,
+    dashboard?.completedTasks
+  );
 
-  const totalRevenue =
-    getDashboardValue(
-      dashboard?.revenue?.total,
-      dashboard?.revenue,
-      stats?.totalRevenue,
-      stats?.revenue,
-      0
-    );
+  // Accept common invoice amount field names used by different API aggregations.
+  // This card shows invoiced value, not collected payments.
+  const getInvoiceAmount = (row) => {
+    const candidates = [
+      row?.totalAmount,
+      row?.grandTotal,
+      row?.total,
+      row?.amount,
+      row?.invoiceValue,
+      row?.totalValue,
+      row?.total_amount,
+      row?.grand_total,
+    ];
 
-  const presentToday =
-    getDashboardValue(
-      attendanceStats?.presentToday,
-      attendanceStats?.present,
-      stats?.presentToday,
-      dashboard?.presentToday
-    );
+    for (const candidate of candidates) {
+      if (candidate !== undefined && candidate !== null && candidate !== "") {
+        const amount = Number(candidate);
+        if (Number.isFinite(amount)) return amount;
+      }
+    }
+    return 0;
+  };
+
+  const invoicedValueFromAnalytics = invoiceStatusRows.reduce((total, row) => {
+    const status = normalizeStatus(row?._id ?? row?.status);
+    if (status === "CANCELLED" || status === "CANCELED") return total;
+    return total + getInvoiceAmount(row);
+  }, 0);
+
+  const totalRevenue = getDashboardValue(
+    dashboard?.revenue?.total,
+    typeof dashboard?.revenue === "number" ? dashboard.revenue : undefined,
+    stats?.invoices?.totalValue,
+    stats?.invoices?.totalAmount,
+    stats?.invoices?.grandTotal,
+    stats?.totalInvoiceValue,
+    stats?.totalInvoicedValue,
+    stats?.totalRevenue,
+    stats?.revenue,
+    invoicedValueFromAnalytics
+  );
+
+  // Count only attendance records whose status indicates presence.
+  const presentFromAnalytics = attendanceStatusRows.reduce((total, row) => {
+    const status = normalizeStatus(row?._id ?? row?.status);
+    if (!["PRESENT", "LATE", "HALF_DAY", "HALFDAY"].includes(status)) {
+      return total;
+    }
+    const count = Number(row?.count ?? 0);
+    return total + (Number.isFinite(count) ? count : 0);
+  }, 0);
+
+  const presentToday = getDashboardValue(
+    attendanceStats?.presentToday,
+    attendanceStats?.present,
+    stats?.presentToday,
+    dashboard?.presentToday,
+    presentFromAnalytics
+  );
 
   /* ----------------------------------
      Charts
   ---------------------------------- */
 
-  const leadData = useMemo(
-    () =>
-      dashboard?.leadChart ||
-      dashboard?.leadData ||
-      dashboard?.leadsChart ||
-      dashboard?.leadOverview ||
-      dashboard?.analytics?.leads ||
-      [],
-    [dashboard]
-  );
+  const leadData = useMemo(() => {
+    const direct =
+      dashboard?.leadChart ??
+      dashboard?.leadData ??
+      dashboard?.leadsChart ??
+      dashboard?.leadOverview;
 
-  const salesData = useMemo(
-    () =>
-      dashboard?.salesChart ||
-      dashboard?.salesData ||
-      dashboard?.revenueChart ||
-      dashboard?.salesOverview ||
-      dashboard?.analytics?.sales ||
-      [],
-    [dashboard]
-  );
+    if (Array.isArray(direct)) return direct;
+
+    // Backend supplies status/source/priority aggregations, not a monthly series.
+    return leadStatusRows.map((row) => ({
+      name: String(row?._id ?? row?.status ?? "Unknown"),
+      status: String(row?._id ?? row?.status ?? "Unknown"),
+      count: Number(row?.count ?? 0),
+      total: Number(row?.count ?? 0),
+    }));
+  }, [dashboard]);
+
+  const salesData = useMemo(() => {
+    const direct =
+      dashboard?.salesChart ??
+      dashboard?.salesData ??
+      dashboard?.revenueChart ??
+      dashboard?.salesOverview;
+
+    if (Array.isArray(direct)) return direct;
+
+    // Backend aggregates quotations and invoices by status.
+    // Keep actual amounts from the API; do not generate synthetic monthly data.
+    const quotationRows = asArray(dashboard?.analytics?.quotations).map((row) => ({
+      name: `Quotation ${String(row?._id ?? row?.status ?? "Unknown")}`,
+      status: String(row?._id ?? row?.status ?? "Unknown"),
+      count: Number(row?.count ?? 0),
+      amount: Number(row?.totalAmount ?? 0),
+      totalAmount: Number(row?.totalAmount ?? 0),
+    }));
+
+    const invoiceRows = asArray(dashboard?.analytics?.invoices).map((row) => ({
+      name: `Invoice ${String(row?._id ?? row?.status ?? "Unknown")}`,
+      status: String(row?._id ?? row?.status ?? "Unknown"),
+      count: Number(row?.count ?? 0),
+      amount: Number(row?.totalAmount ?? 0),
+      totalAmount: Number(row?.totalAmount ?? 0),
+    }));
+
+    return [...quotationRows, ...invoiceRows];
+  }, [dashboard]);
 
   /* ----------------------------------
      Recent Data
   ---------------------------------- */
 
   const recentLeads = useMemo(
-    () =>
-      dashboard?.recentLeads ||
-      dashboard?.recent?.leads ||
-      [],
+    () => asArray(dashboard?.recentLeads ?? recent?.leads),
     [dashboard]
   );
 
   const recentQuotations = useMemo(
-    () =>
-      dashboard?.recentQuotations ||
-      dashboard?.recent?.quotations ||
-      [],
+    () => asArray(dashboard?.recentQuotations ?? recent?.quotations),
     [dashboard]
   );
 
   const recentTasks = useMemo(
-    () =>
-      dashboard?.recentTasks ||
-      dashboard?.recent?.tasks ||
-      [],
+    () => asArray(dashboard?.recentTasks ?? recent?.tasks),
     [dashboard]
   );
 
@@ -294,12 +357,7 @@ const AdminDashboardPage = () => {
       totalCustomers,
       totalEmployees,
     }),
-    [
-      totalLeads,
-      totalQuotations,
-      totalCustomers,
-      totalEmployees,
-    ]
+    [totalLeads, totalQuotations, totalCustomers, totalEmployees]
   );
 
   /* ----------------------------------
@@ -407,7 +465,7 @@ const AdminDashboardPage = () => {
         <div className="admin-dashboard-summary-card">
           <div className="admin-dashboard-summary-top">
             <div>
-              <span>Total Revenue</span>
+              <span>Total Invoiced Value</span>
 
               <strong>
                 ₹
@@ -423,8 +481,7 @@ const AdminDashboardPage = () => {
           </div>
 
           <p>
-            Revenue overview from available
-            dashboard records.
+            Total value of non-cancelled invoices from the database.
           </p>
         </div>
 

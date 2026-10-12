@@ -538,3 +538,57 @@
     min-height: 280px;
   }
 }
+
+/* =========================
+   INVOICE STATUS EDITOR
+========================= */
+.admin-invoice-status-editor {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.admin-invoice-status-select {
+  width: 128px;
+  max-width: 100%;
+  padding: 7px 9px;
+  border: 1px solid #d8e0e9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+.admin-invoice-status-select:focus {
+  border-color: #0f9f6e;
+  box-shadow: 0 0 0 3px rgba(15, 159, 110, 0.12);
+}
+
+.admin-invoice-status-select:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.admin-invoice-status-save {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-invoice-status-save:hover {
+  background: #15803d;
+}
+
+.admin-invoice-status-save:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}

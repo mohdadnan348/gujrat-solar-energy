@@ -1,752 +1,1491 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import Button from "@/components/common/Button";
-import SearchBox from "@/components/common/SearchBox";
-import Select from "@/components/common/Select";
 import Badge from "@/components/common/Badge";
+import SearchBox from "@/components/common/SearchBox";
 import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
+import Select from "@/components/common/Select";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 
-import { useAuth } from "@/hooks/useAuth";
 import taskService from "@/services/task.service";
+import { getEmployees } from "@/services/employee.service";
 
 import "./tasks.css";
-const EmployeeTasksPage = () => {
-  const { user, loading: authLoading } = useAuth();
+
+const AdminTasksPage = () => {
+  const router = useRouter();
 
   const [tasks, setTasks] = useState([]);
+  const [employees, setEmployees] = useState([]);
+
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
   const [error, setError] = useState("");
+  const [employeeError, setEmployeeError] = useState("");
 
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
-  const [priority, setPriority] = useState("");
-  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [priorityFilter, setPriorityFilter] = useState("ALL");
+  const [assigneeFilter, setAssigneeFilter] = useState("ALL");
 
-  const limit = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  /* -------------------------------------------------------
+     Helpers
+  ------------------------------------------------------- */
+
+  const getValue = (object, keys, fallback = "") => {
+    if (!object) return fallback;
+
+    for (const key of keys) {
+      const value = object?.[key];
+
+      if (
+        value !== undefined &&
+        value !== null &&
+        value !== ""
+      ) {
+        return value;
+      }
+    }
+
+    return fallback;
+  };
+
+  const getId = (object) => {
+    if (!object) return "";
+
+    if (typeof object === "string") {
+      return object;
+    }
+
+    return (
+      object?._id ||
+      object?.id ||
+      object?.employeeId ||
+      object?.taskId ||
+      ""
+    );
+  };
+
+  const normalizeList = (response, key) => {
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (Array.isArray(response?.data)) {
+      return response.data;
+    }
+
+    if (
+      key &&
+      Array.isArray(response?.data?.[key])
+    ) {
+      return response.data[key];
+    }
+
+    if (
+      key &&
+      Array.isArray(response?.[key])
+    ) {
+      return response[key];
+    }
+
+    if (Array.isArray(response?.results)) {
+      return response.results;
+    }
+
+    return [];
+  };
+
+  const getApiErrorMessage = (
+    err,
+    fallback
+  ) => {
+    const status =
+      err?.status ||
+      err?.response?.status;
+
+    const message =
+      err?.message ||
+      err?.response?.data?.message ||
+      fallback;
+
+    if (status) {
+      return `${message} (HTTP ${status})`;
+    }
+
+    return message;
+  };
+
+  /* -------------------------------------------------------
+     Load Tasks
+  ------------------------------------------------------- */
 
   const loadTasks = async () => {
     try {
-      setLoading(true);
       setError("");
 
-      const response = await taskService.getMyTasks();
+      const response =
+        await taskService.getTasks();
 
-      const items =
-        response?.data?.tasks ??
-        response?.data?.items ??
-        response?.tasks ??
-        response?.items ??
-        response?.data ??
-        [];
+      const normalizedTasks =
+        normalizeList(
+          response,
+          "tasks"
+        );
 
-      setTasks(Array.isArray(items) ? items : []);
+      setTasks(normalizedTasks);
     } catch (err) {
-      console.error("Failed to load employee tasks:", err);
-
-      setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Unable to load tasks. Please try again."
+      console.error(
+        "Failed to load tasks:",
+        err
       );
 
       setTasks([]);
+
+      setError(
+        getApiErrorMessage(
+          err,
+          "Unable to load tasks."
+        )
+      );
+    }
+  };
+
+  /* -------------------------------------------------------
+     Load Employees
+  ------------------------------------------------------- */
+
+  const loadEmployees = async () => {
+    try {
+      setEmployeeError("");
+
+      const response =
+        await getEmployees();
+
+      const normalizedEmployees =
+        normalizeList(
+          response,
+          "employees"
+        );
+
+      setEmployees(
+        normalizedEmployees
+      );
+    } catch (err) {
+      console.error(
+        "Failed to load employees:",
+        err
+      );
+
+      setEmployees([]);
+
+      setEmployeeError(
+        getApiErrorMessage(
+          err,
+          "Unable to load employees."
+        )
+      );
+    }
+  };
+
+  /* -------------------------------------------------------
+     Load Everything
+  ------------------------------------------------------- */
+
+  const loadData = async (
+    showRefresh = false
+  ) => {
+    try {
+      if (showRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      setError("");
+      setEmployeeError("");
+
+      /*
+       * IMPORTANT:
+       * Do NOT use Promise.all here.
+       *
+       * Tasks and Employees are independent.
+       * If employee API fails, tasks should still load.
+       */
+      await Promise.allSettled([
+        loadTasks(),
+        loadEmployees(),
+      ]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    if (!authLoading && user) {
-      loadTasks();
-    }
-  }, [authLoading, user]);
-
-  const filteredTasks = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    return tasks.filter((task) => {
-      const taskStatus = String(
-        task?.status || task?.taskStatus || ""
-      ).toLowerCase();
-
-      const taskPriority = String(
-        task?.priority || ""
-      ).toLowerCase();
-
-      const searchableText = [
-        task?.taskId,
-        task?.taskNumber,
-        task?.title,
-        task?.taskName,
-        task?.description,
-        task?.category,
-        task?.type,
-        task?.customerName,
-        task?.leadName,
-        task?.customer?.name,
-        task?.lead?.name,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      const matchesSearch =
-        !query || searchableText.includes(query);
-
-      const matchesStatus =
-        !status || taskStatus === status.toLowerCase();
-
-      const matchesPriority =
-        !priority || taskPriority === priority.toLowerCase();
-
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesPriority
-      );
-    });
-  }, [tasks, search, status, priority]);
+    loadData();
+  }, []);
 
   useEffect(() => {
-    setPage(1);
-  }, [search, status, priority]);
+    setCurrentPage(1);
+  }, [
+    search,
+    statusFilter,
+    priorityFilter,
+    assigneeFilter,
+    itemsPerPage,
+  ]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredTasks.length / limit)
-  );
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
-
-  const paginatedTasks = useMemo(() => {
-    const start = (page - 1) * limit;
-
-    return filteredTasks.slice(start, start + limit);
-  }, [filteredTasks, page]);
+  /* -------------------------------------------------------
+     Task Helpers
+  ------------------------------------------------------- */
 
   const getTaskTitle = (task) =>
-    task?.title ||
-    task?.taskName ||
-    "Untitled Task";
+    getValue(
+      task,
+      [
+        "title",
+        "taskTitle",
+        "name",
+        "subject",
+      ],
+      "Untitled Task"
+    );
 
-  const getTaskId = (task) =>
-    task?._id ||
-    task?.id ||
-    task?.taskId;
+  const getTaskDescription = (task) =>
+    getValue(
+      task,
+      [
+        "description",
+        "details",
+      ],
+      ""
+    );
 
-  const getTaskNumber = (task) =>
-    task?.taskNumber ||
-    task?.taskId ||
-    null;
-
-  const getTaskStatus = (task) =>
-    task?.status ||
-    task?.taskStatus ||
-    "PENDING";
+  const getStatus = (task) =>
+    String(
+      getValue(
+        task,
+        ["status"],
+        "PENDING"
+      )
+    ).toUpperCase();
 
   const getPriority = (task) =>
-    task?.priority ||
-    "NORMAL";
+    String(
+      getValue(
+        task,
+        ["priority"],
+        "MEDIUM"
+      )
+    ).toUpperCase();
 
-  const getStatusVariant = (taskStatus) => {
-    const value = String(taskStatus || "").toLowerCase();
+  const getDueDate = (task) =>
+    getValue(
+      task,
+      [
+        "dueDate",
+        "deadline",
+        "endDate",
+      ],
+      ""
+    );
+
+  const getCreatedDate = (task) =>
+    getValue(
+      task,
+      [
+        "createdAt",
+        "createdDate",
+      ],
+      ""
+    );
+
+  const getAssignee = (task) => {
+    const assignedTo =
+      getValue(
+        task,
+        [
+          "assignedTo",
+          "assignee",
+          "employee",
+        ],
+        null
+      );
 
     if (
-      [
-        "completed",
-        "done",
-        "closed",
-      ].includes(value)
+      assignedTo &&
+      typeof assignedTo === "object"
     ) {
-      return "success";
+      return assignedTo;
     }
 
-    if (
-      [
-        "cancelled",
-        "cancelled_by_user",
-        "failed",
-      ].includes(value)
-    ) {
-      return "danger";
+    const assignedId =
+      typeof assignedTo === "string"
+        ? assignedTo
+        : getValue(
+            task,
+            [
+              "assignedToId",
+              "employeeId",
+            ],
+            ""
+          );
+
+    if (assignedId) {
+      return (
+        employees.find(
+          (employee) =>
+            getId(employee) ===
+            assignedId
+        ) || null
+      );
     }
 
-    if (
-      [
-        "in_progress",
-        "ongoing",
-        "started",
-      ].includes(value)
-    ) {
-      return "warning";
-    }
-
-    return "default";
+    return null;
   };
 
-  const getPriorityVariant = (taskPriority) => {
-    const value = String(taskPriority || "").toLowerCase();
+  const getAssigneeName = (task) => {
+    const assignee =
+      getAssignee(task);
 
-    if (
-      ["high", "urgent", "critical"].includes(value)
-    ) {
-      return "danger";
+    if (assignee) {
+      return getValue(
+        assignee,
+        [
+          "name",
+          "fullName",
+          "employeeName",
+        ],
+        "Unassigned"
+      );
     }
 
-    if (
-      ["medium", "normal"].includes(value)
-    ) {
-      return "warning";
-    }
-
-    return "default";
+    return "Unassigned";
   };
 
-  const formatLabel = (value) => {
+  const formatDate = (value) => {
     if (!value) return "—";
 
-    return String(value)
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
-  };
+    const date = new Date(value);
 
-  const formatDate = (date) => {
-    if (!date) return "—";
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
       return "—";
     }
 
-    return parsedDate.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    return date.toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    );
   };
 
   const isOverdue = (task) => {
-    const statusValue = String(
-      getTaskStatus(task)
-    ).toLowerCase();
+    const dueDate =
+      getDueDate(task);
+
+    if (!dueDate) return false;
+
+    const due = new Date(dueDate);
 
     if (
-      ["completed", "done", "closed", "cancelled"].includes(
-        statusValue
+      Number.isNaN(
+        due.getTime()
       )
     ) {
       return false;
     }
 
-    const dueDate =
-      task?.dueDate ||
-      task?.deadline ||
-      task?.endDate;
+    const status =
+      getStatus(task);
 
-    if (!dueDate) return false;
-
-    const date = new Date(dueDate);
-
-    if (Number.isNaN(date.getTime())) {
+    if (
+      [
+        "COMPLETED",
+        "CANCELLED",
+        "DONE",
+      ].includes(status)
+    ) {
       return false;
     }
 
-    return date < new Date();
+    return due < new Date();
   };
 
-  if (authLoading) {
+  const getStatusVariant = (
+    status
+  ) => {
+    switch (status) {
+      case "COMPLETED":
+      case "DONE":
+        return "success";
+
+      case "IN_PROGRESS":
+      case "IN PROGRESS":
+        return "info";
+
+      case "PENDING":
+      case "TODO":
+        return "warning";
+
+      case "CANCELLED":
+        return "danger";
+
+      default:
+        return "default";
+    }
+  };
+
+  const getPriorityVariant = (
+    priority
+  ) => {
+    switch (priority) {
+      case "HIGH":
+      case "URGENT":
+        return "danger";
+
+      case "MEDIUM":
+        return "warning";
+
+      case "LOW":
+        return "success";
+
+      default:
+        return "default";
+    }
+  };
+
+  /* -------------------------------------------------------
+     Filtering
+  ------------------------------------------------------- */
+
+  const filteredTasks = useMemo(() => {
+    const query =
+      search
+        .trim()
+        .toLowerCase();
+
+    return tasks.filter(
+      (task) => {
+        const status =
+          getStatus(task);
+
+        const priority =
+          getPriority(task);
+
+        const assignee =
+          getAssignee(task);
+
+        const assigneeId =
+          getId(assignee) ||
+          getValue(
+            task,
+            [
+              "assignedToId",
+              "employeeId",
+            ],
+            ""
+          );
+
+        if (
+          statusFilter !==
+            "ALL" &&
+          status !==
+            statusFilter
+        ) {
+          return false;
+        }
+
+        if (
+          priorityFilter !==
+            "ALL" &&
+          priority !==
+            priorityFilter
+        ) {
+          return false;
+        }
+
+        if (
+          assigneeFilter !==
+            "ALL" &&
+          assigneeId !==
+            assigneeFilter
+        ) {
+          return false;
+        }
+
+        if (!query) {
+          return true;
+        }
+
+        const searchableText = [
+          getTaskTitle(task),
+          getTaskDescription(task),
+          getAssigneeName(task),
+          status,
+          priority,
+          getValue(
+            task,
+            [
+              "taskNumber",
+              "taskId",
+            ],
+            ""
+          ),
+        ]
+          .map((value) =>
+            String(value ?? "")
+          )
+          .join(" ")
+          .toLowerCase();
+
+        return searchableText.includes(
+          query
+        );
+      }
+    );
+  }, [
+    tasks,
+    employees,
+    search,
+    statusFilter,
+    priorityFilter,
+    assigneeFilter,
+  ]);
+
+  const totalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        filteredTasks.length /
+          itemsPerPage
+      )
+    );
+
+  const paginatedTasks =
+    useMemo(() => {
+      const start =
+        (currentPage - 1) *
+        itemsPerPage;
+
+      return filteredTasks.slice(
+        start,
+        start + itemsPerPage
+      );
+    }, [
+      filteredTasks,
+      currentPage,
+      itemsPerPage,
+    ]);
+
+  /* -------------------------------------------------------
+     Stats
+  ------------------------------------------------------- */
+
+  const stats = useMemo(() => {
+    const total =
+      tasks.length;
+
+    const pending =
+      tasks.filter(
+        (task) =>
+          [
+            "PENDING",
+            "TODO",
+          ].includes(
+            getStatus(task)
+          )
+      ).length;
+
+    const inProgress =
+      tasks.filter(
+        (task) =>
+          [
+            "IN_PROGRESS",
+            "IN PROGRESS",
+          ].includes(
+            getStatus(task)
+          )
+      ).length;
+
+    const completed =
+      tasks.filter(
+        (task) =>
+          [
+            "COMPLETED",
+            "DONE",
+          ].includes(
+            getStatus(task)
+          )
+      ).length;
+
+    const overdue =
+      tasks.filter(
+        (task) =>
+          isOverdue(task)
+      ).length;
+
+    return {
+      total,
+      pending,
+      inProgress,
+      completed,
+      overdue,
+    };
+  }, [tasks]);
+
+  /* -------------------------------------------------------
+     Employee Filter
+  ------------------------------------------------------- */
+
+  const employeeOptions = [
+    {
+      label: "All Assignees",
+      value: "ALL",
+    },
+
+    ...employees.map(
+      (employee) => ({
+        label: getValue(
+          employee,
+          [
+            "name",
+            "fullName",
+            "employeeName",
+          ],
+          "Unnamed Employee"
+        ),
+        value: getId(employee),
+      })
+    ),
+  ];
+
+  /* -------------------------------------------------------
+     Delete Task
+  ------------------------------------------------------- */
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      setDeleting(true);
+      setError("");
+
+      if (
+        typeof taskService.deleteTask !==
+        "function"
+      ) {
+        throw new Error(
+          "Task delete service is not available."
+        );
+      }
+
+      await taskService.deleteTask(
+        deleteId
+      );
+
+      setTasks(
+        (previous) =>
+          previous.filter(
+            (task) =>
+              getId(task) !==
+              deleteId
+          )
+      );
+
+      setDeleteId(null);
+    } catch (err) {
+      console.error(
+        "Failed to delete task:",
+        err
+      );
+
+      setError(
+        getApiErrorMessage(
+          err,
+          "Failed to delete task."
+        )
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  /* -------------------------------------------------------
+     Loading
+  ------------------------------------------------------- */
+
+  if (loading) {
     return (
-      <div className="employee-tasks-loading">
+      <div className="admin-tasks-loading">
         <Loader />
+
+        <p>
+          Loading tasks...
+        </p>
       </div>
     );
   }
 
-  return (
-    <div className="employee-tasks-page">
-      {/* Header */}
-      <div className="employee-tasks-header">
-        <div className="employee-tasks-header-content">
-          <span className="employee-tasks-eyebrow">
-            Work Management
-          </span>
+  /* -------------------------------------------------------
+     UI
+  ------------------------------------------------------- */
 
-          <h1>My Tasks</h1>
+  return (
+    <div className="admin-tasks-page">
+
+      {/* Header */}
+
+      <div className="admin-tasks-page-header">
+
+        <div>
+          <h1>
+            Tasks
+          </h1>
 
           <p>
-            View and manage tasks assigned to you.
+            Manage assignments,
+            deadlines and
+            operational tasks.
           </p>
         </div>
 
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={loadTasks}
-          disabled={loading}
-        >
-          {loading ? "Refreshing..." : "Refresh"}
-        </Button>
-      </div>
-
-      {/* Summary */}
-      {!loading && !error && (
-        <div className="employee-tasks-summary">
-          <div className="employee-task-summary-item">
-            <span className="employee-task-summary-label">
-              Total Tasks
-            </span>
-            <strong>{tasks.length}</strong>
-          </div>
-
-          <div className="employee-task-summary-item">
-            <span className="employee-task-summary-label">
-              Pending
-            </span>
-            <strong>
-              {
-                tasks.filter(
-                  (task) =>
-                    String(getTaskStatus(task)).toLowerCase() ===
-                    "pending"
-                ).length
-              }
-            </strong>
-          </div>
-
-          <div className="employee-task-summary-item">
-            <span className="employee-task-summary-label">
-              In Progress
-            </span>
-            <strong>
-              {
-                tasks.filter((task) =>
-                  [
-                    "in_progress",
-                    "ongoing",
-                    "started",
-                  ].includes(
-                    String(getTaskStatus(task)).toLowerCase()
-                  )
-                ).length
-              }
-            </strong>
-          </div>
-
-          <div className="employee-task-summary-item">
-            <span className="employee-task-summary-label">
-              Completed
-            </span>
-            <strong>
-              {
-                tasks.filter((task) =>
-                  [
-                    "completed",
-                    "done",
-                    "closed",
-                  ].includes(
-                    String(getTaskStatus(task)).toLowerCase()
-                  )
-                ).length
-              }
-            </strong>
-          </div>
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="employee-tasks-toolbar">
-        <div className="employee-tasks-search">
-          <SearchBox
-            value={search}
-            onChange={setSearch}
-            placeholder="Search tasks, customers, leads..."
-          />
-        </div>
-
-        <div className="employee-tasks-filter">
-          <Select
-            value={status}
-            onChange={(event) =>
-              setStatus(event.target.value)
-            }
-            options={[
-              {
-                value: "",
-                label: "All Statuses",
-              },
-              {
-                value: "PENDING",
-                label: "Pending",
-              },
-              {
-                value: "IN_PROGRESS",
-                label: "In Progress",
-              },
-              {
-                value: "COMPLETED",
-                label: "Completed",
-              },
-              {
-                value: "CANCELLED",
-                label: "Cancelled",
-              },
-            ]}
-          />
-        </div>
-
-        <div className="employee-tasks-filter">
-          <Select
-            value={priority}
-            onChange={(event) =>
-              setPriority(event.target.value)
-            }
-            options={[
-              {
-                value: "",
-                label: "All Priorities",
-              },
-              {
-                value: "LOW",
-                label: "Low",
-              },
-              {
-                value: "NORMAL",
-                label: "Normal",
-              },
-              {
-                value: "MEDIUM",
-                label: "Medium",
-              },
-              {
-                value: "HIGH",
-                label: "High",
-              },
-              {
-                value: "URGENT",
-                label: "Urgent",
-              },
-            ]}
-          />
-        </div>
-
-        {(search || status || priority) && (
-          <button
-            type="button"
-            className="employee-tasks-clear"
-            onClick={() => {
-              setSearch("");
-              setStatus("");
-              setPriority("");
-            }}
-          >
-            Clear Filters
-          </button>
-        )}
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="employee-tasks-error">
-          <div>
-            <strong>Unable to load tasks</strong>
-            <span>{error}</span>
-          </div>
+        <div className="admin-tasks-header-actions">
 
           <Button
             type="button"
             variant="secondary"
-            onClick={loadTasks}
+            onClick={() =>
+              loadData(true)
+            }
+            disabled={refreshing}
           >
-            Retry
+            {refreshing
+              ? "Refreshing..."
+              : "↻ Refresh"}
           </Button>
+
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() =>
+              router.push(
+                "/admin/tasks/create"
+              )
+            }
+          >
+            + Create Task
+          </Button>
+
+        </div>
+
+      </div>
+
+      {/* Main Task Error */}
+
+      {error && (
+        <div className="admin-tasks-error">
+
+          <strong>
+            Unable to load tasks
+          </strong>
+
+          <div>
+            {error}
+          </div>
+
+          <div
+            style={{
+              marginTop: "10px",
+            }}
+          >
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                loadTasks()
+              }
+            >
+              Retry Tasks
+            </Button>
+          </div>
+
         </div>
       )}
 
-      {/* Table */}
-      <div className="employee-tasks-card">
-        {loading ? (
-          <div className="employee-tasks-loader">
-            <Loader />
+      {/* Employee Warning */}
+
+      {employeeError && (
+        <div
+          className="admin-tasks-error"
+          style={{
+            marginBottom: "16px",
+          }}
+        >
+          <strong>
+            Employee filter unavailable
+          </strong>
+
+          <div>
+            {employeeError}
           </div>
-        ) : paginatedTasks.length === 0 ? (
-          <div className="employee-tasks-empty">
-            <div className="employee-tasks-empty-icon">
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <rect
-                  x="3"
-                  y="4"
-                  width="18"
-                  height="17"
-                  rx="2"
-                />
-                <path d="M8 2v4M16 2v4M3 9h18" />
-                <path d="m8 14 2 2 5-5" />
-              </svg>
+
+          <div
+            style={{
+              marginTop: "10px",
+            }}
+          >
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                loadEmployees()
+              }
+            >
+              Retry Employees
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Stats */}
+
+      <div className="admin-tasks-stats">
+
+        <div className="admin-task-stat-card">
+          <div className="admin-task-stat-icon">
+            TS
+          </div>
+
+          <div>
+            <span>
+              Total Tasks
+            </span>
+
+            <strong>
+              {stats.total}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-task-stat-card">
+          <div className="admin-task-stat-icon pending">
+            P
+          </div>
+
+          <div>
+            <span>
+              Pending
+            </span>
+
+            <strong>
+              {stats.pending}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-task-stat-card">
+          <div className="admin-task-stat-icon progress">
+            IP
+          </div>
+
+          <div>
+            <span>
+              In Progress
+            </span>
+
+            <strong>
+              {stats.inProgress}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-task-stat-card">
+          <div className="admin-task-stat-icon completed">
+            ✓
+          </div>
+
+          <div>
+            <span>
+              Completed
+            </span>
+
+            <strong>
+              {stats.completed}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-task-stat-card">
+          <div className="admin-task-stat-icon overdue">
+            !
+          </div>
+
+          <div>
+            <span>
+              Overdue
+            </span>
+
+            <strong>
+              {stats.overdue}
+            </strong>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Filters */}
+
+      <div className="admin-tasks-toolbar">
+
+        <div className="admin-tasks-search">
+
+          <SearchBox
+            value={search}
+            onChange={setSearch}
+            placeholder="Search tasks..."
+          />
+
+        </div>
+
+        <div className="admin-tasks-filters">
+
+          <Select
+            value={statusFilter}
+            onChange={(event) =>
+              setStatusFilter(
+                event?.target
+                  ? event.target.value
+                  : event
+              )
+            }
+            options={[
+              {
+                label: "All Status",
+                value: "ALL",
+              },
+              {
+                label: "Pending",
+                value: "PENDING",
+              },
+              {
+                label: "In Progress",
+                value: "IN_PROGRESS",
+              },
+              {
+                label: "Completed",
+                value: "COMPLETED",
+              },
+              {
+                label: "Cancelled",
+                value: "CANCELLED",
+              },
+            ]}
+          />
+
+          <Select
+            value={priorityFilter}
+            onChange={(event) =>
+              setPriorityFilter(
+                event?.target
+                  ? event.target.value
+                  : event
+              )
+            }
+            options={[
+              {
+                label: "All Priorities",
+                value: "ALL",
+              },
+              {
+                label: "Urgent",
+                value: "URGENT",
+              },
+              {
+                label: "High",
+                value: "HIGH",
+              },
+              {
+                label: "Medium",
+                value: "MEDIUM",
+              },
+              {
+                label: "Low",
+                value: "LOW",
+              },
+            ]}
+          />
+
+          <Select
+            value={assigneeFilter}
+            onChange={(event) =>
+              setAssigneeFilter(
+                event?.target
+                  ? event.target.value
+                  : event
+              )
+            }
+            options={
+              employeeOptions
+            }
+          />
+
+          <Select
+            value={String(
+              itemsPerPage
+            )}
+            onChange={(event) =>
+              setItemsPerPage(
+                Number(
+                  event?.target
+                    ? event.target.value
+                    : event
+                )
+              )
+            }
+            options={[
+              {
+                label: "10 / page",
+                value: "10",
+              },
+              {
+                label: "25 / page",
+                value: "25",
+              },
+              {
+                label: "50 / page",
+                value: "50",
+              },
+            ]}
+          />
+
+        </div>
+
+      </div>
+
+      {/* Task Table */}
+
+      <div className="admin-tasks-card">
+
+        <div className="admin-tasks-card-header">
+
+          <div>
+            <h2>
+              Task Records
+            </h2>
+
+            <p>
+              {filteredTasks.length}{" "}
+              task
+              {filteredTasks.length !==
+              1
+                ? "s"
+                : ""}{" "}
+              found
+            </p>
+          </div>
+
+        </div>
+
+        {paginatedTasks.length ===
+        0 ? (
+
+          <div className="admin-tasks-empty">
+
+            <div className="admin-tasks-empty-icon">
+              TS
             </div>
 
             <h3>
-              {search || status || priority
-                ? "No matching tasks"
-                : "No tasks assigned"}
+              No tasks found
             </h3>
 
             <p>
-              {search || status || priority
-                ? "Try changing your search or filters."
-                : "Tasks assigned to you will appear here."}
+              {search ||
+              statusFilter !==
+                "ALL" ||
+              priorityFilter !==
+                "ALL" ||
+              assigneeFilter !==
+                "ALL"
+                ? "Try changing your filters or search."
+                : error
+                ? "Tasks could not be loaded from the server."
+                : "Create your first task to get started."}
             </p>
 
-            {(search || status || priority) && (
-              <button
-                type="button"
-                className="employee-tasks-empty-button"
-                onClick={() => {
-                  setSearch("");
-                  setStatus("");
-                  setPriority("");
-                }}
-              >
-                Clear Filters
-              </button>
-            )}
+            {!search &&
+              statusFilter ===
+                "ALL" &&
+              priorityFilter ===
+                "ALL" &&
+              assigneeFilter ===
+                "ALL" && (
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() =>
+                    router.push(
+                      "/admin/tasks/create"
+                    )
+                  }
+                >
+                  + Create Task
+                </Button>
+              )}
+
           </div>
+
         ) : (
+
           <>
-            <div className="employee-tasks-card-header">
-              <div>
-                <h2>Assigned Tasks</h2>
-                <p>
-                  {filteredTasks.length} task
-                  {filteredTasks.length !== 1 ? "s" : ""} found
-                </p>
-              </div>
 
-              <span className="employee-tasks-count">
-                {filteredTasks.length} Total
-              </span>
-            </div>
+            <div className="admin-tasks-table-wrapper">
 
-            <div className="employee-tasks-table-wrapper">
-              <table className="employee-tasks-table">
+              <table className="admin-tasks-table">
+
                 <thead>
                   <tr>
-                    <th>Task</th>
-                    <th>Related To</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Due Date</th>
-                    <th>Created</th>
-                    <th>Action</th>
+
+                    <th>
+                      Task
+                    </th>
+
+                    <th>
+                      Assigned To
+                    </th>
+
+                    <th>
+                      Priority
+                    </th>
+
+                    <th>
+                      Due Date
+                    </th>
+
+                    <th>
+                      Status
+                    </th>
+
+                    <th>
+                      Created
+                    </th>
+
+                    <th>
+                      Actions
+                    </th>
+
                   </tr>
                 </thead>
 
                 <tbody>
-                  {paginatedTasks.map((task, index) => {
-                    const id =
-                      getTaskId(task) || index;
 
-                    const taskStatus =
-                      getTaskStatus(task);
+                  {paginatedTasks.map(
+                    (
+                      task,
+                      index
+                    ) => {
 
-                    const taskPriority =
-                      getPriority(task);
+                      const id =
+                        getId(task);
 
-                    const relatedTo =
-                      task?.customerName ||
-                      task?.customer?.name ||
-                      task?.leadName ||
-                      task?.lead?.name ||
-                      "No linked record";
+                      const status =
+                        getStatus(
+                          task
+                        );
 
-                    const dueDate =
-                      task?.dueDate ||
-                      task?.deadline ||
-                      task?.endDate;
+                      const priority =
+                        getPriority(
+                          task
+                        );
 
-                    return (
-                      <tr key={id}>
-                        <td>
-                          <div className="employee-task-main">
-                            <div className="employee-task-icon">
-                              <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.8"
-                              >
-                                <rect
-                                  x="3"
-                                  y="4"
-                                  width="18"
-                                  height="17"
-                                  rx="2"
-                                />
-                                <path d="M8 2v4M16 2v4M3 9h18" />
-                              </svg>
-                            </div>
+                      const overdue =
+                        isOverdue(
+                          task
+                        );
 
-                            <div className="employee-task-content">
-                              <div className="employee-task-number">
-                                {getTaskNumber(task)
-                                  ? `#${getTaskNumber(task)}`
-                                  : "Task"}
-                              </div>
+                      return (
+                        <tr
+                          key={
+                            id ||
+                            index
+                          }
+                          className={
+                            overdue
+                              ? "is-overdue"
+                              : ""
+                          }
+                        >
 
-                              <div className="employee-task-title">
-                                {getTaskTitle(task)}
-                              </div>
+                          <td>
 
-                              {(task?.description ||
-                                task?.category) && (
-                                <div className="employee-task-subtext">
-                                  {task?.category ||
-                                    task?.description}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
+                            <div className="admin-task-title-cell">
 
-                        <td>
-                          <div className="employee-task-related">
-                            <strong>
-                              {relatedTo}
-                            </strong>
+                              <strong>
+                                {String(
+                                  getTaskTitle(
+                                    task
+                                  )
+                                )}
+                              </strong>
 
-                            {task?.quotation?.quotationNumber && (
-                              <span>
-                                {
-                                  task.quotation
-                                    .quotationNumber
-                                }
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        <td>
-                          <Badge
-                            variant={getPriorityVariant(
-                              taskPriority
-                            )}
-                          >
-                            {formatLabel(taskPriority)}
-                          </Badge>
-                        </td>
-
-                        <td>
-                          <Badge
-                            variant={getStatusVariant(
-                              taskStatus
-                            )}
-                          >
-                            {formatLabel(taskStatus)}
-                          </Badge>
-                        </td>
-
-                        <td>
-                          <div
-                            className={
-                              isOverdue(task)
-                                ? "employee-task-date employee-task-date-overdue"
-                                : "employee-task-date"
-                            }
-                          >
-                            <span>
-                              {formatDate(dueDate)}
-                            </span>
-
-                            {isOverdue(task) && (
-                              <small>Overdue</small>
-                            )}
-                          </div>
-                        </td>
-
-                        <td>
-                          <span className="employee-task-created">
-                            {formatDate(
-                              task?.createdAt ||
-                                task?.createdDate
-                            )}
-                          </span>
-                        </td>
-
-                        <td>
-                          {getTaskId(task) ? (
-                            <Link
-                              href={`/employee/tasks/${getTaskId(
+                              {getTaskDescription(
                                 task
-                              )}`}
-                              className="employee-task-view-button"
+                              ) && (
+                                <span>
+                                  {String(
+                                    getTaskDescription(
+                                      task
+                                    )
+                                  )}
+                                </span>
+                              )}
+
+                              {getValue(
+                                task,
+                                [
+                                  "taskNumber",
+                                  "taskId",
+                                ],
+                                ""
+                              ) && (
+                                <small>
+                                  {String(
+                                    getValue(
+                                      task,
+                                      [
+                                        "taskNumber",
+                                        "taskId",
+                                      ]
+                                    )
+                                  )}
+                                </small>
+                              )}
+
+                            </div>
+
+                          </td>
+
+                          <td>
+
+                            <div className="admin-task-assignee">
+
+                              <div className="admin-task-avatar">
+                                {String(
+                                  getAssigneeName(
+                                    task
+                                  )
+                                )
+                                  .charAt(0)
+                                  .toUpperCase()}
+                              </div>
+
+                              <span>
+                                {String(
+                                  getAssigneeName(
+                                    task
+                                  )
+                                )}
+                              </span>
+
+                            </div>
+
+                          </td>
+
+                          <td>
+
+                            <Badge
+                              variant={getPriorityVariant(
+                                priority
+                              )}
                             >
-                              View
-                              <svg
-                                width="15"
-                                height="15"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                              >
-                                <path d="m9 18 6-6-6-6" />
-                              </svg>
-                            </Link>
-                          ) : (
-                            <span className="employee-task-no-action">
-                              —
+                              {priority.replaceAll(
+                                "_",
+                                " "
+                              )}
+                            </Badge>
+
+                          </td>
+
+                          <td>
+
+                            <div
+                              className={`admin-task-due-date ${
+                                overdue
+                                  ? "overdue"
+                                  : ""
+                              }`}
+                            >
+
+                              <span>
+                                {formatDate(
+                                  getDueDate(
+                                    task
+                                  )
+                                )}
+                              </span>
+
+                              {overdue && (
+                                <small>
+                                  Overdue
+                                </small>
+                              )}
+
+                            </div>
+
+                          </td>
+
+                          <td>
+
+                            <Badge
+                              variant={getStatusVariant(
+                                status
+                              )}
+                            >
+                              {status.replaceAll(
+                                "_",
+                                " "
+                              )}
+                            </Badge>
+
+                          </td>
+
+                          <td>
+
+                            <span className="admin-task-created-date">
+                              {formatDate(
+                                getCreatedDate(
+                                  task
+                                )
+                              )}
                             </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+
+                          </td>
+
+                          <td>
+
+                            <div className="admin-task-actions">
+
+                              <button
+                                type="button"
+                                className="admin-task-action-button view"
+                                onClick={() =>
+                                  router.push(
+                                    `/admin/tasks/${id}`
+                                  )
+                                }
+                                disabled={!id}
+                              >
+                                View
+                              </button>
+
+                              <button
+                                type="button"
+                                className="admin-task-action-button edit"
+                                onClick={() =>
+                                  router.push(
+                                    `/admin/tasks/create?edit=${id}`
+                                  )
+                                }
+                                disabled={!id}
+                              >
+                                Edit
+                              </button>
+
+                              <button
+                                type="button"
+                                className="admin-task-action-button delete"
+                                onClick={() =>
+                                  setDeleteId(
+                                    id
+                                  )
+                                }
+                                disabled={!id}
+                              >
+                                Delete
+                              </button>
+
+                            </div>
+
+                          </td>
+
+                        </tr>
+                      );
+                    }
+                  )}
+
                 </tbody>
+
               </table>
+
             </div>
 
-            <div className="employee-tasks-footer">
-              <span>
-                Showing{" "}
-                {filteredTasks.length === 0
-                  ? 0
-                  : (page - 1) * limit + 1}{" "}
-                -{" "}
-                {Math.min(
-                  page * limit,
-                  filteredTasks.length
-                )}{" "}
-                of {filteredTasks.length} tasks
-              </span>
+            <div className="admin-tasks-pagination">
 
               <Pagination
-                currentPage={page}
-                totalPages={totalPages}
-                onPageChange={setPage}
+                currentPage={
+                  currentPage
+                }
+                totalPages={
+                  totalPages
+                }
+                onPageChange={(page) =>
+                  setCurrentPage(
+                    page
+                  )
+                }
               />
+
             </div>
+
           </>
         )}
+
       </div>
+
+      <ConfirmDialog
+        isOpen={Boolean(
+          deleteId
+        )}
+        onClose={() =>
+          !deleting &&
+          setDeleteId(null)
+        }
+        onConfirm={
+          handleDelete
+        }
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        confirmText={
+          deleting
+            ? "Deleting..."
+            : "Delete Task"
+        }
+        cancelText="Cancel"
+        loading={deleting}
+        danger
+      />
+
     </div>
   );
 };
 
-export default EmployeeTasksPage;
+export default AdminTasksPage;

@@ -1,141 +1,313 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import { useRouter } from "next/navigation";
 
 import Button from "@/components/common/Button";
-import SearchBox from "@/components/common/SearchBox";
-import Select from "@/components/common/Select";
 import Badge from "@/components/common/Badge";
+import SearchBox from "@/components/common/SearchBox";
 import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
+import Modal from "@/components/common/Modal";
 
-import { useAuth } from "@/hooks/useAuth";
 import leadService from "@/services/lead.service";
+import employeeService from "@/services/employee.service";
 
 import "./leads.css";
 
 const ITEMS_PER_PAGE = 10;
 
 const STATUS_OPTIONS = [
-  { value: "", label: "All Statuses" },
-  { value: "New", label: "New" },
-  { value: "Assigned", label: "Assigned" },
-  { value: "Contacted", label: "Contacted" },
-  { value: "Qualified", label: "Qualified" },
-  { value: "Site Visit", label: "Site Visit" },
-  { value: "Quotation", label: "Quotation" },
-  { value: "Won", label: "Won" },
-  { value: "Lost", label: "Lost" },
+  { label: "New", value: "NEW" },
+  { label: "Assigned", value: "ASSIGNED" },
+  { label: "Contacted", value: "CONTACTED" },
+  { label: "Qualified", value: "QUALIFIED" },
+  { label: "Site Visit", value: "SITE_VISIT" },
+  { label: "Quotation", value: "QUOTATION" },
+  { label: "Won", value: "WON" },
+  { label: "Lost", value: "LOST" },
 ];
 
-const EmployeeLeadsPage = () => {
+const PRIORITY_OPTIONS = [
+  { label: "Urgent", value: "URGENT" },
+  { label: "High", value: "HIGH" },
+  { label: "Medium", value: "MEDIUM" },
+  { label: "Low", value: "LOW" },
+];
+
+const AdminLeadsPage = () => {
   const router = useRouter();
 
-  const { user, loading: authLoading } = useAuth();
-
   const [leads, setLeads] = useState([]);
+  const [employees, setEmployees] = useState([]);
+
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] =
+    useState(false);
+
   const [error, setError] = useState("");
 
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
+  const [statusFilter, setStatusFilter] =
+    useState("ALL");
+  const [priorityFilter, setPriorityFilter] =
+    useState("ALL");
+  const [sourceFilter, setSourceFilter] =
+    useState("ALL");
+  const [employeeFilter, setEmployeeFilter] =
+    useState("ALL");
+
   const [page, setPage] = useState(1);
 
-  const loadLeads = async () => {
+  const [selectedLead, setSelectedLead] =
+    useState(null);
+
+  const [showDetails, setShowDetails] =
+    useState(false);
+
+  /* ----------------------------------
+     Load Data
+  ---------------------------------- */
+
+  const loadData = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
       setError("");
 
-      const response = await leadService.getMyLeads({
-        page: 1,
-        limit: 100,
-      });
+      const [
+        leadResponse,
+        employeeResponse,
+      ] = await Promise.all([
+        leadService.getLeads({
+          page: 1,
+          limit: 1000,
+        }),
 
-      const items =
-        response?.data ||
-        response?.leads ||
+        employeeService.getEmployees({
+          page: 1,
+          limit: 1000,
+        }),
+      ]);
+
+      const leadData =
+        leadResponse?.data?.leads ||
+        leadResponse?.data?.data ||
+        leadResponse?.leads ||
+        leadResponse?.data ||
         [];
 
-      setLeads(Array.isArray(items) ? items : []);
+      const employeeData =
+        employeeResponse?.data?.employees ||
+        employeeResponse?.data?.data ||
+        employeeResponse?.employees ||
+        employeeResponse?.data ||
+        [];
+
+      setLeads(
+        Array.isArray(leadData)
+          ? leadData
+          : []
+      );
+
+      setEmployees(
+        Array.isArray(employeeData)
+          ? employeeData
+          : []
+      );
     } catch (err) {
-      console.error("Failed to load employee leads:", err);
+      console.error(
+        "Admin leads loading error:",
+        err
+      );
 
       setError(
         err?.response?.data?.message ||
+          err?.response?.data?.error ||
           err?.message ||
-          "Unable to load leads. Please try again."
+          "Unable to load leads."
       );
-
-      setLeads([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    if (!authLoading && user) {
-      loadLeads();
-    }
-  }, [authLoading, user]);
+    loadData();
+  }, []);
 
-  useEffect(() => {
-    setPage(1);
-  }, [search, status]);
+  /* ----------------------------------
+     Helpers
+  ---------------------------------- */
+
+  const getLeadId = (lead) =>
+    lead?.leadId ||
+    lead?._id ||
+    lead?.id ||
+    "—";
 
   const getLeadName = (lead) =>
     lead?.customerName ||
     lead?.name ||
-    lead?.contactPerson ||
+    lead?.fullName ||
     "Unnamed Lead";
 
-  const getLeadNumber = (lead) =>
-    lead?.leadId ||
-    lead?.leadNumber ||
-    lead?.leadNo ||
-    lead?._id ||
-    "—";
+  const getCompanyName = (lead) =>
+    lead?.companyName ||
+    "Individual Customer";
 
-  const getLeadPhone = (lead) =>
+  const getPhone = (lead) =>
     lead?.mobile ||
     lead?.phone ||
     lead?.contactNumber ||
     "—";
 
+  const getEmail = (lead) =>
+    lead?.email || "—";
+
   const getStatus = (lead) =>
-    lead?.status ||
-    lead?.leadStatus ||
-    "New";
+    String(
+      lead?.status || "NEW"
+    ).toUpperCase();
+
+  const getPriority = (lead) =>
+    String(
+      lead?.priority || "MEDIUM"
+    ).toUpperCase();
 
   const getSource = (lead) =>
-    lead?.leadSource ||
-    lead?.source ||
-    "Other";
+    String(
+      lead?.leadSource ||
+        lead?.source ||
+        "OTHER"
+    ).toUpperCase();
 
-  const getStatusVariant = (leadStatus) => {
-    switch (String(leadStatus).toLowerCase()) {
-      case "new":
+  const getAssignedEmployee = (lead) =>
+    lead?.assignedTo ||
+    lead?.assignedEmployee ||
+    lead?.employee ||
+    null;
+
+  const getAssignedEmployeeId = (
+    lead
+  ) => {
+    const assigned =
+      getAssignedEmployee(lead);
+
+    if (!assigned) return "";
+
+    if (typeof assigned === "string") {
+      return assigned;
+    }
+
+    return (
+      assigned?._id ||
+      assigned?.id ||
+      assigned?.employeeId ||
+      ""
+    );
+  };
+
+  const getAssignedEmployeeName = (
+    lead
+  ) => {
+    const assigned =
+      getAssignedEmployee(lead);
+
+    if (!assigned) {
+      return "Unassigned";
+    }
+
+    if (typeof assigned === "string") {
+      const employee =
+        employees.find(
+          (item) =>
+            String(
+              item?._id ||
+                item?.id ||
+                item?.employeeId
+            ) === String(assigned)
+        );
+
+      return (
+        employee?.name ||
+        employee?.fullName ||
+        "Assigned"
+      );
+    }
+
+    return (
+      assigned?.name ||
+      assigned?.fullName ||
+      "Assigned"
+    );
+  };
+
+  const formatDate = (value) => {
+    if (!value) return "—";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
+
+    return date.toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    );
+  };
+
+  const formatLabel = (value) =>
+    String(value || "")
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(
+        /\b\w/g,
+        (letter) =>
+          letter.toUpperCase()
+      );
+
+  const getStatusVariant = (
+    status
+  ) => {
+    switch (status) {
+      case "NEW":
         return "info";
 
-      case "assigned":
+      case "ASSIGNED":
         return "info";
 
-      case "contacted":
+      case "CONTACTED":
         return "warning";
 
-      case "qualified":
+      case "QUALIFIED":
         return "success";
 
-      case "site visit":
+      case "SITE_VISIT":
         return "warning";
 
-      case "quotation":
+      case "QUOTATION":
         return "info";
 
-      case "won":
+      case "WON":
         return "success";
 
-      case "lost":
+      case "LOST":
         return "danger";
 
       default:
@@ -143,72 +315,164 @@ const EmployeeLeadsPage = () => {
     }
   };
 
-  const formatDate = (date) => {
-    if (!date) {
-      return "—";
+  const getPriorityVariant = (
+    priority
+  ) => {
+    switch (priority) {
+      case "URGENT":
+      case "HIGH":
+        return "danger";
+
+      case "MEDIUM":
+        return "warning";
+
+      case "LOW":
+        return "secondary";
+
+      default:
+        return "secondary";
     }
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-      return "—";
-    }
-
-    return parsedDate.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
   };
 
+  /* ----------------------------------
+     Source Options
+  ---------------------------------- */
+
+  const sourceOptions = useMemo(() => {
+    return [
+      ...new Set(
+        leads
+          .map((lead) =>
+            getSource(lead)
+          )
+          .filter(Boolean)
+      ),
+    ];
+  }, [leads]);
+
+  /* ----------------------------------
+     Filter Leads
+  ---------------------------------- */
+
   const filteredLeads = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const searchValue =
+      search.trim().toLowerCase();
 
     return leads.filter((lead) => {
-      const leadStatus = getStatus(lead);
+      const leadName =
+        getLeadName(
+          lead
+        ).toLowerCase();
 
-      const searchableText = [
-        getLeadNumber(lead),
-        getLeadName(lead),
-        lead?.companyName,
-        getLeadPhone(lead),
-        lead?.email,
-        lead?.city,
-        lead?.state,
-        lead?.address,
-        getSource(lead),
-        lead?.requirement,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+      const company =
+        getCompanyName(
+          lead
+        ).toLowerCase();
+
+      const phone =
+        String(
+          getPhone(lead)
+        ).toLowerCase();
+
+      const email =
+        getEmail(
+          lead
+        ).toLowerCase();
+
+      const status =
+        getStatus(lead);
+
+      const priority =
+        getPriority(lead);
+
+      const source =
+        getSource(lead);
+
+      const employeeId =
+        getAssignedEmployeeId(
+          lead
+        );
 
       const matchesSearch =
-        !query || searchableText.includes(query);
+        !searchValue ||
+        leadName.includes(
+          searchValue
+        ) ||
+        company.includes(
+          searchValue
+        ) ||
+        phone.includes(
+          searchValue
+        ) ||
+        email.includes(
+          searchValue
+        );
 
       const matchesStatus =
-        !status || leadStatus === status;
+        statusFilter === "ALL" ||
+        status === statusFilter;
 
-      return matchesSearch && matchesStatus;
+      const matchesPriority =
+        priorityFilter === "ALL" ||
+        priority === priorityFilter;
+
+      const matchesSource =
+        sourceFilter === "ALL" ||
+        source === sourceFilter;
+
+      const matchesEmployee =
+        employeeFilter === "ALL" ||
+        String(employeeId) ===
+          String(employeeFilter);
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesPriority &&
+        matchesSource &&
+        matchesEmployee
+      );
     });
-  }, [leads, search, status]);
+  }, [
+    leads,
+    search,
+    statusFilter,
+    priorityFilter,
+    sourceFilter,
+    employeeFilter,
+  ]);
+
+  /* ----------------------------------
+     Pagination
+  ---------------------------------- */
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredLeads.length / ITEMS_PER_PAGE)
+    Math.ceil(
+      filteredLeads.length /
+        ITEMS_PER_PAGE
+    )
   );
 
-  const currentPage = Math.min(page, totalPages);
+  const currentPage = Math.min(
+    page,
+    totalPages
+  );
 
-  const paginatedLeads = useMemo(() => {
-    const start =
-      (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedLeads =
+    useMemo(() => {
+      const start =
+        (currentPage - 1) *
+        ITEMS_PER_PAGE;
 
-    return filteredLeads.slice(
-      start,
-      start + ITEMS_PER_PAGE
-    );
-  }, [filteredLeads, currentPage]);
+      return filteredLeads.slice(
+        start,
+        start + ITEMS_PER_PAGE
+      );
+    }, [
+      filteredLeads,
+      currentPage,
+    ]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -216,220 +480,819 @@ const EmployeeLeadsPage = () => {
     }
   }, [page, totalPages]);
 
-  const handleViewLead = (lead) => {
-    const id = lead?._id || lead?.id;
+  /* ----------------------------------
+     Stats
+  ---------------------------------- */
 
-    if (id) {
-      router.push(`/employee/leads/${id}`);
-    }
+  const stats = useMemo(() => {
+    const total = leads.length;
+
+    const newLeads =
+      leads.filter(
+        (lead) =>
+          getStatus(lead) === "NEW"
+      ).length;
+
+    const qualified =
+      leads.filter(
+        (lead) =>
+          getStatus(lead) ===
+          "QUALIFIED"
+      ).length;
+
+    const won =
+      leads.filter(
+        (lead) =>
+          getStatus(lead) === "WON"
+      ).length;
+
+    const highPriority =
+      leads.filter((lead) =>
+        ["HIGH", "URGENT"].includes(
+          getPriority(lead)
+        )
+      ).length;
+
+    return {
+      total,
+      newLeads,
+      qualified,
+      won,
+      highPriority,
+    };
+  }, [leads]);
+
+  /* ----------------------------------
+     Search
+  ---------------------------------- */
+
+  const handleSearch = (value) => {
+    setSearch(value);
+    setPage(1);
   };
 
-  if (authLoading || loading) {
+  /* ----------------------------------
+     Details
+  ---------------------------------- */
+
+  const openDetails = (lead) => {
+    setSelectedLead(lead);
+    setShowDetails(true);
+  };
+
+  const closeDetails = () => {
+    setSelectedLead(null);
+    setShowDetails(false);
+  };
+
+  /* ----------------------------------
+     Reset
+  ---------------------------------- */
+
+  const resetFilters = () => {
+    setSearch("");
+    setStatusFilter("ALL");
+    setPriorityFilter("ALL");
+    setSourceFilter("ALL");
+    setEmployeeFilter("ALL");
+    setPage(1);
+  };
+
+  /* ----------------------------------
+     Loading
+  ---------------------------------- */
+
+  if (loading) {
     return (
-      <div className="employee-leads-loading">
+      <div className="admin-leads-loading">
         <Loader />
       </div>
     );
   }
 
-  return (
-    <div className="employee-leads-page">
-      {/* Header */}
-      <div className="employee-leads-header">
-        <div>
-          <span className="employee-leads-eyebrow">
-            Sales Management
-          </span>
+  /* ----------------------------------
+     UI
+  ---------------------------------- */
 
-          <h1>My Leads</h1>
+  return (
+    <div className="admin-leads-page">
+      {/* Header */}
+
+      <div className="admin-leads-header">
+        <div>
+          <div className="admin-leads-breadcrumb">
+            Admin{" "}
+            <span>/</span>{" "}
+            Leads
+          </div>
+
+          <h1>
+            Lead Management
+          </h1>
 
           <p>
-            View and manage the leads assigned to you.
+            Manage, assign and monitor
+            all solar leads.
           </p>
         </div>
 
-        <Button
-          type="button"
-          onClick={loadLeads}
-          variant="secondary"
-          disabled={loading}
-        >
-          Refresh
-        </Button>
-      </div>
-
-      {/* Toolbar */}
-      <div className="employee-leads-toolbar">
-        <SearchBox
-          value={search}
-          onChange={setSearch}
-          placeholder="Search leads..."
-        />
-
-        <Select
-          value={status}
-          onChange={(event) =>
-            setStatus(event.target.value)
-          }
-          options={STATUS_OPTIONS}
-        />
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="employee-leads-error">
-          <span>{error}</span>
-
+        <div className="admin-leads-header-actions">
           <Button
             type="button"
             variant="secondary"
-            onClick={loadLeads}
+            onClick={() =>
+              loadData(true)
+            }
+            disabled={refreshing}
           >
-            Retry
+            {refreshing
+              ? "Refreshing..."
+              : "↻ Refresh"}
           </Button>
+
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() =>
+              router.push(
+                "/admin/leads/create"
+              )
+            }
+          >
+            + Create Lead
+          </Button>
+        </div>
+      </div>
+
+      {/* Error */}
+
+      {error && (
+        <div className="admin-leads-error">
+          <span>{error}</span>
+
+          <button
+            type="button"
+            onClick={() =>
+              loadData()
+            }
+          >
+            Try Again
+          </button>
         </div>
       )}
 
-      {/* Leads */}
-      <div className="employee-leads-card">
-        {paginatedLeads.length === 0 ? (
-          <div className="employee-leads-empty">
-            <div className="employee-leads-empty-icon">
-              ☀
+      {/* Stats */}
+
+      <div className="admin-leads-stats">
+        <div className="admin-lead-stat-card">
+          <div className="admin-lead-stat-icon">
+            👥
+          </div>
+
+          <div>
+            <span>Total Leads</span>
+            <strong>
+              {stats.total}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-lead-stat-card">
+          <div className="admin-lead-stat-icon">
+            🆕
+          </div>
+
+          <div>
+            <span>New Leads</span>
+            <strong>
+              {stats.newLeads}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-lead-stat-card">
+          <div className="admin-lead-stat-icon">
+            ✓
+          </div>
+
+          <div>
+            <span>Qualified</span>
+            <strong>
+              {stats.qualified}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-lead-stat-card">
+          <div className="admin-lead-stat-icon">
+            🏆
+          </div>
+
+          <div>
+            <span>Won</span>
+            <strong>
+              {stats.won}
+            </strong>
+          </div>
+        </div>
+
+        <div className="admin-lead-stat-card">
+          <div className="admin-lead-stat-icon">
+            ⚠
+          </div>
+
+          <div>
+            <span>High Priority</span>
+            <strong>
+              {stats.highPriority}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+
+      <div className="admin-leads-filter-card">
+        <div className="admin-leads-search">
+          <SearchBox
+            value={search}
+            onChange={handleSearch}
+            placeholder="Search name, company, phone..."
+          />
+        </div>
+
+        <div className="admin-leads-filter-group">
+          <select
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
+            className="admin-leads-filter-select"
+          >
+            <option value="ALL">
+              All Status
+            </option>
+
+            {STATUS_OPTIONS.map(
+              (option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
+                </option>
+              )
+            )}
+          </select>
+
+          <select
+            value={priorityFilter}
+            onChange={(event) => {
+              setPriorityFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
+            className="admin-leads-filter-select"
+          >
+            <option value="ALL">
+              All Priority
+            </option>
+
+            {PRIORITY_OPTIONS.map(
+              (option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
+                </option>
+              )
+            )}
+          </select>
+
+          <select
+            value={sourceFilter}
+            onChange={(event) => {
+              setSourceFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
+            className="admin-leads-filter-select"
+          >
+            <option value="ALL">
+              All Sources
+            </option>
+
+            {sourceOptions.map(
+              (source) => (
+                <option
+                  key={source}
+                  value={source}
+                >
+                  {formatLabel(source)}
+                </option>
+              )
+            )}
+          </select>
+
+          <select
+            value={employeeFilter}
+            onChange={(event) => {
+              setEmployeeFilter(
+                event.target.value
+              );
+              setPage(1);
+            }}
+            className="admin-leads-filter-select"
+          >
+            <option value="ALL">
+              All Employees
+            </option>
+
+            {employees.map(
+              (employee) => {
+                const id =
+                  employee?._id ||
+                  employee?.id ||
+                  employee?.employeeId;
+
+                const name =
+                  employee?.name ||
+                  employee?.fullName ||
+                  "Employee";
+
+                return (
+                  <option
+                    key={id}
+                    value={id}
+                  >
+                    {name}
+                  </option>
+                );
+              }
+            )}
+          </select>
+
+          <button
+            type="button"
+            className="admin-leads-reset-btn"
+            onClick={resetFilters}
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+
+      <div className="admin-leads-table-card">
+        <div className="admin-leads-table-header">
+          <div>
+            <h2>
+              All Leads
+            </h2>
+
+            <p>
+              {filteredLeads.length}{" "}
+              lead
+              {filteredLeads.length !==
+              1
+                ? "s"
+                : ""}{" "}
+              found
+            </p>
+          </div>
+        </div>
+
+        {paginatedLeads.length ===
+        0 ? (
+          <div className="admin-leads-empty">
+            <div className="admin-leads-empty-icon">
+              👥
             </div>
 
             <h3>
-              {error ? "Unable to load leads" : "No leads found"}
+              No leads found
             </h3>
 
             <p>
-              {error
-                ? "Please retry after checking the connection."
-                : search || status
-                ? "Try changing your search or filters."
-                : "You don't have any assigned leads yet."}
+              Try changing the filters
+              or create a new lead.
             </p>
+
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() =>
+                router.push(
+                  "/admin/leads/create"
+                )
+              }
+            >
+              + Create Lead
+            </Button>
           </div>
         ) : (
           <>
-            <div className="employee-leads-table-wrapper">
-              <table className="employee-leads-table">
+            <div className="admin-leads-table-wrapper">
+              <table className="admin-leads-table">
                 <thead>
                   <tr>
+                    <th>ID</th>
                     <th>Lead</th>
                     <th>Contact</th>
-                    <th>Location</th>
-                    <th>Source</th>
                     <th>Status</th>
+                    <th>Priority</th>
+                    <th>Source</th>
+                    <th>Assigned To</th>
                     <th>Created</th>
                     <th>Action</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {paginatedLeads.map((lead, index) => {
-                    const id =
-                      lead?._id ||
-                      lead?.id ||
-                      index;
-
-                    const leadStatus = getStatus(lead);
-
-                    return (
-                      <tr key={id}>
+                  {paginatedLeads.map(
+                    (lead) => (
+                      <tr
+                        key={
+                          lead?._id ||
+                          lead?.leadId ||
+                          lead?.id
+                        }
+                      >
                         <td>
-                          <div className="employee-lead-name">
-                            {getLeadName(lead)}
+                          <span className="admin-lead-id">
+                            {getLeadId(
+                              lead
+                            )}
+                          </span>
+                        </td>
+
+                        <td>
+                          <div className="admin-lead-name-cell">
+                            <strong>
+                              {getLeadName(
+                                lead
+                              )}
+                            </strong>
+
+                            <span>
+                              {getCompanyName(
+                                lead
+                              )}
+                            </span>
                           </div>
+                        </td>
 
-                          <div className="employee-lead-email">
-                            {getLeadNumber(lead)}
+                        <td>
+                          <div className="admin-lead-contact-cell">
+                            <span>
+                              {getPhone(
+                                lead
+                              )}
+                            </span>
+
+                            <small>
+                              {getEmail(
+                                lead
+                              )}
+                            </small>
                           </div>
-
-                          {lead?.email && (
-                            <div className="employee-lead-email">
-                              {lead.email}
-                            </div>
-                          )}
-                        </td>
-
-                        <td>
-                          {getLeadPhone(lead)}
-                        </td>
-
-                        <td>
-                          {[
-                            lead?.city,
-                            lead?.state,
-                          ]
-                            .filter(Boolean)
-                            .join(", ") || "—"}
-                        </td>
-
-                        <td>
-                          {getSource(lead)}
                         </td>
 
                         <td>
                           <Badge
                             variant={getStatusVariant(
-                              leadStatus
+                              getStatus(
+                                lead
+                              )
                             )}
                           >
-                            {leadStatus}
+                            {formatLabel(
+                              getStatus(
+                                lead
+                              )
+                            )}
                           </Badge>
                         </td>
 
                         <td>
-                          {formatDate(
-                            lead?.createdAt
-                          )}
+                          <Badge
+                            variant={getPriorityVariant(
+                              getPriority(
+                                lead
+                              )
+                            )}
+                          >
+                            {formatLabel(
+                              getPriority(
+                                lead
+                              )
+                            )}
+                          </Badge>
                         </td>
 
                         <td>
-                          <Button
+                          <span className="admin-lead-source">
+                            {formatLabel(
+                              getSource(
+                                lead
+                              )
+                            )}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span className="admin-lead-assignee">
+                            {getAssignedEmployeeName(
+                              lead
+                            )}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span className="admin-lead-date">
+                            {formatDate(
+                              lead?.createdAt
+                            )}
+                          </span>
+                        </td>
+
+                        <td>
+                          <button
                             type="button"
-                            variant="secondary"
+                            className="admin-lead-view-btn"
                             onClick={() =>
-                              handleViewLead(lead)
+                              openDetails(
+                                lead
+                              )
                             }
                           >
                             View
-                          </Button>
+                          </button>
                         </td>
                       </tr>
-                    );
-                  })}
+                    )
+                  )}
                 </tbody>
               </table>
             </div>
 
-            <div className="employee-leads-footer">
-              <span>
-                Showing{" "}
-                {(currentPage - 1) *
-                  ITEMS_PER_PAGE +
-                  1}{" "}
-                -{" "}
-                {Math.min(
-                  currentPage *
-                    ITEMS_PER_PAGE,
-                  filteredLeads.length
-                )}{" "}
-                of {filteredLeads.length} leads
-              </span>
-
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setPage}
-              />
-            </div>
+            {totalPages > 1 && (
+              <div className="admin-leads-pagination">
+                <Pagination
+                  currentPage={
+                    currentPage
+                  }
+                  totalPages={
+                    totalPages
+                  }
+                  onPageChange={
+                    setPage
+                  }
+                />
+              </div>
+            )}
           </>
         )}
       </div>
+
+      {/* Details Modal */}
+
+      {showDetails &&
+        selectedLead && (
+          <Modal
+            isOpen={showDetails}
+            onClose={closeDetails}
+            title="Lead Details"
+          >
+            <div className="admin-lead-details">
+              <div className="admin-lead-details-header">
+                <div className="admin-lead-avatar">
+                  {getLeadName(
+                    selectedLead
+                  )
+                    .charAt(0)
+                    .toUpperCase()}
+                </div>
+
+                <div>
+                  <h3>
+                    {getLeadName(
+                      selectedLead
+                    )}
+                  </h3>
+
+                  <p>
+                    {getCompanyName(
+                      selectedLead
+                    )}
+                  </p>
+
+                  <div className="admin-lead-details-badges">
+                    <Badge
+                      variant={getStatusVariant(
+                        getStatus(
+                          selectedLead
+                        )
+                      )}
+                    >
+                      {formatLabel(
+                        getStatus(
+                          selectedLead
+                        )
+                      )}
+                    </Badge>
+
+                    <Badge
+                      variant={getPriorityVariant(
+                        getPriority(
+                          selectedLead
+                        )
+                      )}
+                    >
+                      {formatLabel(
+                        getPriority(
+                          selectedLead
+                        )
+                      )}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="admin-lead-details-grid">
+                <div>
+                  <span>
+                    Lead ID
+                  </span>
+
+                  <strong>
+                    {getLeadId(
+                      selectedLead
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Mobile
+                  </span>
+
+                  <strong>
+                    {getPhone(
+                      selectedLead
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Email
+                  </span>
+
+                  <strong>
+                    {getEmail(
+                      selectedLead
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Source
+                  </span>
+
+                  <strong>
+                    {formatLabel(
+                      getSource(
+                        selectedLead
+                      )
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Assigned To
+                  </span>
+
+                  <strong>
+                    {getAssignedEmployeeName(
+                      selectedLead
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Follow-up Date
+                  </span>
+
+                  <strong>
+                    {formatDate(
+                      selectedLead?.followUpDate
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Created Date
+                  </span>
+
+                  <strong>
+                    {formatDate(
+                      selectedLead?.createdAt
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    City
+                  </span>
+
+                  <strong>
+                    {selectedLead?.city ||
+                      "—"}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="admin-lead-detail-block">
+                <span>
+                  Requirement
+                </span>
+
+                <p>
+                  {selectedLead?.requirement ||
+                    "No requirement information available."}
+                </p>
+              </div>
+
+              <div className="admin-lead-detail-block">
+                <span>
+                  Address
+                </span>
+
+                <p>
+                  {[
+                    selectedLead?.address,
+                    selectedLead?.city,
+                    selectedLead?.state,
+                    selectedLead?.pincode,
+                  ]
+                    .filter(Boolean)
+                    .join(", ") ||
+                    "No address information available."}
+                </p>
+              </div>
+
+              <div className="admin-lead-detail-block">
+                <span>
+                  Notes
+                </span>
+
+                <p>
+                  {selectedLead?.notes ||
+                    "No additional notes available."}
+                </p>
+              </div>
+
+              <div className="admin-lead-details-footer">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={
+                    closeDetails
+                  }
+                >
+                  Close
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() =>
+                    router.push(
+                      `/admin/leads/${selectedLead?._id}`
+                    )
+                  }
+                >
+                  Open Lead
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
     </div>
   );
 };
 
-export default EmployeeLeadsPage;
+export default AdminLeadsPage;
