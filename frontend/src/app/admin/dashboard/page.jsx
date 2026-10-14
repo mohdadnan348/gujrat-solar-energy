@@ -19,11 +19,13 @@ import RecentTasks from "@/components/dashboard/RecentTasks";
 import AdminStats from "@/components/dashboard/AdminStats";
 
 import dashboardService from "@/services/dashboard.service";
+import taskService from "@/services/task.service";
 
 import "./dashboard.css";
 
 const AdminDashboardPage = () => {
   const [dashboard, setDashboard] = useState(null);
+  const [dashboardTasks, setDashboardTasks] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -45,6 +47,19 @@ const AdminDashboardPage = () => {
     );
   };
 
+  const extractTaskList = (response) => {
+    const candidates = [
+      response?.data?.tasks,
+      response?.data?.data?.tasks,
+      response?.tasks,
+      response?.data?.data,
+      response?.data,
+      response,
+    ];
+
+    return candidates.find((value) => Array.isArray(value)) || [];
+  };
+
   /* ----------------------------------
      Load Dashboard
   ---------------------------------- */
@@ -62,6 +77,18 @@ const AdminDashboardPage = () => {
 
         const response =
           await dashboardService.getDashboard();
+
+        // Fetch actual task records as a fallback when the dashboard endpoint
+        // does not include recent tasks (or returns an empty recent.tasks array).
+        let taskRows = [];
+        try {
+          const taskResponse = await taskService.getTasks({ page: 1, limit: 5, sort: "-createdAt" });
+          taskRows = extractTaskList(taskResponse);
+        } catch (taskError) {
+          console.error("Admin dashboard task loading error:", taskError);
+        }
+
+        setDashboardTasks(taskRows);
 
         const data = extractData(response);
 
@@ -341,10 +368,17 @@ const AdminDashboardPage = () => {
     [dashboard]
   );
 
-  const recentTasks = useMemo(
-    () => asArray(dashboard?.recentTasks ?? recent?.tasks),
-    [dashboard]
-  );
+  const recentTasks = useMemo(() => {
+    const dashboardTaskRows = asArray(
+      dashboard?.recentTasks ?? recent?.tasks
+    );
+
+    // Use the dashboard API list when it contains records; otherwise use
+    // the same task records shown on the Tasks management page.
+    return dashboardTaskRows.length > 0
+      ? dashboardTaskRows
+      : dashboardTasks;
+  }, [dashboard, dashboardTasks]);
 
   /* ----------------------------------
      Admin Stats Component Data
@@ -455,138 +489,7 @@ const AdminDashboardPage = () => {
         />
       </div>
 
-      {/* ================================
-          SUMMARY CARDS
-      ================================= */}
-
-      <div className="admin-dashboard-summary">
-        {/* Revenue */}
-
-        <div className="admin-dashboard-summary-card">
-          <div className="admin-dashboard-summary-top">
-            <div>
-              <span>Total Invoiced Value</span>
-
-              <strong>
-                ₹
-                {Number(
-                  totalRevenue || 0
-                ).toLocaleString("en-IN")}
-              </strong>
-            </div>
-
-            <div className="admin-dashboard-summary-icon">
-              ₹
-            </div>
-          </div>
-
-          <p>
-            Total value of non-cancelled invoices from the database.
-          </p>
-        </div>
-
-        {/* Pending Tasks */}
-
-        <div className="admin-dashboard-summary-card">
-          <div className="admin-dashboard-summary-top">
-            <div>
-              <span>Pending Tasks</span>
-
-              <strong>
-                {pendingTasks}
-              </strong>
-            </div>
-
-            <div className="admin-dashboard-summary-icon">
-              ⏳
-            </div>
-          </div>
-
-          <p>
-            Tasks that are currently pending.
-          </p>
-        </div>
-
-        {/* Present */}
-
-        <div className="admin-dashboard-summary-card">
-          <div className="admin-dashboard-summary-top">
-            <div>
-              <span>Present Today</span>
-
-              <strong>
-                {presentToday}
-              </strong>
-            </div>
-
-            <div className="admin-dashboard-summary-icon">
-              ✓
-            </div>
-          </div>
-
-          <p>
-            Employees marked present today.
-          </p>
-        </div>
-
-        {/* Active Leads */}
-
-        <div className="admin-dashboard-summary-card">
-          <div className="admin-dashboard-summary-top">
-            <div>
-              <span>Active Leads</span>
-
-              <strong>
-                {activeLeads}
-              </strong>
-            </div>
-
-            <div className="admin-dashboard-summary-icon">
-              ●
-            </div>
-          </div>
-
-          <p>
-            Leads currently active in the sales
-            pipeline.
-          </p>
-        </div>
-      </div>
-
-      {/* ================================
-          CHARTS
-      ================================= */}
-
-      <div className="admin-dashboard-chart-grid">
-        <div className="admin-dashboard-chart-card">
-          <div className="admin-dashboard-card-header">
-            <div>
-              <h2>Lead Overview</h2>
-
-              <p>
-                Lead activity and conversion
-                movement.
-              </p>
-            </div>
-          </div>
-
-          <LeadChart data={leadData} />
-        </div>
-
-        <div className="admin-dashboard-chart-card">
-          <div className="admin-dashboard-card-header">
-            <div>
-              <h2>Sales Overview</h2>
-
-              <p>
-                Sales and revenue performance.
-              </p>
-            </div>
-          </div>
-
-          <SalesChart data={salesData} />
-        </div>
-      </div>
+      {/* Summary cards and overview charts removed as requested. */}
 
       {/* ================================
           RECENT DATA

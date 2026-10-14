@@ -1,3 +1,28 @@
+const fs = require("fs");
+const path = require("path");
+
+// Load the company logo from backend/public/assets so it is embedded in the
+// generated HTML/PDF and does not depend on a browser being able to fetch it.
+const getDefaultCompanyLogo = () => {
+  const candidates = [
+    path.resolve(process.cwd(), "public", "assets", "gujrat-solar-logo.png"),
+    path.resolve(__dirname, "../../public/assets/gujrat-solar-logo.png"),
+    path.resolve(__dirname, "../../../public/assets/gujrat-solar-logo.png"),
+    path.resolve(__dirname, "../public/assets/gujrat-solar-logo.png"),
+  ];
+
+  const logoPath = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!logoPath) return "";
+
+  try {
+    const image = fs.readFileSync(logoPath);
+    return `data:image/png;base64,${image.toString("base64")}`;
+  } catch (error) {
+    console.error("Unable to load Gujrat Solar Energy logo:", error.message);
+    return "";
+  }
+};
+
 const escapeHtml = (value) => {
   if (
     value === null ||
@@ -307,14 +332,21 @@ const invoiceTemplate = (data = {}) => {
     company.legalName ||
     "GUJRAT SOLAR ENERGY";
 
+  const companyLogo = company.logo || getDefaultCompanyLogo();
+
   const companyAddress = [
-    company.address,
-    company.city,
-    company.state,
-    company.pincode,
+    company.address || "83/161-3, Parampurwa, Juhi",
+    company.city || "Kanpur Nagar",
+    company.state || "Uttar Pradesh",
+    company.pincode || "208014",
   ]
     .filter(Boolean)
     .join(", ");
+
+  const companyPhone = company.phone || "+91 8545909039";
+  const companyEmail = company.email || "gujratsolar14@gmail.com";
+  const companyWebsite = company.website || "www.gujratsolarenergy.com";
+  const companyGstin = company.gstin || "09GBQPS0127B1ZL";
 
   const sellerAddress = [
     seller.address,
@@ -410,9 +442,13 @@ const invoiceTemplate = (data = {}) => {
   }
 
   .company-logo {
-    max-width: 55mm;
-    max-height: 22mm;
+    display: block;
+    width: auto;
+    max-width: 43mm;
+    height: auto;
+    max-height: 30mm;
     object-fit: contain;
+    object-position: left center;
     margin-bottom: 3mm;
   }
 
@@ -484,6 +520,27 @@ const invoiceTemplate = (data = {}) => {
       1fr 1fr;
     gap: 7mm;
     margin-top: 7mm;
+  }
+
+  .parties.parties-single {
+    grid-template-columns: 1fr;
+  }
+
+  .parties.parties-single .party-card {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .notes-section {
+    margin-top: 7mm;
+    padding: 4mm 0;
+    border-top: 1px solid #ddd;
+  }
+
+  .notes-title {
+    font-size: 10px;
+    font-weight: 800;
+    margin-bottom: 2mm;
   }
 
   .party-card {
@@ -717,17 +774,20 @@ const invoiceTemplate = (data = {}) => {
     <div class="company-section">
 
       ${
-        company.logo
+        companyLogo
           ? `
             <img
               class="company-logo"
               src="${escapeHtml(
-                company.logo
+                companyLogo
               )}"
               alt="${escapeHtml(
                 companyName
               )}"
             />
+            <div class="company-name">
+              ${escapeHtml(companyName)}
+            </div>
           `
           : `
             <div class="company-name">
@@ -745,52 +805,40 @@ const invoiceTemplate = (data = {}) => {
       </div>
 
       ${
-        company.phone
+        companyPhone
           ? `
             <div class="company-contact">
-              Phone:
-              ${escapeHtml(
-                company.phone
-              )}
+              Phone: ${escapeHtml(companyPhone)}
             </div>
           `
           : ""
       }
 
       ${
-        company.email
+        companyEmail
           ? `
             <div class="company-contact">
-              Email:
-              ${escapeHtml(
-                company.email
-              )}
+              Email: ${escapeHtml(companyEmail)}
             </div>
           `
           : ""
       }
 
       ${
-        company.website
+        companyWebsite
           ? `
             <div class="company-contact">
-              Website:
-              ${escapeHtml(
-                company.website
-              )}
+              Website: ${escapeHtml(companyWebsite)}
             </div>
           `
           : ""
       }
 
       ${
-        company.gstin
+        companyGstin
           ? `
             <div class="company-contact">
-              GSTIN:
-              ${escapeHtml(
-                company.gstin
-              )}
+              GSTIN: ${escapeHtml(companyGstin)}
             </div>
           `
           : ""
@@ -901,100 +949,7 @@ const invoiceTemplate = (data = {}) => {
        BILL FROM / BILL TO
   ================================================= -->
 
-  <div class="parties">
-
-    <div class="party-card">
-
-      <div class="party-title">
-        Seller / Bill From
-      </div>
-
-      <div class="party-name">
-        ${escapeHtml(
-          seller.name ||
-            seller.companyName ||
-            companyName
-        )}
-      </div>
-
-      <div class="info-row">
-        <div class="info-label">
-          Address
-        </div>
-
-        <div class="info-value">
-          ${escapeHtml(
-            sellerAddress ||
-              companyAddress
-          )}
-        </div>
-      </div>
-
-      ${
-        seller.gstin ||
-        company.gstin
-          ? `
-            <div class="info-row">
-              <div class="info-label">
-                GSTIN
-              </div>
-
-              <div class="info-value">
-                ${escapeHtml(
-                  seller.gstin ||
-                    company.gstin ||
-                    ""
-                )}
-              </div>
-            </div>
-          `
-          : ""
-      }
-
-      ${
-        seller.pan ||
-        company.pan
-          ? `
-            <div class="info-row">
-              <div class="info-label">
-                PAN
-              </div>
-
-              <div class="info-value">
-                ${escapeHtml(
-                  seller.pan ||
-                    company.pan ||
-                    ""
-                )}
-              </div>
-            </div>
-          `
-          : ""
-      }
-
-      ${
-        seller.phone ||
-        company.phone
-          ? `
-            <div class="info-row">
-              <div class="info-label">
-                Phone
-              </div>
-
-              <div class="info-value">
-                ${escapeHtml(
-                  seller.phone ||
-                    company.phone ||
-                    ""
-                )}
-              </div>
-            </div>
-          `
-          : ""
-      }
-
-    </div>
-
+  <div class="parties parties-single">
 
     <div class="party-card">
 
@@ -1350,130 +1305,16 @@ const invoiceTemplate = (data = {}) => {
   </div>
 
 
-  <!-- ================================================
-       BANK + NOTES
-  ================================================= -->
-
-  <div class="bank-and-notes">
-
-    <div class="box">
-
-      <div class="box-title">
-        Bank Details
-      </div>
-
-      <div class="bank-row">
-        <div class="bank-label">
-          Bank Name
+  ${
+    data.notes
+      ? `
+        <div class="notes-section">
+          <div class="notes-title">Notes</div>
+          <div>${nl2br(data.notes)}</div>
         </div>
-
-        <div class="bank-value">
-          ${escapeHtml(
-            bankDetails.bankName ||
-              ""
-          )}
-        </div>
-      </div>
-
-      <div class="bank-row">
-        <div class="bank-label">
-          Account Name
-        </div>
-
-        <div class="bank-value">
-          ${escapeHtml(
-            bankDetails.accountName ||
-              companyName
-          )}
-        </div>
-      </div>
-
-      <div class="bank-row">
-        <div class="bank-label">
-          Account Number
-        </div>
-
-        <div class="bank-value">
-          ${escapeHtml(
-            bankDetails.accountNumber ||
-              ""
-          )}
-        </div>
-      </div>
-
-      <div class="bank-row">
-        <div class="bank-label">
-          IFSC
-        </div>
-
-        <div class="bank-value">
-          ${escapeHtml(
-            bankDetails.ifscCode ||
-              ""
-          )}
-        </div>
-      </div>
-
-      <div class="bank-row">
-        <div class="bank-label">
-          Branch
-        </div>
-
-        <div class="bank-value">
-          ${escapeHtml(
-            bankDetails.branchName ||
-              ""
-          )}
-        </div>
-      </div>
-
-      ${
-        bankDetails.upiId
-          ? `
-            <div class="bank-row">
-              <div class="bank-label">
-                UPI ID
-              </div>
-
-              <div class="bank-value">
-                ${escapeHtml(
-                  bankDetails.upiId
-                )}
-              </div>
-            </div>
-          `
-          : ""
-      }
-
-    </div>
-
-
-    <div class="box">
-
-      <div class="box-title">
-        Notes
-      </div>
-
-      ${
-        data.notes
-          ? `
-            <div>
-              ${nl2br(
-                data.notes
-              )}
-            </div>
-          `
-          : `
-            <div class="small-text">
-              This is a computer-generated
-              tax invoice.
-            </div>
-          `
-      }
-
-    </div>
-
-  </div>
+      `
+      : ""
+  }
 
 
   <!-- ================================================

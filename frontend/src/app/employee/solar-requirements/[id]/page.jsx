@@ -70,7 +70,11 @@ const SolarRequirementDetailsPage = () => {
   const loadRequirement = async (
     isRefresh = false
   ) => {
-    if (!requirementId) return;
+    if (!requirementId) {
+      setLoading(false);
+      setError("Solar requirement ID is missing from the URL.");
+      return;
+    }
 
     try {
       if (isRefresh) {
@@ -90,7 +94,10 @@ const SolarRequirementDetailsPage = () => {
         response?.data || response;
 
       const loadedRequirement =
-        data?.requirement || data;
+        data?.data?.requirement ||
+        data?.data ||
+        data?.requirement ||
+        data;
 
       setRequirement(loadedRequirement);
 
@@ -125,7 +132,7 @@ const SolarRequirementDetailsPage = () => {
 
   const handleBack = () => {
     router.push(
-      "/admin/solar-requirements"
+      "/employee/solar-requirements"
     );
   };
 
@@ -163,7 +170,10 @@ const SolarRequirementDetailsPage = () => {
         response?.data || response;
 
       const updatedRequirement =
-        data?.requirement || data;
+        data?.data?.requirement ||
+        data?.data ||
+        data?.requirement ||
+        data;
 
       if (updatedRequirement) {
         setRequirement(updatedRequirement);
@@ -473,7 +483,7 @@ const SolarRequirementDetailsPage = () => {
 
   if (loading) {
     return (
-      <div className="admin-requirement-details-loading">
+      <div className="employee-requirement-details-loading">
         <Loader />
       </div>
     );
@@ -488,20 +498,20 @@ const SolarRequirementDetailsPage = () => {
     !requirement
   ) {
     return (
-      <div className="admin-requirement-details-page">
+      <div className="employee-requirement-details-page">
 
-        <div className="admin-requirement-details-header">
+        <div className="employee-requirement-details-header">
           <div>
 
             <button
               type="button"
-              className="admin-requirement-back"
+              className="employee-requirement-back"
               onClick={handleBack}
             >
-              ← Back to Requirements
+              ← Back to My Requirements
             </button>
 
-            <span className="admin-page-eyebrow">
+            <span className="employee-page-eyebrow">
               Solar Management
             </span>
 
@@ -512,9 +522,9 @@ const SolarRequirementDetailsPage = () => {
           </div>
         </div>
 
-        <div className="admin-requirement-details-error">
+        <div className="employee-requirement-details-error">
 
-          <div className="admin-requirement-error-icon">
+          <div className="employee-requirement-error-icon">
             !
           </div>
 
@@ -527,7 +537,7 @@ const SolarRequirementDetailsPage = () => {
               "The requested solar requirement could not be found."}
           </p>
 
-          <div className="admin-requirement-error-actions">
+          <div className="employee-requirement-error-actions">
 
             <Button
               onClick={() =>
@@ -541,7 +551,7 @@ const SolarRequirementDetailsPage = () => {
               variant="secondary"
               onClick={handleBack}
             >
-              Back to Requirements
+              Back to My Requirements
             </Button>
 
           </div>
@@ -557,33 +567,33 @@ const SolarRequirementDetailsPage = () => {
   ========================================================= */
 
   return (
-    <div className="admin-requirement-details-page">
+    <div className="employee-requirement-details-page">
 
       {/* =====================================================
           HEADER
       ===================================================== */}
 
-      <div className="admin-requirement-details-header">
+      <div className="employee-requirement-details-header">
 
         <div>
 
           <button
             type="button"
-            className="admin-requirement-back"
+            className="employee-requirement-back"
             onClick={handleBack}
           >
-            ← Back to Requirements
+            ← Back to My Requirements
           </button>
 
-          <div className="admin-requirement-title-row">
+          <div className="employee-requirement-title-row">
 
-            <div className="admin-requirement-icon">
+            <div className="employee-requirement-icon">
               ☀
             </div>
 
             <div>
 
-              <div className="admin-requirement-title-line">
+              <div className="employee-requirement-title-line">
 
                 <h1>
                   {getValue(
@@ -606,7 +616,7 @@ const SolarRequirementDetailsPage = () => {
               </div>
 
               <p>
-                Solar Requirement •{" "}
+                My Solar Requirement •{" "}
                 {formatDate(
                   requirement?.createdAt
                 )}
@@ -620,9 +630,9 @@ const SolarRequirementDetailsPage = () => {
 
         {/* STATUS CONTROLS */}
 
-        <div className="admin-requirement-header-actions">
+        <div className="employee-requirement-header-actions">
 
-          <div className="admin-requirement-status-editor">
+          <div className="employee-requirement-status-editor">
 
             <select
               value={selectedStatus}
@@ -635,7 +645,7 @@ const SolarRequirementDetailsPage = () => {
                 setStatusError("");
               }}
               disabled={updatingStatus}
-              className="admin-requirement-status-select"
+              className="employee-requirement-status-select"
             >
 
               {STATUS_OPTIONS.map(
@@ -690,14 +700,14 @@ const SolarRequirementDetailsPage = () => {
       {/* STATUS MESSAGE */}
 
       {statusMessage && (
-        <div className="admin-status-success">
+        <div className="employee-status-success">
           <span>✓</span>
           {statusMessage}
         </div>
       )}
 
       {statusError && (
-        <div className="admin-status-error">
+        <div className="employee-status-error">
           <span>!</span>
           {statusError}
         </div>
@@ -707,9 +717,9 @@ const SolarRequirementDetailsPage = () => {
           SUMMARY
       ===================================================== */}
 
-      <div className="admin-requirement-summary-grid">
+      <div className="employee-requirement-summary-grid">
 
-        <div className="admin-requirement-summary-card">
+        <div className="employee-requirement-summary-card">
           <span>
             Required Capacity
           </span>
@@ -724,7 +734,7 @@ const SolarRequirementDetailsPage = () => {
           </strong>
         </div>
 
-        <div className="admin-requirement-summary-card">
+        <div className="employee-requirement-summary-card">
           <span>
             Monthly Bill
           </span>
@@ -741,7 +751,7 @@ const SolarRequirementDetailsPage = () => {
           </strong>
         </div>
 
-        <div className="admin-requirement-summary-card">
+        <div className="employee-requirement-summary-card">
           <span>
             Monthly Units
           </span>
@@ -755,7 +765,7 @@ const SolarRequirementDetailsPage = () => {
           </strong>
         </div>
 
-        <div className="admin-requirement-summary-card">
+        <div className="employee-requirement-summary-card">
           <span>
             System Type
           </span>
@@ -771,19 +781,19 @@ const SolarRequirementDetailsPage = () => {
           MAIN LAYOUT
       ===================================================== */}
 
-      <div className="admin-requirement-details-layout">
+      <div className="employee-requirement-details-layout">
 
         {/* ===================================================
             MAIN
         =================================================== */}
 
-        <div className="admin-requirement-main">
+        <div className="employee-requirement-main">
 
           {/* CUSTOMER */}
 
-          <section className="admin-requirement-detail-card">
+          <section className="employee-requirement-detail-card">
 
-            <div className="admin-requirement-card-header">
+            <div className="employee-requirement-card-header">
 
               <div>
                 <h2>
@@ -798,7 +808,7 @@ const SolarRequirementDetailsPage = () => {
 
             </div>
 
-            <div className="admin-requirement-detail-grid">
+            <div className="employee-requirement-detail-grid">
 
               <div>
                 <span>
@@ -863,9 +873,9 @@ const SolarRequirementDetailsPage = () => {
 
           {/* ELECTRICITY */}
 
-          <section className="admin-requirement-detail-card">
+          <section className="employee-requirement-detail-card">
 
-            <div className="admin-requirement-card-header">
+            <div className="employee-requirement-card-header">
 
               <div>
                 <h2>
@@ -881,7 +891,7 @@ const SolarRequirementDetailsPage = () => {
 
             </div>
 
-            <div className="admin-requirement-detail-grid">
+            <div className="employee-requirement-detail-grid">
 
               <div>
                 <span>
@@ -970,9 +980,9 @@ const SolarRequirementDetailsPage = () => {
 
           {/* SITE */}
 
-          <section className="admin-requirement-detail-card">
+          <section className="employee-requirement-detail-card">
 
-            <div className="admin-requirement-card-header">
+            <div className="employee-requirement-card-header">
 
               <div>
                 <h2>
@@ -987,7 +997,7 @@ const SolarRequirementDetailsPage = () => {
 
             </div>
 
-            <div className="admin-requirement-detail-grid">
+            <div className="employee-requirement-detail-grid">
 
               <div>
                 <span>
@@ -1043,7 +1053,7 @@ const SolarRequirementDetailsPage = () => {
                 </strong>
               </div>
 
-              <div className="admin-requirement-detail-full">
+              <div className="employee-requirement-detail-full">
 
                 <span>
                   Site Address
@@ -1064,9 +1074,9 @@ const SolarRequirementDetailsPage = () => {
 
           {/* NOTES */}
 
-          <section className="admin-requirement-detail-card">
+          <section className="employee-requirement-detail-card">
 
-            <div className="admin-requirement-card-header">
+            <div className="employee-requirement-card-header">
 
               <div>
                 <h2>
@@ -1081,7 +1091,7 @@ const SolarRequirementDetailsPage = () => {
 
             </div>
 
-            <div className="admin-requirement-notes">
+            <div className="employee-requirement-notes">
 
               {requirement?.notes ||
               requirement?.description ? (
@@ -1106,13 +1116,13 @@ const SolarRequirementDetailsPage = () => {
             SIDEBAR
         =================================================== */}
 
-        <aside className="admin-requirement-sidebar">
+        <aside className="employee-requirement-sidebar">
 
           {/* SUMMARY */}
 
-          <section className="admin-requirement-detail-card">
+          <section className="employee-requirement-detail-card">
 
-            <div className="admin-requirement-card-header">
+            <div className="employee-requirement-card-header">
 
               <div>
                 <h2>
@@ -1126,7 +1136,7 @@ const SolarRequirementDetailsPage = () => {
 
             </div>
 
-            <div className="admin-requirement-summary-list">
+            <div className="employee-requirement-summary-list">
 
               <div>
                 <span>
@@ -1221,9 +1231,9 @@ const SolarRequirementDetailsPage = () => {
 
           {/* LINKED LEAD */}
 
-          <section className="admin-requirement-detail-card">
+          <section className="employee-requirement-detail-card">
 
-            <div className="admin-requirement-card-header">
+            <div className="employee-requirement-card-header">
 
               <div>
                 <h2>
@@ -1238,9 +1248,9 @@ const SolarRequirementDetailsPage = () => {
 
             </div>
 
-            <div className="admin-linked-lead">
+            <div className="employee-linked-lead">
 
-              <div className="admin-linked-lead-icon">
+              <div className="employee-linked-lead-icon">
                 L
               </div>
 
@@ -1272,9 +1282,9 @@ const SolarRequirementDetailsPage = () => {
 
           {/* RECORD INFO */}
 
-          <section className="admin-requirement-detail-card">
+          <section className="employee-requirement-detail-card">
 
-            <div className="admin-requirement-card-header">
+            <div className="employee-requirement-card-header">
 
               <div>
                 <h2>
@@ -1288,7 +1298,7 @@ const SolarRequirementDetailsPage = () => {
 
             </div>
 
-            <div className="admin-record-info">
+            <div className="employee-record-info">
 
               <div>
                 <span>
@@ -1324,13 +1334,13 @@ const SolarRequirementDetailsPage = () => {
 
       {/* BOTTOM */}
 
-      <div className="admin-requirement-bottom-actions">
+      <div className="employee-requirement-bottom-actions">
 
         <Button
           variant="secondary"
           onClick={handleBack}
         >
-          Back to Requirements
+          Back to My Requirements
         </Button>
 
       </div>

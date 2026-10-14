@@ -15,16 +15,23 @@ import Loader from "@/components/common/Loader";
 
 import solarRequirementService from "@/services/solarRequirement.service";
 import leadService from "@/services/lead.service";
+import { createCustomer, getCustomers } from "@/services/customer.service";
 import "./create-requirement.css";
+
+const DIRECT_CUSTOMER = "__DIRECT_CUSTOMER__";
+
 const CreateSolarRequirementPage = () => {
   const router = useRouter();
 
   const [leads, setLeads] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [loadingLeads, setLoadingLeads] =
     useState(true);
   const [submitting, setSubmitting] =
     useState(false);
   const [error, setError] = useState("");
+  const [leadLoadError, setLeadLoadError] = useState("");
   const [fieldErrors, setFieldErrors] =
     useState({});
 
@@ -50,32 +57,61 @@ const CreateSolarRequirementPage = () => {
   const loadLeads = async () => {
     try {
       setLoadingLeads(true);
+      setLeadLoadError("");
 
-      const response =
-        await leadService.getLeads();
+      // Employees must load their own assigned leads, not the admin-only
+      // GET /leads endpoint.
+      const response = await leadService.getMyLeads({ page: 1, limit: 100 });
+      const data = response?.data || response;
+      const candidates = [
+        data,
+        data?.leads,
+        data?.items,
+        data?.results,
+        data?.data,
+        data?.data?.leads,
+        data?.data?.items,
+        data?.data?.results,
+      ];
+      const leadList = candidates.find(Array.isArray) || [];
+      setLeads(leadList);
 
-      const data =
-        response?.data || response;
-
-      setLeads(
-        Array.isArray(data)
-          ? data
-          : data?.leads ||
-              data?.items ||
-              []
-      );
+      if (leadList.length === 0) {
+        setLeadLoadError("No leads were found. You can still continue by selecting Direct Customer and entering the customer's details manually.");
+      }
     } catch (err) {
-      console.error(
-        "Failed to load leads:",
-        err
+      console.error("Failed to load employee leads:", err);
+      const statusCode = err?.response?.status;
+      const message = err?.response?.data?.message || err?.response?.data?.error;
+      setLeads([]);
+      setLeadLoadError(
+        statusCode === 401
+          ? (message || "Your session has expired. Please sign in again.")
+          : statusCode === 403
+            ? (message || "Your employee account is not authorized to load assigned leads.")
+            : (message || err?.message || "Unable to load assigned leads. Please try again.")
       );
     } finally {
       setLoadingLeads(false);
     }
   };
 
+  const loadCustomers = async () => {
+    try {
+      const response = await getCustomers({ page: 1, limit: 500 });
+      const payload = response?.data ?? response;
+      const list = Array.isArray(payload)
+        ? payload
+        : payload?.customers || payload?.items || payload?.data || [];
+      setCustomers(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error("Failed to load customers:", err);
+    }
+  };
+
   useEffect(() => {
     loadLeads();
+    loadCustomers();
   }, []);
 
   const handleChange = (event) => {
@@ -149,72 +185,119 @@ const CreateSolarRequirementPage = () => {
     );
   };
 
-  const handleLeadChange = (
-    event
-  ) => {
-    const leadId =
-      event.target.value;
+  const getCustomerName = (customer) =>
+    customer?.name || customer?.customerName || customer?.fullName || customer?.companyName || "";
 
-    const selectedLead =
-      leads.find(
-        (lead) =>
-          String(
-            lead?._id ||
-              lead?.id
-          ) ===
-          String(leadId)
-      );
+  const handleExistingCustomerChange = (event) => {
+    const customerId = event?.target?.value ?? event;
+    setSelectedCustomerId(customerId === "__NEW_CUSTOMER__" ? "" : customerId);
+
+    if (!customerId || customerId === "__NEW_CUSTOMER__") {
+      setForm((previous) => ({
+        ...previous,
+        customerName: "",
+        phone: "",
+        email: "",
+        siteAddress: "",
+        location: "",
+      }));
+      return;
+    }
+
+    const customer = customers.find(
+      (item) => String(item?._id || item?.id) === String(customerId)
+    );
+
+    if (customer) {
+      setForm((previous) => ({
+        ...previous,
+        customerName: getCustomerName(customer),
+        phone: customer?.mobile || customer?.phone || customer?.contactNumber || "",
+        email: customer?.email || "",
+        siteAddress: customer?.siteAddress || customer?.address || "",
+        location: customer?.city || customer?.location || "",
+      }));
+      setFieldErrors((previous) => ({
+        ...previous,
+        customerName: "",
+        phone: "",
+        siteAddress: "",
+        location: "",
+      }));
+      setError("");
+    }
+  };
+
+  const handleLeadChange = (event) => {
+    const leadId = event?.target?.value ?? event;
+    const selectedLead = leads.find(
+      (lead) => String(lead?._id || lead?.id) === String(leadId)
+    );
+
+    if (leadId === DIRECT_CUSTOMER) {
+      setSelectedCustomerId("");
+      setForm((previous) => ({
+        ...previous,
+        leadId: DIRECT_CUSTOMER,
+        customerName: "",
+        phone: "",
+        email: "",
+        siteAddress: "",
+        location: "",
+      }));
+      setFieldErrors((previous) => ({
+        ...previous,
+        leadId: "",
+        customerName: "",
+        phone: "",
+        siteAddress: "",
+        location: "",
+      }));
+      setError("");
+      return;
+    }
+
+    setSelectedCustomerId("");
 
     if (!selectedLead) {
       setForm((previous) => ({
         ...previous,
         leadId,
+        customerName: "",
+        phone: "",
+        email: "",
+        siteAddress: "",
+        location: "",
       }));
-
       return;
     }
 
     setForm((previous) => ({
       ...previous,
       leadId,
-      customerName:
-        getLeadName(
-          selectedLead
-        ),
-      phone:
-        getLeadPhone(
-          selectedLead
-        ),
-      email:
-        getLeadEmail(
-          selectedLead
-        ),
-      siteAddress:
-        getLeadAddress(
-          selectedLead
-        ),
-      location:
-        getLeadCity(
-          selectedLead
-        ),
+      customerName: getLeadName(selectedLead),
+      phone: getLeadPhone(selectedLead),
+      email: getLeadEmail(selectedLead),
+      siteAddress: getLeadAddress(selectedLead),
+      location: getLeadCity(selectedLead),
     }));
 
-    setFieldErrors(
-      (previous) => ({
-        ...previous,
-        leadId: "",
-        customerName: "",
-        phone: "",
-      })
-    );
+    setFieldErrors((previous) => ({
+      ...previous,
+      leadId: "",
+      customerName: "",
+      phone: "",
+      siteAddress: "",
+      location: "",
+    }));
+    setError("");
   };
 
   const validate = () => {
     const errors = {};
 
     if (!form.leadId) {
-      errors.leadId =
-        "Please select a lead.";
+      errors.leadId = "Please select a lead or choose Direct Customer.";
     }
 
     if (
@@ -298,9 +381,44 @@ const CreateSolarRequirementPage = () => {
       setSubmitting(true);
       setError("");
 
+      let linkedCustomerId;
+
+      if (form.leadId === DIRECT_CUSTOMER && selectedCustomerId) {
+        linkedCustomerId = selectedCustomerId;
+      } else if (form.leadId === DIRECT_CUSTOMER) {
+        const customerResponse = await createCustomer({
+          name: form.customerName.trim(),
+          mobile: form.phone.trim(),
+          email: form.email.trim() || undefined,
+          address: form.siteAddress.trim(),
+          siteAddress: form.siteAddress.trim(),
+          city: form.location.trim(),
+          notes: form.notes.trim() || undefined,
+          customerType: "Individual",
+          status: "Active",
+        });
+
+        const createdCustomer =
+          customerResponse?.data?.customer ||
+          customerResponse?.data ||
+          customerResponse?.customer ||
+          customerResponse;
+
+        linkedCustomerId =
+          createdCustomer?._id || createdCustomer?.id;
+
+        if (!linkedCustomerId) {
+          throw new Error(
+            "Customer record was created without an ID. Please check the customer API response."
+          );
+        }
+      }
+
       const payload = {
-        lead: form.leadId,
-        customer: undefined,
+        ...(form.leadId !== DIRECT_CUSTOMER
+          ? { lead: form.leadId }
+          : {}),
+        ...(linkedCustomerId ? { customer: linkedCustomerId } : {}),
 
         requiredKw:
           Number(
@@ -355,8 +473,8 @@ const CreateSolarRequirementPage = () => {
           undefined,
 
         siteSurveyRequired:
-          form.siteSurvey ===
-          "Required",
+          form.siteSurvey !==
+          "Not Required",
 
         siteSurveyCompleted:
           form.siteSurvey ===
@@ -372,7 +490,7 @@ const CreateSolarRequirementPage = () => {
       );
 
       router.push(
-        "/admin/solar-requirements"
+        "/employee/solar-requirements"
       );
     } catch (err) {
       console.error(
@@ -381,8 +499,9 @@ const CreateSolarRequirementPage = () => {
       );
 
       setError(
-        err?.message ||
-          err?.response?.data?.message ||
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.message ||
           "Unable to create solar requirement. Please try again."
       );
     } finally {
@@ -412,7 +531,7 @@ const CreateSolarRequirementPage = () => {
             className="admin-create-requirement-back"
             onClick={() =>
               router.push(
-                "/admin/solar-requirements"
+                "/employee/solar-requirements"
               )
             }
           >
@@ -436,6 +555,22 @@ const CreateSolarRequirementPage = () => {
         </div>
 
       </div>
+
+      {/* Assigned leads loading state */}
+      {leadLoadError && (
+        <div className="admin-create-requirement-error" role="alert">
+          <div className="admin-create-error-icon">!</div>
+          <div>
+            <strong>{leads.length === 0 ? "Assigned leads unavailable" : "Lead loading warning"}</strong>
+            <p>{leadLoadError}</p>
+            <div style={{ marginTop: 10 }}>
+              <Button type="button" variant="secondary" onClick={loadLeads} disabled={loadingLeads}>
+                {loadingLeads ? "Loading leads..." : "Retry loading leads"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error */}
 
@@ -496,7 +631,7 @@ const CreateSolarRequirementPage = () => {
             <div className="admin-form-field admin-form-full">
 
               <Select
-                label="Select Lead *"
+                label="Lead / Customer Source *"
                 name="leadId"
                 value={
                   form.leadId
@@ -512,9 +647,10 @@ const CreateSolarRequirementPage = () => {
                 }
               >
                 <option value="">
-                  {loadingLeads
-                    ? "Loading leads..."
-                    : "Select a lead"}
+                  {loadingLeads ? "Loading leads..." : "Select lead or customer source"}
+                </option>
+                <option value={DIRECT_CUSTOMER}>
+                  Direct Customer — No Lead Created
                 </option>
 
                 {leads.map(
@@ -549,21 +685,41 @@ const CreateSolarRequirementPage = () => {
 
             </div>
 
+            {form.leadId === DIRECT_CUSTOMER && (
+              <div className="admin-form-field admin-form-full">
+                <Select
+                  label="Select Existing Customer (Optional)"
+                  name="existingCustomerId"
+                  value={selectedCustomerId || "__NEW_CUSTOMER__"}
+                  onChange={handleExistingCustomerChange}
+                >
+                  <option value="__NEW_CUSTOMER__">New customer — enter details manually</option>
+                  {customers.map((customer) => {
+                    const id = customer?._id || customer?.id;
+                    if (!id) return null;
+                    return (
+                      <option key={id} value={id}>
+                        {getCustomerName(customer) || "Unnamed Customer"}
+                        {(customer?.mobile || customer?.phone)
+                          ? ` — ${customer.mobile || customer.phone}`
+                          : ""}
+                      </option>
+                    );
+                  })}
+                </Select>
+              </div>
+            )}
+
             <div className="admin-form-field">
 
               <Input
                 label="Customer Name *"
                 name="customerName"
-                value={
-                  form.customerName
-                }
-                onChange={
-                  handleChange
-                }
+                value={form.customerName}
+                onChange={handleChange}
                 placeholder="Enter customer name"
-                error={
-                  fieldErrors.customerName
-                }
+                error={fieldErrors.customerName}
+                disabled={form.leadId === DIRECT_CUSTOMER && Boolean(selectedCustomerId)}
               />
 
             </div>
@@ -757,9 +913,6 @@ const CreateSolarRequirementPage = () => {
                   Yes
                 </option>
 
-                <option value="Optional">
-                  Optional
-                </option>
 
               </Select>
 
@@ -894,10 +1047,6 @@ const CreateSolarRequirementPage = () => {
                   Pending
                 </option>
 
-                <option value="Scheduled">
-                  Scheduled
-                </option>
-
                 <option value="Completed">
                   Completed
                 </option>
@@ -1010,7 +1159,7 @@ const CreateSolarRequirementPage = () => {
             variant="secondary"
             onClick={() =>
               router.push(
-                "/admin/solar-requirements"
+                "/employee/solar-requirements"
               )
             }
             disabled={

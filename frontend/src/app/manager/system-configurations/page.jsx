@@ -34,17 +34,23 @@ const ManagerSystemConfigurationsPage = () => {
       const response =
         await systemConfigurationService.getSystemConfigurations();
 
-      const data =
-        response?.data?.configurations ||
-        response?.configurations ||
-        response?.data?.items ||
-        response?.items ||
-        response?.data ||
-        [];
+      // APIs may return the array at different wrapper levels.
+      const candidates = [
+        response?.data?.configurations,
+        response?.configurations,
+        response?.data?.items,
+        response?.items,
+        response?.data?.data?.configurations,
+        response?.data?.data?.items,
+        response?.data?.data,
+        response?.data?.results,
+        response?.results,
+        response?.data,
+        response,
+      ];
 
-      setConfigurations(
-        Array.isArray(data) ? data : []
-      );
+      const data = candidates.find(Array.isArray);
+      setConfigurations(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(
         "System configurations error:",
@@ -69,41 +75,111 @@ const ManagerSystemConfigurationsPage = () => {
     }
   }, [authLoading, user]);
 
+  const firstValue = (...values) =>
+    values.find((value) =>
+      value !== undefined &&
+      value !== null &&
+      String(value).trim() !== ""
+    );
+
+  const getCustomer = (item) =>
+    item?.customer ||
+    item?.solarRequirement?.customer ||
+    item?.requirement?.customer ||
+    item?.lead?.customer ||
+    {};
+
   const getCustomerName = (item) =>
-    item?.customer?.name ||
-    item?.customerName ||
-    item?.lead?.name ||
-    item?.lead?.customerName ||
-    "Unnamed Customer";
+    firstValue(
+      getCustomer(item)?.name,
+      getCustomer(item)?.fullName,
+      item?.customerName,
+      item?.customer?.customerName,
+      item?.lead?.name,
+      item?.lead?.customerName,
+      item?.solarRequirement?.customerName,
+      item?.name,
+      "Unnamed Customer"
+    );
+
+  const getCustomerPhone = (item) =>
+    firstValue(
+      getCustomer(item)?.mobile,
+      getCustomer(item)?.phone,
+      getCustomer(item)?.mobileNumber,
+      item?.phone,
+      item?.mobile,
+      item?.mobileNumber,
+      item?.customerPhone,
+      item?.lead?.mobile,
+      item?.lead?.phone,
+      "No phone"
+    );
+
+  const getCustomerEmail = (item) =>
+    firstValue(
+      getCustomer(item)?.email,
+      item?.email,
+      item?.customerEmail,
+      item?.lead?.email,
+      "—"
+    );
 
   const getConfigurationNumber = (item) =>
-    item?.configurationNumber ||
-    item?.configurationNo ||
-    item?.configNumber ||
-    item?.referenceNumber ||
-    "—";
+    firstValue(
+      item?.configurationNumber,
+      item?.configurationNo,
+      item?.configNumber,
+      item?.referenceNumber,
+      item?.configurationId,
+      item?.code,
+      item?.number,
+      "—"
+    );
 
   const getStatus = (item) =>
-    item?.status ||
-    item?.configurationStatus ||
-    "DRAFT";
+    firstValue(
+      item?.status,
+      item?.configurationStatus,
+      item?.state,
+      "DRAFT"
+    );
 
   const getCapacity = (item) =>
-    item?.systemSize ||
-    item?.capacity ||
-    item?.requiredKW ||
-    item?.requiredKw ||
-    "—";
+    firstValue(
+      item?.systemSize,
+      item?.systemCapacity,
+      item?.capacity,
+      item?.requiredKW,
+      item?.requiredKw,
+      item?.solarRequirement?.requiredKW,
+      item?.solarRequirement?.requiredKw,
+      item?.requirement?.requiredKW,
+      "—"
+    );
 
   const getItems = (item, type) => {
-    const collection =
-      item?.[type] ||
-      item?.components?.[type] ||
-      [];
+    const singular = {
+      solarPanels: ["solarPanel", "panel", "panels"],
+      inverters: ["inverter"],
+      batteries: ["battery"],
+      structures: ["structure"],
+      accessories: ["accessory"],
+      otherComponents: ["otherComponent", "components"],
+    };
 
-    return Array.isArray(collection)
-      ? collection
-      : [];
+    const direct = item?.[type] ?? item?.components?.[type] ??
+      item?.billOfMaterials?.[type] ?? item?.bom?.[type];
+
+    if (Array.isArray(direct)) return direct;
+    if (direct && typeof direct === "object") return [direct];
+
+    for (const key of singular[type] || []) {
+      const value = item?.[key] ?? item?.components?.[key];
+      if (Array.isArray(value)) return value;
+      if (value && typeof value === "object") return [value];
+    }
+    return [];
   };
 
   const getItemCount = (item, type) =>
@@ -111,8 +187,9 @@ const ManagerSystemConfigurationsPage = () => {
       (total, component) =>
         total +
         Number(
-          component?.quantity ||
-            component?.qty ||
+          component?.quantity ??
+            component?.qty ??
+            component?.count ??
             1
         ),
       0
@@ -206,12 +283,20 @@ const ManagerSystemConfigurationsPage = () => {
 
       const searchableText = [
         getCustomerName(item),
+        getCustomerPhone(item),
+        getCustomerEmail(item),
         getConfigurationNumber(item),
+        getCapacity(item),
         item?.systemType,
         item?.inverter?.name,
         item?.inverter?.model,
         item?.roofType,
         item?.notes,
+        item?.location,
+        item?.siteAddress,
+        ...getItems(item, "solarPanels").flatMap((part) => [part?.name, part?.model, part?.brand]),
+        ...getItems(item, "inverters").flatMap((part) => [part?.name, part?.model, part?.brand]),
+        ...getItems(item, "batteries").flatMap((part) => [part?.name, part?.model, part?.brand]),
       ]
         .filter(Boolean)
         .map((value) => String(value))
@@ -439,11 +524,7 @@ const ManagerSystemConfigurationsPage = () => {
                               </strong>
 
                               <span>
-                                {item?.phone ||
-                                  item?.mobile ||
-                                  item?.customer
-                                    ?.mobile ||
-                                  "No phone"}
+                                {getCustomerPhone(item)}
                               </span>
                             </div>
                           </div>
@@ -461,11 +542,10 @@ const ManagerSystemConfigurationsPage = () => {
                         {/* System Size */}
                         <td>
                           <strong>
-                            {getCapacity(item)}
-                            {getCapacity(item) !==
-                            "—"
-                              ? " kW"
-                              : ""}
+                            {String(getCapacity(item)) !== "—" &&
+                            !String(getCapacity(item)).toLowerCase().includes("kw")
+                              ? `${getCapacity(item)} kW`
+                              : getCapacity(item)}
                           </strong>
                         </td>
 
@@ -480,33 +560,15 @@ const ManagerSystemConfigurationsPage = () => {
                         {/* Inverter */}
                         <td>
                           {inverters.length > 0
-                            ? inverters[0]
-                                ?.name ||
-                              inverters[0]
-                                ?.model ||
-                              "Configured"
-                            : item?.inverter
-                                ?.name ||
-                              item?.inverter
-                                ?.model ||
-                              "—"}
+                            ? firstValue(inverters[0]?.name, inverters[0]?.model, inverters[0]?.brand, "Configured")
+                            : firstValue(item?.inverter?.name, item?.inverter?.model, item?.inverter?.brand, "—")}
                         </td>
 
                         {/* Battery */}
                         <td>
-                          {getItemCount(
-                            item,
-                            "batteries"
-                          ) > 0
-                            ? getItemCount(
-                                item,
-                                "batteries"
-                              )
-                            : item?.battery
-                                ?.name ||
-                              item?.battery
-                                ?.model ||
-                              "—"}
+                          {getItemCount(item, "batteries") > 0
+                            ? getItemCount(item, "batteries")
+                            : firstValue(item?.battery?.name, item?.battery?.model, item?.battery?.brand, "—")}
                         </td>
 
                         {/* Status */}
@@ -625,6 +687,21 @@ const ManagerSystemConfigurationsPage = () => {
                 </div>
 
                 <div>
+                  <span>Customer Phone</span>
+                  <strong>{getCustomerPhone(selectedConfiguration)}</strong>
+                </div>
+
+                <div>
+                  <span>Customer Email</span>
+                  <strong>{getCustomerEmail(selectedConfiguration)}</strong>
+                </div>
+
+                <div>
+                  <span>Created</span>
+                  <strong>{formatDate(selectedConfiguration?.createdAt || selectedConfiguration?.createdOn)}</strong>
+                </div>
+
+                <div>
                   <span>Status</span>
 
                   <Badge
@@ -682,10 +759,9 @@ const ManagerSystemConfigurationsPage = () => {
                       ?.inverter?.name ||
                       selectedConfiguration
                         ?.inverter?.model ||
-                      getItems(
-                        selectedConfiguration,
-                        "inverters"
-                      )[0]?.name ||
+                      selectedConfiguration?.inverter?.brand ||
+                      getItems(selectedConfiguration, "inverters")[0]?.name ||
+                      getItems(selectedConfiguration, "inverters")[0]?.model ||
                       "—"}
                   </strong>
                 </div>
@@ -698,10 +774,9 @@ const ManagerSystemConfigurationsPage = () => {
                       ?.battery?.name ||
                       selectedConfiguration
                         ?.battery?.model ||
-                      getItems(
-                        selectedConfiguration,
-                        "batteries"
-                      )[0]?.name ||
+                      selectedConfiguration?.battery?.brand ||
+                      getItems(selectedConfiguration, "batteries")[0]?.name ||
+                      getItems(selectedConfiguration, "batteries")[0]?.model ||
                       "—"}
                   </strong>
                 </div>
@@ -834,9 +909,25 @@ const ManagerSystemConfigurationsPage = () => {
                       selectedConfiguration
                         ?.total ||
                       selectedConfiguration
-                        ?.grandAmount
+                        ?.grandAmount ||
+                      selectedConfiguration?.totalAmount ||
+                      selectedConfiguration?.estimatedCost ||
+                      selectedConfiguration?.price
                   )}
                 </strong>
+              </div>
+
+              <div className="manager-configuration-notes">
+                <span>Site Address / Location</span>
+                <p>
+                  {firstValue(
+                    selectedConfiguration?.siteAddress,
+                    selectedConfiguration?.address,
+                    selectedConfiguration?.location,
+                    selectedConfiguration?.customer?.address,
+                    "No site address available."
+                  )}
+                </p>
               </div>
 
               {/* Notes */}

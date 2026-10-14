@@ -63,13 +63,6 @@ export const createLeaveRequest = async (leaveData) => {
   return response.data;
 };
 
-/**
- * Alias for createLeaveRequest.
- * Frontend pages call `createLeave`, so we expose
- * both names to keep backward compatibility.
- */
-export const createLeave = createLeaveRequest;
-
 export const updateLeaveRequest = async (
   leaveId,
   leaveData
@@ -89,8 +82,6 @@ export const updateLeaveRequest = async (
 
   return response.data;
 };
-
-export const updateLeave = updateLeaveRequest;
 
 export const approveLeave = async (leaveId) => {
   if (!leaveId) {
@@ -179,9 +170,7 @@ const leaveService = {
   getMyLeaveBalance,
   getEmployeeLeaveBalance,
   createLeaveRequest,
-  createLeave,
   updateLeaveRequest,
-  updateLeave,
   approveLeave,
   rejectLeave,
   cancelLeave,
@@ -189,5 +178,4 @@ const leaveService = {
   searchLeaves,
 };
 
-export { leaveService };
 export default leaveService;

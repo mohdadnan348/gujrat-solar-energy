@@ -104,40 +104,7 @@ const PendingIcon = () => (
   </svg>
 );
 
-const CompletedIcon = () => (
-  <svg
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <circle cx="12" cy="12" r="9" />
-    <path d="m8 12 2.5 2.5L16 9" />
-  </svg>
-);
 
-const OverdueIcon = () => (
-  <svg
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M10.3 2.9 1.8 17a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 2.9a2 2 0 0 0-3.4 0Z" />
-    <path d="M12 9v4" />
-    <path d="M12 17h.01" />
-  </svg>
-);
 
 const InvoiceIcon = () => (
   <svg
@@ -197,24 +164,6 @@ const AttendanceIcon = () => (
   </svg>
 );
 
-const NewLeadIcon = () => (
-  <svg
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <circle cx="9" cy="7" r="4" />
-    <path d="M15 8h6" />
-    <path d="M18 5v6" />
-    <path d="M15 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-  </svg>
-);
 
 const StatCardWrapper = ({
   title,
@@ -276,17 +225,7 @@ const EmployeeStats = ({
       variant: "primary",
       icon: <LeadsIcon />,
     },
-
-    {
-      title: "New Leads",
-      value:
-        leads?.new ??
-        0,
-      variant: "info",
-      icon: <NewLeadIcon />,
-    },
-
-    {
+{
       title: "My Customers",
       value:
         customers?.total ??
@@ -331,26 +270,7 @@ const EmployeeStats = ({
       variant: "warning",
       icon: <PendingIcon />,
     },
-
-    {
-      title: "Completed Tasks",
-      value:
-        tasks?.completed ??
-        0,
-      variant: "success",
-      icon: <CompletedIcon />,
-    },
-
-    {
-      title: "Overdue Tasks",
-      value:
-        tasks?.overdue ??
-        0,
-      variant: "danger",
-      icon: <OverdueIcon />,
-    },
-
-    {
+{
       title: "Pending Leaves",
       value:
         leaves?.pending ??
@@ -367,16 +287,7 @@ const EmployeeStats = ({
       variant: "success",
       icon: <AttendanceIcon />,
     },
-
-    {
-      title: "Invoices in Period",
-      value:
-        invoices?.inPeriod ??
-        0,
-      variant: "info",
-      icon: <InvoiceIcon />,
-    },
-  ];
+];
 
   return (
     <div className="gse-stats-grid">

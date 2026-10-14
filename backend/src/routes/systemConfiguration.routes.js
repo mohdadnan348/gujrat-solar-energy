@@ -38,18 +38,20 @@ router.post(
 );
 
 // Get all System Configurations
-// Admin / Manager / HR
+// Admin / Manager / HR / Employee
+// Employee data must be scoped in the controller/service
 router.get(
   "/",
   allowRoles(
     ROLES.ADMIN,
     ROLES.MANAGER,
-    ROLES.HR
+    ROLES.HR,
+    ROLES.EMPLOYEE
   ),
   getSystemConfigurations
 );
 
-// Get all configurations for a lead
+// Get configurations for a specific lead
 router.get(
   "/lead/:leadId",
   allowRoles(
@@ -73,7 +75,7 @@ router.get(
   getLatestConfigurationByLead
 );
 
-// Get single configuration
+// Get single System Configuration
 router.get(
   "/:id",
   allowRoles(

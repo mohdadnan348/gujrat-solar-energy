@@ -41,15 +41,20 @@ router.post(
 
 // Get all Solar Requirements
 // Admin / Manager / HR
+// Get all Solar Requirements
+// Admin / Manager / HR / Employee
+// Employee access must be restricted to authorized records
 router.get(
   "/",
   allowRoles(
     ROLES.ADMIN,
     ROLES.MANAGER,
-    ROLES.HR
+    ROLES.HR,
+    ROLES.EMPLOYEE
   ),
   getSolarRequirements
 );
+
 
 // Get requirement by Lead
 router.get(

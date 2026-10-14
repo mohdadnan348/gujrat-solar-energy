@@ -1,8 +1,8 @@
 /* =========================================================
-   ADMIN SOLAR REQUIREMENT DETAILS
+   EMPLOYEE SOLAR REQUIREMENT DETAILS
 ========================================================= */
 
-.admin-requirement-details-page {
+.employee-requirement-details-page {
   width: 100%;
   min-height: 100%;
   padding: 24px;
@@ -14,7 +14,7 @@
    LOADING
 ========================================================= */
 
-.admin-requirement-details-loading {
+.employee-requirement-details-loading {
   min-height: 70vh;
   display: flex;
   align-items: center;
@@ -26,7 +26,7 @@
    HEADER
 ========================================================= */
 
-.admin-requirement-details-header {
+.employee-requirement-details-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -34,7 +34,7 @@
   margin-bottom: 20px;
 }
 
-.admin-requirement-back {
+.employee-requirement-back {
   border: 0;
   background: transparent;
   padding: 0;
@@ -46,17 +46,17 @@
   transition: color 0.2s ease;
 }
 
-.admin-requirement-back:hover {
+.employee-requirement-back:hover {
   color: #16a34a;
 }
 
-.admin-requirement-title-row {
+.employee-requirement-title-row {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
-.admin-requirement-icon {
+.employee-requirement-icon {
   width: 52px;
   height: 52px;
   flex-shrink: 0;
@@ -76,14 +76,14 @@
       rgba(34, 197, 94, 0.2);
 }
 
-.admin-requirement-title-line {
+.employee-requirement-title-line {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
 }
 
-.admin-requirement-title-row h1 {
+.employee-requirement-title-row h1 {
   margin: 0;
   color: #111827;
   font-size: 26px;
@@ -92,7 +92,7 @@
   letter-spacing: -0.4px;
 }
 
-.admin-requirement-title-row p {
+.employee-requirement-title-row p {
   margin: 6px 0 0;
   color: #64748b;
   font-size: 13px;
@@ -102,7 +102,7 @@
    HEADER ACTIONS
 ========================================================= */
 
-.admin-requirement-header-actions {
+.employee-requirement-header-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -114,7 +114,7 @@
    STATUS EDITOR
 ========================================================= */
 
-.admin-requirement-status-editor {
+.employee-requirement-status-editor {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -127,7 +127,7 @@
       rgba(15, 23, 42, 0.04);
 }
 
-.admin-requirement-status-select {
+.employee-requirement-status-select {
   min-width: 145px;
   height: 38px;
   padding: 0 32px 0 11px;
@@ -141,11 +141,11 @@
   cursor: pointer;
 }
 
-.admin-requirement-status-select:focus {
+.employee-requirement-status-select:focus {
   background: #f8fafc;
 }
 
-.admin-requirement-status-select:disabled {
+.employee-requirement-status-select:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -154,8 +154,8 @@
    STATUS SUCCESS / ERROR
 ========================================================= */
 
-.admin-status-success,
-.admin-status-error {
+.employee-status-success,
+.employee-status-error {
   width: 100%;
   margin-bottom: 18px;
   padding: 12px 15px;
@@ -168,20 +168,20 @@
   box-sizing: border-box;
 }
 
-.admin-status-success {
+.employee-status-success {
   border: 1px solid #b7e4c4;
   background: #f0fdf4;
   color: #15803d;
 }
 
-.admin-status-error {
+.employee-status-error {
   border: 1px solid #fecaca;
   background: #fef2f2;
   color: #b91c1c;
 }
 
-.admin-status-success span,
-.admin-status-error span {
+.employee-status-success span,
+.employee-status-error span {
   width: 22px;
   height: 22px;
   min-width: 22px;
@@ -193,11 +193,11 @@
   font-weight: 800;
 }
 
-.admin-status-success span {
+.employee-status-success span {
   background: #dcfce7;
 }
 
-.admin-status-error span {
+.employee-status-error span {
   background: #fee2e2;
 }
 
@@ -205,7 +205,7 @@
    SUMMARY
 ========================================================= */
 
-.admin-requirement-summary-grid {
+.employee-requirement-summary-grid {
   display: grid;
   grid-template-columns:
     repeat(4, minmax(0, 1fr));
@@ -213,7 +213,7 @@
   margin-bottom: 20px;
 }
 
-.admin-requirement-summary-card {
+.employee-requirement-summary-card {
   min-height: 118px;
   padding: 20px;
   border: 1px solid #e7ebf0;
@@ -227,13 +227,13 @@
   justify-content: space-between;
 }
 
-.admin-requirement-summary-card span {
+.employee-requirement-summary-card span {
   color: #64748b;
   font-size: 13px;
   font-weight: 600;
 }
 
-.admin-requirement-summary-card strong {
+.employee-requirement-summary-card strong {
   margin-top: 14px;
   color: #111827;
   font-size: 22px;
@@ -245,7 +245,7 @@
    MAIN LAYOUT
 ========================================================= */
 
-.admin-requirement-details-layout {
+.employee-requirement-details-layout {
   display: grid;
   grid-template-columns:
     minmax(0, 1fr) 330px;
@@ -253,18 +253,18 @@
   align-items: start;
 }
 
-.admin-requirement-main,
-.admin-requirement-sidebar {
+.employee-requirement-main,
+.employee-requirement-sidebar {
   min-width: 0;
 }
 
-.admin-requirement-main {
+.employee-requirement-main {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.admin-requirement-sidebar {
+.employee-requirement-sidebar {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -274,7 +274,7 @@
    CARDS
 ========================================================= */
 
-.admin-requirement-detail-card {
+.employee-requirement-detail-card {
   border: 1px solid #e7ebf0;
   border-radius: 17px;
   background: #ffffff;
@@ -284,7 +284,7 @@
   overflow: hidden;
 }
 
-.admin-requirement-card-header {
+.employee-requirement-card-header {
   padding: 20px 22px;
   border-bottom: 1px solid #edf0f3;
   display: flex;
@@ -293,14 +293,14 @@
   gap: 16px;
 }
 
-.admin-requirement-card-header h2 {
+.employee-requirement-card-header h2 {
   margin: 0;
   color: #172033;
   font-size: 17px;
   font-weight: 700;
 }
 
-.admin-requirement-card-header p {
+.employee-requirement-card-header p {
   margin: 5px 0 0;
   color: #7b8798;
   font-size: 12px;
@@ -311,7 +311,7 @@
    DETAIL GRID
 ========================================================= */
 
-.admin-requirement-detail-grid {
+.employee-requirement-detail-grid {
   padding: 4px 22px 20px;
   display: grid;
   grid-template-columns:
@@ -319,7 +319,7 @@
   column-gap: 34px;
 }
 
-.admin-requirement-detail-grid > div {
+.employee-requirement-detail-grid > div {
   min-width: 0;
   padding: 17px 0;
   border-bottom: 1px solid #f0f2f5;
@@ -328,14 +328,14 @@
   gap: 7px;
 }
 
-.admin-requirement-detail-grid
+.employee-requirement-detail-grid
   > div:nth-last-child(-n + 2) {
   border-bottom: 0;
 }
 
-.admin-requirement-detail-grid span,
-.admin-requirement-summary-list span,
-.admin-record-info span {
+.employee-requirement-detail-grid span,
+.employee-requirement-summary-list span,
+.employee-record-info span {
   color: #7b8798;
   font-size: 11px;
   font-weight: 650;
@@ -343,7 +343,7 @@
   letter-spacing: 0.45px;
 }
 
-.admin-requirement-detail-grid strong {
+.employee-requirement-detail-grid strong {
   color: #273244;
   font-size: 14px;
   line-height: 1.55;
@@ -351,12 +351,12 @@
   word-break: break-word;
 }
 
-.admin-requirement-detail-full {
+.employee-requirement-detail-full {
   grid-column: 1 / -1;
 }
 
-.admin-requirement-detail-grid
-  > .admin-requirement-detail-full:last-child {
+.employee-requirement-detail-grid
+  > .employee-requirement-detail-full:last-child {
   border-bottom: 0;
 }
 
@@ -364,11 +364,11 @@
    NOTES
 ========================================================= */
 
-.admin-requirement-notes {
+.employee-requirement-notes {
   padding: 21px 22px;
 }
 
-.admin-requirement-notes p {
+.employee-requirement-notes p {
   margin: 0;
   color: #4b5563;
   font-size: 14px;
@@ -377,7 +377,7 @@
   word-break: break-word;
 }
 
-.admin-requirement-notes span {
+.employee-requirement-notes span {
   color: #94a3b8;
   font-size: 13px;
 }
@@ -386,16 +386,16 @@
    SIDEBAR
 ========================================================= */
 
-.admin-requirement-sidebar
-  .admin-requirement-detail-card {
+.employee-requirement-sidebar
+  .employee-requirement-detail-card {
   width: 100%;
 }
 
-.admin-requirement-summary-list {
+.employee-requirement-summary-list {
   padding: 4px 20px 16px;
 }
 
-.admin-requirement-summary-list > div {
+.employee-requirement-summary-list > div {
   min-width: 0;
   padding: 14px 0;
   border-bottom: 1px solid #f0f2f5;
@@ -404,12 +404,12 @@
   gap: 6px;
 }
 
-.admin-requirement-summary-list
+.employee-requirement-summary-list
   > div:last-child {
   border-bottom: 0;
 }
 
-.admin-requirement-summary-list strong {
+.employee-requirement-summary-list strong {
   color: #273244;
   font-size: 13px;
   line-height: 1.45;
@@ -425,14 +425,14 @@
    LINKED LEAD
 ========================================================= */
 
-.admin-linked-lead {
+.employee-linked-lead {
   padding: 20px;
   display: flex;
   align-items: center;
   gap: 13px;
 }
 
-.admin-linked-lead-icon {
+.employee-linked-lead-icon {
   width: 42px;
   height: 42px;
   flex-shrink: 0;
@@ -446,7 +446,7 @@
   font-weight: 800;
 }
 
-.admin-linked-lead
+.employee-linked-lead
   > div:last-child {
   min-width: 0;
   display: flex;
@@ -454,7 +454,7 @@
   gap: 4px;
 }
 
-.admin-linked-lead span {
+.employee-linked-lead span {
   color: #94a3b8;
   font-size: 10px;
   font-weight: 700;
@@ -462,14 +462,14 @@
   letter-spacing: 0.45px;
 }
 
-.admin-linked-lead strong {
+.employee-linked-lead strong {
   color: #273244;
   font-size: 14px;
   font-weight: 700;
   overflow-wrap: anywhere;
 }
 
-.admin-linked-lead small {
+.employee-linked-lead small {
   color: #64748b;
   font-size: 12px;
   overflow-wrap: anywhere;
@@ -479,11 +479,11 @@
    RECORD INFORMATION
 ========================================================= */
 
-.admin-record-info {
+.employee-record-info {
   padding: 5px 20px 16px;
 }
 
-.admin-record-info > div {
+.employee-record-info > div {
   padding: 14px 0;
   border-bottom: 1px solid #f0f2f5;
   display: flex;
@@ -491,12 +491,12 @@
   gap: 6px;
 }
 
-.admin-record-info
+.employee-record-info
   > div:last-child {
   border-bottom: 0;
 }
 
-.admin-record-info strong {
+.employee-record-info strong {
   color: #273244;
   font-size: 13px;
   line-height: 1.5;
@@ -507,7 +507,7 @@
    ERROR
 ========================================================= */
 
-.admin-requirement-details-error {
+.employee-requirement-details-error {
   max-width: 650px;
   margin: 70px auto;
   padding: 40px 30px;
@@ -520,7 +520,7 @@
   text-align: center;
 }
 
-.admin-requirement-error-icon {
+.employee-requirement-error-icon {
   width: 54px;
   height: 54px;
   margin: 0 auto 18px;
@@ -534,13 +534,13 @@
   font-weight: 800;
 }
 
-.admin-requirement-details-error h2 {
+.employee-requirement-details-error h2 {
   margin: 0 0 8px;
   color: #172033;
   font-size: 20px;
 }
 
-.admin-requirement-details-error p {
+.employee-requirement-details-error p {
   margin: 0 auto;
   max-width: 480px;
   color: #64748b;
@@ -548,7 +548,7 @@
   line-height: 1.65;
 }
 
-.admin-requirement-error-actions {
+.employee-requirement-error-actions {
   margin-top: 24px;
   display: flex;
   align-items: center;
@@ -561,7 +561,7 @@
    BOTTOM
 ========================================================= */
 
-.admin-requirement-bottom-actions {
+.employee-requirement-bottom-actions {
   margin-top: 22px;
   display: flex;
   justify-content: flex-end;
@@ -572,36 +572,36 @@
 ========================================================= */
 
 @media (max-width: 1180px) {
-  .admin-requirement-details-layout {
+  .employee-requirement-details-layout {
     grid-template-columns:
       minmax(0, 1fr) 290px;
   }
 
-  .admin-requirement-summary-grid {
+  .employee-requirement-summary-grid {
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 900px) {
-  .admin-requirement-details-page {
+  .employee-requirement-details-page {
     padding: 20px;
   }
 
-  .admin-requirement-details-header {
+  .employee-requirement-details-header {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .admin-requirement-header-actions {
+  .employee-requirement-header-actions {
     justify-content: flex-start;
   }
 
-  .admin-requirement-details-layout {
+  .employee-requirement-details-layout {
     grid-template-columns: 1fr;
   }
 
-  .admin-requirement-sidebar {
+  .employee-requirement-sidebar {
     display: grid;
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
@@ -610,148 +610,148 @@
 }
 
 @media (max-width: 680px) {
-  .admin-requirement-details-page {
+  .employee-requirement-details-page {
     padding: 15px;
   }
 
-  .admin-requirement-summary-grid {
+  .employee-requirement-summary-grid {
     grid-template-columns: 1fr;
   }
 
-  .admin-requirement-title-row {
+  .employee-requirement-title-row {
     align-items: flex-start;
   }
 
-  .admin-requirement-title-row h1 {
+  .employee-requirement-title-row h1 {
     font-size: 21px;
   }
 
-  .admin-requirement-icon {
+  .employee-requirement-icon {
     width: 45px;
     height: 45px;
     border-radius: 12px;
     font-size: 21px;
   }
 
-  .admin-requirement-detail-grid {
+  .employee-requirement-detail-grid {
     grid-template-columns: 1fr;
     column-gap: 0;
   }
 
-  .admin-requirement-detail-grid
+  .employee-requirement-detail-grid
     > div {
     border-bottom: 1px solid #f0f2f5 !important;
   }
 
-  .admin-requirement-detail-grid
+  .employee-requirement-detail-grid
     > div:last-child {
     border-bottom: 0 !important;
   }
 
-  .admin-requirement-detail-full {
+  .employee-requirement-detail-full {
     grid-column: auto;
   }
 
-  .admin-requirement-sidebar {
+  .employee-requirement-sidebar {
     grid-template-columns: 1fr;
   }
 
-  .admin-requirement-card-header {
+  .employee-requirement-card-header {
     padding: 17px 18px;
   }
 
-  .admin-requirement-detail-grid {
+  .employee-requirement-detail-grid {
     padding-left: 18px;
     padding-right: 18px;
   }
 
-  .admin-requirement-notes {
+  .employee-requirement-notes {
     padding: 18px;
   }
 
-  .admin-requirement-summary-list,
-  .admin-record-info {
+  .employee-requirement-summary-list,
+  .employee-record-info {
     padding-left: 18px;
     padding-right: 18px;
   }
 
-  .admin-linked-lead {
+  .employee-linked-lead {
     padding: 18px;
   }
 
-  .admin-requirement-details-error {
+  .employee-requirement-details-error {
     margin: 40px auto;
     padding: 30px 20px;
   }
 
-  .admin-requirement-header-actions {
+  .employee-requirement-header-actions {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
   }
 
-  .admin-requirement-status-editor {
+  .employee-requirement-status-editor {
     width: 100%;
   }
 
-  .admin-requirement-status-select {
+  .employee-requirement-status-select {
     flex: 1;
     min-width: 0;
   }
 }
 
 @media (max-width: 430px) {
-  .admin-requirement-title-line {
+  .employee-requirement-title-line {
     align-items: flex-start;
     flex-direction: column;
     gap: 7px;
   }
 
-  .admin-requirement-title-row p {
+  .employee-requirement-title-row p {
     font-size: 12px;
   }
 
-  .admin-requirement-summary-card {
+  .employee-requirement-summary-card {
     min-height: 100px;
     padding: 17px;
   }
 
-  .admin-requirement-summary-card strong {
+  .employee-requirement-summary-card strong {
     font-size: 19px;
   }
 
-  .admin-requirement-status-editor {
+  .employee-requirement-status-editor {
     flex-direction: column;
     align-items: stretch;
     padding: 4px;
   }
 
-  .admin-requirement-status-select {
+  .employee-requirement-status-select {
     width: 100%;
     height: 40px;
   }
 
-  .admin-requirement-status-editor button {
+  .employee-requirement-status-editor button {
     width: 100%;
   }
 
-  .admin-requirement-header-actions > button {
+  .employee-requirement-header-actions > button {
     width: 100%;
   }
 
-  .admin-requirement-error-actions {
+  .employee-requirement-error-actions {
     flex-direction: column;
   }
 
-  .admin-requirement-error-actions button {
+  .employee-requirement-error-actions button {
     width: 100%;
   }
 
-  .admin-requirement-bottom-actions {
+  .employee-requirement-bottom-actions {
     justify-content: stretch;
   }
 
-  .admin-requirement-bottom-actions button {
+  .employee-requirement-bottom-actions button {
     width: 100%;
   }
 }

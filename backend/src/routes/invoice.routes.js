@@ -38,7 +38,7 @@ router.get(
 router.post(
   "/",
   validate([createInvoiceValidator]),
-  allowRoles("ADMIN", "MANAGER"),
+  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
   invoiceController.createInvoice
 );
 
@@ -49,7 +49,7 @@ router.post(
 */
 router.post(
   "/from-quotation/:quotationId",
-  allowRoles("ADMIN", "MANAGER"),
+  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
   invoiceController.createInvoiceFromQuotation
 );
 

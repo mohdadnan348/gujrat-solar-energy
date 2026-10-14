@@ -2,13 +2,13 @@ const mongoose = require("mongoose");
 const { LEAVE_STATUS } = require("../config/constants");
 
 const leaveRequestSchema = new mongoose.Schema(
-  {
-    employee: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "Employee is required"],
-      index: true,
-    },
+ {
+  employee: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Employee",
+  required: [true, "Employee is required"],
+  index: true,
+},
 
     leaveType: {
       type: mongoose.Schema.Types.ObjectId,

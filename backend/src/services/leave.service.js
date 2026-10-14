@@ -698,6 +698,99 @@ const deleteLeaveRequest = async (leaveRequestId, updatedBy) => {
   return { message: "Leave request cancelled successfully" };
 };
 
+const getMyLeaveRequests = async (userId, options = {}) => {
+  // Resolve logged-in User ID to Employee ID
+  const employee = await Employee.findOne({
+    user: userId,
+  })
+    .select("_id")
+    .lean();
+
+  if (!employee) {
+    const error = new Error("Employee profile not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const pageNumber = Math.max(Number(options.page) || 1, 1);
+  const limitNumber = Math.max(Number(options.limit) || 10, 1);
+
+  const filter = {
+    employee: employee._id,
+  };
+
+  // Optional year filter
+  if (options.year) {
+    const year = Number(options.year);
+
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+      const error = new Error("Invalid year");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    filter.startDate = {
+      $lte: new Date(year, 11, 31, 23, 59, 59, 999),
+    };
+
+    filter.endDate = {
+      $gte: new Date(year, 0, 1),
+    };
+  }
+
+  if (options.status) {
+    filter.status = options.status;
+  }
+
+  if (options.leaveType) {
+    filter.leaveType = options.leaveType;
+  }
+
+  if (options.startDate || options.endDate) {
+    filter.$and = [];
+
+    if (options.startDate) {
+      filter.$and.push({
+        endDate: {
+          $gte: getDateOnly(options.startDate),
+        },
+      });
+    }
+
+    if (options.endDate) {
+      filter.$and.push({
+        startDate: {
+          $lte: getDateOnly(options.endDate),
+        },
+      });
+    }
+  }
+
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const [leaveRequests, total] = await Promise.all([
+    LeaveRequest.find(filter)
+      .populate("leaveType", "name code totalDays isPaid")
+      .populate("approvedBy", "username email role")
+      .populate("rejectedBy", "username email role")
+      .sort({ startDate: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limitNumber)
+      .lean(),
+
+    LeaveRequest.countDocuments(filter),
+  ]);
+
+  return {
+    leaveRequests,
+    pagination: {
+      page: pageNumber,
+      limit: limitNumber,
+      total,
+      totalPages: Math.ceil(total / limitNumber),
+    },
+  };
+};
 module.exports = {
   createLeaveRequest,
   getLeaveRequests,
@@ -708,7 +801,7 @@ module.exports = {
   approveLeaveRequest: approveLeave,
   rejectLeaveRequest: rejectLeave,
   cancelLeaveRequest: cancelLeave,
-  getMyLeaveRequests: getEmployeeLeaveRequests,
+  getMyLeaveRequests,
   getLeaveBalanceForEmployee: getLeaveStats,
 
   approveLeave,

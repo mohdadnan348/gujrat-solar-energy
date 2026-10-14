@@ -1158,7 +1158,9 @@ const CreateSystemConfigurationPage = () => {
       );
 
       router.push(
-        "/admin/system-configurations"
+        typeof window !== "undefined" && window.location.pathname.startsWith("/employee")
+          ? "/employee/system-configurations"
+          : "/admin/system-configurations"
       );
     } catch (err) {
       console.error(
@@ -1261,7 +1263,9 @@ const CreateSystemConfigurationPage = () => {
           className="admin-create-configuration-back"
           onClick={() =>
             router.push(
-              "/admin/system-configurations"
+              typeof window !== "undefined" && window.location.pathname.startsWith("/employee")
+                ? "/employee/system-configurations"
+                : "/admin/system-configurations"
             )
           }
         >
@@ -2124,7 +2128,9 @@ const CreateSystemConfigurationPage = () => {
             variant="secondary"
             onClick={() =>
               router.push(
-                "/admin/system-configurations"
+                typeof window !== "undefined" && window.location.pathname.startsWith("/employee")
+                  ? "/employee/system-configurations"
+                  : "/admin/system-configurations"
               )
             }
             disabled={saving}

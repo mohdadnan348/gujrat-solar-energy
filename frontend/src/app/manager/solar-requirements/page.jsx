@@ -33,15 +33,23 @@ const ManagerSolarRequirementsPage = () => {
       const response =
         await solarRequirementService.getSolarRequirements();
 
-      const data =
-        response?.data?.requirements ||
-        response?.requirements ||
-        response?.data?.items ||
-        response?.items ||
-        response?.data ||
-        [];
+      // Support common API response envelopes without accidentally
+      // treating a single object as a list.
+      const candidates = [
+        response?.data?.requirements,
+        response?.data?.items,
+        response?.data?.results,
+        response?.requirements,
+        response?.items,
+        response?.results,
+        response?.data?.data?.requirements,
+        response?.data?.data?.items,
+        response?.data,
+        response,
+      ];
 
-      setRequirements(Array.isArray(data) ? data : []);
+      const data = candidates.find(Array.isArray);
+      setRequirements(data || []);
     } catch (err) {
       console.error("Solar requirements error:", err);
 
@@ -63,30 +71,96 @@ const ManagerSolarRequirementsPage = () => {
     }
   }, [authLoading, user]);
 
+  const firstValue = (...values) =>
+    values.find((value) =>
+      value !== undefined &&
+      value !== null &&
+      String(value).trim() !== ""
+    );
+
   const getCustomerName = (item) =>
-    item?.customer?.name ||
-    item?.customerName ||
-    item?.lead?.name ||
-    item?.lead?.customerName ||
-    "Unnamed Customer";
+    firstValue(
+      item?.customer?.name,
+      item?.customer?.customerName,
+      item?.customerName,
+      item?.lead?.customer?.name,
+      item?.lead?.name,
+      item?.lead?.customerName,
+      item?.name
+    ) || "Unnamed Customer";
+
+  const getCustomerPhone = (item) =>
+    firstValue(
+      item?.customer?.mobile,
+      item?.customer?.phone,
+      item?.customer?.phoneNumber,
+      item?.phone,
+      item?.mobile,
+      item?.mobileNumber,
+      item?.lead?.customer?.mobile,
+      item?.lead?.mobile,
+      item?.lead?.phone
+    ) || "No phone";
+
+  const getCustomerEmail = (item) =>
+    firstValue(
+      item?.customer?.email,
+      item?.email,
+      item?.lead?.customer?.email,
+      item?.lead?.email
+    ) || "—";
 
   const getLeadNumber = (item) =>
-    item?.lead?.leadNumber ||
-    item?.lead?.leadNo ||
-    item?.leadNumber ||
-    "—";
+    firstValue(
+      item?.lead?.leadNumber,
+      item?.lead?.leadNo,
+      item?.lead?.leadId,
+      item?.leadNumber,
+      item?.leadNo
+    ) || "—";
 
   const getStatus = (item) =>
-    item?.status ||
-    item?.requirementStatus ||
-    "PENDING";
+    firstValue(item?.status, item?.requirementStatus, item?.approvalStatus) || "PENDING";
 
   const getCapacity = (item) =>
-    item?.requiredKW ||
-    item?.requiredKw ||
-    item?.systemSize ||
-    item?.capacity ||
-    "—";
+    firstValue(
+      item?.requiredKW,
+      item?.requiredKw,
+      item?.requiredKwp,
+      item?.systemSize,
+      item?.capacity,
+      item?.solarCapacity,
+      item?.configuration?.systemSize
+    ) ?? "—";
+
+  const displayCapacity = (value) => {
+    if (value === "—") return value;
+    return String(value).replace(/\s*k\s*w(p)?$/i, "").trim();
+  };
+
+  const getRoofType = (item) =>
+    firstValue(item?.roofType, item?.roof?.type, item?.siteDetails?.roofType) || "—";
+
+  const getSystemType = (item) =>
+    firstValue(item?.systemType, item?.solarSystemType, item?.configuration?.systemType) || "—";
+
+  const getSiteAddress = (item) =>
+    firstValue(
+      item?.siteAddress,
+      item?.address,
+      item?.customer?.siteAddress,
+      item?.customer?.address,
+      item?.lead?.siteAddress,
+      item?.lead?.address
+    ) || "—";
+
+  const getLocation = (item) =>
+    firstValue(
+      item?.location,
+      item?.city,
+      item?.customer?.city,
+      item?.lead?.city
+    ) || "—";
 
   const getBadgeVariant = (value) => {
     const status = String(value).toLowerCase();
@@ -158,14 +232,13 @@ const ManagerSolarRequirementsPage = () => {
       const searchableText = [
         getCustomerName(item),
         getLeadNumber(item),
-        item?.phone,
-        item?.mobile,
-        item?.siteAddress,
-        item?.location,
-        item?.roofType,
-        item?.systemType,
-        item?.requiredKW,
-        item?.requiredKw,
+        getCustomerPhone(item),
+        getCustomerEmail(item),
+        getSiteAddress(item),
+        getLocation(item),
+        getRoofType(item),
+        getSystemType(item),
+        getCapacity(item),
       ]
         .filter(Boolean)
         .map((value) => String(value))
@@ -364,9 +437,7 @@ const ManagerSolarRequirementsPage = () => {
                             </strong>
 
                             <span>
-                              {item?.phone ||
-                                item?.mobile ||
-                                "No phone"}
+                              {getCustomerPhone(item)}
                             </span>
                           </div>
                         </div>
@@ -382,8 +453,9 @@ const ManagerSolarRequirementsPage = () => {
                       {/* Capacity */}
                       <td>
                         <strong>
-                          {getCapacity(item)}
-                          {getCapacity(item) !== "—"
+                          {displayCapacity(getCapacity(item))}
+                          {getCapacity(item) !== "—" &&
+                          !/\bk\s*w(p)?\b/i.test(String(getCapacity(item)))
                             ? " kW"
                             : ""}
                         </strong>
@@ -391,12 +463,12 @@ const ManagerSolarRequirementsPage = () => {
 
                       {/* Roof */}
                       <td>
-                        {item?.roofType || "—"}
+                        {getRoofType(item)}
                       </td>
 
                       {/* System */}
                       <td>
-                        {item?.systemType || "—"}
+                        {getSystemType(item)}
                       </td>
 
                       {/* Status */}
@@ -508,6 +580,16 @@ const ManagerSolarRequirementsPage = () => {
                 </div>
 
                 <div>
+                  <span>Customer Mobile</span>
+                  <strong>{getCustomerPhone(selectedRequirement)}</strong>
+                </div>
+
+                <div>
+                  <span>Customer Email</span>
+                  <strong>{getCustomerEmail(selectedRequirement)}</strong>
+                </div>
+
+                <div>
                   <span>Status</span>
 
                   <Badge
@@ -529,9 +611,11 @@ const ManagerSolarRequirementsPage = () => {
                   <span>Required kW</span>
 
                   <strong>
-                    {getCapacity(
-                      selectedRequirement
-                    )}
+                    {displayCapacity(getCapacity(selectedRequirement))}
+                    {getCapacity(selectedRequirement) !== "—" &&
+                    !/\bk\s*w(p)?\b/i.test(String(getCapacity(selectedRequirement)))
+                      ? " kW"
+                      : ""}
                   </strong>
                 </div>
 
@@ -539,8 +623,16 @@ const ManagerSolarRequirementsPage = () => {
                   <span>Monthly Bill</span>
 
                   <strong>
-                    {selectedRequirement?.monthlyBill
-                      ? `₹${selectedRequirement.monthlyBill}`
+                    {firstValue(
+                      selectedRequirement?.monthlyBill,
+                      selectedRequirement?.electricityBill,
+                      selectedRequirement?.monthlyElectricityBill
+                    ) != null
+                      ? `₹${firstValue(
+                          selectedRequirement?.monthlyBill,
+                          selectedRequirement?.electricityBill,
+                          selectedRequirement?.monthlyElectricityBill
+                        )}`
                       : "—"}
                   </strong>
                 </div>
@@ -549,9 +641,12 @@ const ManagerSolarRequirementsPage = () => {
                   <span>Units</span>
 
                   <strong>
-                    {selectedRequirement?.units ||
-                      selectedRequirement?.monthlyUnits ||
-                      "—"}
+                    {firstValue(
+                      selectedRequirement?.units,
+                      selectedRequirement?.monthlyUnits,
+                      selectedRequirement?.monthlyConsumption,
+                      selectedRequirement?.averageMonthlyUnits
+                    ) || "—"}
                   </strong>
                 </div>
 
@@ -559,8 +654,7 @@ const ManagerSolarRequirementsPage = () => {
                   <span>Roof Type</span>
 
                   <strong>
-                    {selectedRequirement?.roofType ||
-                      "—"}
+                    {getRoofType(selectedRequirement)}
                   </strong>
                 </div>
 
@@ -577,8 +671,7 @@ const ManagerSolarRequirementsPage = () => {
                   <span>System Type</span>
 
                   <strong>
-                    {selectedRequirement?.systemType ||
-                      "—"}
+                    {getSystemType(selectedRequirement)}
                   </strong>
                 </div>
 
@@ -609,9 +702,9 @@ const ManagerSolarRequirementsPage = () => {
                 <span>Site Address</span>
 
                 <p>
-                  {selectedRequirement?.siteAddress ||
-                    selectedRequirement?.address ||
-                    "No site address available."}
+                  {getSiteAddress(selectedRequirement) === "—"
+                    ? "No site address available."
+                    : getSiteAddress(selectedRequirement)}
                 </p>
               </div>
 
@@ -620,8 +713,9 @@ const ManagerSolarRequirementsPage = () => {
                 <span>Location</span>
 
                 <p>
-                  {selectedRequirement?.location ||
-                    "No location available."}
+                  {getLocation(selectedRequirement) === "—"
+                    ? "No location available."
+                    : getLocation(selectedRequirement)}
                 </p>
               </div>
 

@@ -30,26 +30,17 @@ const PAGE_SIZE = 10;
 const getId = (item) => {
   if (!item) return "";
 
-  if (
-    typeof item === "string" ||
-    typeof item === "number"
-  ) {
+  if (typeof item === "string" || typeof item === "number") {
     return String(item);
   }
 
-  return (
+  // Only return the configuration's own ID. Never fall back to
+  // customer/lead/requirement IDs for a configuration detail route.
+  return String(
     item?._id ||
     item?.id ||
     item?.configurationId ||
     item?.configurationID ||
-    item?.customerId ||
-    item?.customerID ||
-    item?.requirementId ||
-    item?.requirementID ||
-    item?.solarRequirementId ||
-    item?.solarRequirementID ||
-    item?.leadId ||
-    item?.leadID ||
     ""
   );
 };
@@ -176,18 +167,16 @@ const getValue = (
   keys,
   fallback = "—"
 ) => {
-  if (!object) {
+  if (!object || !Array.isArray(keys)) {
     return fallback;
   }
 
   for (const key of keys) {
-    const value = object?.[key];
+    const value = String(key)
+      .split(".")
+      .reduce((current, part) => current?.[part], object);
 
-    if (
-      value !== undefined &&
-      value !== null &&
-      value !== ""
-    ) {
+    if (value !== undefined && value !== null && value !== "") {
       return value;
     }
   }
@@ -617,7 +606,9 @@ const normalizeConfiguration = (
       displayValue(
         configuration.inverterCapacity ||
           configuration.inverterSize ||
-          inverter,
+          (typeof inverter === "string" || typeof inverter === "number"
+            ? inverter
+            : inverter?.capacityKW || inverter?.capacity || ""),
         "—"
       ),
 
@@ -1307,7 +1298,7 @@ const SystemConfigurationsPage =
     const handleCreate =
       () => {
         router.push(
-          "/admin/system-configurations/create"
+          "/employee/system-configurations/create"
         );
       };
 
@@ -1320,7 +1311,7 @@ const SystemConfigurationsPage =
 
         if (id) {
           router.push(
-            `/admin/system-configurations/${id}`
+            `/employee/system-configurations/${id}`
           );
           return;
         }
@@ -1368,7 +1359,7 @@ const SystemConfigurationsPage =
           <div>
 
             <div className="admin-configurations-breadcrumb">
-              Admin{" "}
+              Employee{" "}
               <span>/</span>{" "}
               System Configurations
             </div>

@@ -116,6 +116,11 @@ const getSystemConfigurations = async (
         solarRequirement,
         startDate,
         endDate,
+        // Employee list requests are restricted to records they created.
+        // Admin/Manager/HR retain the existing organization-wide listing.
+        createdBy: String(req.user?.role || "").toUpperCase() === "EMPLOYEE"
+          ? req.user?.userId
+          : undefined,
       });
 
     return res.status(200).json({

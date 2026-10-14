@@ -1,11 +1,17 @@
+
 const mongoose = require("mongoose");
 const { LEAVE_STATUS } = require("../config/constants");
 
 const isValidObjectId = (value) => {
-  return mongoose.Types.ObjectId.isValid(value);
+  return (
+    typeof value === "string" &&
+    mongoose.Types.ObjectId.isValid(value)
+  );
 };
 
 const isValidDate = (value) => {
+  if (!value) return false;
+
   const date = new Date(value);
   return !Number.isNaN(date.getTime());
 };
@@ -22,47 +28,26 @@ const validateDateRange = (startDate, endDate) => {
   return true;
 };
 
-/* -----------------------------------------
-   Leave type validation
-
-   Accepts:
-   - MongoDB ObjectId  : "68a3f2c1b4e5d6a7b8c9d0e1"
-   - String code/name  : "SICK", "CASUAL", "Sick Leave"
-
-   Service will resolve the string to its _id.
------------------------------------------ */
-
+// Accept a MongoDB ObjectId, leave type code, or leave type name.
 const isValidLeaveTypeValue = (value) => {
-  if (!value) return false;
-
-  if (typeof value !== "string") return false;
-
-  const trimmed = value.trim();
-
-  if (!trimmed) return false;
-
-  // ObjectId OR non-empty string (code / name)
-  return true;
+  return typeof value === "string" && value.trim().length > 0;
 };
-
-/* -----------------------------------------
-   Case-insensitive leave status check
------------------------------------------ */
 
 const isValidLeaveStatus = (value) => {
   if (value === undefined || value === null || value === "") {
-    return true; // optional field
+    return true;
   }
 
   const normalized = String(value).trim().toLowerCase();
 
   return Object.values(LEAVE_STATUS).some(
-    (status) => String(status).trim().toLowerCase() === normalized
+    (status) =>
+      String(status).trim().toLowerCase() === normalized
   );
 };
 
 /* -----------------------------------------
-   Create validator
+   Create Leave Request
 ----------------------------------------- */
 
 const validateLeave = (req, res, next) => {
@@ -98,7 +83,6 @@ const validateLeave = (req, res, next) => {
     });
   }
 
-  /* ✅ Accept both ObjectId AND string code/name */
   if (!isValidLeaveTypeValue(leaveType)) {
     return res.status(400).json({
       success: false,
@@ -141,21 +125,25 @@ const validateLeave = (req, res, next) => {
     });
   }
 
-  if (totalDays === undefined || totalDays === null) {
-    return res.status(400).json({
-      success: false,
-      message: "Total leave days are required",
-    });
-  }
-
-  if (typeof totalDays !== "number" || totalDays < 0.5) {
+  // totalDays is optional during creation.
+  // The backend service calculates it from startDate and endDate.
+  // If supplied, it must still be a valid number.
+  if (
+    totalDays !== undefined &&
+    totalDays !== null &&
+    (
+      typeof totalDays !== "number" ||
+      !Number.isFinite(totalDays) ||
+      totalDays < 0.5
+    )
+  ) {
     return res.status(400).json({
       success: false,
       message: "Total leave days must be at least 0.5",
     });
   }
 
-  if (!reason || !reason.trim()) {
+  if (typeof reason !== "string" || !reason.trim()) {
     return res.status(400).json({
       success: false,
       message: "Leave reason is required",
@@ -180,7 +168,7 @@ const validateLeave = (req, res, next) => {
 };
 
 /* -----------------------------------------
-   Update validator
+   Update Leave Request
 ----------------------------------------- */
 
 const validateLeaveUpdate = (req, res, next) => {
@@ -197,14 +185,16 @@ const validateLeaveUpdate = (req, res, next) => {
     notes,
   } = req.body;
 
-  if (employee !== undefined && !isValidObjectId(employee)) {
+  if (
+    employee !== undefined &&
+    !isValidObjectId(employee)
+  ) {
     return res.status(400).json({
       success: false,
       message: "Invalid employee ID",
     });
   }
 
-  /* ✅ Accept both ObjectId AND string code/name */
   if (
     leaveType !== undefined &&
     leaveType !== null &&
@@ -217,21 +207,31 @@ const validateLeaveUpdate = (req, res, next) => {
     });
   }
 
-  if (startDate !== undefined && !isValidDate(startDate)) {
+  if (
+    startDate !== undefined &&
+    !isValidDate(startDate)
+  ) {
     return res.status(400).json({
       success: false,
       message: "Invalid start date",
     });
   }
 
-  if (endDate !== undefined && !isValidDate(endDate)) {
+  if (
+    endDate !== undefined &&
+    !isValidDate(endDate)
+  ) {
     return res.status(400).json({
       success: false,
       message: "Invalid end date",
     });
   }
 
-  if (startDate && endDate && !validateDateRange(startDate, endDate)) {
+  if (
+    startDate &&
+    endDate &&
+    !validateDateRange(startDate, endDate)
+  ) {
     return res.status(400).json({
       success: false,
       message: "End date cannot be before start date",
@@ -240,7 +240,12 @@ const validateLeaveUpdate = (req, res, next) => {
 
   if (
     totalDays !== undefined &&
-    (typeof totalDays !== "number" || totalDays < 0.5)
+    totalDays !== null &&
+    (
+      typeof totalDays !== "number" ||
+      !Number.isFinite(totalDays) ||
+      totalDays < 0.5
+    )
   ) {
     return res.status(400).json({
       success: false,
@@ -248,13 +253,14 @@ const validateLeaveUpdate = (req, res, next) => {
     });
   }
 
-  if (reason !== undefined) {
-    if (typeof reason !== "string" || !reason.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Leave reason cannot be empty",
-      });
-    }
+  if (
+    reason !== undefined &&
+    (typeof reason !== "string" || !reason.trim())
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Leave reason cannot be empty",
+    });
   }
 
   if (!isValidLeaveStatus(status)) {
@@ -295,7 +301,7 @@ const validateLeaveUpdate = (req, res, next) => {
 };
 
 /* -----------------------------------------
-   Action validator
+   Leave Action Validation
 ----------------------------------------- */
 
 const validateLeaveAction = (req, res, next) => {

@@ -375,190 +375,182 @@ const CreateQuotationPage = () => {
      CONFIGURATION CHANGE
   ========================================= */
 
-  const handleConfigurationChange =
-    (configurationId) => {
-      const selected =
-        configurations.find(
-          (configuration) =>
-            String(
-              getId(configuration)
-            ) ===
-            String(
-              configurationId
-            )
-        );
+  const handleConfigurationChange = async (configurationId) => {
+    let selected = configurations.find(
+      (configuration) => String(getId(configuration)) === String(configurationId)
+    );
 
-      setForm((prev) => ({
-        ...prev,
-        systemConfigurationId:
-          configurationId,
-      }));
-
-      if (!selected) {
-        return;
-      }
-
-      const systemSizeKW =
-        getValue(
-          selected,
-          [
-            "systemSizeKW",
-            "requiredKW",
-            "requiredKw",
-            "capacityKW",
-            "systemCapacity",
-          ],
-          ""
-        );
-
-      const systemType =
-        getValue(
-          selected,
-          [
-            "systemType",
-            "system_type",
-            "type",
-          ],
-          ""
-        );
-
-      const customer =
-        getValue(
-          selected,
-          [
-            "customerId",
-            "customer",
-          ],
-          ""
-        );
-
-      setForm((prev) => ({
-        ...prev,
-
-        systemConfigurationId:
-          configurationId,
-
-        systemSizeKW:
-          systemSizeKW !== ""
-            ? systemSizeKW
-            : prev.systemSizeKW,
-
-        systemType:
-          systemType ||
-          prev.systemType,
-
-        customerId:
-          typeof customer ===
-          "string"
-            ? customer
-            : getId(
-                customer
-              ) ||
-              prev.customerId,
-      }));
-
-      const panelMake =
-        getValue(
-          selected,
-          [
-            "panelMake",
-            "panelBrand",
-            "moduleMake",
-          ],
-          ""
-        );
-
-      const panelWattage =
-        getValue(
-          selected,
-          [
-            "panelWattage",
-            "wattage",
-            "panelWp",
-          ],
-          ""
-        );
-
-      const panelCount =
-        getValue(
-          selected,
-          [
-            "panelCount",
-            "numberOfPanels",
-            "panelsCount",
-          ],
-          ""
-        );
-
-      const inverterMake =
-        getValue(
-          selected,
-          [
-            "inverterMake",
-            "inverterBrand",
-          ],
-          ""
-        );
-
-      const inverterCapacity =
-        getValue(
-          selected,
-          [
-            "inverterCapacity",
-            "inverterSize",
-          ],
-          ""
-        );
-
-      const descriptionParts = [
-        "Solar PV System",
-
-        systemType,
-
-        systemSizeKW
-          ? `${systemSizeKW} kW`
-          : "",
-
-        panelMake
-          ? `Panel: ${panelMake}`
-          : "",
-
-        panelWattage
-          ? `${panelWattage}W`
-          : "",
-
-        panelCount
-          ? `${panelCount} Panels`
-          : "",
-
-        inverterMake
-          ? `Inverter: ${inverterMake}`
-          : "",
-
-        inverterCapacity
-          ? inverterCapacity
-          : "",
-      ].filter(Boolean);
-
-      setItems((prev) => {
-        const firstItem = {
-          ...prev[0],
-
-          description:
-            descriptionParts.join(
-              " • "
-            ) ||
-            "Solar PV System",
-
+    if (!configurationId) {
+      setForm((prev) => ({ ...prev, systemConfigurationId: "" }));
+      setItems([
+        {
+          id: Date.now(),
+          description: "Solar PV System",
           quantity: 1,
-        };
+          unit: "System",
+          rate: "",
+          taxRate: 0,
+        },
+      ]);
+      return;
+    }
 
-        return [
-          firstItem,
-          ...prev.slice(1),
-        ];
+    setForm((prev) => ({ ...prev, systemConfigurationId: configurationId }));
+    setError("");
+
+    // The list endpoint may return a summary without component pricing.
+    // Fetch the complete configuration before building quotation line items.
+    try {
+      const detailResponse =
+        await systemConfigurationService.getSystemConfigurationById(configurationId);
+      const detailedConfiguration =
+        detailResponse?.data?.data ||
+        detailResponse?.data?.configuration ||
+        detailResponse?.data ||
+        detailResponse?.configuration ||
+        detailResponse;
+
+      if (detailedConfiguration && typeof detailedConfiguration === "object") {
+        selected = detailedConfiguration;
+      }
+    } catch (detailError) {
+      // Continue with the list result if detail loading fails; show the error
+      // only when no usable configuration was available.
+      console.error("Failed to load full system configuration:", detailError);
+    }
+
+    if (!selected) {
+      setError("Selected system configuration load nahi ho paayi. Dobara try karein.");
+      return;
+    }
+
+    const systemSizeKW = getValue(
+      selected,
+      ["systemSizeKW", "systemSize", "requiredKW", "requiredKw", "capacityKW", "systemCapacity"],
+      ""
+    );
+    const systemType = getValue(selected, ["systemType", "system_type", "type"], "");
+    const customer = getValue(selected, ["customerId", "customer"], "");
+
+    const customerId = typeof customer === "string" ? customer : getId(customer);
+
+    setForm((prev) => ({
+      ...prev,
+      systemConfigurationId: configurationId,
+      systemSizeKW: systemSizeKW !== "" ? systemSizeKW : prev.systemSizeKW,
+      systemType: systemType || prev.systemType,
+      customerId: customerId || prev.customerId,
+    }));
+
+    const componentsSource =
+      selected.components ||
+      selected.items ||
+      selected.configuration?.components ||
+      selected.data?.components ||
+      [];
+    const components = Array.isArray(componentsSource) ? componentsSource : [];
+    const nextItems = [];
+
+    // Convert each saved configuration component into a quotation line.
+    components.forEach((component, index) => {
+      const quantity = Number(component.quantity ?? component.qty ?? 1);
+      const rate = Number(component.unitPrice ?? component.rate ?? component.price ?? 0);
+      if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(rate) || rate < 0) return;
+
+      const type = String(component.componentType || component.type || "").toUpperCase();
+      const name = component.name || component.componentName || component.productName ||
+        type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()) ||
+        "Solar Component";
+      const description = [name, component.brand, component.model].filter(Boolean).join(" • ");
+      const isInstallation = type.includes("INSTALL") || /installation|installing|labour|labor/i.test(name);
+
+      nextItems.push({
+        id: `config-${configurationId}-${index}-${Date.now()}`,
+        description,
+        quantity: String(quantity),
+        unit: component.unit || component.unitOfMeasure || "Unit",
+        rate: String(rate),
+        taxRate: Number(component.taxRate) || 0,
+        _pricingSource: isInstallation ? "installation-component" : "component",
       });
-    };
+    });
+
+    const installationCost = Math.max(0, Number(selected.installationCost) || 0);
+    const transportationCost = Math.max(0, Number(selected.transportationCost) || 0);
+    const otherCost = Math.max(0, Number(selected.otherCost) || 0);
+
+    // Do not duplicate installation when it is already listed as a component.
+    const hasInstallation = nextItems.some((item) => item._pricingSource === "installation-component");
+    if (installationCost > 0 && !hasInstallation) {
+      nextItems.push({
+        id: `installation-${configurationId}-${Date.now()}`,
+        description: "Installation Charges",
+        quantity: "1",
+        unit: "Job",
+        rate: String(installationCost),
+        taxRate: 0,
+        _pricingSource: "configuration-charge",
+      });
+    }
+
+    if (transportationCost > 0) {
+      nextItems.push({
+        id: `transport-${configurationId}-${Date.now()}`,
+        description: "Transportation Charges",
+        quantity: "1",
+        unit: "Job",
+        rate: String(transportationCost),
+        taxRate: 0,
+        _pricingSource: "configuration-charge",
+      });
+    }
+
+    if (otherCost > 0) {
+      nextItems.push({
+        id: `other-${configurationId}-${Date.now()}`,
+        description: "Other Configuration Charges",
+        quantity: "1",
+        unit: "Job",
+        rate: String(otherCost),
+        taxRate: 0,
+        _pricingSource: "configuration-charge",
+      });
+    }
+
+    // Use totalAmount only when there is no itemized pricing, avoiding double-counting.
+    if (nextItems.length === 0) {
+      const totalAmount = Math.max(0, Number(selected.totalAmount) || 0);
+      const panelMake = getValue(selected, ["panelMake", "panelBrand", "moduleMake"], "");
+      const panelWattage = getValue(selected, ["panelWattage", "wattage", "panelWp"], "");
+      const panelCount = getValue(selected, ["panelCount", "numberOfPanels", "panelsCount"], "");
+      const inverterMake = getValue(selected, ["inverterMake", "inverterBrand"], "");
+      const inverterCapacity = getValue(selected, ["inverterCapacity", "inverterSize"], "");
+      const description = [
+        "Solar PV System", systemType,
+        systemSizeKW !== "" ? `${systemSizeKW} kW` : "",
+        panelMake ? `Panel: ${panelMake}` : "",
+        panelWattage ? `${panelWattage}W` : "",
+        panelCount ? `${panelCount} Panels` : "",
+        inverterMake ? `Inverter: ${inverterMake}` : "",
+        inverterCapacity || "",
+      ].filter(Boolean).join(" • ");
+
+      nextItems.push({
+        id: `system-${configurationId}-${Date.now()}`,
+        description: description || "Solar PV System",
+        quantity: "1",
+        unit: "System",
+        rate: String(totalAmount),
+        taxRate: 0,
+        _pricingSource: "configuration-total",
+      });
+    }
+
+    // Keep only fields supported by the existing quotation form/API payload.
+    setItems(nextItems.map(({ _pricingSource, ...item }) => item));
+    setCharges({ discount: 0, additionalCharges: 0 });
+    setError("");
+  };
 
   /* =========================================
      CUSTOMER CHANGE

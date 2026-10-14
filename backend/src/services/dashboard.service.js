@@ -479,12 +479,11 @@ const getDashboardStats = async ({
   |--------------------------------------------------------------------------
   */
 
-  const attendanceFilter = isEmployee
-    ? {
-        employee:
-          employeeScope.userId,
-      }
-    : {};
+const attendanceFilter = isEmployee
+  ? {
+      employee: employeeScope.employeeId,
+    }
+  : {};
 
   /*
   |--------------------------------------------------------------------------
@@ -1510,24 +1509,25 @@ const getRecentInvoices = async (
 |--------------------------------------------------------------------------
 */
 
+
 const getRecentTasks = async (
   limit = 10,
   userId = null,
   role = null
 ) => {
-  const filter = {
-    status: {
-      $ne:
-        TASK_STATUS.CANCELLED,
-    },
-  };
+  // Employee dashboard: show all tasks assigned to this employee.
+  // Admin, Manager and HR: keep cancelled tasks excluded.
+  const filter = {};
 
   if (role === "EMPLOYEE") {
     const employeeScope =
       await getEmployeeScope(userId);
 
-    filter.assignedTo =
-      employeeScope.employeeId;
+    filter.assignedTo = employeeScope.employeeId;
+  } else {
+    filter.status = {
+      $ne: TASK_STATUS.CANCELLED,
+    };
   }
 
   return Task.find(filter)

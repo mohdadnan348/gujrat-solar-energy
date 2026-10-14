@@ -1,3 +1,42 @@
+const fs = require("fs");
+const path = require("path");
+
+/**
+ * Loads an image from public/assets and embeds it in the generated HTML.
+ * This keeps Puppeteer/PDF generation independent of relative URL resolution.
+ */
+const getPublicAssetDataUri = (fileName) => {
+  const roots = [
+    path.join(__dirname, "public", "assets"),
+    path.join(__dirname, "..", "public", "assets"),
+    path.join(__dirname, "..", "..", "public", "assets"),
+    path.join(process.cwd(), "public", "assets"),
+    path.join(process.cwd(), "backend", "public", "assets"),
+    path.join(process.cwd(), "server", "public", "assets"),
+  ];
+
+  for (const root of roots) {
+    const filePath = path.join(root, fileName);
+    try {
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+        const mimeType =
+          fileName.toLowerCase().endsWith(".jpg") ||
+          fileName.toLowerCase().endsWith(".jpeg")
+            ? "image/jpeg"
+            : fileName.toLowerCase().endsWith(".webp")
+              ? "image/webp"
+              : "image/png";
+        const encoded = fs.readFileSync(filePath).toString("base64");
+        return `data:${mimeType};base64,${encoded}`;
+      }
+    } catch (error) {
+      // Try the next known public/assets location.
+    }
+  }
+
+  return "";
+};
+
 const escapeHtml = (value) => {
   if (value === null || value === undefined) return "";
 
@@ -1111,6 +1150,33 @@ const quotationTemplate = (
   const company =
     data.company || {};
 
+  // Use the company's uploaded Gujrat Solar logo when no logo is supplied
+  // by the quotation/company settings.
+  const defaultLogo =
+    getPublicAssetDataUri("gujrat-solar-logo.png");
+
+  const defaultProjectCover =
+    getPublicAssetDataUri("solerpanal.jpg");
+
+  const defaultSolarPhotos = [
+    {
+      title: "Solar Panel Installation",
+      url: getPublicAssetDataUri("karan.png"),
+    },
+    {
+      title: "Rooftop Solar Panels",
+      url: getPublicAssetDataUri("panelswebp.png"),
+    },
+    {
+      title: "Solar Installation Project",
+      url: getPublicAssetDataUri("payal.png"),
+    },
+    {
+      title: "Solar Plant Installation",
+      url: getPublicAssetDataUri("rahul.png"),
+    },
+  ].filter((photo) => photo.url);
+
   const bankDetails =
     data.bankDetails || {};
 
@@ -1184,6 +1250,11 @@ const quotationTemplate = (
     company.name ||
     company.legalName ||
     "GUJRAT SOLAR ENERGY";
+
+  // Keep an explicitly configured logo, otherwise use public/assets logo.
+  if (!company.logo) {
+    company.logo = defaultLogo;
+  }
 
 
   const companyAddress = [
@@ -1299,10 +1370,16 @@ const quotationTemplate = (
     );
 
 
-  const photos =
+  const suppliedPhotos =
     quotation.productPhotos ||
     proposal.productPhotos ||
     [];
+
+  // Use uploaded local solar photos by default, while preserving custom photos.
+  const photos =
+    asArray(suppliedPhotos).length
+      ? asArray(suppliedPhotos)
+      : defaultSolarPhotos;
 
 
   const testimonials =
@@ -3203,17 +3280,18 @@ tbody tr:nth-child(even) td {
   <div class="cover-visual">
 
     ${
-      photos.length
+      (defaultProjectCover || photos.length)
         ? `
           <img
             src="${escapeHtml(
-              typeof photos[0] === "string"
+              defaultProjectCover ||
+              (typeof photos[0] === "string"
                 ? photos[0]
                 : photos[0]?.url ||
                   photos[0]?.src ||
-                  ""
+                  "")
             )}"
-            alt="Solar Project"
+            alt="Gujrat Solar Energy Project"
           />
         `
         : `

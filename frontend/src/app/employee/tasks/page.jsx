@@ -1,232 +1,102 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import SearchBox from "@/components/common/SearchBox";
-import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
 import Select from "@/components/common/Select";
-import ConfirmDialog from "@/components/common/ConfirmDialog";
-
 import taskService from "@/services/task.service";
-import { getEmployees } from "@/services/employee.service";
-
 import "./tasks.css";
 
-const AdminTasksPage = () => {
-  const router = useRouter();
+const getValue = (object, keys, fallback = "") => {
+  if (!object) return fallback;
+  for (const key of keys) {
+    const value = object?.[key];
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+  return fallback;
+};
 
+const getId = (object) => {
+  if (!object) return "";
+  if (typeof object === "string") return object;
+  return object?._id || object?.id || object?.taskId || "";
+};
+
+const normalizeList = (response) => {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response?.data?.tasks)) return response.data.tasks;
+  if (Array.isArray(response?.tasks)) return response.tasks;
+  if (Array.isArray(response?.results)) return response.results;
+  return [];
+};
+
+const getStatus = (task) =>
+  String(getValue(task, ["status"], "PENDING")).toUpperCase();
+
+const getPriority = (task) =>
+  String(getValue(task, ["priority"], "MEDIUM")).toUpperCase();
+
+const formatDate = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const statusVariant = (status) => {
+  if (["COMPLETED", "DONE"].includes(status)) return "success";
+  if (["IN_PROGRESS", "IN PROGRESS"].includes(status)) return "info";
+  if (["CANCELLED"].includes(status)) return "danger";
+  if (["PENDING", "TODO"].includes(status)) return "warning";
+  return "default";
+};
+
+const priorityVariant = (priority) => {
+  if (["URGENT", "HIGH"].includes(priority)) return "danger";
+  if (priority === "MEDIUM") return "warning";
+  if (priority === "LOW") return "success";
+  return "default";
+};
+
+export default function EmployeeTasksPage() {
   const [tasks, setTasks] = useState([]);
-  const [employees, setEmployees] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
   const [error, setError] = useState("");
-  const [employeeError, setEmployeeError] = useState("");
-
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
-  const [assigneeFilter, setAssigneeFilter] = useState("ALL");
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-
-  const [deleteId, setDeleteId] = useState(null);
-  const [deleting, setDeleting] = useState(false);
-
-  /* -------------------------------------------------------
-     Helpers
-  ------------------------------------------------------- */
-
-  const getValue = (object, keys, fallback = "") => {
-    if (!object) return fallback;
-
-    for (const key of keys) {
-      const value = object?.[key];
-
-      if (
-        value !== undefined &&
-        value !== null &&
-        value !== ""
-      ) {
-        return value;
-      }
-    }
-
-    return fallback;
-  };
-
-  const getId = (object) => {
-    if (!object) return "";
-
-    if (typeof object === "string") {
-      return object;
-    }
-
-    return (
-      object?._id ||
-      object?.id ||
-      object?.employeeId ||
-      object?.taskId ||
-      ""
-    );
-  };
-
-  const normalizeList = (response, key) => {
-    if (Array.isArray(response)) {
-      return response;
-    }
-
-    if (Array.isArray(response?.data)) {
-      return response.data;
-    }
-
-    if (
-      key &&
-      Array.isArray(response?.data?.[key])
-    ) {
-      return response.data[key];
-    }
-
-    if (
-      key &&
-      Array.isArray(response?.[key])
-    ) {
-      return response[key];
-    }
-
-    if (Array.isArray(response?.results)) {
-      return response.results;
-    }
-
-    return [];
-  };
-
-  const getApiErrorMessage = (
-    err,
-    fallback
-  ) => {
-    const status =
-      err?.status ||
-      err?.response?.status;
-
-    const message =
-      err?.message ||
-      err?.response?.data?.message ||
-      fallback;
-
-    if (status) {
-      return `${message} (HTTP ${status})`;
-    }
-
-    return message;
-  };
-
-  /* -------------------------------------------------------
-     Load Tasks
-  ------------------------------------------------------- */
-
-  const loadTasks = async () => {
+  const loadTasks = async (isRefresh = false) => {
     try {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
       setError("");
 
-      const response =
-        await taskService.getTasks();
-
-      const normalizedTasks =
-        normalizeList(
-          response,
-          "tasks"
+      // Employees must use their own-task endpoint, never the admin all-tasks endpoint.
+      if (typeof taskService.getMyTasks !== "function") {
+        throw new Error(
+          "getMyTasks() is missing from task.service.js. It must call GET /api/v1/tasks/my."
         );
+      }
 
-      setTasks(normalizedTasks);
+      const response = await taskService.getMyTasks();
+      setTasks(normalizeList(response));
     } catch (err) {
-      console.error(
-        "Failed to load tasks:",
-        err
-      );
-
+      console.error("Failed to load employee tasks:", err);
       setTasks([]);
-
       setError(
-        getApiErrorMessage(
-          err,
-          "Unable to load tasks."
-        )
+        err?.response?.data?.message ||
+          err?.message ||
+          "Unable to load your tasks."
       );
-    }
-  };
-
-  /* -------------------------------------------------------
-     Load Employees
-  ------------------------------------------------------- */
-
-  const loadEmployees = async () => {
-    try {
-      setEmployeeError("");
-
-      const response =
-        await getEmployees();
-
-      const normalizedEmployees =
-        normalizeList(
-          response,
-          "employees"
-        );
-
-      setEmployees(
-        normalizedEmployees
-      );
-    } catch (err) {
-      console.error(
-        "Failed to load employees:",
-        err
-      );
-
-      setEmployees([]);
-
-      setEmployeeError(
-        getApiErrorMessage(
-          err,
-          "Unable to load employees."
-        )
-      );
-    }
-  };
-
-  /* -------------------------------------------------------
-     Load Everything
-  ------------------------------------------------------- */
-
-  const loadData = async (
-    showRefresh = false
-  ) => {
-    try {
-      if (showRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-
-      setError("");
-      setEmployeeError("");
-
-      /*
-       * IMPORTANT:
-       * Do NOT use Promise.all here.
-       *
-       * Tasks and Employees are independent.
-       * If employee API fails, tasks should still load.
-       */
-      await Promise.allSettled([
-        loadTasks(),
-        loadEmployees(),
-      ]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -234,1258 +104,183 @@ const AdminTasksPage = () => {
   };
 
   useEffect(() => {
-    loadData();
+    loadTasks();
   }, []);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    search,
-    statusFilter,
-    priorityFilter,
-    assigneeFilter,
-    itemsPerPage,
-  ]);
-
-  /* -------------------------------------------------------
-     Task Helpers
-  ------------------------------------------------------- */
-
-  const getTaskTitle = (task) =>
-    getValue(
-      task,
-      [
-        "title",
-        "taskTitle",
-        "name",
-        "subject",
-      ],
-      "Untitled Task"
-    );
-
-  const getTaskDescription = (task) =>
-    getValue(
-      task,
-      [
-        "description",
-        "details",
-      ],
-      ""
-    );
-
-  const getStatus = (task) =>
-    String(
-      getValue(
-        task,
-        ["status"],
-        "PENDING"
-      )
-    ).toUpperCase();
-
-  const getPriority = (task) =>
-    String(
-      getValue(
-        task,
-        ["priority"],
-        "MEDIUM"
-      )
-    ).toUpperCase();
-
-  const getDueDate = (task) =>
-    getValue(
-      task,
-      [
-        "dueDate",
-        "deadline",
-        "endDate",
-      ],
-      ""
-    );
-
-  const getCreatedDate = (task) =>
-    getValue(
-      task,
-      [
-        "createdAt",
-        "createdDate",
-      ],
-      ""
-    );
-
-  const getAssignee = (task) => {
-    const assignedTo =
-      getValue(
-        task,
-        [
-          "assignedTo",
-          "assignee",
-          "employee",
-        ],
-        null
-      );
-
-    if (
-      assignedTo &&
-      typeof assignedTo === "object"
-    ) {
-      return assignedTo;
-    }
-
-    const assignedId =
-      typeof assignedTo === "string"
-        ? assignedTo
-        : getValue(
-            task,
-            [
-              "assignedToId",
-              "employeeId",
-            ],
-            ""
-          );
-
-    if (assignedId) {
-      return (
-        employees.find(
-          (employee) =>
-            getId(employee) ===
-            assignedId
-        ) || null
-      );
-    }
-
-    return null;
-  };
-
-  const getAssigneeName = (task) => {
-    const assignee =
-      getAssignee(task);
-
-    if (assignee) {
-      return getValue(
-        assignee,
-        [
-          "name",
-          "fullName",
-          "employeeName",
-        ],
-        "Unassigned"
-      );
-    }
-
-    return "Unassigned";
-  };
-
-  const formatDate = (value) => {
-    if (!value) return "—";
-
-    const date = new Date(value);
-
-    if (
-      Number.isNaN(
-        date.getTime()
-      )
-    ) {
-      return "—";
-    }
-
-    return date.toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }
-    );
-  };
-
-  const isOverdue = (task) => {
-    const dueDate =
-      getDueDate(task);
-
-    if (!dueDate) return false;
-
-    const due = new Date(dueDate);
-
-    if (
-      Number.isNaN(
-        due.getTime()
-      )
-    ) {
-      return false;
-    }
-
-    const status =
-      getStatus(task);
-
-    if (
-      [
-        "COMPLETED",
-        "CANCELLED",
-        "DONE",
-      ].includes(status)
-    ) {
-      return false;
-    }
-
-    return due < new Date();
-  };
-
-  const getStatusVariant = (
-    status
-  ) => {
-    switch (status) {
-      case "COMPLETED":
-      case "DONE":
-        return "success";
-
-      case "IN_PROGRESS":
-      case "IN PROGRESS":
-        return "info";
-
-      case "PENDING":
-      case "TODO":
-        return "warning";
-
-      case "CANCELLED":
-        return "danger";
-
-      default:
-        return "default";
-    }
-  };
-
-  const getPriorityVariant = (
-    priority
-  ) => {
-    switch (priority) {
-      case "HIGH":
-      case "URGENT":
-        return "danger";
-
-      case "MEDIUM":
-        return "warning";
-
-      case "LOW":
-        return "success";
-
-      default:
-        return "default";
-    }
-  };
-
-  /* -------------------------------------------------------
-     Filtering
-  ------------------------------------------------------- */
-
   const filteredTasks = useMemo(() => {
-    const query =
-      search
-        .trim()
-        .toLowerCase();
+    const query = search.trim().toLowerCase();
+    return tasks.filter((task) => {
+      const status = getStatus(task);
+      const priority = getPriority(task);
+      if (statusFilter !== "ALL" && status !== statusFilter) return false;
+      if (priorityFilter !== "ALL" && priority !== priorityFilter) return false;
+      if (!query) return true;
+      const searchable = [
+        getValue(task, ["title", "taskTitle", "name", "subject"], "Untitled Task"),
+        getValue(task, ["description", "details"], ""),
+        getValue(task, ["taskNumber", "taskId"], ""),
+        status,
+        priority,
+      ].join(" ").toLowerCase();
+      return searchable.includes(query);
+    });
+  }, [tasks, search, statusFilter, priorityFilter]);
 
-    return tasks.filter(
-      (task) => {
-        const status =
-          getStatus(task);
-
-        const priority =
-          getPriority(task);
-
-        const assignee =
-          getAssignee(task);
-
-        const assigneeId =
-          getId(assignee) ||
-          getValue(
-            task,
-            [
-              "assignedToId",
-              "employeeId",
-            ],
-            ""
-          );
-
-        if (
-          statusFilter !==
-            "ALL" &&
-          status !==
-            statusFilter
-        ) {
-          return false;
-        }
-
-        if (
-          priorityFilter !==
-            "ALL" &&
-          priority !==
-            priorityFilter
-        ) {
-          return false;
-        }
-
-        if (
-          assigneeFilter !==
-            "ALL" &&
-          assigneeId !==
-            assigneeFilter
-        ) {
-          return false;
-        }
-
-        if (!query) {
-          return true;
-        }
-
-        const searchableText = [
-          getTaskTitle(task),
-          getTaskDescription(task),
-          getAssigneeName(task),
-          status,
-          priority,
-          getValue(
-            task,
-            [
-              "taskNumber",
-              "taskId",
-            ],
-            ""
-          ),
-        ]
-          .map((value) =>
-            String(value ?? "")
-          )
-          .join(" ")
-          .toLowerCase();
-
-        return searchableText.includes(
-          query
-        );
-      }
-    );
-  }, [
-    tasks,
-    employees,
-    search,
-    statusFilter,
-    priorityFilter,
-    assigneeFilter,
-  ]);
-
-  const totalPages =
-    Math.max(
-      1,
-      Math.ceil(
-        filteredTasks.length /
-          itemsPerPage
-      )
-    );
-
-  const paginatedTasks =
-    useMemo(() => {
-      const start =
-        (currentPage - 1) *
-        itemsPerPage;
-
-      return filteredTasks.slice(
-        start,
-        start + itemsPerPage
-      );
-    }, [
-      filteredTasks,
-      currentPage,
-      itemsPerPage,
-    ]);
-
-  /* -------------------------------------------------------
-     Stats
-  ------------------------------------------------------- */
-
-  const stats = useMemo(() => {
-    const total =
-      tasks.length;
-
-    const pending =
-      tasks.filter(
-        (task) =>
-          [
-            "PENDING",
-            "TODO",
-          ].includes(
-            getStatus(task)
-          )
-      ).length;
-
-    const inProgress =
-      tasks.filter(
-        (task) =>
-          [
-            "IN_PROGRESS",
-            "IN PROGRESS",
-          ].includes(
-            getStatus(task)
-          )
-      ).length;
-
-    const completed =
-      tasks.filter(
-        (task) =>
-          [
-            "COMPLETED",
-            "DONE",
-          ].includes(
-            getStatus(task)
-          )
-      ).length;
-
-    const overdue =
-      tasks.filter(
-        (task) =>
-          isOverdue(task)
-      ).length;
-
-    return {
-      total,
-      pending,
-      inProgress,
-      completed,
-      overdue,
-    };
-  }, [tasks]);
-
-  /* -------------------------------------------------------
-     Employee Filter
-  ------------------------------------------------------- */
-
-  const employeeOptions = [
-    {
-      label: "All Assignees",
-      value: "ALL",
-    },
-
-    ...employees.map(
-      (employee) => ({
-        label: getValue(
-          employee,
-          [
-            "name",
-            "fullName",
-            "employeeName",
-          ],
-          "Unnamed Employee"
-        ),
-        value: getId(employee),
-      })
-    ),
-  ];
-
-  /* -------------------------------------------------------
-     Delete Task
-  ------------------------------------------------------- */
-
-  const handleDelete = async () => {
-    if (!deleteId) return;
-
-    try {
-      setDeleting(true);
-      setError("");
-
-      if (
-        typeof taskService.deleteTask !==
-        "function"
-      ) {
-        throw new Error(
-          "Task delete service is not available."
-        );
-      }
-
-      await taskService.deleteTask(
-        deleteId
-      );
-
-      setTasks(
-        (previous) =>
-          previous.filter(
-            (task) =>
-              getId(task) !==
-              deleteId
-          )
-      );
-
-      setDeleteId(null);
-    } catch (err) {
-      console.error(
-        "Failed to delete task:",
-        err
-      );
-
-      setError(
-        getApiErrorMessage(
-          err,
-          "Failed to delete task."
-        )
-      );
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  /* -------------------------------------------------------
-     Loading
-  ------------------------------------------------------- */
+  const stats = useMemo(() => ({
+    total: tasks.length,
+    pending: tasks.filter((task) => ["PENDING", "TODO"].includes(getStatus(task))).length,
+    inProgress: tasks.filter((task) => ["IN_PROGRESS", "IN PROGRESS"].includes(getStatus(task))).length,
+    completed: tasks.filter((task) => ["COMPLETED", "DONE"].includes(getStatus(task))).length,
+    overdue: tasks.filter((task) => {
+      const dueDate = getValue(task, ["dueDate", "deadline", "endDate"], "");
+      if (!dueDate || ["COMPLETED", "DONE", "CANCELLED"].includes(getStatus(task))) return false;
+      const due = new Date(dueDate);
+      return !Number.isNaN(due.getTime()) && due < new Date();
+    }).length,
+  }), [tasks]);
 
   if (loading) {
     return (
       <div className="admin-tasks-loading">
         <Loader />
-
-        <p>
-          Loading tasks...
-        </p>
+        <p>Loading your tasks...</p>
       </div>
     );
   }
 
-  /* -------------------------------------------------------
-     UI
-  ------------------------------------------------------- */
-
   return (
     <div className="admin-tasks-page">
-
-      {/* Header */}
-
       <div className="admin-tasks-page-header">
-
         <div>
-          <h1>
-            Tasks
-          </h1>
-
-          <p>
-            Manage assignments,
-            deadlines and
-            operational tasks.
-          </p>
+          <h1>My Tasks</h1>
+          <p>View and track tasks assigned to you.</p>
         </div>
-
         <div className="admin-tasks-header-actions">
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() =>
-              loadData(true)
-            }
-            disabled={refreshing}
-          >
-            {refreshing
-              ? "Refreshing..."
-              : "↻ Refresh"}
+          <Button type="button" variant="secondary" onClick={() => loadTasks(true)} disabled={refreshing}>
+            {refreshing ? "Refreshing..." : "↻ Refresh"}
           </Button>
-
-          <Button
-            type="button"
-            variant="primary"
-            onClick={() =>
-              router.push(
-                "/admin/tasks/create"
-              )
-            }
-          >
-            + Create Task
-          </Button>
-
         </div>
-
       </div>
-
-      {/* Main Task Error */}
 
       {error && (
         <div className="admin-tasks-error">
-
-          <strong>
-            Unable to load tasks
-          </strong>
-
-          <div>
-            {error}
-          </div>
-
-          <div
-            style={{
-              marginTop: "10px",
-            }}
-          >
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() =>
-                loadTasks()
-              }
-            >
+          <strong>Unable to load your tasks</strong>
+          <div>{error}</div>
+          <div style={{ marginTop: 10 }}>
+            <Button type="button" variant="secondary" onClick={() => loadTasks()}>
               Retry Tasks
             </Button>
           </div>
-
         </div>
       )}
-
-      {/* Employee Warning */}
-
-      {employeeError && (
-        <div
-          className="admin-tasks-error"
-          style={{
-            marginBottom: "16px",
-          }}
-        >
-          <strong>
-            Employee filter unavailable
-          </strong>
-
-          <div>
-            {employeeError}
-          </div>
-
-          <div
-            style={{
-              marginTop: "10px",
-            }}
-          >
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() =>
-                loadEmployees()
-              }
-            >
-              Retry Employees
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Stats */}
 
       <div className="admin-tasks-stats">
-
-        <div className="admin-task-stat-card">
-          <div className="admin-task-stat-icon">
-            TS
+        {[
+          ["Total Tasks", stats.total, "TS"],
+          ["Pending", stats.pending, "P"],
+          ["In Progress", stats.inProgress, "IP"],
+          ["Completed", stats.completed, "✓"],
+          ["Overdue", stats.overdue, "!"],
+        ].map(([label, value, icon]) => (
+          <div className="admin-task-stat-card" key={label}>
+            <div className={`admin-task-stat-icon ${label === "Pending" ? "pending" : label === "In Progress" ? "progress" : label === "Completed" ? "completed" : label === "Overdue" ? "overdue" : ""}`}>
+              {icon}
+            </div>
+            <div>
+              <span>{label}</span>
+              <strong>{value}</strong>
+            </div>
           </div>
-
-          <div>
-            <span>
-              Total Tasks
-            </span>
-
-            <strong>
-              {stats.total}
-            </strong>
-          </div>
-        </div>
-
-        <div className="admin-task-stat-card">
-          <div className="admin-task-stat-icon pending">
-            P
-          </div>
-
-          <div>
-            <span>
-              Pending
-            </span>
-
-            <strong>
-              {stats.pending}
-            </strong>
-          </div>
-        </div>
-
-        <div className="admin-task-stat-card">
-          <div className="admin-task-stat-icon progress">
-            IP
-          </div>
-
-          <div>
-            <span>
-              In Progress
-            </span>
-
-            <strong>
-              {stats.inProgress}
-            </strong>
-          </div>
-        </div>
-
-        <div className="admin-task-stat-card">
-          <div className="admin-task-stat-icon completed">
-            ✓
-          </div>
-
-          <div>
-            <span>
-              Completed
-            </span>
-
-            <strong>
-              {stats.completed}
-            </strong>
-          </div>
-        </div>
-
-        <div className="admin-task-stat-card">
-          <div className="admin-task-stat-icon overdue">
-            !
-          </div>
-
-          <div>
-            <span>
-              Overdue
-            </span>
-
-            <strong>
-              {stats.overdue}
-            </strong>
-          </div>
-        </div>
-
+        ))}
       </div>
-
-      {/* Filters */}
 
       <div className="admin-tasks-toolbar">
-
         <div className="admin-tasks-search">
-
-          <SearchBox
-            value={search}
-            onChange={setSearch}
-            placeholder="Search tasks..."
-          />
-
+          <SearchBox value={search} onChange={setSearch} placeholder="Search my tasks..." />
         </div>
-
         <div className="admin-tasks-filters">
-
           <Select
             value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(
-                event?.target
-                  ? event.target.value
-                  : event
-              )
-            }
+            onChange={(value) => setStatusFilter(value?.target ? value.target.value : value)}
             options={[
-              {
-                label: "All Status",
-                value: "ALL",
-              },
-              {
-                label: "Pending",
-                value: "PENDING",
-              },
-              {
-                label: "In Progress",
-                value: "IN_PROGRESS",
-              },
-              {
-                label: "Completed",
-                value: "COMPLETED",
-              },
-              {
-                label: "Cancelled",
-                value: "CANCELLED",
-              },
+              { label: "All Status", value: "ALL" },
+              { label: "Pending", value: "PENDING" },
+              { label: "In Progress", value: "IN_PROGRESS" },
+              { label: "Completed", value: "COMPLETED" },
+              { label: "Cancelled", value: "CANCELLED" },
             ]}
           />
-
           <Select
             value={priorityFilter}
-            onChange={(event) =>
-              setPriorityFilter(
-                event?.target
-                  ? event.target.value
-                  : event
-              )
-            }
+            onChange={(value) => setPriorityFilter(value?.target ? value.target.value : value)}
             options={[
-              {
-                label: "All Priorities",
-                value: "ALL",
-              },
-              {
-                label: "Urgent",
-                value: "URGENT",
-              },
-              {
-                label: "High",
-                value: "HIGH",
-              },
-              {
-                label: "Medium",
-                value: "MEDIUM",
-              },
-              {
-                label: "Low",
-                value: "LOW",
-              },
+              { label: "All Priorities", value: "ALL" },
+              { label: "Urgent", value: "URGENT" },
+              { label: "High", value: "HIGH" },
+              { label: "Medium", value: "MEDIUM" },
+              { label: "Low", value: "LOW" },
             ]}
           />
-
-          <Select
-            value={assigneeFilter}
-            onChange={(event) =>
-              setAssigneeFilter(
-                event?.target
-                  ? event.target.value
-                  : event
-              )
-            }
-            options={
-              employeeOptions
-            }
-          />
-
-          <Select
-            value={String(
-              itemsPerPage
-            )}
-            onChange={(event) =>
-              setItemsPerPage(
-                Number(
-                  event?.target
-                    ? event.target.value
-                    : event
-                )
-              )
-            }
-            options={[
-              {
-                label: "10 / page",
-                value: "10",
-              },
-              {
-                label: "25 / page",
-                value: "25",
-              },
-              {
-                label: "50 / page",
-                value: "50",
-              },
-            ]}
-          />
-
         </div>
-
       </div>
-
-      {/* Task Table */}
 
       <div className="admin-tasks-card">
-
         <div className="admin-tasks-card-header">
-
           <div>
-            <h2>
-              Task Records
-            </h2>
-
-            <p>
-              {filteredTasks.length}{" "}
-              task
-              {filteredTasks.length !==
-              1
-                ? "s"
-                : ""}{" "}
-              found
-            </p>
+            <h2>Assigned Tasks</h2>
+            <p>{filteredTasks.length} task{filteredTasks.length === 1 ? "" : "s"} found</p>
           </div>
-
         </div>
 
-        {paginatedTasks.length ===
-        0 ? (
-
+        {filteredTasks.length === 0 ? (
           <div className="admin-tasks-empty">
-
-            <div className="admin-tasks-empty-icon">
-              TS
-            </div>
-
-            <h3>
-              No tasks found
-            </h3>
-
-            <p>
-              {search ||
-              statusFilter !==
-                "ALL" ||
-              priorityFilter !==
-                "ALL" ||
-              assigneeFilter !==
-                "ALL"
-                ? "Try changing your filters or search."
-                : error
-                ? "Tasks could not be loaded from the server."
-                : "Create your first task to get started."}
-            </p>
-
-            {!search &&
-              statusFilter ===
-                "ALL" &&
-              priorityFilter ===
-                "ALL" &&
-              assigneeFilter ===
-                "ALL" && (
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={() =>
-                    router.push(
-                      "/admin/tasks/create"
-                    )
-                  }
-                >
-                  + Create Task
-                </Button>
-              )}
-
+            <div className="admin-tasks-empty-icon">TS</div>
+            <h3>{error ? "Tasks could not be loaded" : "No tasks found"}</h3>
+            <p>{error ? "Check the API response and try again." : "No tasks match your search or filters."}</p>
           </div>
-
         ) : (
-
-          <>
-
-            <div className="admin-tasks-table-wrapper">
-
-              <table className="admin-tasks-table">
-
-                <thead>
-                  <tr>
-
-                    <th>
-                      Task
-                    </th>
-
-                    <th>
-                      Assigned To
-                    </th>
-
-                    <th>
-                      Priority
-                    </th>
-
-                    <th>
-                      Due Date
-                    </th>
-
-                    <th>
-                      Status
-                    </th>
-
-                    <th>
-                      Created
-                    </th>
-
-                    <th>
-                      Actions
-                    </th>
-
-                  </tr>
-                </thead>
-
-                <tbody>
-
-                  {paginatedTasks.map(
-                    (
-                      task,
-                      index
-                    ) => {
-
-                      const id =
-                        getId(task);
-
-                      const status =
-                        getStatus(
-                          task
-                        );
-
-                      const priority =
-                        getPriority(
-                          task
-                        );
-
-                      const overdue =
-                        isOverdue(
-                          task
-                        );
-
-                      return (
-                        <tr
-                          key={
-                            id ||
-                            index
-                          }
-                          className={
-                            overdue
-                              ? "is-overdue"
-                              : ""
-                          }
-                        >
-
-                          <td>
-
-                            <div className="admin-task-title-cell">
-
-                              <strong>
-                                {String(
-                                  getTaskTitle(
-                                    task
-                                  )
-                                )}
-                              </strong>
-
-                              {getTaskDescription(
-                                task
-                              ) && (
-                                <span>
-                                  {String(
-                                    getTaskDescription(
-                                      task
-                                    )
-                                  )}
-                                </span>
-                              )}
-
-                              {getValue(
-                                task,
-                                [
-                                  "taskNumber",
-                                  "taskId",
-                                ],
-                                ""
-                              ) && (
-                                <small>
-                                  {String(
-                                    getValue(
-                                      task,
-                                      [
-                                        "taskNumber",
-                                        "taskId",
-                                      ]
-                                    )
-                                  )}
-                                </small>
-                              )}
-
-                            </div>
-
-                          </td>
-
-                          <td>
-
-                            <div className="admin-task-assignee">
-
-                              <div className="admin-task-avatar">
-                                {String(
-                                  getAssigneeName(
-                                    task
-                                  )
-                                )
-                                  .charAt(0)
-                                  .toUpperCase()}
-                              </div>
-
-                              <span>
-                                {String(
-                                  getAssigneeName(
-                                    task
-                                  )
-                                )}
-                              </span>
-
-                            </div>
-
-                          </td>
-
-                          <td>
-
-                            <Badge
-                              variant={getPriorityVariant(
-                                priority
-                              )}
-                            >
-                              {priority.replaceAll(
-                                "_",
-                                " "
-                              )}
-                            </Badge>
-
-                          </td>
-
-                          <td>
-
-                            <div
-                              className={`admin-task-due-date ${
-                                overdue
-                                  ? "overdue"
-                                  : ""
-                              }`}
-                            >
-
-                              <span>
-                                {formatDate(
-                                  getDueDate(
-                                    task
-                                  )
-                                )}
-                              </span>
-
-                              {overdue && (
-                                <small>
-                                  Overdue
-                                </small>
-                              )}
-
-                            </div>
-
-                          </td>
-
-                          <td>
-
-                            <Badge
-                              variant={getStatusVariant(
-                                status
-                              )}
-                            >
-                              {status.replaceAll(
-                                "_",
-                                " "
-                              )}
-                            </Badge>
-
-                          </td>
-
-                          <td>
-
-                            <span className="admin-task-created-date">
-                              {formatDate(
-                                getCreatedDate(
-                                  task
-                                )
-                              )}
-                            </span>
-
-                          </td>
-
-                          <td>
-
-                            <div className="admin-task-actions">
-
-                              <button
-                                type="button"
-                                className="admin-task-action-button view"
-                                onClick={() =>
-                                  router.push(
-                                    `/admin/tasks/${id}`
-                                  )
-                                }
-                                disabled={!id}
-                              >
-                                View
-                              </button>
-
-                              <button
-                                type="button"
-                                className="admin-task-action-button edit"
-                                onClick={() =>
-                                  router.push(
-                                    `/admin/tasks/create?edit=${id}`
-                                  )
-                                }
-                                disabled={!id}
-                              >
-                                Edit
-                              </button>
-
-                              <button
-                                type="button"
-                                className="admin-task-action-button delete"
-                                onClick={() =>
-                                  setDeleteId(
-                                    id
-                                  )
-                                }
-                                disabled={!id}
-                              >
-                                Delete
-                              </button>
-
-                            </div>
-
-                          </td>
-
-                        </tr>
-                      );
-                    }
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-            <div className="admin-tasks-pagination">
-
-              <Pagination
-                currentPage={
-                  currentPage
-                }
-                totalPages={
-                  totalPages
-                }
-                onPageChange={(page) =>
-                  setCurrentPage(
-                    page
-                  )
-                }
-              />
-
-            </div>
-
-          </>
+          <div className="admin-tasks-table-wrapper">
+            <table className="admin-tasks-table">
+              <thead>
+                <tr>
+                  <th>Task</th>
+                  <th>Priority</th>
+                  <th>Due Date</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTasks.map((task, index) => {
+                  const id = getId(task);
+                  const status = getStatus(task);
+                  const priority = getPriority(task);
+                  const dueDate = getValue(task, ["dueDate", "deadline", "endDate"], "");
+                  return (
+                    <tr key={id || index}>
+                      <td>
+                        <div className="admin-task-title-cell">
+                          <strong>{String(getValue(task, ["title", "taskTitle", "name", "subject"], "Untitled Task"))}</strong>
+                          {getValue(task, ["description", "details"], "") && (
+                            <span>{String(getValue(task, ["description", "details"], ""))}</span>
+                          )}
+                          {getValue(task, ["taskNumber", "taskId"], "") && (
+                            <small>{String(getValue(task, ["taskNumber", "taskId"], ""))}</small>
+                          )}
+                        </div>
+                      </td>
+                      <td><Badge variant={priorityVariant(priority)}>{priority.replaceAll("_", " ")}</Badge></td>
+                      <td>{formatDate(dueDate)}</td>
+                      <td><Badge variant={statusVariant(status)}>{status.replaceAll("_", " ")}</Badge></td>
+                      <td>{formatDate(getValue(task, ["createdAt", "createdDate"], ""))}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
-
       </div>
-
-      <ConfirmDialog
-        isOpen={Boolean(
-          deleteId
-        )}
-        onClose={() =>
-          !deleting &&
-          setDeleteId(null)
-        }
-        onConfirm={
-          handleDelete
-        }
-        title="Delete Task"
-        message="Are you sure you want to delete this task? This action cannot be undone."
-        confirmText={
-          deleting
-            ? "Deleting..."
-            : "Delete Task"
-        }
-        cancelText="Cancel"
-        loading={deleting}
-        danger
-      />
-
     </div>
   );
-};
-
-export default AdminTasksPage;
+}

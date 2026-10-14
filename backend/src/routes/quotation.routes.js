@@ -41,7 +41,7 @@ router.get(
 router.post(
   "/",
   validate([createQuotationValidator]),
-  allowRoles("ADMIN", "MANAGER"),
+  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
   createQuotation
 );
 

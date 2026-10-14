@@ -1,6 +1,9 @@
 const puppeteer = require("puppeteer");
 const pdfService = require("../services/pdf.service");
 
+const HTML_CONTENT_TIMEOUT = 60000;
+const IMAGE_LOAD_TIMEOUT = 10000;
+
 const generatePdfFromHtml = async (html) => {
   let browser;
 
@@ -21,9 +24,48 @@ const generatePdfFromHtml = async (html) => {
       deviceScaleFactor: 1,
     });
 
+    // Do not wait for networkidle0: external images/fonts can keep network
+    // activity open and cause intermittent 30-second navigation timeouts.
     await page.setContent(html, {
-      waitUntil: ["load", "networkidle0"],
+      waitUntil: "domcontentloaded",
+      timeout: HTML_CONTENT_TIMEOUT,
     });
+
+    // Wait for images that are actually present in the HTML, but never let a
+    // broken/unreachable image block PDF generation indefinitely.
+    await page.evaluate((imageTimeout) => {
+      const images = Array.from(document.images);
+
+      return Promise.all(
+        images.map((img) => {
+          if (img.complete) {
+            return Promise.resolve();
+          }
+
+          return new Promise((resolve) => {
+            let settled = false;
+
+            const finish = () => {
+              if (settled) return;
+              settled = true;
+              img.removeEventListener("load", finish);
+              img.removeEventListener("error", finish);
+              resolve();
+            };
+
+            img.addEventListener("load", finish, { once: true });
+            img.addEventListener("error", finish, { once: true });
+
+            setTimeout(finish, imageTimeout);
+          });
+        })
+      );
+    }, IMAGE_LOAD_TIMEOUT);
+
+    // Allow CSS/layout to settle after images have either loaded or timed out.
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    );
 
     const pdfBuffer = await page.pdf({
       format: "A4",
@@ -40,7 +82,11 @@ const generatePdfFromHtml = async (html) => {
     return pdfBuffer;
   } finally {
     if (browser) {
-      await browser.close();
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error("Failed to close Puppeteer browser:", closeError);
+      }
     }
   }
 };
@@ -59,28 +105,24 @@ const sendPdf = (res, buffer, filename) => {
 const generateQuotationPdf = async (req, res, next) => {
   try {
     const result = await pdfService.getQuotationPdfData(req.params.id);
-
     const pdfBuffer = await generatePdfFromHtml(result.html);
-
     const filename = `${result.quotationNumber || "quotation"}.pdf`;
 
     return sendPdf(res, pdfBuffer, filename);
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
 const generateInvoicePdf = async (req, res, next) => {
   try {
     const result = await pdfService.getInvoicePdfData(req.params.id);
-
     const pdfBuffer = await generatePdfFromHtml(result.html);
-
     const filename = `${result.invoiceNumber || "invoice"}.pdf`;
 
     return sendPdf(res, pdfBuffer, filename);
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 

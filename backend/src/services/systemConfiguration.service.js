@@ -977,8 +977,15 @@ const getConfigurations = async ({
   solarRequirement,
   startDate,
   endDate,
+  createdBy,
 } = {}) => {
   const filter = {};
+
+  // Never return organization-wide configurations to an employee.
+  // Scope by creator until the project defines a canonical assignment field.
+  if (createdBy) {
+    filter.createdBy = createdBy;
+  }
 
   if (lead) {
     filter.lead = lead;

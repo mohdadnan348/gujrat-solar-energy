@@ -1,11 +1,6 @@
 "use client";
 
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Button from "@/components/common/Button";
@@ -14,1192 +9,380 @@ import SearchBox from "@/components/common/SearchBox";
 import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
 
+import leadService from "@/services/lead.service";
 import solarRequirementService from "@/services/solarRequirement.service";
 
 import "./requirements.css";
 
-const SolarRequirementsPage = () => {
+const ITEMS_PER_PAGE = 10;
+
+function extractArray(response, keys = []) {
+  const candidates = [
+    response,
+    response?.data,
+    response?.requirements,
+    response?.solarRequirements,
+    response?.leads,
+    response?.results,
+    response?.items,
+    response?.data?.requirements,
+    response?.data?.solarRequirements,
+    response?.data?.leads,
+    response?.data?.results,
+    response?.data?.items,
+  ];
+
+  for (const value of candidates) {
+    if (Array.isArray(value)) return value;
+  }
+
+  for (const key of keys) {
+    if (Array.isArray(response?.[key])) return response[key];
+    if (Array.isArray(response?.data?.[key])) return response.data[key];
+  }
+
+  return [];
+}
+
+function extractObject(response) {
+  const candidates = [
+    response?.data?.requirement,
+    response?.data?.solarRequirement,
+    response?.data?.data,
+    response?.data,
+    response?.requirement,
+    response?.solarRequirement,
+    response,
+  ];
+
+  return candidates.find(
+    (value) => value && typeof value === "object" && !Array.isArray(value)
+  ) || null;
+}
+
+function getLeadId(lead) {
+  return lead?._id || lead?.id || lead?.leadId || lead?.lead?._id || lead?.lead?.id || "";
+}
+
+function getRequirementId(item) {
+  return item?.requirementNumber || item?.requirementId || item?._id || item?.id || "";
+}
+
+function getName(person) {
+  if (!person) return "—";
+  if (typeof person === "string") return person;
+  const fullName = `${person?.firstName || ""} ${person?.lastName || ""}`.trim();
+  return person?.name || person?.fullName || person?.customerName || fullName || person?.email || "—";
+}
+
+function getCustomer(item) {
+  return item?.customer || item?.customerId || item?.lead || item?.leadId || null;
+}
+
+function getCustomerName(item) {
+  const customer = getCustomer(item);
+  return item?.customerName || item?.customer?.name || item?.customer?.fullName ||
+    item?.lead?.customerName || item?.lead?.name || getName(customer);
+}
+
+function getCustomerPhone(item) {
+  return item?.phone || item?.mobile || item?.customer?.phone || item?.customer?.mobile ||
+    item?.lead?.phone || item?.lead?.mobile || item?.lead?.contactNumber || "";
+}
+
+function getCustomerEmail(item) {
+  return item?.email || item?.customer?.email || item?.lead?.email || "";
+}
+
+function getCapacity(item) {
+  const value = item?.requiredKw ?? item?.requiredKW ?? item?.kw ?? item?.systemSize ??
+    item?.capacity ?? item?.requiredCapacity ?? item?.plantCapacity;
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isNaN(number) ? value : number;
+}
+
+function getSystemType(item) {
+  return item?.systemType || item?.requirementType || item?.solarType || item?.type || "—";
+}
+
+function getConnectionType(item) {
+  return item?.connectionType || item?.connection || "—";
+}
+
+function getLocation(item) {
+  const location = item?.location;
+  if (location && typeof location === "object") {
+    return location?.city || location?.name || location?.address || "—";
+  }
+  return item?.city || location || item?.siteAddress || item?.address || "—";
+}
+
+function normalizeStatus(status) {
+  return String(status || "PENDING").trim().toUpperCase().replace(/[\s-]+/g, "_");
+}
+
+function getStatusVariant(status) {
+  const value = normalizeStatus(status);
+  if (["COMPLETE", "COMPLETED", "APPROVED", "CONVERTED", "ACTIVE"].some((s) => value.includes(s))) return "success";
+  if (["REJECT", "CANCEL", "FAILED"].some((s) => value.includes(s))) return "danger";
+  if (["PENDING", "DRAFT", "PROGRESS", "NEW"].some((s) => value.includes(s))) return "warning";
+  return "info";
+}
+
+function formatStatus(status) {
+  return normalizeStatus(status).replace(/_/g, " ").toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function formatNumber(value) {
+  if (value === null || value === undefined || value === "") return "—";
+  const number = Number(value);
+  return Number.isNaN(number) ? String(value) : number.toLocaleString("en-IN");
+}
+
+export default function EmployeeSolarRequirementsPage() {
   const router = useRouter();
 
   const [requirements, setRequirements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [typeFilter, setTypeFilter] = useState("ALL");
-
   const [currentPage, setCurrentPage] = useState(1);
 
-  const itemsPerPage = 10;
-
-  /* =========================================================
-     LOAD REQUIREMENTS
-  ========================================================= */
-
-  const loadRequirements = async (isRefresh = false) => {
+  const loadRequirements = useCallback(async (refresh = false) => {
     try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-
+      if (refresh) setRefreshing(true);
+      else setLoading(true);
       setError("");
 
-      const response =
-        await solarRequirementService.getSolarRequirements();
+      // Do not call GET /solar-requirements: backend restricts that endpoint
+      // to Admin, Manager and HR. Employee data is loaded via their own leads.
+      const leadResponse = await leadService.getMyLeads({ page: 1, limit: 100 });
+      const leads = extractArray(leadResponse, ["leads", "results", "items"]);
 
-      const data = response?.data || response;
+      if (leads.length === 0) {
+        setRequirements([]);
+        return;
+      }
 
-      const list = Array.isArray(data)
-        ? data
-        : data?.requirements ||
-          data?.solarRequirements ||
-          data?.items ||
-          [];
+      const results = await Promise.allSettled(
+        leads.map(async (lead) => {
+          const leadId = getLeadId(lead);
+          if (!leadId) return [];
+          const response = await solarRequirementService.getSolarRequirementsByLead(leadId);
+          const list = extractArray(response, ["requirements", "solarRequirements", "items"]);
+          if (list.length) return list;
 
-      setRequirements(
-        Array.isArray(list) ? list : []
+          const item = extractObject(response);
+          return item && (getRequirementId(item) || item.lead || item.leadId || item.customer)
+            ? [item]
+            : [];
+        })
       );
+
+      const found = [];
+      results.forEach((result) => {
+        if (result.status === "fulfilled") found.push(...result.value);
+      });
+
+      const unique = new Map();
+      found.forEach((item, index) => {
+        const id = getRequirementId(item) || `${getLeadId(item?.lead || item)}-${index}`;
+        if (id) unique.set(String(id), item);
+      });
+
+      setRequirements(Array.from(unique.values()));
+
+      if (found.length === 0 && results.every((result) => result.status === "rejected")) {
+        const firstError = results.find((result) => result.status === "rejected")?.reason;
+        throw firstError || new Error("Unable to load solar requirements for your leads.");
+      }
     } catch (err) {
-      console.error(
-        "Failed to load solar requirements:",
-        err
-      );
-
-      setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Unable to load solar requirements."
-      );
+      console.error("Failed to load employee solar requirements:", err);
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message || err?.response?.data?.error;
+      setRequirements([]);
+      if (status === 401) {
+        setError(message || "Your session has expired. Please sign in again.");
+      } else if (status === 403) {
+        setError(message || "Your account is not authorized to view these requirements. Please verify Employee role permissions.");
+      } else {
+        setError(message || err?.message || "Unable to load solar requirements. Please try again.");
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadRequirements();
-  }, []);
+  }, [loadRequirements]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [search, statusFilter, typeFilter]);
 
-  /* =========================================================
-     HELPERS
-  ========================================================= */
-
-  const safeText = (
-    value,
-    fallback = "—"
-  ) => {
-    if (
-      value === null ||
-      value === undefined ||
-      value === ""
-    ) {
-      return fallback;
-    }
-
-    if (typeof value === "object") {
-      return (
-        value?.name ||
-        value?.fullName ||
-        value?.customerName ||
-        value?.city ||
-        value?.label ||
-        value?.email ||
-        fallback
-      );
-    }
-
-    return String(value);
-  };
-
-  const getName = (person) => {
-    if (!person) return "—";
-
-    if (typeof person === "string") {
-      return person;
-    }
-
-    const fullName =
-      `${person?.firstName || ""} ${
-        person?.lastName || ""
-      }`.trim();
-
-    return (
-      person?.name ||
-      person?.fullName ||
-      person?.customerName ||
-      fullName ||
-      person?.email ||
-      "—"
-    );
-  };
-
-  const getCustomer = (item) => {
-    return (
-      item?.customer ||
-      item?.customerId ||
-      item?.lead ||
-      item?.leadId ||
-      null
-    );
-  };
-
-  const getCustomerName = (item) => {
-    const customer = getCustomer(item);
-
-    return (
-      item?.customerName ||
-      item?.customer?.name ||
-      item?.customer?.fullName ||
-      item?.lead?.customerName ||
-      item?.lead?.name ||
-      getName(customer)
-    );
-  };
-
-  const getCustomerPhone = (item) => {
-    return (
-      item?.phone ||
-      item?.mobile ||
-      item?.customer?.phone ||
-      item?.customer?.mobile ||
-      item?.lead?.phone ||
-      item?.lead?.mobile ||
-      ""
-    );
-  };
-
-  const getCustomerEmail = (item) => {
-    return (
-      item?.email ||
-      item?.customer?.email ||
-      item?.lead?.email ||
-      ""
-    );
-  };
-
-  const getRequirementId = (
-    item,
-    index = 0
-  ) => {
-    return (
-      item?.requirementNumber ||
-      item?.requirementId ||
-      item?._id ||
-      item?.id ||
-      `REQ-${String(index + 1).padStart(3, "0")}`
-    );
-  };
-
-  /* =========================================================
-     CAPACITY
-  ========================================================= */
-
-  const getCapacity = (item) => {
-    const value =
-      item?.requiredKw ??
-      item?.requiredKW ??
-      item?.kw ??
-      item?.systemSize ??
-      item?.capacity ??
-      item?.requiredCapacity ??
-      item?.plantCapacity;
-
-    if (
-      value === null ||
-      value === undefined ||
-      value === ""
-    ) {
-      return null;
-    }
-
-    const numericValue = Number(value);
-
-    return Number.isNaN(numericValue)
-      ? value
-      : numericValue;
-  };
-
-  /* =========================================================
-     SYSTEM TYPE
-  ========================================================= */
-
-  const getSystemType = (item) => {
-    return (
-      item?.systemType ||
-      item?.requirementType ||
-      item?.solarType ||
-      item?.type ||
-      "—"
-    );
-  };
-
-  const getConnectionType = (item) => {
-    return (
-      item?.connectionType ||
-      item?.connection ||
-      "—"
-    );
-  };
-
-  /* =========================================================
-     LOCATION
-  ========================================================= */
-
-  const getLocation = (item) => {
-    const location = item?.location;
-
-    if (
-      typeof location === "object" &&
-      location
-    ) {
-      return (
-        location?.city ||
-        location?.name ||
-        location?.address ||
-        "—"
-      );
-    }
-
-    return (
-      item?.city ||
-      location ||
-      item?.siteAddress ||
-      item?.address ||
-      "—"
-    );
-  };
-
-  /* =========================================================
-     STATUS
-  ========================================================= */
-
-  const getStatus = (item) => {
-    return item?.status || "PENDING";
-  };
-
-  const normalizeStatus = (status) => {
-    return String(status || "")
-      .trim()
-      .toUpperCase()
-      .replace(/[\s-]+/g, "_");
-  };
-
-  const formatDate = (date) => {
-    if (!date) return "—";
-
-    const parsedDate = new Date(date);
-
-    if (
-      Number.isNaN(
-        parsedDate.getTime()
-      )
-    ) {
-      return safeText(date);
-    }
-
-    return parsedDate.toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }
-    );
-  };
-
-  const formatNumber = (value) => {
-    if (
-      value === null ||
-      value === undefined ||
-      value === ""
-    ) {
-      return "—";
-    }
-
-    const number = Number(value);
-
-    if (Number.isNaN(number)) {
-      return safeText(value);
-    }
-
-    return number.toLocaleString("en-IN");
-  };
-
-  const getStatusText = (status) => {
-    if (!status) {
-      return "Pending";
-    }
-
-    return String(status)
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (char) =>
-        char.toUpperCase()
-      );
-  };
-
-  const getStatusVariant = (status) => {
-    const value = normalizeStatus(status);
-
-    if (
-      value.includes("COMPLETE") ||
-      value.includes("APPROVED") ||
-      value.includes("CONVERTED") ||
-      value.includes("ACTIVE")
-    ) {
-      return "success";
-    }
-
-    if (
-      value.includes("REJECT") ||
-      value.includes("CANCEL")
-    ) {
-      return "danger";
-    }
-
-    if (
-      value.includes("PENDING") ||
-      value.includes("DRAFT") ||
-      value.includes("PROGRESS") ||
-      value.includes("NEW")
-    ) {
-      return "warning";
-    }
-
-    return "info";
-  };
-
-  /* =========================================================
-     FILTERS
-  ========================================================= */
-
   const filteredRequirements = useMemo(() => {
-    const normalizedSearch =
-      search.trim().toLowerCase();
-
+    const query = search.trim().toLowerCase();
     return requirements.filter((item) => {
-      const customerName =
-        getCustomerName(item);
+      const searchable = [
+        getRequirementId(item), getCustomerName(item), getCustomerPhone(item),
+        getCustomerEmail(item), getLocation(item), getSystemType(item),
+        getConnectionType(item), item?.status, getCapacity(item),
+      ].filter((value) => value !== null && value !== undefined && value !== "")
+        .map((value) => typeof value === "object" ? JSON.stringify(value) : String(value))
+        .join(" ").toLowerCase();
 
-      const searchableText = [
-        getRequirementId(item),
-        customerName,
-        getCustomerPhone(item),
-        getCustomerEmail(item),
-        item?.city,
-        item?.location,
-        item?.siteAddress,
-        item?.address,
-        item?.status,
-        item?.systemType,
-        item?.requirementType,
-        item?.connectionType,
-        getCapacity(item),
-      ]
-        .filter(
-          (value) =>
-            value !== null &&
-            value !== undefined &&
-            value !== ""
-        )
-        .map((value) =>
-          typeof value === "object"
-            ? JSON.stringify(value)
-            : String(value)
-        )
-        .join(" ")
-        .toLowerCase();
-
-      const matchesSearch =
-        !normalizedSearch ||
-        searchableText.includes(
-          normalizedSearch
-        );
-
-      const normalizedStatus =
-        normalizeStatus(item?.status);
-
-      const matchesStatus =
-        statusFilter === "ALL" ||
-        normalizedStatus === statusFilter;
-
-      const normalizedType = String(
-        getSystemType(item)
-      )
-        .toUpperCase()
-        .replace(/[\s-]+/g, "_");
-
-      const matchesType =
-        typeFilter === "ALL" ||
-        normalizedType === typeFilter;
-
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesType
-      );
+      const matchesSearch = !query || searchable.includes(query);
+      const matchesStatus = statusFilter === "ALL" || normalizeStatus(item?.status) === statusFilter;
+      const normalizedType = String(getSystemType(item)).toUpperCase().replace(/[\s-]+/g, "_");
+      const matchesType = typeFilter === "ALL" || normalizedType === typeFilter;
+      return matchesSearch && matchesStatus && matchesType;
     });
-  }, [
-    requirements,
-    search,
-    statusFilter,
-    typeFilter,
-  ]);
+  }, [requirements, search, statusFilter, typeFilter]);
 
-  /* =========================================================
-     STATUS OPTIONS
-  ========================================================= */
+  const statusOptions = useMemo(
+    () => [...new Set(requirements.map((item) => normalizeStatus(item?.status)).filter(Boolean))],
+    [requirements]
+  );
 
-  const statusOptions = useMemo(() => {
-    const statuses = requirements
-      .map((item) => {
-        const status =
-          item?.status || "PENDING";
-
-        return normalizeStatus(status);
-      })
-      .filter(Boolean);
-
-    return [...new Set(statuses)];
-  }, [requirements]);
-
-  /* =========================================================
-     TYPE OPTIONS
-  ========================================================= */
-
-  const typeOptions = useMemo(() => {
-    const types = requirements
-      .map((item) => {
-        const type =
-          getSystemType(item);
-
-        if (
-          !type ||
-          type === "—"
-        ) {
-          return null;
-        }
-
-        return String(type)
-          .toUpperCase()
-          .replace(/[\s-]+/g, "_");
-      })
-      .filter(Boolean);
-
-    return [...new Set(types)];
-  }, [requirements]);
-
-  /* =========================================================
-     STATS
-  ========================================================= */
+  const typeOptions = useMemo(
+    () => [...new Set(requirements.map((item) => String(getSystemType(item)).toUpperCase().replace(/[\s-]+/g, "_")).filter((value) => value && value !== "—"))],
+    [requirements]
+  );
 
   const stats = useMemo(() => {
-    const total =
-      requirements.length;
-
-    const normalizedStatuses =
-      requirements.map((item) =>
-        normalizeStatus(
-          getStatus(item)
-        )
-      );
-
-    const pending =
-      normalizedStatuses.filter(
-        (status) =>
-          [
-            "PENDING",
-            "NEW",
-            "DRAFT",
-          ].includes(status)
-      ).length;
-
-    const inProgress =
-      normalizedStatuses.filter(
-        (status) =>
-          [
-            "IN_PROGRESS",
-            "PROCESSING",
-          ].includes(status)
-      ).length;
-
-    const approved =
-      normalizedStatuses.filter(
-        (status) =>
-          [
-            "APPROVED",
-            "COMPLETED",
-            "ACTIVE",
-            "CONVERTED",
-          ].includes(status)
-      ).length;
-
+    const statuses = requirements.map((item) => normalizeStatus(item?.status));
     return {
-      total,
-      pending,
-      inProgress,
-      approved,
+      total: requirements.length,
+      pending: statuses.filter((status) => ["PENDING", "NEW", "DRAFT"].includes(status)).length,
+      inProgress: statuses.filter((status) => ["IN_PROGRESS", "PROCESSING"].includes(status)).length,
+      approved: statuses.filter((status) => ["APPROVED", "COMPLETED", "ACTIVE", "CONVERTED"].includes(status)).length,
     };
   }, [requirements]);
 
-  /* =========================================================
-     PAGINATION
-  ========================================================= */
+  const totalPages = Math.max(1, Math.ceil(filteredRequirements.length / ITEMS_PER_PAGE));
+  const page = Math.min(currentPage, totalPages);
+  const paginatedRequirements = filteredRequirements.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(
-      filteredRequirements.length /
-        itemsPerPage
-    )
-  );
+  const handleCreate = () => router.push("/employee/solar-requirements/create");
 
-  const paginatedRequirements =
-    filteredRequirements.slice(
-      (currentPage - 1) *
-        itemsPerPage,
-      currentPage *
-        itemsPerPage
-    );
-
-  /* =========================================================
-     ACTIONS
-  ========================================================= */
-
-  const handleCreate = () => {
-    router.push(
-      "/admin/solar-requirements/create"
-    );
-  };
-
-  /**
-   * IMPORTANT:
-   * View button now opens the actual
-   * requirement details page.
-   */
   const handleView = (item) => {
-    const id =
-      item?._id ||
-      item?.id ||
-      item?.requirementId;
-
+    const id = item?._id || item?.id || item?.requirementId;
     if (!id) {
-      setError(
-        "Requirement ID is missing."
-      );
+      setError("Requirement ID is missing, so this item cannot be opened.");
       return;
     }
-
-    router.push(
-      `/admin/solar-requirements/${id}`
-    );
+    router.push(`/employee/solar-requirements/${id}`);
   };
 
-  /* =========================================================
-     LOADING
-  ========================================================= */
-
   if (loading) {
-    return (
-      <div className="admin-requirements-loading">
-        <Loader />
-      </div>
-    );
+    return <div className="admin-requirements-loading"><Loader /></div>;
   }
-
-  /* =========================================================
-     UI
-  ========================================================= */
 
   return (
     <div className="admin-requirements-page">
-
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
-
       <div className="admin-requirements-header">
-
         <div className="admin-requirements-heading">
-
-          <span className="admin-page-eyebrow">
-            Solar Management
-          </span>
-
-          <h1>
-            Solar Requirements
-          </h1>
-
-          <p>
-            Manage customer solar
-            requirements, capacity and
-            system needs.
-          </p>
-
+          <span className="admin-page-eyebrow">Solar Management · Employee</span>
+          <h1>My Solar Requirements</h1>
+          <p>View solar requirements linked to your leads.</p>
         </div>
-
         <div className="admin-requirements-header-actions">
-
-          <Button
-            variant="secondary"
-            onClick={() =>
-              loadRequirements(true)
-            }
-            disabled={refreshing}
-          >
-            {refreshing
-              ? "Refreshing..."
-              : "↻ Refresh"}
+          <Button variant="secondary" onClick={() => loadRequirements(true)} disabled={refreshing}>
+            {refreshing ? "Refreshing..." : "↻ Refresh"}
           </Button>
-
-          <Button
-            onClick={handleCreate}
-          >
-            + Create Requirement
-          </Button>
-
+          <Button onClick={handleCreate}>+ Create Requirement</Button>
         </div>
-
       </div>
 
-      {/* =====================================================
-          ERROR
-      ===================================================== */}
-
       {error && (
-        <div className="admin-requirements-error">
-
-          <div>
-
-            <strong>
-              Something went wrong
-            </strong>
-
-            <p>
-              {error}
-            </p>
-
-          </div>
-
-          <Button
-            variant="secondary"
-            onClick={() =>
-              loadRequirements(true)
-            }
-          >
-            Try Again
-          </Button>
-
+        <div className="admin-requirements-error" role="alert">
+          <div><strong>Something went wrong</strong><p>{error}</p></div>
+          <Button variant="secondary" onClick={() => loadRequirements(true)} disabled={refreshing}>Try Again</Button>
         </div>
       )}
 
-      {/* =====================================================
-          STATS
-      ===================================================== */}
-
       <div className="admin-requirements-stats">
-
-        <div className="admin-requirement-stat-card">
-
-          <div className="admin-stat-icon total">
-            ☀
-          </div>
-
-          <div>
-            <span>
-              Total Requirements
-            </span>
-
-            <strong>
-              {stats.total}
-            </strong>
-          </div>
-
-        </div>
-
-        <div className="admin-requirement-stat-card">
-
-          <div className="admin-stat-icon pending">
-            ◷
-          </div>
-
-          <div>
-            <span>
-              Pending
-            </span>
-
-            <strong>
-              {stats.pending}
-            </strong>
-          </div>
-
-        </div>
-
-        <div className="admin-requirement-stat-card">
-
-          <div className="admin-stat-icon progress">
-            ↻
-          </div>
-
-          <div>
-            <span>
-              In Progress
-            </span>
-
-            <strong>
-              {stats.inProgress}
-            </strong>
-          </div>
-
-        </div>
-
-        <div className="admin-requirement-stat-card">
-
-          <div className="admin-stat-icon approved">
-            ✓
-          </div>
-
-          <div>
-            <span>
-              Approved / Completed
-            </span>
-
-            <strong>
-              {stats.approved}
-            </strong>
-          </div>
-
-        </div>
-
+        <div className="admin-requirement-stat-card"><div className="admin-stat-icon total">☀</div><div><span>My Requirements</span><strong>{stats.total}</strong></div></div>
+        <div className="admin-requirement-stat-card"><div className="admin-stat-icon pending">◷</div><div><span>Pending</span><strong>{stats.pending}</strong></div></div>
+        <div className="admin-requirement-stat-card"><div className="admin-stat-icon progress">↻</div><div><span>In Progress</span><strong>{stats.inProgress}</strong></div></div>
+        <div className="admin-requirement-stat-card"><div className="admin-stat-icon approved">✓</div><div><span>Approved / Completed</span><strong>{stats.approved}</strong></div></div>
       </div>
-
-      {/* =====================================================
-          FILTERS
-      ===================================================== */}
 
       <div className="admin-requirements-toolbar">
-
         <div className="admin-requirements-search">
-
-          <SearchBox
-            value={search}
-            onChange={setSearch}
-            placeholder="Search customer, requirement ID, city..."
-          />
-
+          <SearchBox value={search} onChange={setSearch} placeholder="Search requirement, customer, city..." />
         </div>
-
         <div className="admin-requirements-filters">
-
-          <select
-            value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(
-                event.target.value
-              )
-            }
-            className="admin-filter-select"
-          >
-
-            <option value="ALL">
-              All Status
-            </option>
-
-            {statusOptions.map(
-              (status) => (
-                <option
-                  key={status}
-                  value={status}
-                >
-                  {getStatusText(
-                    status
-                  )}
-                </option>
-              )
-            )}
-
+          <select className="admin-filter-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            <option value="ALL">All Statuses</option>
+            {statusOptions.map((status) => <option key={status} value={status}>{formatStatus(status)}</option>)}
           </select>
-
-          <select
-            value={typeFilter}
-            onChange={(event) =>
-              setTypeFilter(
-                event.target.value
-              )
-            }
-            className="admin-filter-select"
-          >
-
-            <option value="ALL">
-              All Types
-            </option>
-
-            {typeOptions.map(
-              (type) => (
-                <option
-                  key={type}
-                  value={type}
-                >
-                  {getStatusText(
-                    type
-                  )}
-                </option>
-              )
-            )}
-
+          <select className="admin-filter-select" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+            <option value="ALL">All Types</option>
+            {typeOptions.map((type) => <option key={type} value={type}>{formatStatus(type)}</option>)}
           </select>
-
         </div>
-
       </div>
 
-      {/* =====================================================
-          TABLE
-      ===================================================== */}
-
       <div className="admin-requirements-card">
-
         <div className="admin-requirements-card-header">
-
-          <div>
-
-            <h2>
-              Requirements List
-            </h2>
-
-            <p>
-              Showing{" "}
-              <strong>
-                {filteredRequirements.length}
-              </strong>{" "}
-              requirement
-              {filteredRequirements.length !==
-              1
-                ? "s"
-                : ""}
-            </p>
-
-          </div>
-
-          <div className="admin-results-count">
-            {filteredRequirements.length} Results
-          </div>
-
+          <div><h2>My Requirements</h2><p>Showing <strong>{filteredRequirements.length}</strong> requirement{filteredRequirements.length === 1 ? "" : "s"}</p></div>
+          <div className="admin-results-count">{filteredRequirements.length} Results</div>
         </div>
 
-        {paginatedRequirements.length ===
-        0 ? (
+        {paginatedRequirements.length === 0 ? (
           <div className="admin-requirements-empty">
-
-            <div className="admin-empty-icon">
-              ☀
-            </div>
-
-            <h3>
-              No requirements found
-            </h3>
-
-            <p>
-              No solar requirement
-              matches your current
-              search or filters.
-            </p>
-
-            <Button
-              onClick={handleCreate}
-            >
-              + Create Requirement
-            </Button>
-
+            <div className="admin-empty-icon">☀</div>
+            <h3>{error ? "Unable to load requirements" : "No requirements found"}</h3>
+            <p>{error ? "Retry the request. If this continues, verify the employee API permissions." : search || statusFilter !== "ALL" || typeFilter !== "ALL" ? "Try changing your search or filters." : "No solar requirements are linked to your leads yet."}</p>
+            {!error && <Button onClick={handleCreate}>+ Create Requirement</Button>}
           </div>
         ) : (
           <div className="admin-requirements-table-wrapper">
-
             <table className="admin-requirements-table">
-
-              <thead>
-                <tr>
-                  <th>
-                    Requirement
-                  </th>
-
-                  <th>
-                    Customer
-                  </th>
-
-                  <th>
-                    System Type
-                  </th>
-
-                  <th>
-                    Capacity
-                  </th>
-
-                  <th>
-                    Location
-                  </th>
-
-                  <th>
-                    Status
-                  </th>
-
-                  <th>
-                    Created
-                  </th>
-
-                  <th>
-                    Action
-                  </th>
-                </tr>
-              </thead>
-
+              <thead><tr><th>Requirement</th><th>Customer</th><th>System Type</th><th>Capacity</th><th>Location</th><th>Status</th><th>Created</th><th>Action</th></tr></thead>
               <tbody>
-
-                {paginatedRequirements.map(
-                  (item, index) => {
-
-                    const requirementId =
-                      getRequirementId(
-                        item,
-                        index
-                      );
-
-                    const customerName =
-                      getCustomerName(
-                        item
-                      );
-
-                    const customerPhone =
-                      getCustomerPhone(
-                        item
-                      );
-
-                    const systemType =
-                      getSystemType(
-                        item
-                      );
-
-                    const capacity =
-                      getCapacity(
-                        item
-                      );
-
-                    const location =
-                      getLocation(
-                        item
-                      );
-
-                    const status =
-                      getStatus(item);
-
-                    return (
-                      <tr
-                        key={
-                          item?._id ||
-                          item?.id ||
-                          requirementId
-                        }
-                      >
-
-                        {/* REQUIREMENT */}
-
-                        <td>
-
-                          <div className="admin-requirement-id">
-
-                            <span className="admin-mini-icon">
-                              ☀
-                            </span>
-
-                            <div>
-
-                              <strong>
-                                {safeText(
-                                  requirementId
-                                )}
-                              </strong>
-
-                              <small>
-                                {formatDate(
-                                  item?.createdAt
-                                )}
-                              </small>
-
-                            </div>
-
-                          </div>
-
-                        </td>
-
-                        {/* CUSTOMER */}
-
-                        <td>
-
-                          <div className="admin-customer-cell">
-
-                            <strong>
-                              {safeText(
-                                customerName
-                              )}
-                            </strong>
-
-                            {customerPhone && (
-                              <small>
-                                {customerPhone}
-                              </small>
-                            )}
-
-                          </div>
-
-                        </td>
-
-                        {/* SYSTEM TYPE */}
-
-                        <td>
-
-                          <div className="admin-system-type-cell">
-
-                            <span className="admin-type-text">
-                              {safeText(
-                                systemType
-                              )}
-                            </span>
-
-                            {getConnectionType(
-                              item
-                            ) !== "—" && (
-                              <small>
-                                {getConnectionType(
-                                  item
-                                )}
-                              </small>
-                            )}
-
-                          </div>
-
-                        </td>
-
-                        {/* CAPACITY */}
-
-                        <td>
-
-                          <strong className="admin-capacity">
-
-                            {capacity !==
-                              null &&
-                            capacity !==
-                              undefined
-                              ? `${formatNumber(
-                                  capacity
-                                )} kW`
-                              : "—"}
-
-                          </strong>
-
-                        </td>
-
-                        {/* LOCATION */}
-
-                        <td>
-
-                          <span className="admin-location-text">
-                            {safeText(
-                              location
-                            )}
-                          </span>
-
-                        </td>
-
-                        {/* STATUS */}
-
-                        <td>
-
-                          <Badge
-                            variant={getStatusVariant(
-                              status
-                            )}
-                          >
-                            {getStatusText(
-                              status
-                            )}
-                          </Badge>
-
-                        </td>
-
-                        {/* CREATED */}
-
-                        <td>
-
-                          <span className="admin-date-text">
-                            {formatDate(
-                              item?.createdAt
-                            )}
-                          </span>
-
-                        </td>
-
-                        {/* ACTION */}
-
-                        <td>
-
-                          <button
-                            type="button"
-                            className="admin-view-button"
-                            onClick={() =>
-                              handleView(
-                                item
-                              )
-                            }
-                          >
-                            View
-                          </button>
-
-                        </td>
-
-                      </tr>
-                    );
-                  }
-                )}
-
+                {paginatedRequirements.map((item, index) => {
+                  const id = getRequirementId(item) || `requirement-${index}`;
+                  const capacity = getCapacity(item);
+                  return (
+                    <tr key={String(item?._id || item?.id || id)}>
+                      <td><div className="admin-requirement-id"><span className="admin-mini-icon">☀</span><div><strong>{id || "—"}</strong><small>{formatDate(item?.createdAt)}</small></div></div></td>
+                      <td><div className="admin-customer-cell"><strong>{getCustomerName(item)}</strong>{getCustomerPhone(item) && <small>{getCustomerPhone(item)}</small>}{getCustomerEmail(item) && <small>{getCustomerEmail(item)}</small>}</div></td>
+                      <td><div className="admin-system-type-cell"><span className="admin-type-text">{getSystemType(item)}</span>{getConnectionType(item) !== "—" && <small>{getConnectionType(item)}</small>}</div></td>
+                      <td><strong className="admin-capacity">{capacity !== null && capacity !== undefined ? `${formatNumber(capacity)} kW` : "—"}</strong></td>
+                      <td><span className="admin-location-text">{getLocation(item)}</span></td>
+                      <td><Badge variant={getStatusVariant(item?.status)}>{formatStatus(item?.status)}</Badge></td>
+                      <td><span className="admin-date-text">{formatDate(item?.createdAt)}</span></td>
+                      <td><button type="button" className="admin-view-button" onClick={() => handleView(item)}>View</button></td>
+                    </tr>
+                  );
+                })}
               </tbody>
-
             </table>
-
           </div>
         )}
 
-        {/* PAGINATION */}
-
-        {filteredRequirements.length >
-          itemsPerPage && (
+        {filteredRequirements.length > ITEMS_PER_PAGE && (
           <div className="admin-requirements-pagination">
-
-            <Pagination
-              currentPage={
-                currentPage
-              }
-              totalPages={
-                totalPages
-              }
-              onPageChange={
-                setCurrentPage
-              }
-            />
-
+            <Pagination currentPage={page} totalPages={totalPages} onPageChange={setCurrentPage} />
           </div>
         )}
-
       </div>
-
     </div>
   );
-};
-
-export default SolarRequirementsPage;
+}
