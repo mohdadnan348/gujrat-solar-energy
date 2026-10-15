@@ -19,27 +19,21 @@ const round = (value) =>
   Number(Number(value || 0).toFixed(2));
 
 const calculateItem = (item = {}) => {
-  const quantity = Number(item.quantity) || 0;
-  const rate = Number(item.rate) || 0;
-  const discountPercent = Number(item.discount) || 0;
-  const taxRate = Number(item.taxRate) || 0;
+  const quantity = Math.max(0, Number(item.quantity) || 0);
+  const rate = Math.max(0, Number(item.rate) || 0);
+  const discountPercent = Math.min(100, Math.max(0, Number(item.discount) || 0));
+  const taxRate = Math.max(0, Number(item.taxRate) || 0);
 
-  const grossAmount = quantity * rate;
-
-  const discountAmount =
-    (grossAmount * discountPercent) / 100;
-
-  const taxableAmount = Math.max(
-    grossAmount - discountAmount,
-    0
-  );
-
-  const taxAmount =
-    (taxableAmount * taxRate) / 100;
+  const grossAmount = round(quantity * rate);
+  const discountAmount = round((grossAmount * discountPercent) / 100);
+  const taxableAmount = round(Math.max(grossAmount - discountAmount, 0));
+  const taxAmount = round((taxableAmount * taxRate) / 100);
 
   return {
-    taxableAmount: round(taxableAmount),
-    taxAmount: round(taxAmount),
+    grossAmount,
+    discountAmount,
+    taxableAmount,
+    taxAmount,
     amount: round(taxableAmount + taxAmount),
   };
 };
@@ -51,32 +45,24 @@ const calculateTotals = (items = []) => {
   let totalTax = 0;
 
   items.forEach((item) => {
-    const quantity = Number(item.quantity) || 0;
-    const rate = Number(item.rate) || 0;
-    const discountPercent =
-      Number(item.discount) || 0;
-
-    const grossAmount = quantity * rate;
-
-    const discountAmount =
-      (grossAmount * discountPercent) / 100;
-
     const calculated = calculateItem(item);
-
-    subtotal += grossAmount;
-    totalDiscount += discountAmount;
+    subtotal += calculated.grossAmount;
+    totalDiscount += calculated.discountAmount;
     taxableAmount += calculated.taxableAmount;
     totalTax += calculated.taxAmount;
   });
 
+  subtotal = round(subtotal);
+  totalDiscount = round(totalDiscount);
+  taxableAmount = round(taxableAmount);
+  totalTax = round(totalTax);
+
   return {
-    subtotal: round(subtotal),
-    totalDiscount: round(totalDiscount),
-    taxableAmount: round(taxableAmount),
-    totalTax: round(totalTax),
-    grandTotal: round(
-      taxableAmount + totalTax
-    ),
+    subtotal,
+    totalDiscount,
+    taxableAmount,
+    totalTax,
+    grandTotal: round(taxableAmount + totalTax),
   };
 };
 
@@ -493,7 +479,7 @@ const createQuotation = async (
       subtotal:
         totals.subtotal,
 
-      discount:
+      totalDiscount:
         totals.totalDiscount,
 
       taxableAmount:

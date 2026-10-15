@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { forwardRef, useId } from "react";
@@ -28,8 +29,12 @@ const SearchBox = forwardRef(
     const generatedId = useId();
     const inputId = id || `gse-search-${generatedId}`;
 
+    // Always pass a string to controlled search inputs.
+    const inputValue =
+      typeof value === "string" ? value : "";
+
     const handleChange = (event) => {
-      onChange?.(event);
+      onChange?.(event.target.value);
     };
 
     const handleKeyDown = (event) => {
@@ -37,8 +42,8 @@ const SearchBox = forwardRef(
         onSearch?.(event.target.value);
       }
 
-      if (event.key === "Escape" && clearable && value) {
-        onClear?.();
+      if (event.key === "Escape" && clearable && inputValue) {
+        handleClear();
       }
     };
 
@@ -47,15 +52,9 @@ const SearchBox = forwardRef(
 
       if (onClear) {
         onClear();
-        return;
+      } else {
+        onChange?.("");
       }
-
-      onChange?.({
-        target: {
-          name,
-          value: "",
-        },
-      });
     };
 
     const searchClasses = [
@@ -71,11 +70,17 @@ const SearchBox = forwardRef(
     return (
       <div className={searchClasses}>
         {leftIcon ? (
-          <span className="gse-searchbox-left-icon" aria-hidden="true">
+          <span
+            className="gse-searchbox-left-icon"
+            aria-hidden="true"
+          >
             {leftIcon}
           </span>
         ) : (
-          <span className="gse-searchbox-default-icon" aria-hidden="true">
+          <span
+            className="gse-searchbox-default-icon"
+            aria-hidden="true"
+          >
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -95,7 +100,7 @@ const SearchBox = forwardRef(
           id={inputId}
           name={name}
           type="search"
-          value={value}
+          value={inputValue}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
@@ -113,7 +118,7 @@ const SearchBox = forwardRef(
           />
         )}
 
-        {!loading && clearable && value && (
+        {!loading && clearable && inputValue && (
           <button
             type="button"
             className="gse-searchbox-clear"
@@ -136,8 +141,11 @@ const SearchBox = forwardRef(
           </button>
         )}
 
-        {!loading && rightIcon && !value && (
-          <span className="gse-searchbox-right-icon" aria-hidden="true">
+        {!loading && rightIcon && !inputValue && (
+          <span
+            className="gse-searchbox-right-icon"
+            aria-hidden="true"
+          >
             {rightIcon}
           </span>
         )}

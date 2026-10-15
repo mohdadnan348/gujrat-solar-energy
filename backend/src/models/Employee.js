@@ -35,6 +35,12 @@ const employeeSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    
+    alternatePhone: {
+      type: String,
+      trim: true,
+      default: "",
+    },
 
     department: {
       type: String,

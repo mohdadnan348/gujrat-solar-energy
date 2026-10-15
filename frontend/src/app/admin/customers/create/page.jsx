@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
@@ -14,6 +14,10 @@ import "./create-customer.css";
 
 const CreateCustomerPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
+  const isEditMode = Boolean(editId);
+  const [loadingCustomer, setLoadingCustomer] = useState(Boolean(editId));
 
   const [form, setForm] = useState({
     name: "",
@@ -33,6 +37,70 @@ const CreateCustomerPage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  /* ----------------------------------
+     Load existing customer in edit mode
+  ---------------------------------- */
+  useEffect(() => {
+    if (!editId) {
+      setLoadingCustomer(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadCustomer = async () => {
+      try {
+        setLoadingCustomer(true);
+        setError("");
+
+        const response = await customerService.getCustomerById(editId);
+        const customer =
+          response?.data?.customer ||
+          response?.data?.data ||
+          response?.data ||
+          response?.customer ||
+          response;
+
+        if (!customer || typeof customer !== "object") {
+          throw new Error("Customer record nahi mila.");
+        }
+
+        if (cancelled) return;
+
+        const rawType = String(customer.customerType || customer.type || "Individual").toUpperCase();
+        setForm({
+          name: customer.name || customer.fullName || customer.customerName || "",
+          companyName: customer.companyName || "",
+          phone: String(customer.mobile || customer.phone || customer.phoneNumber || customer.contactNumber || "").replace(/\D/g, "").slice(-10),
+          alternatePhone: String(customer.alternateMobile || customer.alternatePhone || customer.secondaryPhone || "").replace(/\D/g, "").slice(-10),
+          email: customer.email || customer.emailAddress || "",
+          address: customer.address || customer.fullAddress || "",
+          city: customer.city || customer.location || "",
+          state: customer.state || "",
+          pincode: String(customer.pincode || customer.pinCode || customer.postalCode || "").replace(/\D/g, "").slice(0, 6),
+          customerType: rawType.includes("BUSINESS") ? "BUSINESS" : "INDIVIDUAL",
+          source: String(customer.source || customer.customerSource || "DIRECT").toUpperCase(),
+          notes: customer.notes || customer.additionalNotes || "",
+        });
+      } catch (err) {
+        console.error("Failed to load customer for editing:", err);
+        if (!cancelled) {
+          setError(
+            err?.response?.data?.message ||
+            err?.response?.data?.error ||
+            err?.message ||
+            "Customer details load nahi ho paaye."
+          );
+        }
+      } finally {
+        if (!cancelled) setLoadingCustomer(false);
+      }
+    };
+
+    loadCustomer();
+    return () => { cancelled = true; };
+  }, [editId]);
 
   /* ----------------------------------
      Update Field
@@ -180,18 +248,16 @@ const CreateCustomerPage = () => {
           undefined,
       };
 
-      const response =
-        await customerService.createCustomer(
-          payload
-        );
+      const response = isEditMode
+        ? await customerService.updateCustomer(editId, payload)
+        : await customerService.createCustomer(payload);
 
-      console.log(
-        "Customer created:",
-        response
-      );
+      console.log(isEditMode ? "Customer updated:" : "Customer created:", response);
 
       setSuccess(
-        "Customer successfully create ho gaya."
+        isEditMode
+          ? "Customer updated successfully."
+          : "Customer created successfully."
       );
 
       setTimeout(() => {
@@ -208,8 +274,12 @@ const CreateCustomerPage = () => {
       setError(
         err?.response?.data?.message ||
           err?.response?.data?.error ||
-          err?.message ||
-          "Customer create nahi ho paaya."
+          (err?.response?.status === 409
+            ? "This mobile number or email is already associated with another customer. Please verify the details."
+            : err?.message) ||
+          (isEditMode
+            ? "Unable to update customer. Please try again."
+            : "Unable to create customer. Please try again.")
       );
     } finally {
       setSaving(false);
@@ -244,17 +314,26 @@ const CreateCustomerPage = () => {
 
           <div>
             <h1>
-              Add Customer
+              {isEditMode ? "Edit Customer" : "Add Customer"}
             </h1>
 
             <p>
-              New customer ki basic aur
-              contact information add
-              karein.
+              {isEditMode
+                ? "Customer ki existing information update karein."
+                : "New customer ki basic aur contact information add karein."}
             </p>
           </div>
         </div>
       </div>
+
+      {loadingCustomer && (
+        <div className="admin-create-customer-alert">
+          <div>
+            <strong>Loading customer details...</strong>
+            <p>Please wait while the existing customer information is loaded.</p>
+          </div>
+        </div>
+      )}
 
       {/* Error */}
 
@@ -266,7 +345,7 @@ const CreateCustomerPage = () => {
 
           <div>
             <strong>
-              Customer create nahi hua
+              {isEditMode ? "Customer update failed" : "Customer creation failed"}
             </strong>
 
             <p>{error}</p>
@@ -644,11 +723,11 @@ const CreateCustomerPage = () => {
             <Button
               type="submit"
               variant="primary"
-              disabled={saving}
+              disabled={saving || loadingCustomer}
             >
               {saving
-                ? "Creating..."
-                : "Create Customer"}
+                ? (isEditMode ? "Updating..." : "Creating...")
+                : (isEditMode ? "Update Customer" : "Create Customer")}
             </Button>
           </div>
         </div>

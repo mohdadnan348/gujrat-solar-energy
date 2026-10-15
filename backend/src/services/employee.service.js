@@ -312,6 +312,8 @@ const createEmployee = async (data, createdBy) => {
 
         mobile,
 
+        alternatePhone,
+
         department,
 
         designation,
@@ -637,6 +639,17 @@ const updateEmployee = async (
     employee.mobile =
       String(data.mobile).trim();
   }
+
+  if (
+  data.alternatePhone !== undefined ||
+  data.alternateMobile !== undefined
+  ) {
+  employee.alternatePhone = String(
+    data.alternatePhone ??
+      data.alternateMobile ??
+      ""
+  ).trim();
+}
 
   if (data.department !== undefined) {
     employee.department =

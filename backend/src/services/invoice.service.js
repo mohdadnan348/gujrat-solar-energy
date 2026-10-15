@@ -109,33 +109,23 @@ const numberToWords = (amount) => {
   return `${result.trim()} Rupees Only`;
 };
 
-const calculateItem = (item) => {
-  const quantity = Number(item.quantity) || 0;
-  const rate = Number(item.rate) || 0;
-  const discountPercent = Number(item.discount) || 0;
-  const taxRate = Number(item.taxRate) || 0;
+const calculateItem = (item = {}) => {
+  const quantity = Math.max(0, Number(item.quantity) || 0);
+  const rate = Math.max(0, Number(item.rate) || 0);
+  const discountPercent = Math.min(100, Math.max(0, Number(item.discount) || 0));
+  const taxRate = Math.max(0, Number(item.taxRate) || 0);
 
-  const grossAmount = quantity * rate;
-
-  const discountAmount =
-    (grossAmount * discountPercent) / 100;
-
-  const taxableAmount = Math.max(
-    grossAmount - discountAmount,
-    0
-  );
-
-  const taxAmount =
-    (taxableAmount * taxRate) / 100;
-
-  const amount = taxableAmount + taxAmount;
+  const grossAmount = round(quantity * rate);
+  const discountAmount = round((grossAmount * discountPercent) / 100);
+  const taxableAmount = round(Math.max(grossAmount - discountAmount, 0));
+  const taxAmount = round((taxableAmount * taxRate) / 100);
 
   return {
-    grossAmount: round(grossAmount),
-    discountAmount: round(discountAmount),
-    taxableAmount: round(taxableAmount),
-    taxAmount: round(taxAmount),
-    amount: round(amount),
+    grossAmount,
+    discountAmount,
+    taxableAmount,
+    taxAmount,
+    amount: round(taxableAmount + taxAmount),
   };
 };
 
@@ -161,6 +151,11 @@ const calculateTotals = (items = []) => {
     sgst += Number(item.sgstAmount) || 0;
     igst += Number(item.igstAmount) || 0;
   });
+
+  subtotal = round(subtotal);
+  totalDiscount = round(totalDiscount);
+  taxableAmount = round(taxableAmount);
+  totalTax = round(totalTax);
 
   if (
     cgst === 0 &&

@@ -301,9 +301,9 @@ const AdminEmployeesPage = () => {
   };
 
   const filteredEmployees = useMemo(() => {
-    const query = search
-      .trim()
-      .toLowerCase();
+   const query = String(search ?? "")
+  .trim()
+  .toLowerCase();
 
     return employees.filter(
       (employee) => {

@@ -714,162 +714,145 @@ const getCustomerByCustomerId = async (
 |--------------------------------------------------------------------------
 */
 
+
 const updateCustomer = async (
   customerId,
   data,
   updatedBy,
   role
 ) => {
-  const customer =
-    await Customer.findById(
-      customerId
-    );
-
-  if (!customer) {
-    const error = new Error(
-      "Customer not found"
-    );
-
-    error.statusCode = 404;
-
+  if (!customerId) {
+    const error = new Error("Customer ID is required.");
+    error.statusCode = 400;
     throw error;
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | Employee authorization
-  |--------------------------------------------------------------------------
-  */
-
-  const normalizedRole =
-    String(role || "").toUpperCase();
-
-  if (
-    normalizedRole === "EMPLOYEE"
-  ) {
-    await getCustomerById(
-      customerId,
-      updatedBy,
-      role
-    );
+  if (!data || typeof data !== "object") {
+    const error = new Error("Customer data is required.");
+    error.statusCode = 400;
+    throw error;
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | Duplicate Mobile
-  |--------------------------------------------------------------------------
-  */
+  const customer = await Customer.findById(customerId);
 
-  if (
-    data.mobile &&
-    data.mobile !==
-      customer.mobile
-  ) {
-    const existingMobile =
-      await Customer.findOne({
-        mobile:
-          data.mobile,
+  if (!customer) {
+    const error = new Error("Customer not found.");
+    error.statusCode = 404;
+    throw error;
+  }
 
-        _id: {
-          $ne: customerId,
-        },
-      });
+  const normalizedRole = String(role || "").toUpperCase();
 
-    if (existingMobile) {
-      const error = new Error(
-        "Customer with this mobile number already exists"
-      );
+  // Employee authorization
+  if (normalizedRole === "EMPLOYEE") {
+    await getCustomerById(customerId, updatedBy, role);
+  }
 
-      error.statusCode = 409;
+  // Normalize phone numbers for comparison.
+  // Indian country code +91 is ignored when comparing 10-digit numbers.
+  const normalizeMobile = (value) => {
+    let digits = String(value || "").replace(/\D/g, "");
 
-      throw error;
+    if (digits.length === 12 && digits.startsWith("91")) {
+      digits = digits.slice(2);
+    }
+
+    return digits;
+  };
+
+  // Validate mobile only when it has actually changed.
+  if (data.mobile !== undefined) {
+    const newMobile = String(data.mobile || "").trim();
+    const currentMobile = String(customer.mobile || "").trim();
+
+    if (
+      newMobile &&
+      normalizeMobile(newMobile) !== normalizeMobile(currentMobile)
+    ) {
+      const existingMobile = await Customer.findOne({
+        mobile: newMobile,
+        _id: { $ne: customer._id },
+      }).select("_id");
+
+      if (existingMobile) {
+        const error = new Error(
+          "This mobile number is already associated with another customer."
+        );
+        error.statusCode = 409;
+        throw error;
+      }
     }
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | Lead Update
-  |--------------------------------------------------------------------------
-  */
+  // Validate email only when it has actually changed.
+  if (data.email !== undefined) {
+    const newEmail = String(data.email || "").trim().toLowerCase();
+    const currentEmail = String(customer.email || "").trim().toLowerCase();
 
-  if (
-    data.lead !==
-    undefined
-  ) {
-    if (data.lead) {
-      const lead =
-        await Lead.findById(
-          data.lead
+    if (newEmail && newEmail !== currentEmail) {
+      const escapedEmail = newEmail.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+
+      const existingEmail = await Customer.findOne({
+        email: { $regex: `^${escapedEmail}$`, $options: "i" },
+        _id: { $ne: customer._id },
+      }).select("_id");
+
+      if (existingEmail) {
+        const error = new Error(
+          "This email address is already associated with another customer."
         );
+        error.statusCode = 409;
+        throw error;
+      }
+    }
+  }
+
+  // Validate lead if the lead field was supplied.
+  if (data.lead !== undefined) {
+    if (data.lead) {
+      const lead = await Lead.findById(data.lead);
 
       if (!lead) {
-        const error = new Error(
-          "Lead not found"
-        );
-
+        const error = new Error("Lead not found.");
         error.statusCode = 404;
-
         throw error;
       }
 
       if (
         lead.convertedCustomer &&
-        String(
-          lead.convertedCustomer
-        ) !==
-          String(
-            customer._id
-          )
+        String(lead.convertedCustomer) !== String(customer._id)
       ) {
         const error = new Error(
-          "This lead is already linked to another customer"
+          "This lead is already linked to another customer."
         );
-
         error.statusCode = 409;
-
         throw error;
       }
 
-      lead.convertedCustomer =
-        customer._id;
+      lead.convertedCustomer = customer._id;
+      lead.updatedBy = updatedBy;
 
-      lead.updatedBy =
-        updatedBy;
-
-      const statusPath =
-        Lead.schema.path(
-          "status"
-        );
+      const statusPath = Lead.schema.path("status");
 
       if (
         statusPath &&
-        Array.isArray(
-          statusPath.enumValues
-        ) &&
-        statusPath.enumValues.includes(
-          "CONVERTED"
-        )
+        Array.isArray(statusPath.enumValues) &&
+        statusPath.enumValues.includes("CONVERTED")
       ) {
-        lead.status =
-          "CONVERTED";
+        lead.status = "CONVERTED";
       }
 
       await lead.save();
-
-      customer.lead =
-        lead._id;
+      customer.lead = lead._id;
     } else {
-      customer.lead =
-        undefined;
+      customer.lead = undefined;
     }
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | Allowed Fields
-  |--------------------------------------------------------------------------
-  */
-
+  // Update only allowed customer fields.
   const allowedFields = [
     "name",
     "companyName",
@@ -888,29 +871,19 @@ const updateCustomer = async (
     "status",
   ];
 
-  allowedFields.forEach(
-    (field) => {
-      if (
-        data[field] !==
-        undefined
-      ) {
-        customer[field] =
-          data[field];
-      }
+  for (const field of allowedFields) {
+    if (data[field] !== undefined) {
+      customer[field] = data[field];
     }
-  );
+  }
 
-  customer.updatedBy =
-    updatedBy;
+  customer.updatedBy = updatedBy;
 
   await customer.save();
 
-  return getCustomerById(
-    customer._id,
-    updatedBy,
-    role
-  );
+  return getCustomerById(customer._id, updatedBy, role);
 };
+
 
 /*
 |--------------------------------------------------------------------------

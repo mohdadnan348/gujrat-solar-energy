@@ -1395,34 +1395,62 @@ const QuotationsPage = () => {
                           quotation.lead
                         );
 
-                      const systemSize =
-                        safeText(
-                          getValue(
-                            quotation,
-                            [
-                              "systemSizeKW",
-                              "requiredKW",
-                              "requiredKw",
-                              "capacityKW",
-                              "systemCapacity",
-                            ],
-                            ""
-                          ),
-                          ""
-                        );
+                      const systemConfiguration =
+                        quotation?.systemConfiguration || {};
 
-                      const systemType =
-                        safeText(
+                      const systemSize = safeText(
+                        getValue(
+                          quotation,
+                          [
+                            "systemSizeKW",
+                            "requiredKW",
+                            "requiredKw",
+                            "capacityKW",
+                            "systemCapacity",
+                          ],
                           getValue(
-                            quotation,
+                            systemConfiguration,
                             [
-                              "systemType",
-                              "system_type",
-                              "type",
+                              "systemCapacity",
+                              "capacityKw",
+                              "systemSizeKW",
                             ],
-                            ""
-                          ),
-                          ""
+                            getValue(
+                              quotation?.solarRequirement,
+                              ["requiredKw", "capacityKw"],
+                              getValue(
+                                quotation?.plantDetails,
+                                ["capacityKw", "systemCapacity"],
+                                ""
+                              )
+                            )
+                          )
+                        ),
+                        ""
+                      );
+
+                      const rawSystemType = getValue(
+                        quotation,
+                        ["systemType", "system_type", "type"],
+                        getValue(
+                          systemConfiguration,
+                          ["systemType", "system_type"],
+                          getValue(
+                            quotation?.solarRequirement,
+                            ["systemType"],
+                            getValue(
+                              quotation?.plantDetails,
+                              ["systemType"],
+                              ""
+                            )
+                          )
+                        )
+                      );
+
+                      const systemType = safeText(rawSystemType, "")
+                        .replace(/[_-]/g, " ")
+                        .replace(/\\b\\w/g, (letter) =>
+                          letter.toUpperCase()
                         );
 
                       const amount =
@@ -1506,22 +1534,13 @@ const QuotationsPage = () => {
                           </td>
 
                           <td>
-
                             <div className="admin-quotation-system">
-
                               <strong>
                                 {systemSize
-                                  ? `${systemSize} kW`
+                                  ? `${systemSize} kW${systemType ? ` · ${systemType}` : ""}`
                                   : "—"}
                               </strong>
-
-                              <small>
-                                {systemType ||
-                                  "—"}
-                              </small>
-
                             </div>
-
                           </td>
 
                           <td>

@@ -652,36 +652,24 @@ const CreateQuotationPage = () => {
 
   const taxTotal =
     useMemo(() => {
-      return items.reduce(
-        (sum, item) => {
-          const quantity =
-            Number(
-              item.quantity
-            ) || 0;
-
-          const rate =
-            Number(
-              item.rate
-            ) || 0;
-
-          const taxRate =
-            Number(
-              item.taxRate
-            ) || 0;
-
-          const lineTotal =
-            quantity * rate;
-
-          return (
-            sum +
-            (lineTotal *
-              taxRate) /
-              100
-          );
-        },
-        0
+      const roundMoney = (value) => Number(Number(value || 0).toFixed(2));
+      const discountValue = Math.min(
+        Math.max(Number(charges.discount) || 0, 0),
+        subtotal
       );
-    }, [items]);
+      const discountRatio = subtotal > 0 ? discountValue / subtotal : 0;
+
+      // GST is calculated on the taxable amount after proportional discount.
+      return items.reduce((sum, item) => {
+        const quantity = Number(item.quantity) || 0;
+        const rate = Number(item.rate) || 0;
+        const taxRate = Number(item.taxRate) || 0;
+        const lineGross = roundMoney(quantity * rate);
+        const lineDiscount = roundMoney(lineGross * discountRatio);
+        const taxableLine = roundMoney(Math.max(0, lineGross - lineDiscount));
+        return sum + roundMoney((taxableLine * taxRate) / 100);
+      }, 0);
+    }, [items, charges.discount, subtotal]);
 
   const discount =
     Number(
@@ -873,7 +861,7 @@ const CreateQuotationPage = () => {
       const quotationItems = rawItems.map((item) => ({
         ...item,
         discount: Number(
-          (discountRatio * 100).toFixed(4)
+          (discountRatio * 100).toFixed(8)
         ),
       }));
 
