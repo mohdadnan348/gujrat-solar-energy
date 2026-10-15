@@ -187,6 +187,45 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Developer credits: subtle branding for the software team */}
+      <section className="developers-section" aria-labelledby="developers-heading">
+        <div className="home-container">
+          <div className="developers-heading">
+            <span>THE TEAM BEHIND THE SOFTWARE</span>
+            <h2 id="developers-heading">Meet the Developers</h2>
+            <p>Full-stack development for modern business workflows.</p>
+          </div>
+
+          <div className="developers-grid">
+            <article className="developer-card">
+              <div className="developer-photo-wrap">
+                <img src="/developers/adnan.jpeg" alt="Mohd Adnan, Full Stack Developer" className="developer-photo" />
+              </div>
+              <h3>Mohd Adnan</h3>
+              <p className="developer-role">Full Stack Developer</p>
+              <a className="developer-contact" href="https://wa.me/919336176580" target="_blank" rel="noreferrer">
+                Contact on WhatsApp <ArrowRight size={16} />
+              </a>
+            </article>
+
+            <article className="developer-card">
+              <div className="developer-photo-wrap">
+                <img src="/developers/kaif.png" alt="Mohd Kaif, Full Stack Developer" className="developer-photo" />
+              </div>
+              <h3>Mohd Kaif</h3>
+              <p className="developer-role">Full Stack Developer</p>
+              <a className="developer-contact" href="https://wa.me/919519170797" target="_blank" rel="noreferrer">
+                Contact on WhatsApp <ArrowRight size={16} />
+              </a>
+            </article>
+          </div>
+
+          <a className="developer-company-link" href="https://mirextech.in/" target="_blank" rel="noreferrer">
+            Developed by <strong>Mirex Tech</strong> <ArrowRight size={15} />
+          </a>
+        </div>
+      </section>
+
       <footer className="home-footer">
         <div className="home-container footer-inner">
           <div>
@@ -634,6 +673,134 @@ export default function HomePage() {
           line-height: 1.7;
         }
 
+        .developers-section {
+          padding: 78px 0 82px;
+          background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+          border-top: 1px solid #e2e8f0;
+        }
+
+        .developers-heading {
+          max-width: 650px;
+          margin: 0 auto 34px;
+          text-align: center;
+        }
+
+        .developers-heading > span {
+          color: #16a34a;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+        }
+
+        .developers-heading h2 {
+          margin-top: 8px;
+          color: #0f172a;
+          font-size: clamp(28px, 4vw, 38px);
+          letter-spacing: -0.035em;
+        }
+
+        .developers-heading p {
+          margin-top: 10px;
+          color: #64748b;
+          font-size: 14px;
+        }
+
+        .developers-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 22px;
+          max-width: 760px;
+          margin: 0 auto;
+        }
+
+        .developer-card {
+          display: flex;
+          align-items: center;
+          flex-direction: column;
+          padding: 30px 24px 26px;
+          border: 1px solid #dbece1;
+          border-radius: 18px;
+          background: rgba(255, 255, 255, 0.94);
+          box-shadow: 0 12px 34px rgba(15, 23, 42, 0.055);
+          text-align: center;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .developer-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.09);
+        }
+
+        .developer-photo-wrap {
+          width: 124px;
+          height: 124px;
+          margin-bottom: 17px;
+          padding: 4px;
+          border: 1px solid #bbf7d0;
+          border-radius: 50%;
+          background: #f0fdf4;
+        }
+
+        .developer-photo {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          object-fit: cover;
+          object-position: center 30%;
+        }
+
+        .developer-card h3 {
+          color: #0f172a;
+          font-size: 20px;
+          font-weight: 800;
+        }
+
+        .developer-role {
+          margin-top: 5px;
+          color: #64748b;
+          font-size: 13px;
+        }
+
+        .developer-contact {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          min-height: 42px;
+          margin-top: 20px;
+          padding: 0 16px;
+          border-radius: 9px;
+          background: #16a34a;
+          color: #ffffff;
+          font-size: 12px;
+          font-weight: 750;
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .developer-contact:hover {
+          background: #15803d;
+          transform: translateY(-1px);
+        }
+
+        .developer-company-link {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          width: fit-content;
+          margin: 28px auto 0;
+          color: #64748b;
+          font-size: 12px;
+        }
+
+        .developer-company-link strong {
+          color: #15803d;
+        }
+
+        .developer-company-link:hover {
+          color: #15803d;
+        }
+
         .home-footer {
           padding: 25px 0;
           border-top: 1px solid #e2e8f0;
@@ -682,6 +849,19 @@ export default function HomePage() {
         }
 
         @media (max-width: 700px) {
+          .developers-section {
+            padding: 60px 0;
+          }
+
+          .developers-grid {
+            grid-template-columns: 1fr;
+            max-width: 390px;
+            gap: 16px;
+          }
+
+          .developer-card {
+            padding: 26px 20px;
+          }
           .home-container {
             width: min(100% - 28px, 1180px);
           }

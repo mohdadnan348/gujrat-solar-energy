@@ -36,15 +36,14 @@ const ManagerTasksPage = () => {
 
       const response = await taskService.getTasks();
 
-      const data =
-        response?.data?.tasks ||
-        response?.tasks ||
-        response?.data?.items ||
-        response?.items ||
-        response?.data ||
-        [];
-
-      setTasks(Array.isArray(data) ? data : []);
+      const candidates = [
+        response?.data?.data?.tasks, response?.data?.tasks, response?.tasks,
+        response?.data?.data?.items, response?.data?.items, response?.items,
+        response?.data?.results, response?.results, response?.data?.data,
+        response?.data, response,
+      ];
+      const data = candidates.find(Array.isArray);
+      setTasks(data || []);
     } catch (err) {
       console.error("Tasks error:", err);
 
@@ -92,34 +91,31 @@ const ManagerTasksPage = () => {
     task?.taskPriority ||
     "MEDIUM";
 
-  const getAssignedEmployee = (task) => {
-    const employee =
-      task?.assignedTo ||
-      task?.employee ||
-      task?.assignedEmployee;
-
-    if (typeof employee === "string") {
-      return employee;
-    }
-
-    return (
-      employee?.name ||
-      employee?.fullName ||
-      [
-        employee?.firstName,
-        employee?.lastName,
-      ]
-        .filter(Boolean)
-        .join(" ") ||
-      "Unassigned"
-    );
+  const getPersonName = (person) => {
+    if (!person) return "";
+    if (typeof person === "string") return person;
+    return person.name || person.fullName || person.full_name ||
+      person.employeeName || person.customerName ||
+      [person.firstName || person.first_name, person.lastName || person.last_name]
+        .filter(Boolean).join(" ") || person.email || "";
   };
 
-  const getCustomerName = (task) =>
-    task?.customer?.name ||
-    task?.customerName ||
-    task?.lead?.name ||
-    "—";
+  const getAssignedPerson = (task) =>
+    task?.assignedTo || task?.assigned_to || task?.assignedEmployee ||
+    task?.assignedEmployeeId || task?.assigned_employee || task?.employee ||
+    task?.assignee || task?.owner || null;
+
+  const getAssignedEmployee = (task) =>
+    getPersonName(getAssignedPerson(task)) ||
+    task?.assignedToName || task?.assignedEmployeeName || "Unassigned";
+
+  const getCreatedBy = (task) =>
+    getPersonName(task?.createdBy || task?.created_by || task?.creator) ||
+    task?.createdByName || "—";
+
+  const getUpdatedBy = (task) =>
+    getPersonName(task?.updatedBy || task?.updated_by || task?.lastUpdatedBy) ||
+    task?.updatedByName || "—";
 
   const getBadgeVariant = (value) => {
     const status = String(value).toLowerCase();
@@ -237,11 +233,11 @@ const ManagerTasksPage = () => {
     return tasks.filter((task) => {
       const status = String(
         getEffectiveStatus(task)
-      ).toUpperCase();
+      ).toUpperCase().replaceAll(" ", "_");
 
       const priority = String(
         getPriority(task)
-      ).toUpperCase();
+      ).toUpperCase().replaceAll(" ", "_");
 
       const matchesStatus =
         statusFilter === "ALL" ||
@@ -263,9 +259,10 @@ const ManagerTasksPage = () => {
         getTaskTitle(task),
         getTaskDescription(task),
         getAssignedEmployee(task),
-        getCustomerName(task),
         task?.category,
         task?.type,
+        task?.status,
+        task?.priority,
       ]
         .filter(Boolean)
         .map((value) => String(value))
@@ -423,7 +420,7 @@ const ManagerTasksPage = () => {
         <SearchBox
           value={search}
           onChange={(value) => setSearch(value)}
-          placeholder="Search task, employee, customer..."
+          placeholder="Search task or employee..."
         />
 
         <select
@@ -479,7 +476,6 @@ const ManagerTasksPage = () => {
             <thead>
               <tr>
                 <th>Task</th>
-                <th>Customer</th>
                 <th>Assigned To</th>
                 <th>Priority</th>
                 <th>Due Date</th>
@@ -541,13 +537,6 @@ const ManagerTasksPage = () => {
                               </span>
                             )}
                           </div>
-                        </td>
-
-                        {/* CUSTOMER */}
-                        <td>
-                          <span className="manager-task-customer">
-                            {getCustomerName(task)}
-                          </span>
                         </td>
 
                         {/* ASSIGNED */}
@@ -682,11 +671,6 @@ const ManagerTasksPage = () => {
                   {getTaskTitle(selectedTask)}
                 </h2>
 
-                <p>
-                  {getCustomerName(
-                    selectedTask
-                  )}
-                </p>
               </div>
 
               <button
@@ -752,16 +736,6 @@ const ManagerTasksPage = () => {
                 </div>
 
                 <div>
-                  <span>Customer</span>
-
-                  <strong>
-                    {getCustomerName(
-                      selectedTask
-                    )}
-                  </strong>
-                </div>
-
-                <div>
                   <span>Due Date</span>
 
                   <strong>
@@ -781,6 +755,22 @@ const ManagerTasksPage = () => {
                       selectedTask?.createdAt
                     )}
                   </strong>
+                </div>
+                <div>
+                  <span>Updated On</span>
+                  <strong>{formatDate(selectedTask?.updatedAt || selectedTask?.modifiedAt || selectedTask?.updated_at)}</strong>
+                </div>
+                <div>
+                  <span>Created By</span>
+                  <strong>{getCreatedBy(selectedTask)}</strong>
+                </div>
+                <div>
+                  <span>Updated By</span>
+                  <strong>{getUpdatedBy(selectedTask)}</strong>
+                </div>
+                <div>
+                  <span>Assigned Employee Email</span>
+                  <strong>{getAssignedPerson(selectedTask)?.email || getAssignedPerson(selectedTask)?.workEmail || "—"}</strong>
                 </div>
               </div>
 
@@ -819,6 +809,15 @@ const ManagerTasksPage = () => {
                       selectedTask.type
                     )}
                   </strong>
+                </div>
+              )}
+
+              {(selectedTask?.address || selectedTask?.city || selectedTask?.kiloWatt || selectedTask?.kw || selectedTask?.solarCapacity) && (
+                <div className="manager-task-extra-details">
+                  <span>Additional Details</span>
+                  {selectedTask?.address && <p><strong>Address:</strong> {selectedTask.address}</p>}
+                  {selectedTask?.city && <p><strong>City:</strong> {selectedTask.city}</p>}
+                  {(selectedTask?.kiloWatt || selectedTask?.kw || selectedTask?.solarCapacity) && <p><strong>Solar Capacity:</strong> {selectedTask?.kiloWatt || selectedTask?.kw || selectedTask?.solarCapacity} kW</p>}
                 </div>
               )}
 

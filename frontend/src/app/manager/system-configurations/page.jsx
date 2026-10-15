@@ -159,21 +159,49 @@ const ManagerSystemConfigurationsPage = () => {
     );
 
   const getItems = (item, type) => {
+    // Backend stores component details in a single `components` array
+    // with componentType values such as SOLAR_PANEL, INVERTER, BATTERY.
+    const typeMap = {
+      solarPanels: ["SOLAR_PANEL", "PANEL", "PANELS"],
+      inverters: ["INVERTER", "INVERTERS"],
+      batteries: ["BATTERY", "BATTERIES"],
+      structures: ["STRUCTURE", "STRUCTURES"],
+      accessories: ["ACCESSORY", "ACCESSORIES"],
+      otherComponents: ["OTHER", "OTHER_COMPONENT", "OTHER_COMPONENTS"],
+    };
+
+    const directCandidates = [
+      item?.[type],
+      item?.components?.[type],
+      item?.billOfMaterials?.[type],
+      item?.bom?.[type],
+    ];
+
+    for (const value of directCandidates) {
+      if (Array.isArray(value)) return value;
+      if (value && typeof value === "object") return [value];
+    }
+
+    // Canonical backend format: components: [{ componentType, name, quantity, ... }]
+    if (Array.isArray(item?.components)) {
+      const acceptedTypes = typeMap[type] || [];
+      return item.components.filter((component) => {
+        const componentType = String(
+          component?.componentType || component?.type || component?.category || ""
+        ).toUpperCase().replace(/[\s-]+/g, "_");
+        return acceptedTypes.includes(componentType);
+      });
+    }
+
+    // Legacy singular object formats.
     const singular = {
       solarPanels: ["solarPanel", "panel", "panels"],
       inverters: ["inverter"],
       batteries: ["battery"],
       structures: ["structure"],
       accessories: ["accessory"],
-      otherComponents: ["otherComponent", "components"],
+      otherComponents: ["otherComponent", "otherItems"],
     };
-
-    const direct = item?.[type] ?? item?.components?.[type] ??
-      item?.billOfMaterials?.[type] ?? item?.bom?.[type];
-
-    if (Array.isArray(direct)) return direct;
-    if (direct && typeof direct === "object") return [direct];
-
     for (const key of singular[type] || []) {
       const value = item?.[key] ?? item?.components?.[key];
       if (Array.isArray(value)) return value;
@@ -551,10 +579,7 @@ const ManagerSystemConfigurationsPage = () => {
 
                         {/* Panels */}
                         <td>
-                          {getItemCount(
-                            item,
-                            "solarPanels"
-                          ) || "—"}
+                          {getItemCount(item, "solarPanels") || item?.panelCount || "—"}
                         </td>
 
                         {/* Inverter */}
@@ -568,7 +593,7 @@ const ManagerSystemConfigurationsPage = () => {
                         <td>
                           {getItemCount(item, "batteries") > 0
                             ? getItemCount(item, "batteries")
-                            : firstValue(item?.battery?.name, item?.battery?.model, item?.battery?.brand, "—")}
+                            : item?.batteryCount || firstValue(item?.battery?.name, item?.battery?.model, item?.battery?.brand, "—")}
                         </td>
 
                         {/* Status */}
@@ -744,10 +769,7 @@ const ManagerSystemConfigurationsPage = () => {
                   <span>Panel Quantity</span>
 
                   <strong>
-                    {getItemCount(
-                      selectedConfiguration,
-                      "solarPanels"
-                    ) || "—"}
+                    {getItemCount(selectedConfiguration, "solarPanels") || selectedConfiguration?.panelCount || "—"}
                   </strong>
                 </div>
 
@@ -762,6 +784,8 @@ const ManagerSystemConfigurationsPage = () => {
                       selectedConfiguration?.inverter?.brand ||
                       getItems(selectedConfiguration, "inverters")[0]?.name ||
                       getItems(selectedConfiguration, "inverters")[0]?.model ||
+                      getItems(selectedConfiguration, "inverters")[0]?.brand ||
+                      (selectedConfiguration?.inverterCount ? `${selectedConfiguration.inverterCount} unit(s)` : "") ||
                       "—"}
                   </strong>
                 </div>
@@ -777,6 +801,8 @@ const ManagerSystemConfigurationsPage = () => {
                       selectedConfiguration?.battery?.brand ||
                       getItems(selectedConfiguration, "batteries")[0]?.name ||
                       getItems(selectedConfiguration, "batteries")[0]?.model ||
+                      getItems(selectedConfiguration, "batteries")[0]?.brand ||
+                      (selectedConfiguration?.batteryCount ? `${selectedConfiguration.batteryCount} unit(s)` : "") ||
                       "—"}
                   </strong>
                 </div>
@@ -877,9 +903,7 @@ const ManagerSystemConfigurationsPage = () => {
                               }
                             >
                               <span>
-                                {component?.name ||
-                                  component?.model ||
-                                  "Component"}
+                                {[component?.name, component?.brand, component?.model].filter(Boolean).join(" · ") || "Component"}
                               </span>
 
                               <b>

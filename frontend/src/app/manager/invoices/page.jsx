@@ -21,6 +21,7 @@ const ManagerInvoicesPage = () => {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [page, setPage] = useState(1);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [downloadId, setDownloadId] = useState("");
 
   const itemsPerPage = 10;
 
@@ -34,25 +35,99 @@ const ManagerInvoicesPage = () => {
       setError("");
 
       const response = await invoiceService.getInvoices();
+      const payload = response?.data ?? response;
+      const list =
+        payload?.invoices ||
+        payload?.data?.invoices ||
+        payload?.items ||
+        payload?.data?.items ||
+        (Array.isArray(payload) ? payload : []);
 
-      const data =
-        response?.data?.invoices ||
-        response?.invoices ||
-        response?.data?.items ||
-        response?.items ||
-        response?.data ||
-        [];
+      // List endpoints often omit InvoiceItem records. Hydrate each invoice
+      // from the detail/items endpoints when those methods are available.
+      const hydrated = await Promise.all(
+        (Array.isArray(list) ? list : []).map(async (invoice) => {
+          const id = invoice?._id || invoice?.id;
+          let result = invoice;
 
-      setInvoices(Array.isArray(data) ? data : []);
+          if (id && typeof invoiceService.getInvoiceById === "function") {
+            try {
+              const detailResponse = await invoiceService.getInvoiceById(id);
+              const detailPayload = detailResponse?.data ?? detailResponse;
+              const detailInvoice =
+                detailPayload?.invoice ||
+                detailPayload?.data?.invoice ||
+                detailPayload?.data ||
+                detailPayload;
+
+              if (detailInvoice && typeof detailInvoice === "object") {
+                result = { ...invoice, ...detailInvoice };
+              }
+
+              const detailItems = [
+                detailPayload?.items,
+                detailPayload?.invoiceItems,
+                detailPayload?.lineItems,
+                detailPayload?.data?.items,
+                detailPayload?.data?.invoiceItems,
+                detailPayload?.data?.lineItems,
+                detailPayload?.data?.data?.items,
+                detailInvoice?.items,
+                detailInvoice?.invoiceItems,
+                detailInvoice?.lineItems,
+                detailInvoice?.quotation?.items,
+                detailInvoice?.quotation?.quotationItems,
+              ].find((value) => Array.isArray(value) && value.length > 0);
+
+              if (detailItems) {
+                result = { ...result, items: detailItems };
+              }
+            } catch (detailError) {
+              console.warn("Unable to load invoice detail:", id, detailError);
+            }
+          }
+
+          const currentItems =
+            result?.items || result?.invoiceItems || result?.products;
+          if (
+            id &&
+            (!Array.isArray(currentItems) || currentItems.length === 0) &&
+            typeof invoiceService.getInvoiceItems === "function"
+          ) {
+            try {
+              const itemsResponse = await invoiceService.getInvoiceItems(id);
+              const itemsPayload = itemsResponse?.data ?? itemsResponse;
+              const fetchedItems = [
+                Array.isArray(itemsPayload) ? itemsPayload : null,
+                itemsPayload?.items,
+                itemsPayload?.invoiceItems,
+                itemsPayload?.lineItems,
+                itemsPayload?.data?.items,
+                itemsPayload?.data?.invoiceItems,
+                itemsPayload?.data?.lineItems,
+                itemsPayload?.data?.data?.items,
+                itemsPayload?.data?.data?.invoiceItems,
+              ].find((value) => Array.isArray(value) && value.length > 0);
+              if (fetchedItems) {
+                result = { ...result, items: fetchedItems };
+              }
+            } catch (itemsError) {
+              console.warn("Unable to load invoice items:", id, itemsError);
+            }
+          }
+
+          return result;
+        })
+      );
+
+      setInvoices(hydrated);
     } catch (err) {
       console.error("Invoices error:", err);
-
       setError(
         err?.response?.data?.message ||
           err?.message ||
           "Unable to load invoices."
       );
-
       setInvoices([]);
     } finally {
       setLoading(false);
@@ -69,11 +144,26 @@ const ManagerInvoicesPage = () => {
      HELPERS
   ========================= */
 
-  const getCustomerName = (invoice) =>
-    invoice?.customer?.name ||
-    invoice?.customerName ||
-    invoice?.lead?.name ||
-    "Unnamed Customer";
+  const getCustomerDetails = (invoice) =>
+    invoice?.customerDetails ||
+    invoice?.customerSnapshot ||
+    invoice?.billingDetails ||
+    invoice?.customer ||
+    invoice?.lead ||
+    {};
+
+  const getCustomerName = (invoice) => {
+    const customer = getCustomerDetails(invoice);
+    return (
+      customer?.name ||
+      customer?.fullName ||
+      customer?.customerName ||
+      customer?.companyName ||
+      invoice?.customerName ||
+      invoice?.lead?.customerName ||
+      "Unnamed Customer"
+    );
+  };
 
   const getInvoiceNumber = (invoice) =>
     invoice?.invoiceNumber ||
@@ -92,16 +182,112 @@ const ManagerInvoicesPage = () => {
     invoice?.totalAmount ??
     invoice?.total ??
     invoice?.grandAmount ??
-    0;
+    invoice?.amount ??
+    invoice?.netAmount ??
+    invoice?.totalPayable ??
+    invoice?.quotation?.grandTotal ??
+    null;
 
   const getItems = (invoice) => {
-    const items =
-      invoice?.items ||
-      invoice?.invoiceItems ||
-      invoice?.products ||
+    const candidates = [
+      invoice?.items,
+      invoice?.invoiceItems,
+      invoice?.lineItems,
+      invoice?.products,
+      invoice?.quotationItems,
+      invoice?.quotation?.items,
+      invoice?.quotation?.quotationItems,
+      invoice?.quotation?.lineItems,
+      invoice?.quotation?.products,
+      invoice?.data?.items,
+      invoice?.data?.invoiceItems,
+    ];
+    return candidates.find((value) => Array.isArray(value) && value.length > 0) ||
+      candidates.find(Array.isArray) ||
       [];
+  };
 
-    return Array.isArray(items) ? items : [];
+  const getCustomerPhone = (invoice) => {
+    const customer = getCustomerDetails(invoice);
+    return (
+      customer?.mobile ||
+      customer?.phone ||
+      customer?.contactNumber ||
+      invoice?.mobile ||
+      invoice?.phone ||
+      invoice?.lead?.mobile ||
+      "—"
+    );
+  };
+
+  const getCustomerEmail = (invoice) => {
+    const customer = getCustomerDetails(invoice);
+    return customer?.email || invoice?.email || "—";
+  };
+
+  const getItemName = (item, index) =>
+    item?.name ||
+    item?.itemName ||
+    item?.productName ||
+    item?.serviceName ||
+    item?.description ||
+    item?.title ||
+    `Item ${index + 1}`;
+
+  const getItemAmount = (item) => {
+    const direct =
+      item?.totalAmount ??
+      item?.lineTotal ??
+      item?.total ??
+      item?.amount;
+    if (direct !== undefined && direct !== null && direct !== "") {
+      return Number(direct) || 0;
+    }
+    const quantity = Number(item?.quantity ?? item?.qty ?? 1) || 1;
+    const price = Number(
+      item?.unitPrice ?? item?.rate ?? item?.price ?? item?.sellingPrice ?? 0
+    ) || 0;
+    const tax = Number(item?.taxAmount ?? item?.gstAmount ?? 0) || 0;
+    const discount = Number(item?.discountAmount ?? item?.discount ?? 0) || 0;
+    return Math.max(quantity * price - discount + tax, 0);
+  };
+
+  const getTaxValue = (invoice, taxName) => {
+    const title = taxName.toLowerCase();
+    const aliases = {
+      cgst: ["cgst", "cgstAmount", "centralTax"],
+      sgst: ["sgst", "sgstAmount", "stateTax"],
+      igst: ["igst", "igstAmount", "integratedTax"],
+    };
+    for (const key of aliases[title] || [title]) {
+      const value = invoice?.[key] ?? invoice?.taxes?.[key];
+      if (value !== undefined && value !== null && value !== "") {
+        return Number(value) || 0;
+      }
+    }
+    const itemTax = getItems(invoice).reduce(
+      (sum, item) => sum + (Number(item?.[`${title}Amount`]) || 0),
+      0
+    );
+    return itemTax;
+  };
+
+  const getSubtotal = (invoice) => {
+    const saved =
+      invoice?.subtotal ??
+      invoice?.subTotal ??
+      invoice?.taxableAmount ??
+      invoice?.taxableValue;
+    if (saved !== undefined && saved !== null && saved !== "") {
+      return Number(saved) || 0;
+    }
+    return getItems(invoice).reduce((sum, item) => {
+      const qty = Number(item?.quantity ?? item?.qty ?? 1) || 1;
+      const price = Number(
+        item?.unitPrice ?? item?.rate ?? item?.price ?? item?.sellingPrice ?? 0
+      ) || 0;
+      return sum + (Number(item?.grossAmount) || qty * price);
+    }, 0);
   };
 
   const getBadgeVariant = (value) => {
@@ -164,13 +350,13 @@ const ManagerInvoicesPage = () => {
       value === null ||
       value === ""
     ) {
-      return "₹0";
+      return "—";
     }
 
     const amount = Number(value);
 
     if (Number.isNaN(amount)) {
-      return "₹0";
+      return "—";
     }
 
     return `₹${amount.toLocaleString("en-IN", {
@@ -203,10 +389,11 @@ const ManagerInvoicesPage = () => {
       const searchableText = [
         getCustomerName(invoice),
         getInvoiceNumber(invoice),
-        invoice?.customer?.phone,
-        invoice?.customer?.mobile,
-        invoice?.city,
-        invoice?.state,
+        getCustomerPhone(invoice),
+        getCustomerEmail(invoice),
+        getCustomerDetails(invoice)?.city,
+        getCustomerDetails(invoice)?.state,
+        getCustomerDetails(invoice)?.address,
         invoice?.notes,
       ]
         .filter(Boolean)
@@ -240,43 +427,173 @@ const ManagerInvoicesPage = () => {
     setPage(nextPage);
   };
 
+  const handleViewInvoice = async (invoice) => {
+    setSelectedInvoice(invoice);
+    const id = invoice?._id || invoice?.id;
+    if (!id) return;
+
+    try {
+      let detailed = invoice;
+      if (typeof invoiceService.getInvoiceById === "function") {
+        const response = await invoiceService.getInvoiceById(id);
+        const payload = response?.data ?? response;
+        const detail =
+          payload?.invoice ||
+          payload?.data?.invoice ||
+          payload?.data?.data?.invoice ||
+          payload?.data?.data ||
+          payload?.data ||
+          payload;
+        if (detail && typeof detail === "object") {
+          detailed = { ...invoice, ...detail };
+        }
+
+        const detailItems = [
+          payload?.items,
+          payload?.invoiceItems,
+          payload?.lineItems,
+          payload?.data?.items,
+          payload?.data?.invoiceItems,
+          payload?.data?.lineItems,
+          payload?.data?.data?.items,
+          detail?.items,
+          detail?.invoiceItems,
+          detail?.lineItems,
+          detail?.quotation?.items,
+          detail?.quotation?.quotationItems,
+        ].find((value) => Array.isArray(value) && value.length > 0);
+        if (detailItems) detailed = { ...detailed, items: detailItems };
+      }
+
+      if (
+        getItems(detailed).length === 0 &&
+        typeof invoiceService.getInvoiceItems === "function"
+      ) {
+        const response = await invoiceService.getInvoiceItems(id);
+        const payload = response?.data ?? response;
+        const fetchedItems = [
+          Array.isArray(payload) ? payload : null,
+          payload?.items,
+          payload?.invoiceItems,
+          payload?.lineItems,
+          payload?.data?.items,
+          payload?.data?.invoiceItems,
+          payload?.data?.lineItems,
+          payload?.data?.data?.items,
+        ].find((value) => Array.isArray(value) && value.length > 0);
+        if (fetchedItems) detailed = { ...detailed, items: fetchedItems };
+      }
+
+      setSelectedInvoice(detailed);
+      setInvoices((current) =>
+        current.map((item) =>
+          String(item?._id || item?.id) === String(id)
+            ? { ...item, ...detailed }
+            : item
+        )
+      );
+    } catch (err) {
+      console.error("Unable to load invoice details/items:", err);
+    }
+  };
+
   /* =========================
      PDF
   ========================= */
 
+  const escapeHtml = (value) =>
+    String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+
   const handleDownloadPdf = async (invoice) => {
+    const id = invoice?._id || invoice?.id;
+    if (!id) {
+      window.alert("Invoice ID missing hai. PDF download nahi ho sakta.");
+      return;
+    }
+
     try {
-      const id = invoice?._id || invoice?.id;
+      setDownloadId(String(id));
 
-      if (!id) {
-        console.warn("Invoice ID not found.");
-        return;
+      // Download the server-generated PDF directly, like the quotation page.
+      // This path must return a Blob; it must not open the print dialog.
+      const pdfMethod =
+        invoiceService.getInvoicePdf ||
+        invoiceService.downloadInvoicePdf ||
+        invoiceService.generateInvoicePdf;
+
+      if (typeof pdfMethod !== "function") {
+        throw new Error(
+          "invoice.service.js mein getInvoicePdf(id) method add karein jo /pdf/invoice/:id ko responseType: 'blob' ke saath call kare."
+        );
+      }
+
+      const response = await pdfMethod.call(invoiceService, id);
+      let blob =
+        response instanceof Blob
+          ? response
+          : response?.data instanceof Blob
+            ? response.data
+            : null;
+
+      if (
+        !blob &&
+        (response instanceof ArrayBuffer || ArrayBuffer.isView(response))
+      ) {
+        blob = new Blob([response], { type: "application/pdf" });
+      }
+
+      if (!blob || blob.size === 0) {
+        const message =
+          response?.data?.message ||
+          response?.message ||
+          "Server se valid PDF nahi aayi. Invoice PDF API check karein.";
+        throw new Error(message);
       }
 
       if (
-        typeof invoiceService.downloadInvoicePdf ===
-        "function"
+        blob.type &&
+        !blob.type.includes("pdf") &&
+        blob.type !== "application/octet-stream"
       ) {
-        await invoiceService.downloadInvoicePdf(id);
-        return;
+        const bodyText = await blob.text().catch(() => "");
+        let message = "Server response PDF format mein nahi hai.";
+        try {
+          const body = JSON.parse(bodyText);
+          message = body?.message || body?.error || message;
+        } catch {}
+        throw new Error(message);
       }
 
-      if (
-        typeof invoiceService.generateInvoicePdf ===
-        "function"
-      ) {
-        await invoiceService.generateInvoicePdf(id);
-        return;
-      }
-
-      console.warn(
-        "Invoice PDF service method is not available."
+      const pdfBlob =
+        blob.type === "application/pdf"
+          ? blob
+          : new Blob([blob], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${getInvoiceNumber(invoice) || "invoice"}.pdf`.replace(
+        /[^a-z0-9._-]/gi,
+        "_"
       );
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1500);
     } catch (err) {
-      console.error(
-        "Invoice PDF download error:",
-        err
+      console.error("Invoice PDF download error:", err);
+      window.alert(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Invoice PDF download failed. Invoice PDF API check karein."
       );
+    } finally {
+      setDownloadId("");
     }
   };
 
@@ -488,9 +805,7 @@ const ManagerInvoicesPage = () => {
                             </strong>
 
                             <span>
-                              {invoice?.customer?.phone ||
-                                invoice?.customer?.mobile ||
-                                "No phone"}
+                              {getCustomerPhone(invoice)}
                             </span>
                           </div>
                         </div>
@@ -547,11 +862,7 @@ const ManagerInvoicesPage = () => {
                           <Button
                             type="button"
                             variant="secondary"
-                            onClick={() =>
-                              setSelectedInvoice(
-                                invoice
-                              )
-                            }
+                            onClick={() => handleViewInvoice(invoice)}
                           >
                             View
                           </Button>
@@ -560,10 +871,10 @@ const ManagerInvoicesPage = () => {
                             type="button"
                             variant="secondary"
                             onClick={() =>
-                              handleDownloadPdf(
-                                invoice
-                              )
+                              handleDownloadPdf(invoice)
                             }
+                            disabled={downloadId === String(invoice?._id || invoice?.id)}
+                            loading={downloadId === String(invoice?._id || invoice?.id)}
                           >
                             PDF
                           </Button>
@@ -686,11 +997,7 @@ const ManagerInvoicesPage = () => {
                   <span>Phone</span>
 
                   <strong>
-                    {selectedInvoice?.customer
-                      ?.phone ||
-                      selectedInvoice?.customer
-                        ?.mobile ||
-                      "—"}
+                    {getCustomerPhone(selectedInvoice)}
                   </strong>
                 </div>
 
@@ -698,8 +1005,7 @@ const ManagerInvoicesPage = () => {
                   <span>Email</span>
 
                   <strong>
-                    {selectedInvoice?.customer
-                      ?.email || "—"}
+                    {getCustomerEmail(selectedInvoice)}
                   </strong>
                 </div>
               </div>
@@ -741,10 +1047,7 @@ const ManagerInvoicesPage = () => {
                       >
                         <div>
                           <strong>
-                            {item?.name ||
-                              item?.productName ||
-                              item?.description ||
-                              `Item ${index + 1}`}
+                            {getItemName(item, index)}
                           </strong>
 
                           {item?.description &&
@@ -791,9 +1094,7 @@ const ManagerInvoicesPage = () => {
 
                   <strong>
                     {formatCurrency(
-                      selectedInvoice?.subtotal ??
-                        selectedInvoice?.subTotal ??
-                        0
+                      getSubtotal(selectedInvoice)
                     )}
                   </strong>
                 </div>
@@ -803,10 +1104,7 @@ const ManagerInvoicesPage = () => {
 
                   <strong>
                     {formatCurrency(
-                      selectedInvoice?.cgst ??
-                        selectedInvoice?.taxes
-                          ?.cgst ??
-                        0
+                      getTaxValue(selectedInvoice, "cgst")
                     )}
                   </strong>
                 </div>
@@ -816,10 +1114,7 @@ const ManagerInvoicesPage = () => {
 
                   <strong>
                     {formatCurrency(
-                      selectedInvoice?.sgst ??
-                        selectedInvoice?.taxes
-                          ?.sgst ??
-                        0
+                      getTaxValue(selectedInvoice, "sgst")
                     )}
                   </strong>
                 </div>
@@ -864,11 +1159,9 @@ const ManagerInvoicesPage = () => {
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() =>
-                  handleDownloadPdf(
-                    selectedInvoice
-                  )
-                }
+                onClick={() => handleDownloadPdf(selectedInvoice)}
+                disabled={downloadId === String(selectedInvoice?._id || selectedInvoice?.id)}
+                loading={downloadId === String(selectedInvoice?._id || selectedInvoice?.id)}
               >
                 Download PDF
               </Button>

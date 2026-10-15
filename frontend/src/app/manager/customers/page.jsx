@@ -69,31 +69,30 @@ const ManagerCustomersPage = () => {
      HELPERS
   ========================= */
 
+  const firstValue = (...values) =>
+    values.find((value) => value !== undefined && value !== null && String(value).trim() !== "");
+
   const getCustomerName = (customer) =>
-    customer?.name ||
-    customer?.customerName ||
-    [customer?.firstName, customer?.lastName]
-      .filter(Boolean)
-      .join(" ") ||
-    "Unnamed Customer";
+    firstValue(customer?.name, customer?.fullName, customer?.customerName,
+      customer?.companyName, [customer?.firstName, customer?.lastName].filter(Boolean).join(" "),
+      customer?.lead?.customerName, customer?.lead?.name) || "Unnamed Customer";
 
   const getPhone = (customer) =>
-    customer?.phone ||
-    customer?.mobile ||
-    customer?.contactNumber ||
-    "—";
+    firstValue(customer?.phone, customer?.mobile, customer?.mobileNumber,
+      customer?.contactNumber, customer?.phoneNumber, customer?.lead?.mobile,
+      customer?.lead?.phone) || "—";
 
-  const getEmail = (customer) => customer?.email || "—";
+  const getEmail = (customer) =>
+    firstValue(customer?.email, customer?.emailAddress, customer?.lead?.email) || "—";
 
   const getStatus = (customer) =>
-    customer?.status || customer?.customerStatus || "ACTIVE";
+    String(firstValue(customer?.status, customer?.customerStatus, customer?.lead?.status) || "ACTIVE")
+      .trim().toUpperCase().replace(/[\\s-]+/g, "_");
 
   const getCustomerNumber = (customer) =>
-    customer?.customerNumber ||
-    customer?.customerNo ||
-    customer?.customerId ||
-    customer?.code ||
-    "—";
+    firstValue(customer?.customerNumber, customer?.customerNo, customer?.customerId,
+      customer?.customerID, customer?.customerCode, customer?.code,
+      customer?.referenceNumber) || "—";
 
   const getBadgeVariant = (value) => {
     const status = String(value).toLowerCase();
@@ -168,23 +167,60 @@ const ManagerCustomersPage = () => {
     })}`;
   };
 
-  const getSystemSize = (customer) =>
-    customer?.systemSize ||
-    customer?.capacity ||
-    customer?.solarRequirement?.systemSize ||
-    customer?.solarRequirement?.requiredCapacity ||
-    "—";
+  const getSystemSize = (customer) => {
+    const value = firstValue(
+      customer?.systemSize, customer?.systemCapacity, customer?.capacity,
+      customer?.capacityKW, customer?.requiredKW, customer?.requiredKw, customer?.kw,
+      customer?.solarRequirement?.systemSize, customer?.solarRequirement?.systemCapacity,
+      customer?.solarRequirement?.requiredCapacity, customer?.solarRequirement?.requiredKW,
+      customer?.solarRequirement?.requiredKw, customer?.solarRequirement?.capacity,
+      customer?.solarRequirement?.kw, customer?.solarRequirement?.requirement?.systemSize,
+      customer?.solarRequirement?.requirement?.requiredKW,
+      customer?.systemConfiguration?.systemSize, customer?.systemConfiguration?.capacity,
+      customer?.systemConfiguration?.requiredKW, customer?.configuration?.systemSize,
+      customer?.configuration?.capacity, customer?.quotation?.systemSize,
+      customer?.quotation?.capacity, customer?.quotation?.requiredKW,
+      customer?.latestQuotation?.systemSize, customer?.latestQuotation?.capacity,
+      customer?.latestQuotation?.requiredKW, customer?.lead?.requiredKW,
+      customer?.lead?.systemSize
+    );
+    if (value === undefined) return "—";
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : String(value);
+  };
 
-  const getTotalValue = (customer) =>
-    customer?.totalAmount ??
-    customer?.projectValue ??
-    customer?.quotation?.grandTotal ??
-    customer?.quotation?.totalAmount ??
-    0;
+  const getTotalValue = (customer) => {
+    const value = firstValue(
+      customer?.projectValue, customer?.totalAmount, customer?.grandTotal,
+      customer?.quotationAmount, customer?.installationCost,
+      customer?.solarRequirement?.projectValue, customer?.solarRequirement?.totalAmount,
+      customer?.solarRequirement?.grandTotal, customer?.solarRequirement?.estimatedCost,
+      customer?.solarRequirement?.installationCost,
+      customer?.systemConfiguration?.totalAmount, customer?.systemConfiguration?.grandTotal,
+      customer?.systemConfiguration?.installationCost, customer?.quotation?.grandTotal,
+      customer?.quotation?.totalAmount, customer?.quotation?.total,
+      customer?.latestQuotation?.grandTotal, customer?.latestQuotation?.totalAmount,
+      customer?.latestQuotation?.total, customer?.invoice?.grandTotal,
+      customer?.invoice?.totalAmount, customer?.lead?.projectValue
+    );
+    if (value === undefined) return null;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  };
 
-  /* =========================
-     FILTER
-  ========================= */
+  const getAddressLine = (customer) =>
+    firstValue(customer?.address, customer?.siteAddress, customer?.fullAddress) || "Address not available";
+
+  const getLocationLine = (customer) =>
+    [
+      firstValue(customer?.city, customer?.location?.city, customer?.addressDetails?.city),
+      firstValue(customer?.state, customer?.location?.state, customer?.addressDetails?.state),
+      firstValue(customer?.pincode, customer?.postalCode, customer?.zipCode, customer?.location?.pincode)
+    ].filter(Boolean).join(", ") || "Location not available";
+
+  const getInstallationDate = (customer) =>
+    firstValue(customer?.installationDate, customer?.installedAt, customer?.installation?.date,
+      customer?.solarRequirement?.installationDate, customer?.systemConfiguration?.installationDate);
 
   const filteredCustomers = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -462,13 +498,11 @@ const ManagerCustomersPage = () => {
                       <td>
                         <div className="manager-customer-location">
                           <strong>
-                            {customer?.city || "—"}
+                            {firstValue(customer?.city, customer?.location?.city, customer?.addressDetails?.city) || "—"}
                           </strong>
 
                           <span>
-                            {customer?.state ||
-                              customer?.address ||
-                              "—"}
+                            {firstValue(customer?.state, customer?.address, customer?.siteAddress, customer?.location?.state) || "—"}
                           </span>
                         </div>
                       </td>
@@ -663,14 +697,7 @@ const ManagerCustomersPage = () => {
                   </p>
 
                   <span>
-                    {[
-                      selectedCustomer?.city,
-                      selectedCustomer?.state,
-                      selectedCustomer?.pincode ||
-                        selectedCustomer?.postalCode,
-                    ]
-                      .filter(Boolean)
-                      .join(", ") || "—"}
+                    {getLocationLine(selectedCustomer)}
                   </span>
                 </div>
               </div>
@@ -722,11 +749,8 @@ const ManagerCustomersPage = () => {
                     <span>Installation</span>
 
                     <strong>
-                      {selectedCustomer
-                        ?.installationDate
-                        ? formatDate(
-                            selectedCustomer.installationDate
-                          )
+                      {getInstallationDate(selectedCustomer)
+                        ? formatDate(getInstallationDate(selectedCustomer))
                         : "—"}
                     </strong>
                   </div>

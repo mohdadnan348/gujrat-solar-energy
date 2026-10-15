@@ -152,8 +152,16 @@ const checkIn = async (
 ) => {
   const employee = await validateEmployee(employeeId);
 
+  // Use the server timestamp by default so clients cannot decide attendance status.
+  const checkInTime = data.checkIn ? new Date(data.checkIn) : new Date();
+  if (Number.isNaN(checkInTime.getTime())) {
+    const error = new Error("Invalid check-in time");
+    error.statusCode = 400;
+    throw error;
+  }
+
   const attendanceDate = getDateOnly(
-    data.attendanceDate || new Date()
+    data.attendanceDate || checkInTime
   );
 
   let attendance = await Attendance.findOne({
@@ -169,26 +177,42 @@ const checkIn = async (
     throw error;
   }
 
+  // Attendance policy:
+  // Up to 11:00 AM => Present
+  // After 11:00 AM and before 3:00 PM => Half Day
+  // At/after 3:00 PM => Absent for attendance purposes.
+  // The employee's check-in time is still recorded for audit purposes.
+  const hour = checkInTime.getHours();
+  const minute = checkInTime.getMinutes();
+  const minutesSinceMidnight = hour * 60 + minute;
+  const presentCutoff = 11 * 60;
+  const absentCutoff = 15 * 60;
+
+  let computedStatus;
+  if (minutesSinceMidnight <= presentCutoff) {
+    computedStatus = ATTENDANCE_STATUS.PRESENT;
+  } else if (minutesSinceMidnight < absentCutoff) {
+    computedStatus =
+      ATTENDANCE_STATUS.HALF_DAY || "HALF_DAY";
+  } else {
+    computedStatus = ATTENDANCE_STATUS.ABSENT;
+  }
+
   if (!attendance) {
     attendance = new Attendance({
       employee: employee._id,
       attendanceDate,
-      status:
-        data.status ||
-        ATTENDANCE_STATUS.PRESENT,
+      status: computedStatus,
       createdBy,
     });
+  } else {
+    // A late check-in must not turn an already auto-marked Absent record into Present.
+    attendance.status = computedStatus;
   }
 
-  attendance.checkIn =
-    data.checkIn || new Date();
-
-  attendance.lateMinutes =
-    Number(data.lateMinutes) || 0;
-
-  attendance.remarks =
-    data.remarks || attendance.remarks;
-
+  attendance.checkIn = checkInTime;
+  attendance.lateMinutes = Number(data.lateMinutes) || 0;
+  attendance.remarks = data.remarks || attendance.remarks;
   attendance.updatedBy = createdBy;
 
   await attendance.save();
@@ -783,6 +807,162 @@ const getAttendanceStats = async ({
 
 /*
 |--------------------------------------------------------------------------
+| Daily Attendance Automation
+|--------------------------------------------------------------------------
+|
+| Creates a daily Absent record for active employees who have not checked in.
+| The scheduler calls this after 3:00 PM. It can also backfill missing days
+| from the current month when the server starts.
+|
+| Sundays are treated as weekly off by default. Configure your own working
+| days in the scheduler if the company follows a different calendar.
+|--------------------------------------------------------------------------
+*/
+
+const isSunday = (date) => date.getDay() === 0;
+
+const getSystemActorId = async () => {
+  const admin = await User.findOne({
+    role: { $in: ["ADMIN", "Admin", "admin"] },
+  }).select("_id").lean();
+
+  return admin?._id || null;
+};
+
+const ensureAbsentRecordsForDate = async (
+  attendanceDate,
+  { allowTodayBeforeCutoff = false } = {}
+) => {
+  const date = getDateOnly(attendanceDate);
+  const today = getDateOnly(new Date());
+
+  if (isSunday(date)) {
+    return { date, created: 0, skipped: "weekly-off" };
+  }
+
+  const isToday = date.getTime() === today.getTime();
+  const now = new Date();
+  if (
+    isToday &&
+    !allowTodayBeforeCutoff &&
+    now.getHours() * 60 + now.getMinutes() < 15 * 60
+  ) {
+    return { date, created: 0, skipped: "before-3-pm" };
+  }
+
+  const employees = await Employee.find({
+    status: { $not: /^inactive$/i },
+    isDeleted: { $ne: true },
+  }).select("_id user status").lean();
+
+  if (!employees.length) {
+    return { date, created: 0 };
+  }
+
+  const existingRecords = await Attendance.find({
+    attendanceDate: date,
+    employee: { $in: employees.map((item) => item._id) },
+  }).select("employee status checkIn").lean();
+
+  const existingByEmployee = new Map(
+    existingRecords.map((record) => [
+      String(record.employee),
+      record,
+    ])
+  );
+
+  let systemActorId = await getSystemActorId();
+  let created = 0;
+
+  for (const employee of employees) {
+    const existing = existingByEmployee.get(String(employee._id));
+
+    // Never overwrite a check-in, approved leave, or a manually recorded status.
+    if (existing) {
+      if (
+        existing.checkIn ||
+        String(existing.status || "").toUpperCase() === "LEAVE"
+      ) {
+        continue;
+      }
+
+      // Existing blank/no-check-in attendance should become Absent after cutoff.
+      if (
+        String(existing.status || "").toUpperCase() !==
+        String(ATTENDANCE_STATUS.ABSENT).toUpperCase()
+      ) {
+        await Attendance.updateOne(
+          { _id: existing._id, checkIn: null },
+          {
+            $set: {
+              status: ATTENDANCE_STATUS.ABSENT,
+              remarks: existing.remarks || "Automatically marked absent: no check-in by 3:00 PM.",
+              ...(systemActorId ? { updatedBy: systemActorId } : {}),
+            },
+          }
+        );
+      }
+      continue;
+    }
+
+    const actorId = systemActorId || employee.user;
+    if (!actorId) {
+      // createdBy is required by the schema; skip rather than insert invalid data.
+      continue;
+    }
+
+    try {
+      await Attendance.create({
+        employee: employee._id,
+        attendanceDate: date,
+        status: ATTENDANCE_STATUS.ABSENT,
+        checkIn: null,
+        checkOut: null,
+        remarks: "Automatically marked absent: no check-in by 3:00 PM.",
+        createdBy: actorId,
+        updatedBy: systemActorId || undefined,
+      });
+      created += 1;
+    } catch (error) {
+      // Unique employee/date index protects against duplicate scheduler instances.
+      if (error.code !== 11000) throw error;
+    }
+  }
+
+  return { date, created };
+};
+
+const runDailyAttendanceAutomation = async (now = new Date()) => {
+  const today = getDateOnly(now);
+  const todayMinutes = now.getHours() * 60 + now.getMinutes();
+
+  // Backfill missing working-day records from the start of the current month.
+  // Today is only marked absent after 3:00 PM.
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const results = [];
+
+  for (
+    let cursor = new Date(monthStart);
+    cursor <= today;
+    cursor.setDate(cursor.getDate() + 1)
+  ) {
+    const date = new Date(cursor);
+    const isToday = date.getTime() === today.getTime();
+
+    if (isToday && todayMinutes < 15 * 60) continue;
+
+    results.push(
+      await ensureAbsentRecordsForDate(date, {
+        allowTodayBeforeCutoff: false,
+      })
+    );
+  }
+
+  return results;
+};
+
+/*
+|--------------------------------------------------------------------------
 | Mark Absent
 |--------------------------------------------------------------------------
 */
@@ -890,6 +1070,8 @@ module.exports = {
 
   getAttendanceStats,
   markAbsent,
+  ensureAbsentRecordsForDate,
+  runDailyAttendanceAutomation,
   deleteAttendance,
 
   calculateTotalHours,

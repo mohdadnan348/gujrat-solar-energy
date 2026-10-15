@@ -23,6 +23,8 @@ const ManagerQuotationsPage = () => {
   const [page, setPage] = useState(1);
   const [selectedQuotation, setSelectedQuotation] =
     useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [downloadId, setDownloadId] = useState("");
 
   const itemsPerPage = 10;
 
@@ -66,31 +68,93 @@ const ManagerQuotationsPage = () => {
     }
   }, [authLoading, user]);
 
+  const firstValue = (...values) =>
+    values.find((value) =>
+      value !== undefined &&
+      value !== null &&
+      String(value).trim() !== ""
+    );
+
+  const getCustomer = (quotation) =>
+    quotation?.customer ||
+    quotation?.solarRequirement?.customer ||
+    quotation?.requirement?.customer ||
+    quotation?.lead?.customer ||
+    {};
+
   const getCustomerName = (quotation) =>
-    quotation?.customer?.name ||
-    quotation?.customerName ||
-    quotation?.lead?.name ||
-    quotation?.lead?.customerName ||
-    "Unnamed Customer";
+    firstValue(
+      getCustomer(quotation)?.name,
+      getCustomer(quotation)?.fullName,
+      quotation?.customerName,
+      quotation?.customer?.customerName,
+      quotation?.lead?.name,
+      quotation?.lead?.customerName,
+      "Unnamed Customer"
+    );
+
+  const getCustomerPhone = (quotation) =>
+    firstValue(
+      getCustomer(quotation)?.mobile,
+      getCustomer(quotation)?.phone,
+      getCustomer(quotation)?.mobileNumber,
+      quotation?.customerPhone,
+      quotation?.phone,
+      quotation?.mobile,
+      quotation?.lead?.mobile,
+      quotation?.lead?.phone,
+      "—"
+    );
+
+  const getCustomerEmail = (quotation) =>
+    firstValue(
+      getCustomer(quotation)?.email,
+      quotation?.customerEmail,
+      quotation?.email,
+      quotation?.lead?.email,
+      "—"
+    );
 
   const getQuotationNumber = (quotation) =>
-    quotation?.quotationNumber ||
-    quotation?.quotationNo ||
-    quotation?.quoteNumber ||
-    quotation?.referenceNumber ||
-    "—";
+    firstValue(
+      quotation?.quotationNumber,
+      quotation?.quotationNo,
+      quotation?.quoteNumber,
+      quotation?.estimateNumber,
+      quotation?.referenceNumber,
+      quotation?.code,
+      "—"
+    );
 
   const getStatus = (quotation) =>
-    quotation?.status ||
-    quotation?.quotationStatus ||
-    "DRAFT";
+    firstValue(quotation?.status, quotation?.quotationStatus, "DRAFT");
 
   const getTotal = (quotation) =>
-    quotation?.grandTotal ??
-    quotation?.totalAmount ??
-    quotation?.total ??
-    quotation?.grandAmount ??
-    0;
+    firstValue(
+      quotation?.grandTotal,
+      quotation?.totalAmount,
+      quotation?.total,
+      quotation?.grandAmount,
+      quotation?.finalAmount,
+      quotation?.pricing?.grandTotal,
+      quotation?.pricing?.totalAmount,
+      0
+    );
+
+  const getSystemSize = (quotation) =>
+    firstValue(
+      quotation?.systemSize,
+      quotation?.systemCapacity,
+      quotation?.capacity,
+      quotation?.requiredKW,
+      quotation?.requiredKw,
+      quotation?.solarRequirement?.requiredKW,
+      quotation?.solarRequirement?.requiredKw,
+      quotation?.systemConfiguration?.systemSize,
+      quotation?.systemConfiguration?.systemCapacity,
+      quotation?.configuration?.systemSize,
+      "—"
+    );
 
   const getBadgeVariant = (value) => {
     const status = String(value).toLowerCase();
@@ -160,14 +224,27 @@ const ManagerQuotationsPage = () => {
   };
 
   const getItems = (quotation) => {
-    const items =
-      quotation?.items ||
-      quotation?.quotationItems ||
-      quotation?.products ||
-      [];
-
-    return Array.isArray(items) ? items : [];
+    const candidates = [
+      quotation?.items,
+      quotation?.quotationItems,
+      quotation?.lineItems,
+      quotation?.products,
+      quotation?.components,
+      quotation?.bom?.items,
+      quotation?.billOfMaterials?.items,
+      quotation?.data?.items,
+    ];
+    const items = candidates.find(Array.isArray);
+    return items || [];
   };
+
+  const unwrapObject = (response) =>
+    response?.data?.quotation ||
+    response?.quotation ||
+    response?.data?.data?.quotation ||
+    response?.data?.data ||
+    response?.data ||
+    response;
 
   const filteredQuotations = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -192,12 +269,10 @@ const ManagerQuotationsPage = () => {
       const searchableText = [
         getCustomerName(quotation),
         getQuotationNumber(quotation),
-        quotation?.customer?.phone,
-        quotation?.customer?.mobile,
-        quotation?.lead?.phone,
+        getCustomerPhone(quotation),
+        getCustomerEmail(quotation),
         quotation?.city,
-        quotation?.systemSize,
-        quotation?.capacity,
+        getSystemSize(quotation),
         quotation?.notes,
       ]
         .filter(Boolean)
@@ -241,43 +316,111 @@ const ManagerQuotationsPage = () => {
   };
 
   const handleDownloadPdf = async (quotation) => {
+    const id = quotation?._id || quotation?.id;
+    if (!id) {
+      window.alert("Quotation ID is missing. Cannot download PDF.");
+      return;
+    }
+
     try {
-      const id =
-        quotation?._id ||
-        quotation?.id;
-
-      if (!id) {
-        return;
-      }
-
-      if (
-        typeof quotationService.downloadQuotationPdf ===
-        "function"
-      ) {
-        await quotationService.downloadQuotationPdf(
-          id
+      setDownloadId(String(id));
+      if (typeof quotationService.getQuotationPdf !== "function") {
+        throw new Error(
+          "PDF service method getQuotationPdf is not available in quotation.service.js."
         );
-        return;
       }
 
-      if (
-        typeof quotationService.generateQuotationPdf ===
-        "function"
-      ) {
-        await quotationService.generateQuotationPdf(
-          id
-        );
-        return;
+      const response = await quotationService.getQuotationPdf(id);
+      const blob =
+        response instanceof Blob
+          ? response
+          : response?.data instanceof Blob
+            ? response.data
+            : new Blob([response], { type: "application/pdf" });
+
+      if (!blob || blob.size === 0) {
+        throw new Error("The server returned an empty PDF file.");
       }
 
-      console.warn(
-        "Quotation PDF service method is not available."
+      const url = window.URL.createObjectURL(
+        blob.type === "application/pdf"
+          ? blob
+          : new Blob([blob], { type: "application/pdf" })
       );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${getQuotationNumber(quotation) || "quotation"}.pdf`
+        .replace(/[^a-z0-9._-]/gi, "_");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error(
-        "Quotation PDF download error:",
-        err
+      console.error("Quotation PDF download error:", err);
+      window.alert(
+        err?.response?.data?.message ||
+        err?.message ||
+        "PDF download failed. Please check the PDF API."
       );
+    } finally {
+      setDownloadId("");
+    }
+  };
+
+  const handleViewQuotation = async (quotation) => {
+    setSelectedQuotation(quotation);
+    const id = quotation?._id || quotation?.id;
+    if (!id) return;
+
+    setDetailLoading(true);
+    try {
+      let detailed = quotation;
+
+      if (typeof quotationService.getQuotationById === "function") {
+        try {
+          const response = await quotationService.getQuotationById(id);
+          const unwrapped = unwrapObject(response);
+          if (unwrapped && typeof unwrapped === "object") {
+            detailed = { ...quotation, ...unwrapped };
+          }
+        } catch (detailError) {
+          console.warn("Could not load quotation detail endpoint:", detailError);
+        }
+      }
+
+      // Fetch the separate line-items endpoint when the quotation detail
+      // response does not contain items. This avoids displaying a false 0-item state.
+      if (
+        getItems(detailed).length === 0 &&
+        typeof quotationService.getQuotationItems === "function"
+      ) {
+        try {
+          const itemsResponse = await quotationService.getQuotationItems(id);
+          const possibleArrays = [
+            itemsResponse?.data?.items,
+            itemsResponse?.items,
+            itemsResponse?.data?.quotationItems,
+            itemsResponse?.quotationItems,
+            itemsResponse?.data?.data?.items,
+            itemsResponse?.data,
+          ];
+          const items = possibleArrays.find(Array.isArray);
+          if (items) detailed = { ...detailed, items };
+        } catch (itemsError) {
+          console.warn("Could not load quotation items:", itemsError);
+        }
+      }
+
+      setSelectedQuotation(detailed);
+      setQuotations((current) =>
+        current.map((item) =>
+          String(item?._id || item?.id) === String(id)
+            ? { ...item, ...detailed }
+            : item
+        )
+      );
+    } finally {
+      setDetailLoading(false);
     }
   };
 
@@ -503,14 +646,7 @@ const ManagerQuotationsPage = () => {
                             </strong>
 
                             <span>
-                              {quotation?.customer
-                                ?.phone ||
-                                quotation
-                                  ?.customer
-                                  ?.mobile ||
-                                quotation?.lead
-                                  ?.phone ||
-                                "No phone"}
+                              {getCustomerPhone(quotation)}
                             </span>
                           </div>
                         </div>
@@ -518,18 +654,9 @@ const ManagerQuotationsPage = () => {
 
                       {/* System Size */}
                       <td>
-                        {quotation?.systemSize ||
-                          quotation?.capacity ||
-                          quotation
-                            ?.systemConfiguration
-                            ?.systemSize ||
-                          "—"}
+                        {getSystemSize(quotation)}
 
-                        {(quotation?.systemSize ||
-                          quotation?.capacity ||
-                          quotation
-                            ?.systemConfiguration
-                            ?.systemSize) &&
+                        {(getSystemSize(quotation) !== "—") &&
                           " kW"}
                       </td>
 
@@ -584,11 +711,7 @@ const ManagerQuotationsPage = () => {
                           <Button
                             type="button"
                             variant="secondary"
-                            onClick={() =>
-                              setSelectedQuotation(
-                                quotation
-                              )
-                            }
+                            onClick={() => handleViewQuotation(quotation)}
                           >
                             View
                           </Button>
@@ -602,7 +725,7 @@ const ManagerQuotationsPage = () => {
                               )
                             }
                           >
-                            PDF
+                            {downloadId === String(quotation?._id || quotation?.id) ? "Downloading…" : "PDF"}
                           </Button>
                         </div>
                       </td>
@@ -673,6 +796,11 @@ const ManagerQuotationsPage = () => {
 
             {/* Modal Body */}
             <div className="manager-quotation-modal-body">
+              {detailLoading && (
+                <p role="status" style={{ marginTop: 0, color: "#64748b" }}>
+                  Loading complete quotation details…
+                </p>
+              )}
               <div className="manager-quotation-info-grid">
                 <div>
                   <span>Customer</span>
@@ -733,18 +861,9 @@ const ManagerQuotationsPage = () => {
                   <span>System Size</span>
 
                   <strong>
-                    {selectedQuotation?.systemSize ||
-                      selectedQuotation?.capacity ||
-                      selectedQuotation
-                        ?.systemConfiguration
-                        ?.systemSize ||
-                      "—"}
+                    {getSystemSize(selectedQuotation)}
 
-                    {(selectedQuotation?.systemSize ||
-                      selectedQuotation?.capacity ||
-                      selectedQuotation
-                        ?.systemConfiguration
-                        ?.systemSize) &&
+                    {(getSystemSize(selectedQuotation) !== "—") &&
                       " kW"}
                   </strong>
                 </div>
@@ -753,14 +872,12 @@ const ManagerQuotationsPage = () => {
                   <span>Customer Phone</span>
 
                   <strong>
-                    {selectedQuotation?.customer
-                      ?.phone ||
-                      selectedQuotation?.customer
-                        ?.mobile ||
-                      selectedQuotation?.lead
-                        ?.phone ||
-                      "—"}
+                    {getCustomerPhone(selectedQuotation)}
                   </strong>
+                </div>
+                <div>
+                  <span>Customer Email</span>
+                  <strong>{getCustomerEmail(selectedQuotation)}</strong>
                 </div>
               </div>
 
@@ -806,6 +923,8 @@ const ManagerQuotationsPage = () => {
                             <strong>
                               {item?.name ||
                                 item?.productName ||
+                                item?.title ||
+                                item?.componentName ||
                                 item?.description ||
                                 `Item ${
                                   index + 1
@@ -824,23 +943,27 @@ const ManagerQuotationsPage = () => {
 
                           <span>
                             Qty:{" "}
-                            {item?.quantity ||
-                              item?.qty ||
+                            {item?.quantity ??
+                              item?.qty ??
+                              item?.count ??
                               1}
                           </span>
 
                           <strong>
                             {formatCurrency(
-                              item?.total ||
-                                item?.amount ||
+                              item?.total ??
+                                item?.lineTotal ??
+                                item?.amount ??
                                 Number(
-                                  item?.quantity ||
-                                    item?.qty ||
+                                  item?.quantity ??
+                                    item?.qty ??
+                                    item?.count ??
                                     1
                                 ) *
                                   Number(
-                                    item?.unitPrice ||
-                                      item?.price ||
+                                    item?.unitPrice ??
+                                      item?.rate ??
+                                      item?.price ??
                                       0
                                   )
                             )}
@@ -888,7 +1011,7 @@ const ManagerQuotationsPage = () => {
                   )
                 }
               >
-                Download PDF
+                {downloadId === String(selectedQuotation?._id || selectedQuotation?.id) ? "Downloading…" : "Download PDF"}
               </Button>
 
               <Button

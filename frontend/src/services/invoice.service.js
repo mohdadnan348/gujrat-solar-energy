@@ -17,6 +17,22 @@ export const getInvoiceById = async (invoiceId) => {
   return response.data;
 };
 
+/**
+ * Download the server-generated invoice PDF as a Blob.
+ * Endpoint: GET /pdf/invoice/:id
+ */
+export const getInvoicePdf = async (invoiceId) => {
+  if (!invoiceId) {
+    throw new Error("Invoice ID is required.");
+  }
+
+  const response = await api.get(`/pdf/invoice/${invoiceId}`, {
+    responseType: "blob",
+  });
+
+  return response.data;
+};
+
 export const getInvoiceItems = async (invoiceId) => {
   if (!invoiceId) {
     throw new Error("Invoice ID is required.");
@@ -149,6 +165,7 @@ const invoiceService = {
   getInvoices,
   getInvoiceById,
   getInvoiceItems,
+  getInvoicePdf,
   createInvoice,
   createInvoiceFromQuotation,
   updateInvoice,

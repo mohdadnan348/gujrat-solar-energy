@@ -548,3 +548,9 @@
     width: 100%;
   }
 }
+/* Extra data shown in task details */
+.manager-task-extra-details{margin-top:15px;padding:15px 16px;border-radius:10px;background:#f7f8fa}
+.manager-task-extra-details>span{display:block;margin-bottom:8px;color:#596477;font-size:11px;font-weight:750;text-transform:uppercase}
+.manager-task-extra-details p{margin:5px 0;color:#697386;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.manager-task-extra-details strong{color:#344054}
+@media(max-width:650px){.manager-tasks-table{min-width:1050px}}

@@ -23,7 +23,10 @@ const Header = ({
 
   const displayName =
     user?.name ||
+    user?.fullName ||
+    user?.employeeName ||
     `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
+    (user?.email ? user.email.split("@")[0] : "") ||
     "User";
 
   const getInitials = (name) => {
@@ -40,9 +43,13 @@ const Header = ({
     }`.toUpperCase();
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setProfileOpen(false);
-    onLogout?.();
+    try {
+      await onLogout?.();
+    } catch (error) {
+      // MainLayout handles the redirect; keep the profile menu responsive.
+    }
   };
 
   return (
