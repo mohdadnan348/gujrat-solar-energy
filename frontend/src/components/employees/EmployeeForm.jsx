@@ -13,6 +13,7 @@ const INITIAL_FORM = {
   designation: "",
   role: "Employee",
   joiningDate: "",
+  monthlySalary: "0",
   manager: "",
   status: "Active",
   address: "",
@@ -78,6 +79,7 @@ export default function EmployeeForm({
         employeeData.joiningDate ||
         employeeData.dateOfJoining ||
         "",
+      monthlySalary: String(employeeData.monthlySalary ?? employeeData.salary ?? 0),
       manager:
         employeeData.manager?._id ||
         employeeData.manager?.id ||
@@ -161,6 +163,7 @@ export default function EmployeeForm({
       lastName: form.lastName.trim(),
       email: form.email.trim(),
       mobile: form.mobile.trim(),
+      monthlySalary: Number(form.monthlySalary || 0),
       address: form.address.trim(),
     };
 
@@ -555,6 +558,24 @@ export default function EmployeeForm({
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="employee-form__field">
+                <label className="employee-form__label" htmlFor="monthlySalary">
+                  Monthly Salary (₹)
+                </label>
+                <input
+                  id="monthlySalary"
+                  name="monthlySalary"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="employee-form__input"
+                  value={form.monthlySalary}
+                  onChange={handleChange}
+                  placeholder="Enter monthly salary"
+                  disabled={saving}
+                />
               </div>
 
               <div className="employee-form__field">

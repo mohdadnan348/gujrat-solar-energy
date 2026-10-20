@@ -66,6 +66,23 @@ const calculateTotals = (items = []) => {
   };
 };
 
+// A quotation-level flat discount is deducted from the final total after GST.
+// Item-level discounts (if any) retain their existing tax treatment.
+const applyGlobalDiscount = (totals, requestedDiscount = 0) => {
+  const globalDiscount = round(Math.min(
+    Math.max(Number(requestedDiscount) || 0, 0),
+    Math.max(Number(totals.subtotal) || 0, 0)
+  ));
+  return {
+    ...totals,
+    totalDiscount: round((Number(totals.totalDiscount) || 0) + globalDiscount),
+    grandTotal: round(Math.max(
+      (Number(totals.taxableAmount) || 0) + (Number(totals.totalTax) || 0) - globalDiscount,
+      0
+    )),
+  };
+};
+
 /* =========================================================
    EMPLOYEE BUSINESS SCOPE
 ========================================================= */
@@ -348,6 +365,90 @@ const createQuotation = async (
     throw error;
   }
 
+  // The create-quotation screen can submit the requirement and system
+  // configuration inline. Persist those supporting records here so the user
+  // does not need to visit separate modules. Existing references still work.
+  if (data.customer && data.inlineSolarRequirement) {
+    const customerRecord = await Customer.findById(data.customer).lean();
+    if (!customerRecord) {
+      const error = new Error("Customer not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const requirementInput = data.inlineSolarRequirement;
+    const requirement = await SolarRequirement.create({
+      lead: data.lead || customerRecord.lead || undefined,
+      customer: data.customer,
+      status: "PENDING",
+      requiredKw: Number(requirementInput.requiredKw || data.plantDetails?.capacityKw || 0),
+      monthlyBill: Number(requirementInput.monthlyBill || 0),
+      monthlyUnits: Number(requirementInput.monthlyUnits || 0),
+      roofType: requirementInput.roofType || "",
+      roofArea: Number(requirementInput.roofArea || 0),
+      siteAddress: requirementInput.siteAddress || customerRecord.siteAddress || customerRecord.address || "",
+      location: requirementInput.location || customerRecord.city || "",
+      connectionType: requirementInput.connectionType || "",
+      sanctionedLoad: Number(requirementInput.sanctionedLoad || 0),
+      systemType: ({ ON_GRID: "On-grid", OFF_GRID: "Off-grid", HYBRID: "Hybrid" })[requirementInput.systemType] || requirementInput.systemType || data.plantDetails?.systemType || "On-grid",
+      batteryRequired: Boolean(requirementInput.batteryRequired),
+      batteryCapacity: Number(requirementInput.batteryCapacity || 0),
+      siteSurveyRequired: requirementInput.siteSurveyRequired !== false,
+      siteSurveyCompleted: Boolean(requirementInput.siteSurveyCompleted),
+      notes: requirementInput.notes || "",
+      createdBy,
+    });
+    data.solarRequirement = requirement._id;
+
+    if (data.inlineSystemConfiguration) {
+      const configInput = data.inlineSystemConfiguration;
+      const sourceComponents = Array.isArray(configInput.components) ? configInput.components : [];
+      const components = sourceComponents.map((component) => ({
+        componentType: ["SOLAR_PANEL", "INVERTER", "BATTERY", "STRUCTURE", "ACCESSORY", "INSTALLATION", "OTHER"].includes(component.componentType) ? component.componentType : "OTHER",
+        name: String(component.name || component.description || "Solar Component"),
+        brand: component.brand || "",
+        model: component.model || "",
+        quantity: Math.max(0, Number(component.quantity || 1)),
+        unit: component.unit || "Unit",
+        unitPrice: Math.max(0, Number(component.unitPrice || component.rate || 0)),
+        totalPrice: Math.max(0, Number(component.quantity || 1)) * Math.max(0, Number(component.unitPrice || component.rate || 0)),
+        tax: Math.max(0, Number(component.tax || component.taxRate || 0)),
+      }));
+      const componentSubtotal = components.reduce((sum, component) => sum + component.totalPrice, 0);
+      const installationCost = Math.max(0, Number(configInput.installationCost || 0));
+      const transportationCost = Math.max(0, Number(configInput.transportationCost || 0));
+      const otherCost = Math.max(0, Number(configInput.otherCost || 0));
+      const configNumber = `SC-${Date.now()}-${Math.floor(Math.random() * 900 + 100)}`;
+      const configuration = await SystemConfiguration.create({
+        configurationNumber: configNumber,
+        version: 1,
+        lead: data.lead || customerRecord.lead || undefined,
+        solarRequirement: requirement._id,
+        customer: data.customer,
+        systemCapacity: Math.max(0, Number(configInput.systemCapacity || requirementInput.requiredKw || 0)),
+        capacityUnit: configInput.capacityUnit || "KW",
+        systemType: configInput.systemType || requirementInput.systemType || "ON_GRID",
+        phase: configInput.phase || undefined,
+        panelCount: Math.max(0, Number(configInput.panelCount || 0)),
+        inverterCount: components.filter((item) => item.componentType === "INVERTER").reduce((sum, item) => sum + item.quantity, 0),
+        batteryCount: components.filter((item) => item.componentType === "BATTERY").reduce((sum, item) => sum + item.quantity, 0),
+        components,
+        subtotal: componentSubtotal + installationCost + transportationCost + otherCost,
+        installationCost,
+        transportationCost,
+        otherCost,
+        discount: 0,
+        taxPercentage: 0,
+        taxAmount: 0,
+        totalAmount: componentSubtotal + installationCost + transportationCost + otherCost,
+        status: "DRAFT",
+        notes: [configInput.panelMake && `Panel: ${configInput.panelMake}`, configInput.panelModel && `Panel model: ${configInput.panelModel}`, configInput.panelWattage && `Panel wattage: ${configInput.panelWattage}W`, configInput.inverterMake && `Inverter: ${configInput.inverterMake}`, configInput.inverterModel && `Inverter model: ${configInput.inverterModel}`, configInput.inverterCapacity && `Inverter capacity: ${configInput.inverterCapacity}`, configInput.batteryMake && `Battery: ${configInput.batteryMake}`, configInput.batteryModel && `Battery model: ${configInput.batteryModel}`, configInput.mountingStructure && `Structure: ${configInput.mountingStructure}`, configInput.notes].filter(Boolean).join(" | "),
+        createdBy,
+      });
+      data.systemConfiguration = configuration._id;
+    }
+  }
+
   await validateReferences(data);
 
   let lead = null;
@@ -411,8 +512,10 @@ const createQuotation = async (
     }
   );
 
-  const totals =
-    calculateTotals(items);
+  const totals = applyGlobalDiscount(
+    calculateTotals(items),
+    data.globalDiscount
+  );
 
   const activeProposal =
     await getActiveProposalContent();
@@ -1013,13 +1116,15 @@ const updateQuotation = async (
       items
     );
 
-    const totals =
-      calculateTotals(items);
+    const totals = applyGlobalDiscount(
+      calculateTotals(items),
+      data.globalDiscount
+    );
 
     quotation.subtotal =
       totals.subtotal;
 
-    quotation.discount =
+    quotation.totalDiscount =
       totals.totalDiscount;
 
     quotation.taxableAmount =

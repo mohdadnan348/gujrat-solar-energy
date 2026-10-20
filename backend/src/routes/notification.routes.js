@@ -1,107 +1,26 @@
 const express = require("express");
-
-const {
-  createNotification,
-  createBulkNotifications,
-  getMyNotifications,
-  getUnreadCount,
-  getNotification,
-  markAsRead,
-  markAllAsRead,
-  deleteNotification,
-  deleteReadNotifications,
-  getRecordNotifications,
-  removeExpiredNotifications,
-} = require("../controllers/notification.controller");
-
+const controller = require("../controllers/notification.controller");
 const { protect } = require("../middleware/auth.middleware");
 const { allowRoles } = require("../middleware/role.middleware");
-
 const { ROLES } = require("../config/constants");
 
 const router = express.Router();
-
 router.use(protect);
 
-// Current user's notifications
-router.get(
-  "/my",
-  getMyNotifications
-);
+// Admin broadcast/history routes MUST be before /:id routes.
+router.post("/broadcast", allowRoles(ROLES.ADMIN), controller.broadcastNotification);
+router.get("/sent-history", allowRoles(ROLES.ADMIN), controller.getSentBroadcasts);
 
-// Current user's unread count
-router.get(
-  "/unread-count",
-  getUnreadCount
-);
-
-// Get a single notification
-router.get(
-  "/:id",
-  getNotification
-);
-
-// Mark one notification as read
-router.put(
-  "/:id/read",
-  markAsRead
-);
-
-// Mark all notifications as read
-router.put(
-  "/read-all",
-  markAllAsRead
-);
-
-// Delete one notification
-router.delete(
-  "/:id",
-  deleteNotification
-);
-
-// Delete all read notifications
-router.delete(
-  "/read",
-  deleteReadNotifications
-);
-
-// Get notifications related to a record
-router.get(
-  "/record/:recordId",
-  allowRoles(
-    ROLES.ADMIN,
-    ROLES.MANAGER
-  ),
-  getRecordNotifications
-);
-
-// Create notification manually
-router.post(
-  "/",
-  allowRoles(
-    ROLES.ADMIN,
-    ROLES.MANAGER
-  ),
-  createNotification
-);
-
-// Create notifications for multiple users
-router.post(
-  "/bulk",
-  allowRoles(
-    ROLES.ADMIN,
-    ROLES.MANAGER
-  ),
-  createBulkNotifications
-);
-
-// Remove expired notifications
-router.delete(
-  "/cleanup/expired",
-  allowRoles(
-    ROLES.ADMIN
-  ),
-  removeExpiredNotifications
-);
+router.get("/my", controller.getMyNotifications);
+router.get("/unread-count", controller.getUnreadCount);
+router.put("/read-all", controller.markAllAsRead);
+router.delete("/read", controller.deleteReadNotifications);
+router.get("/record/:recordId", allowRoles(ROLES.ADMIN, ROLES.MANAGER), controller.getRecordNotifications);
+router.post("/", allowRoles(ROLES.ADMIN, ROLES.MANAGER), controller.createNotification);
+router.post("/bulk", allowRoles(ROLES.ADMIN, ROLES.MANAGER), controller.createBulkNotifications);
+router.delete("/cleanup/expired", allowRoles(ROLES.ADMIN), controller.removeExpiredNotifications);
+router.get("/:id", controller.getNotification);
+router.put("/:id/read", controller.markAsRead);
+router.delete("/:id", controller.deleteNotification);
 
 module.exports = router;

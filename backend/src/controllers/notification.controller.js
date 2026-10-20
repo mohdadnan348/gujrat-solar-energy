@@ -1,356 +1,60 @@
-const notificationService = require("../services/notification.service");
+const service = require("../services/notification.service");
 
-/**
- * Create notification
- */
-const createNotification = async (req, res, next) => {
-  try {
-    const {
-      recipient,
-      type,
-      title,
-      message,
-      module,
-      recordId,
-      recordType,
-      actionUrl,
-      priority,
-      expiresAt,
-      metadata,
-    } = req.body;
+const asyncHandler = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 
-    const notification =
-      await notificationService.createNotification({
-        recipient,
-        type,
-        title,
-        message,
-        module,
-        recordId,
-        recordType,
-        actionUrl,
-        priority,
-        expiresAt,
-        metadata,
-        createdBy: req.user.userId,
-      });
+const broadcastNotification = asyncHandler(async (req, res) => {
+  const result = await service.broadcastToStaff({ ...req.body, createdBy: req.user.userId });
+  res.status(201).json({ success: true, message: "Notification sent successfully", data: result });
+});
 
-    return res.status(201).json({
-      success: true,
-      message: "Notification created successfully",
-      data: notification,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+const getSentBroadcasts = asyncHandler(async (req, res) => {
+  const result = await service.getSentBroadcasts({ ...req.query, createdBy: req.user.userId });
+  res.json({ success: true, message: "Sent notification history fetched", data: result.notifications, pagination: result.pagination });
+});
 
-/**
- * Create bulk notifications
- */
-const createBulkNotifications = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const {
-      recipients,
-      type,
-      title,
-      message,
-      module,
-      recordId,
-      recordType,
-      actionUrl,
-      priority,
-      expiresAt,
-      metadata,
-    } = req.body;
+const createNotification = asyncHandler(async (req, res) => {
+  const result = await service.createNotification({ ...req.body, createdBy: req.user.userId });
+  res.status(201).json({ success: true, message: "Notification created successfully", data: result });
+});
+const createBulkNotifications = asyncHandler(async (req, res) => {
+  const result = await service.createBulkNotifications({ ...req.body, createdBy: req.user.userId });
+  res.status(201).json({ success: true, message: "Notifications created successfully", data: result });
+});
+const getMyNotifications = asyncHandler(async (req, res) => {
+  const result = await service.getMyNotifications(req.user.userId, req.query);
+  res.json({ success: true, message: "Notifications fetched successfully", data: result.notifications, pagination: result.pagination });
+});
+const getUnreadCount = asyncHandler(async (req, res) => {
+  const result = await service.getUnreadCount(req.user.userId);
+  res.json({ success: true, message: "Unread count fetched", data: result });
+});
+const getNotification = asyncHandler(async (req, res) => {
+  const result = await service.getNotificationById(req.params.id, req.user.userId);
+  res.json({ success: true, data: result });
+});
+const markAsRead = asyncHandler(async (req, res) => {
+  const result = await service.markAsRead(req.params.id, req.user.userId);
+  res.json({ success: true, message: "Notification marked as read", data: result });
+});
+const markAllAsRead = asyncHandler(async (req, res) => {
+  const result = await service.markAllAsRead(req.user.userId);
+  res.json({ success: true, message: "All notifications marked as read", data: result });
+});
+const deleteNotification = asyncHandler(async (req, res) => {
+  const result = await service.deleteNotification(req.params.id, req.user.userId);
+  res.json({ success: true, data: result });
+});
+const deleteReadNotifications = asyncHandler(async (req, res) => {
+  const result = await service.deleteReadNotifications(req.user.userId);
+  res.json({ success: true, data: result });
+});
+const getRecordNotifications = asyncHandler(async (req, res) => {
+  const result = await service.getRecordNotifications(req.params.recordId, req.query);
+  res.json({ success: true, data: result.notifications, pagination: result.pagination });
+});
+const removeExpiredNotifications = asyncHandler(async (req, res) => {
+  const result = await service.removeExpiredNotifications();
+  res.json({ success: true, data: result });
+});
 
-    const notifications =
-      await notificationService.createBulkNotifications({
-        recipients,
-        type,
-        title,
-        message,
-        module,
-        recordId,
-        recordType,
-        actionUrl,
-        priority,
-        expiresAt,
-        metadata,
-        createdBy: req.user.userId,
-      });
-
-    return res.status(201).json({
-      success: true,
-      message: "Bulk notifications created successfully",
-      data: notifications,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Get current user's notifications
- */
-const getMyNotifications = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const {
-      page = 1,
-      limit = 20,
-      isRead,
-      type,
-      priority,
-      search = "",
-    } = req.query;
-
-    const result =
-      await notificationService.getMyNotifications(
-        req.user.userId,
-        {
-          page,
-          limit,
-          isRead,
-          type,
-          priority,
-          search,
-        }
-      );
-
-    return res.status(200).json({
-      success: true,
-      message: "Notifications fetched successfully",
-      data: result.notifications,
-      pagination: result.pagination,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Get unread notification count
- */
-const getUnreadCount = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const count =
-      await notificationService.getUnreadCount(
-        req.user.userId
-      );
-
-    return res.status(200).json({
-      success: true,
-      message: "Unread notification count fetched successfully",
-      data: {
-        count,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Get notification by ID
- */
-const getNotification = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const notification =
-      await notificationService.getNotificationById(
-        req.params.id,
-        req.user.userId
-      );
-
-    return res.status(200).json({
-      success: true,
-      message: "Notification fetched successfully",
-      data: notification,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Mark notification as read
- */
-const markAsRead = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const notification =
-      await notificationService.markAsRead(
-        req.params.id,
-        req.user.userId
-      );
-
-    return res.status(200).json({
-      success: true,
-      message: "Notification marked as read",
-      data: notification,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Mark all notifications as read
- */
-const markAllAsRead = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const result =
-      await notificationService.markAllAsRead(
-        req.user.userId
-      );
-
-    return res.status(200).json({
-      success: true,
-      message: "All notifications marked as read",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Delete notification
- */
-const deleteNotification = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const result =
-      await notificationService.deleteNotification(
-        req.params.id,
-        req.user.userId
-      );
-
-    return res.status(200).json({
-      success: true,
-      message: "Notification deleted successfully",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Delete all read notifications
- */
-const deleteReadNotifications = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const result =
-      await notificationService.deleteReadNotifications(
-        req.user.userId
-      );
-
-    return res.status(200).json({
-      success: true,
-      message: "Read notifications deleted successfully",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Get notifications for a specific record
- */
-const getRecordNotifications = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const {
-      page = 1,
-      limit = 20,
-    } = req.query;
-
-    const result =
-      await notificationService.getRecordNotifications(
-        req.params.recordId,
-        {
-          page,
-          limit,
-        }
-      );
-
-    return res.status(200).json({
-      success: true,
-      message: "Record notifications fetched successfully",
-      data: result.notifications,
-      pagination: result.pagination,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Remove expired notifications
- */
-const removeExpiredNotifications = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const result =
-      await notificationService.removeExpiredNotifications();
-
-    return res.status(200).json({
-      success: true,
-      message: "Expired notifications removed successfully",
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-module.exports = {
-  createNotification,
-  createBulkNotifications,
-  getMyNotifications,
-  getUnreadCount,
-  getNotification,
-  markAsRead,
-  markAllAsRead,
-  deleteNotification,
-  deleteReadNotifications,
-  getRecordNotifications,
-  removeExpiredNotifications,
-};
+module.exports = { broadcastNotification, getSentBroadcasts, createNotification, createBulkNotifications, getMyNotifications, getUnreadCount, getNotification, markAsRead, markAllAsRead, deleteNotification, deleteReadNotifications, getRecordNotifications, removeExpiredNotifications };

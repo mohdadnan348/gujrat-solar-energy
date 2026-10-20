@@ -1,194 +1,307 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import Button from "@/components/common/Button";
+import Select from "@/components/common/Select";
 import Badge from "@/components/common/Badge";
-import SearchBox from "@/components/common/SearchBox";
 import Pagination from "@/components/common/Pagination";
 import Loader from "@/components/common/Loader";
-import Modal from "@/components/common/Modal";
+
 import { useAuth } from "@/hooks/useAuth";
 import attendanceService from "@/services/attendance.service";
 
 import "./attendance.css";
 
-const PAGE_SIZE = 10;
-
 const ManagerAttendancePage = () => {
-  const { loading: authLoading } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+  } = useAuth();
 
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [dateFilter, setDateFilter] = useState("");
+  const [month, setMonth] = useState(
+    new Date().getMonth() + 1
+  );
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedAttendance, setSelectedAttendance] = useState(null);
+  const [year, setYear] = useState(
+    new Date().getFullYear()
+  );
 
-  /* =========================
-     LOAD ATTENDANCE
-  ========================= */
+  const [page, setPage] = useState(1);
+
+  const limit = 10;
+
+  /*
+  |--------------------------------------------------------------------------
+  | Date Helpers
+  |--------------------------------------------------------------------------
+  */
+
+  const getMonthDateRange = () => {
+    const paddedMonth = String(month).padStart(
+      2,
+      "0"
+    );
+
+    const firstDay = `${year}-${paddedMonth}-01`;
+
+    const lastDayNumber = new Date(
+      year,
+      month,
+      0
+    ).getDate();
+
+    const lastDay = `${year}-${paddedMonth}-${String(
+      lastDayNumber
+    ).padStart(2, "0")}`;
+
+    return {
+      dateFrom: firstDay,
+      dateTo: lastDay,
+    };
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Error Message
+  |--------------------------------------------------------------------------
+  */
+
+  const getErrorMessage = (err) => {
+    return (
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.message ||
+      "Unable to load attendance. Please try again."
+    );
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Load My Attendance
+  |--------------------------------------------------------------------------
+  */
 
   const loadAttendance = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const response = await attendanceService.getAttendance();
+      if (
+        typeof attendanceService.getMyAttendance !==
+        "function"
+      ) {
+        throw new Error(
+          "My attendance service is not available."
+        );
+      }
 
-      const data =
-        response?.data?.attendance ||
-        response?.data?.data ||
-        response?.attendance ||
-        response?.data ||
-        response ||
-        [];
+      const {
+        dateFrom,
+        dateTo,
+      } = getMonthDateRange();
 
-      setAttendance(Array.isArray(data) ? data : []);
+      /*
+       * IMPORTANT:
+       * Employee must use /attendance/my.
+       *
+       * Do NOT send employeeId here.
+       */
+      const response =
+        await attendanceService.getMyAttendance({
+          dateFrom,
+          dateTo,
+          page: 1,
+          limit: 100,
+        });
+
+      /*
+       * Backend response:
+       *
+       * {
+       *   success: true,
+       *   data: [...],
+       *   pagination: {...}
+       * }
+       */
+
+      const items =
+        Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(
+              response?.data?.attendances
+            )
+          ? response.data.attendances
+          : Array.isArray(
+              response?.attendances
+            )
+          ? response.attendances
+          : [];
+
+      setAttendance(items);
     } catch (err) {
-      console.error("Failed to load attendance:", err);
-
-      setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Unable to load attendance records."
+      console.error(
+        "Failed to load attendance:",
+        err
       );
 
+      setError(getErrorMessage(err));
       setAttendance([]);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadAttendance();
-  }, []);
+  /*
+  |--------------------------------------------------------------------------
+  | Initial / Filter Load
+  |--------------------------------------------------------------------------
+  */
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter, dateFilter]);
-
-  /* =========================
-     EMPLOYEE HELPERS
-  ========================= */
-
-  const getEmployee = (record) => {
-    return record?.employee || record?.user || {};
-  };
-
-  const getEmployeeName = (record) => {
-    const employee = getEmployee(record);
-
-    if (typeof employee?.name === "string" && employee.name.trim()) {
-      return employee.name;
+    if (!authLoading && user) {
+      loadAttendance();
     }
+  }, [
+    authLoading,
+    user,
+    month,
+    year,
+  ]);
 
-    const firstName =
-      employee?.firstName ||
-      record?.employeeName?.firstName ||
-      record?.user?.firstName ||
-      "";
+  /*
+  |--------------------------------------------------------------------------
+  | Reset Pagination
+  |--------------------------------------------------------------------------
+  */
 
-    const lastName =
-      employee?.lastName ||
-      record?.employeeName?.lastName ||
-      record?.user?.lastName ||
-      "";
+  useEffect(() => {
+    setPage(1);
+  }, [month, year]);
 
-    const fullName = `${firstName} ${lastName}`.trim();
+  /*
+  |--------------------------------------------------------------------------
+  | Sorted Attendance
+  |--------------------------------------------------------------------------
+  */
 
-    if (fullName) return fullName;
+  const sortedAttendance = useMemo(() => {
+    return [...attendance].sort(
+      (a, b) => {
+        const dateA = new Date(
+          a?.attendanceDate ||
+            a?.date ||
+            a?.createdAt ||
+            0
+        );
 
-    if (typeof record?.employeeName === "string") {
-      return record.employeeName;
-    }
+        const dateB = new Date(
+          b?.attendanceDate ||
+            b?.date ||
+            b?.createdAt ||
+            0
+        );
 
-    if (typeof record?.name === "string") {
-      return record.name;
-    }
-
-    return "Unknown Employee";
-  };
-
-  const getEmployeeEmail = (record) => {
-    const employee = getEmployee(record);
-
-    return (
-      employee?.email ||
-      record?.employeeEmail ||
-      record?.email ||
-      "—"
+        return dateB - dateA;
+      }
     );
-  };
+  }, [attendance]);
 
-  const getEmployeeId = (record) => {
-    const employee = getEmployee(record);
+  /*
+  |--------------------------------------------------------------------------
+  | Pagination
+  |--------------------------------------------------------------------------
+  */
 
-    return (
-      employee?.employeeId ||
-      employee?.employeeCode ||
-      record?.employeeId ||
-      record?.employeeCode ||
-      employee?._id ||
-      "—"
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      sortedAttendance.length / limit
+    )
+  );
+
+  const paginatedAttendance = useMemo(() => {
+    const start =
+      (page - 1) * limit;
+
+    return sortedAttendance.slice(
+      start,
+      start + limit
     );
-  };
+  }, [
+    sortedAttendance,
+    page,
+  ]);
 
-  /* =========================
-     ATTENDANCE HELPERS
-  ========================= */
+  /*
+  |--------------------------------------------------------------------------
+  | Attendance Stats
+  |--------------------------------------------------------------------------
+  */
 
-  const getStatus = (record) => {
-    return (
-      record?.status ||
-      record?.attendanceStatus ||
-      record?.state ||
-      "PRESENT"
-    );
-  };
+  // Normalize backend status variants such as "Half Day", "half-day",
+  // "HALF_DAY" and "half day" into one consistent value.
+  const normalizeAttendanceStatus = (value) =>
+    String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
 
-  const getDate = (record) => {
-    return (
-      record?.date ||
-      record?.attendanceDate ||
-      record?.createdAt ||
-      null
-    );
-  };
+  const stats = useMemo(() => {
+    const total = attendance.length;
 
-  const getCheckIn = (record) => {
-    return (
-      record?.checkIn ||
-      record?.checkInTime ||
-      record?.inTime ||
-      null
-    );
-  };
+    const getRecordStatus = (item) =>
+      normalizeAttendanceStatus(
+        item?.status || item?.attendanceStatus
+      );
 
-  const getCheckOut = (record) => {
-    return (
-      record?.checkOut ||
-      record?.checkOutTime ||
-      record?.outTime ||
-      null
-    );
-  };
+    const present = attendance.filter(
+      (item) => getRecordStatus(item) === "present"
+    ).length;
 
-  const getWorkHours = (record) => {
-    return (
-      record?.workHours ??
-      record?.workingHours ??
-      record?.totalHours ??
-      null
-    );
-  };
+    const absent = attendance.filter(
+      (item) => getRecordStatus(item) === "absent"
+    ).length;
 
-  /* =========================
-     FORMATTERS
-  ========================= */
+    const leave = attendance.filter((item) => {
+      const status = getRecordStatus(item);
+      return status === "leave" || status === "on_leave";
+    }).length;
+
+    const halfDay = attendance.filter(
+      (item) => getRecordStatus(item) === "half_day"
+    ).length;
+
+    const totalHours = attendance.reduce((sum, item) => {
+      const hours = item?.totalHours ?? item?.workingHours ?? item?.hours ?? 0;
+      const numericHours = Number(hours);
+      return sum + (Number.isFinite(numericHours) ? numericHours : 0);
+    }, 0);
+
+    return {
+      total,
+      present,
+      absent,
+      leave,
+      halfDay,
+      totalHours: Number(totalHours.toFixed(2)),
+    };
+  }, [attendance]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Formatters
+  |--------------------------------------------------------------------------
+  */
 
   const formatDate = (value) => {
     if (!value) return "—";
@@ -196,14 +309,18 @@ const ManagerAttendancePage = () => {
     const date = new Date(value);
 
     if (Number.isNaN(date.getTime())) {
-      return String(value);
+      return "—";
     }
 
-    return date.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    return date.toLocaleDateString(
+      "en-IN",
+      {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    );
   };
 
   const formatTime = (value) => {
@@ -212,209 +329,429 @@ const ManagerAttendancePage = () => {
     const date = new Date(value);
 
     if (Number.isNaN(date.getTime())) {
-      return String(value);
+      return value;
     }
 
-    return date.toLocaleTimeString("en-IN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
+    return date.toLocaleTimeString(
+      "en-IN",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
   };
 
-  const formatStatus = (status) => {
-    if (!status) return "Present";
-
-    return String(status)
-      .toLowerCase()
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (char) => char.toUpperCase());
-  };
+  const getStatus = (item) =>
+    item?.status ||
+    item?.attendanceStatus ||
+    "Unknown";
 
   const getStatusVariant = (status) => {
-    const normalized = String(status || "").toUpperCase();
+    const value = String(
+      status || ""
+    ).toLowerCase();
 
-    if (normalized === "PRESENT") return "success";
-    if (normalized === "ABSENT") return "danger";
-    if (normalized === "LATE") return "warning";
-    if (normalized === "HALF_DAY") return "warning";
-    if (normalized === "LEAVE") return "info";
+    if (value === "present") {
+      return "success";
+    }
+
+    if (value === "absent") {
+      return "danger";
+    }
+
+    if (
+      value === "half_day" ||
+      value === "half-day"
+    ) {
+      return "warning";
+    }
+
+    if (
+      value === "leave" ||
+      value === "on_leave"
+    ) {
+      return "info";
+    }
 
     return "default";
   };
 
-  const getInitials = (name) => {
-    if (!name) return "E";
+  const formatStatus = (status) => {
+    if (!status) return "Unknown";
 
-    const parts = String(name).trim().split(/\s+/);
-
-    if (parts.length === 1) {
-      return parts[0].slice(0, 2).toUpperCase();
-    }
-
-    return `${parts[0][0]}${
-      parts[parts.length - 1][0]
-    }`.toUpperCase();
+    return String(status)
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (letter) =>
+        letter.toUpperCase()
+      );
   };
 
-  /* =========================
-     NORMALIZE DATA
-  ========================= */
+  /*
+  |--------------------------------------------------------------------------
+  | Today's Record
+  |--------------------------------------------------------------------------
+  */
 
-  const normalizedAttendance = useMemo(() => {
-    return attendance.map((record) => ({
-      ...record,
-      _employeeName: String(getEmployeeName(record)),
-      _employeeEmail: String(getEmployeeEmail(record)),
-      _employeeId: String(getEmployeeId(record)),
-      _status: String(getStatus(record)),
-      _date: getDate(record),
-      _checkIn: getCheckIn(record),
-      _checkOut: getCheckOut(record),
-      _workHours: getWorkHours(record),
-    }));
+  const todayRecord = useMemo(() => {
+    const today = new Date();
+
+    return attendance.find((item) => {
+      const value =
+        item?.attendanceDate ||
+        item?.date;
+
+      if (!value) return false;
+
+      const date = new Date(value);
+
+      return (
+        date.getDate() ===
+          today.getDate() &&
+        date.getMonth() ===
+          today.getMonth() &&
+        date.getFullYear() ===
+          today.getFullYear()
+      );
+    });
   }, [attendance]);
 
-  /* =========================
-     FILTER
-  ========================= */
+  const hasCheckedIn =
+    Boolean(
+      todayRecord?.checkIn ||
+        todayRecord?.inTime
+    );
 
-  const filteredAttendance = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  const hasCheckedOut =
+    Boolean(
+      todayRecord?.checkOut ||
+        todayRecord?.outTime
+    );
 
-    return normalizedAttendance.filter((record) => {
-      const matchesSearch =
-        !query ||
-        record._employeeName.toLowerCase().includes(query) ||
-        record._employeeEmail.toLowerCase().includes(query) ||
-        record._employeeId.toLowerCase().includes(query);
+  /*
+  |--------------------------------------------------------------------------
+  | Check-In
+  |--------------------------------------------------------------------------
+  */
 
-      const matchesStatus =
-        statusFilter === "ALL" ||
-        record._status.toUpperCase() === statusFilter;
+  const handleCheckIn = async () => {
+    try {
+      setActionLoading(true);
+      setError("");
 
-      const recordDate = record._date
-        ? new Date(record._date)
-        : null;
+      await attendanceService.checkIn({});
 
-      const selectedDate = dateFilter
-        ? new Date(`${dateFilter}T00:00:00`)
-        : null;
+      await loadAttendance();
+    } catch (err) {
+      console.error(
+        "Check-in failed:",
+        err
+      );
 
-      const matchesDate =
-        !selectedDate ||
-        (recordDate &&
-          !Number.isNaN(recordDate.getTime()) &&
-          recordDate.getFullYear() === selectedDate.getFullYear() &&
-          recordDate.getMonth() === selectedDate.getMonth() &&
-          recordDate.getDate() === selectedDate.getDate());
+      setError(
+        getErrorMessage(err)
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
-      return matchesSearch && matchesStatus && matchesDate;
-    });
-  }, [
-    normalizedAttendance,
-    search,
-    statusFilter,
-    dateFilter,
-  ]);
+  /*
+  |--------------------------------------------------------------------------
+  | Check-Out
+  |--------------------------------------------------------------------------
+  */
 
-  /* =========================
-     PAGINATION
-  ========================= */
+  const handleCheckOut = async () => {
+    try {
+      setActionLoading(true);
+      setError("");
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredAttendance.length / PAGE_SIZE)
+      await attendanceService.checkOut({});
+
+      await loadAttendance();
+    } catch (err) {
+      console.error(
+        "Check-out failed:",
+        err
+      );
+
+      setError(
+        getErrorMessage(err)
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Month Options
+  |--------------------------------------------------------------------------
+  */
+
+  const monthOptions = [
+    {
+      value: 1,
+      label: "January",
+    },
+    {
+      value: 2,
+      label: "February",
+    },
+    {
+      value: 3,
+      label: "March",
+    },
+    {
+      value: 4,
+      label: "April",
+    },
+    {
+      value: 5,
+      label: "May",
+    },
+    {
+      value: 6,
+      label: "June",
+    },
+    {
+      value: 7,
+      label: "July",
+    },
+    {
+      value: 8,
+      label: "August",
+    },
+    {
+      value: 9,
+      label: "September",
+    },
+    {
+      value: 10,
+      label: "October",
+    },
+    {
+      value: 11,
+      label: "November",
+    },
+    {
+      value: 12,
+      label: "December",
+    },
+  ];
+
+  /*
+  |--------------------------------------------------------------------------
+  | Year Options
+  |--------------------------------------------------------------------------
+  */
+
+  const currentYear =
+    new Date().getFullYear();
+
+  const yearOptions = Array.from(
+    { length: 5 },
+    (_, index) => {
+      const value =
+        currentYear - index;
+
+      return {
+        value,
+        label: String(value),
+      };
+    }
   );
 
-  const paginatedAttendance = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-
-    return filteredAttendance.slice(
-      start,
-      start + PAGE_SIZE
-    );
-  }, [filteredAttendance, currentPage]);
-
-  /* =========================
-     STATISTICS
-  ========================= */
-
-  const statistics = useMemo(() => {
-    const total = normalizedAttendance.length;
-
-    const present = normalizedAttendance.filter(
-      (record) =>
-        record._status.toUpperCase() === "PRESENT"
-    ).length;
-
-    const absent = normalizedAttendance.filter(
-      (record) =>
-        record._status.toUpperCase() === "ABSENT"
-    ).length;
-
-    const late = normalizedAttendance.filter(
-      (record) =>
-        record._status.toUpperCase() === "LATE"
-    ).length;
-
-    return {
-      total,
-      present,
-      absent,
-      late,
-    };
-  }, [normalizedAttendance]);
-
-  /* =========================
-     AUTH LOADING
-  ========================= */
+  /*
+  |--------------------------------------------------------------------------
+  | Loading
+  |--------------------------------------------------------------------------
+  */
 
   if (authLoading) {
     return (
-      <div className="manager-attendance-loading">
+      <div className="employee-attendance-loading">
         <Loader />
       </div>
     );
   }
 
-  /* =========================
-     PAGE
-  ========================= */
+  /*
+  |--------------------------------------------------------------------------
+  | UI
+  |--------------------------------------------------------------------------
+  */
 
   return (
-    <div className="manager-attendance-page">
-      {/* HEADER */}
-      <div className="manager-attendance-header">
+    <div className="employee-attendance-page">
+
+      {/* Header */}
+      <div className="employee-attendance-header">
         <div>
-          <span className="manager-attendance-eyebrow">
-            Workforce Management
+          <span className="employee-attendance-eyebrow">
+            Manager Portal
           </span>
 
-          <h1>Attendance</h1>
+          <h1>My Attendance</h1>
 
           <p>
-            Monitor employee attendance, check-in and
-            check-out records.
+            Track your attendance,
+            working hours and daily
+            check-in / check-out.
           </p>
         </div>
 
-        <Button
-          variant="secondary"
-          onClick={loadAttendance}
-          disabled={loading}
-        >
-          ↻ Refresh
-        </Button>
+        <div className="employee-attendance-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleCheckIn}
+            disabled={
+              actionLoading ||
+              hasCheckedIn
+            }
+          >
+            {actionLoading
+              ? "Processing..."
+              : hasCheckedIn
+              ? "Checked In"
+              : "Check In"}
+          </Button>
+
+          <Button
+            type="button"
+            onClick={handleCheckOut}
+            disabled={
+              actionLoading ||
+              !hasCheckedIn ||
+              hasCheckedOut
+            }
+          >
+            {actionLoading
+              ? "Processing..."
+              : hasCheckedOut
+              ? "Checked Out"
+              : "Check Out"}
+          </Button>
+        </div>
       </div>
 
-      {/* ERROR */}
+      {/* Today Status */}
+      <div className="employee-attendance-today">
+        <div className="attendance-today-icon">
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="9"
+            />
+            <path d="M12 7v5l3 2" />
+          </svg>
+        </div>
+
+        <div className="attendance-today-content">
+          <strong>
+            Today's Attendance
+          </strong>
+
+          <span>
+            {hasCheckedOut
+              ? "Your attendance for today is complete."
+              : hasCheckedIn
+              ? "You are currently checked in."
+              : "You have not checked in yet."}
+          </span>
+        </div>
+
+        <div className="attendance-today-time">
+          {hasCheckedIn && (
+            <span>
+              In:{" "}
+              {formatTime(
+                todayRecord?.checkIn ||
+                  todayRecord?.inTime
+              )}
+            </span>
+          )}
+
+          {hasCheckedOut && (
+            <span>
+              Out:{" "}
+              {formatTime(
+                todayRecord?.checkOut ||
+                  todayRecord?.outTime
+              )}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="employee-attendance-stats">
+
+        <div className="attendance-stat-card">
+          <span className="attendance-stat-label">
+            Total Days
+          </span>
+          <strong>
+            {stats.total}
+          </strong>
+        </div>
+
+        <div className="attendance-stat-card attendance-stat-success">
+          <span className="attendance-stat-label">
+            Present
+          </span>
+          <strong>
+            {stats.present}
+          </strong>
+        </div>
+
+        <div className="attendance-stat-card attendance-stat-danger">
+          <span className="attendance-stat-label">
+            Absent
+          </span>
+          <strong>
+            {stats.absent}
+          </strong>
+        </div>
+
+        <div className="attendance-stat-card attendance-stat-warning">
+          <span className="attendance-stat-label">
+            Half Day
+          </span>
+          <strong>
+            {stats.halfDay}
+          </strong>
+        </div>
+
+        <div className="attendance-stat-card attendance-stat-info">
+          <span className="attendance-stat-label">
+            Total Hours
+          </span>
+          <strong>
+            {stats.totalHours}h
+          </strong>
+        </div>
+
+      </div>
+
+      {/* Error */}
       {error && (
-        <div className="manager-attendance-error">
+        <div className="employee-attendance-error">
           <span>{error}</span>
 
           <Button
-            size="small"
+            type="button"
             variant="secondary"
             onClick={loadAttendance}
           >
@@ -423,336 +760,228 @@ const ManagerAttendancePage = () => {
         </div>
       )}
 
-      {/* SUMMARY */}
-      <div className="manager-attendance-summary">
-        <div className="manager-attendance-summary-card">
-          <span>Total Records</span>
-          <strong>{statistics.total}</strong>
+      {/* Filters */}
+      <div className="employee-attendance-filters">
+
+        <div className="attendance-filter">
+          <label htmlFor="attendance-month">
+            Month
+          </label>
+
+          <Select
+            id="attendance-month"
+            value={month}
+            onChange={(event) =>
+              setMonth(
+                Number(
+                  event.target.value
+                )
+              )
+            }
+            options={monthOptions}
+          />
         </div>
 
-        <div className="manager-attendance-summary-card manager-attendance-present">
-          <span>Present</span>
-          <strong>{statistics.present}</strong>
+        <div className="attendance-filter">
+          <label htmlFor="attendance-year">
+            Year
+          </label>
+
+          <Select
+            id="attendance-year"
+            value={year}
+            onChange={(event) =>
+              setYear(
+                Number(
+                  event.target.value
+                )
+              )
+            }
+            options={yearOptions}
+          />
         </div>
 
-        <div className="manager-attendance-summary-card manager-attendance-absent">
-          <span>Absent</span>
-          <strong>{statistics.absent}</strong>
-        </div>
-
-        <div className="manager-attendance-summary-card manager-attendance-late">
-          <span>Late</span>
-          <strong>{statistics.late}</strong>
-        </div>
-      </div>
-
-      {/* TOOLBAR */}
-      <div className="manager-attendance-toolbar">
-        <SearchBox
-          value={search}
-          onChange={setSearch}
-          placeholder="Search employee, email or ID..."
-        />
-
-        <select
-          className="manager-attendance-filter"
-          value={statusFilter}
-          onChange={(event) =>
-            setStatusFilter(event.target.value)
-          }
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={loadAttendance}
+          disabled={loading}
         >
-          <option value="ALL">All Status</option>
-          <option value="PRESENT">Present</option>
-          <option value="ABSENT">Absent</option>
-          <option value="LATE">Late</option>
-          <option value="HALF_DAY">Half Day</option>
-          <option value="LEAVE">Leave</option>
-        </select>
-
-        <input
-          type="date"
-          className="manager-attendance-date"
-          value={dateFilter}
-          onChange={(event) =>
-            setDateFilter(event.target.value)
-          }
-        />
-
-        {dateFilter && (
-          <Button
-            size="small"
-            variant="secondary"
-            onClick={() => setDateFilter("")}
-          >
-            Clear
-          </Button>
-        )}
+          {loading
+            ? "Loading..."
+            : "Refresh"}
+        </Button>
       </div>
 
-      {/* TABLE */}
-      <div className="manager-attendance-card">
+      {/* Attendance Table */}
+      <div className="employee-attendance-card">
+
         {loading ? (
-          <div className="manager-attendance-table-loading">
+          <div className="employee-attendance-loader">
             <Loader />
+          </div>
+        ) : paginatedAttendance.length ===
+          0 ? (
+          <div className="employee-attendance-empty">
+
+            <div className="attendance-empty-icon">
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect
+                  x="3"
+                  y="4"
+                  width="18"
+                  height="17"
+                  rx="2"
+                />
+                <path d="M8 2v4" />
+                <path d="M16 2v4" />
+                <path d="M3 10h18" />
+                <path d="M8 15h.01" />
+                <path d="M12 15h.01" />
+                <path d="M16 15h.01" />
+              </svg>
+            </div>
+
+            <h3>
+              No attendance records
+            </h3>
+
+            <p>
+              No attendance data is
+              available for the selected
+              month.
+            </p>
           </div>
         ) : (
           <>
-            <div className="manager-attendance-table-wrapper">
-              <table className="manager-attendance-table">
+            <div className="employee-attendance-table-wrapper">
+              <table className="employee-attendance-table">
+
                 <thead>
                   <tr>
-                    <th>Employee</th>
-                    <th>Employee ID</th>
                     <th>Date</th>
+                    <th>Status</th>
                     <th>Check In</th>
                     <th>Check Out</th>
-                    <th>Work Hours</th>
-                    <th>Status</th>
-                    <th>Action</th>
+                    <th>Working Hours</th>
+                    <th>Remarks</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {paginatedAttendance.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan="8"
-                        className="manager-attendance-empty"
-                      >
-                        <div>
-                          <span className="manager-attendance-empty-icon">
-                            🕘
-                          </span>
+                  {paginatedAttendance.map(
+                    (item, index) => {
+                      const status =
+                        getStatus(item);
 
-                          <strong>
-                            No attendance records found
-                          </strong>
+                      const id =
+                        item?._id ||
+                        item?.id ||
+                        index;
 
-                          <p>
-                            Try changing your search, date
-                            or status filter.
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    paginatedAttendance.map((record) => (
-                      <tr
-                        key={
-                          record._id ||
-                          record.id ||
-                          `${record._employeeId}-${record._date}`
-                        }
-                      >
-                        {/* EMPLOYEE */}
-                        <td>
-                          <div className="manager-attendance-employee">
-                            <span className="manager-attendance-avatar">
-                              {getInitials(
-                                record._employeeName
+                      return (
+                        <tr key={id}>
+
+                          <td>
+                            <div className="attendance-date">
+                              {formatDate(
+                                item?.attendanceDate ||
+                                  item?.date
                               )}
-                            </span>
-
-                            <div>
-                              <strong>
-                                {record._employeeName}
-                              </strong>
-
-                              <small>
-                                {record._employeeEmail}
-                              </small>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* EMPLOYEE ID */}
-                        <td>
-                          <span className="manager-attendance-id">
-                            {record._employeeId}
-                          </span>
-                        </td>
+                          <td>
+                            <Badge
+                              variant={getStatusVariant(
+                                status
+                              )}
+                              size="small"
+                            >
+                              {formatStatus(
+                                status
+                              )}
+                            </Badge>
+                          </td>
 
-                        {/* DATE */}
-                        <td>
-                          <span className="manager-attendance-date-value">
-                            {formatDate(record._date)}
-                          </span>
-                        </td>
-
-                        {/* CHECK IN */}
-                        <td>
-                          <span className="manager-attendance-time">
-                            {formatTime(record._checkIn)}
-                          </span>
-                        </td>
-
-                        {/* CHECK OUT */}
-                        <td>
-                          <span className="manager-attendance-time">
-                            {formatTime(record._checkOut)}
-                          </span>
-                        </td>
-
-                        {/* HOURS */}
-                        <td>
-                          <span className="manager-attendance-hours">
-                            {record._workHours ?? "—"}
-                          </span>
-                        </td>
-
-                        {/* STATUS */}
-                        <td>
-                          <Badge
-                            variant={getStatusVariant(
-                              record._status
+                          <td>
+                            {formatTime(
+                              item?.checkIn ||
+                                item?.inTime
                             )}
-                          >
-                            {formatStatus(record._status)}
-                          </Badge>
-                        </td>
+                          </td>
 
-                        {/* ACTION */}
-                        <td>
-                          <Button
-                            size="small"
-                            variant="secondary"
-                            onClick={() =>
-                              setSelectedAttendance(record)
-                            }
-                          >
-                            View
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
+                          <td>
+                            {formatTime(
+                              item?.checkOut ||
+                                item?.outTime
+                            )}
+                          </td>
+
+                          <td>
+                            {item?.totalHours ??
+                              item?.workingHours ??
+                              item?.hours ??
+                              "—"}
+                          </td>
+
+                          <td>
+                            <span className="attendance-remarks">
+                              {item?.remarks ||
+                                item?.note ||
+                                "—"}
+                            </span>
+                          </td>
+
+                        </tr>
+                      );
+                    }
                   )}
                 </tbody>
+
               </table>
             </div>
 
-            {/* PAGINATION */}
-            {filteredAttendance.length > 0 && (
-              <div className="manager-attendance-pagination">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                />
-              </div>
-            )}
-          </>
-        )}
-      </div>
+            <div className="employee-attendance-footer">
 
-      {/* DETAILS MODAL */}
-      {selectedAttendance && (
-        <Modal
-          isOpen={Boolean(selectedAttendance)}
-          onClose={() => setSelectedAttendance(null)}
-          title="Attendance Details"
-        >
-          <div className="manager-attendance-modal-content">
-            {/* PROFILE */}
-            <div className="manager-attendance-modal-profile">
-              <span className="manager-attendance-modal-avatar">
-                {getInitials(
-                  getEmployeeName(selectedAttendance)
-                )}
+              <span>
+                Showing{" "}
+                {sortedAttendance.length ===
+                0
+                  ? 0
+                  : (page - 1) *
+                      limit +
+                    1}{" "}
+                -{" "}
+                {Math.min(
+                  page * limit,
+                  sortedAttendance.length
+                )}{" "}
+                of{" "}
+                {sortedAttendance.length}{" "}
+                records
               </span>
 
-              <div>
-                <h2>
-                  {getEmployeeName(selectedAttendance)}
-                </h2>
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
 
-                <p>
-                  {getEmployeeEmail(selectedAttendance)}
-                </p>
-              </div>
             </div>
+          </>
+        )}
 
-            {/* DETAILS */}
-            <div className="manager-attendance-details-grid">
-              <div>
-                <span>Employee ID</span>
-                <strong>
-                  {getEmployeeId(selectedAttendance)}
-                </strong>
-              </div>
-
-              <div>
-                <span>Date</span>
-                <strong>
-                  {formatDate(
-                    getDate(selectedAttendance)
-                  )}
-                </strong>
-              </div>
-
-              <div>
-                <span>Check In</span>
-                <strong>
-                  {formatTime(
-                    getCheckIn(selectedAttendance)
-                  )}
-                </strong>
-              </div>
-
-              <div>
-                <span>Check Out</span>
-                <strong>
-                  {formatTime(
-                    getCheckOut(selectedAttendance)
-                  )}
-                </strong>
-              </div>
-
-              <div>
-                <span>Work Hours</span>
-                <strong>
-                  {getWorkHours(selectedAttendance) ?? "—"}
-                </strong>
-              </div>
-
-              <div>
-                <span>Status</span>
-                <strong>
-                  {formatStatus(
-                    getStatus(selectedAttendance)
-                  )}
-                </strong>
-              </div>
-            </div>
-
-            {/* NOTES */}
-            {(selectedAttendance.note ||
-              selectedAttendance.notes ||
-              selectedAttendance.remarks) && (
-              <div className="manager-attendance-notes">
-                <span>Notes / Remarks</span>
-
-                <p>
-                  {selectedAttendance.note ||
-                    selectedAttendance.notes ||
-                    selectedAttendance.remarks}
-                </p>
-              </div>
-            )}
-
-            {/* FOOTER */}
-            <div className="manager-attendance-modal-footer">
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  setSelectedAttendance(null)
-                }
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      </div>
     </div>
   );
 };

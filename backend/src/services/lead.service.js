@@ -75,43 +75,99 @@ if (startDate || endDate) {
  */
 const createLead = async (data, createdBy) => {
   const leadId = await generateId("LD");
+  let lead;
+  let createdCustomer = null;
 
-  const lead = await Lead.create({
-    leadId,
-    customerName: data.customerName,
-    companyName: data.companyName,
-    mobile: data.mobile,
-    alternateMobile: data.alternateMobile,
-    email: data.email,
-    address: data.address,
-    city: data.city,
-    state: data.state,
-    pincode: data.pincode,
-    leadSource: data.leadSource || LEAD_SOURCES.WEBSITE,
-    requirement: data.requirement,
-    status: data.status || LEAD_STATUS.NEW,
-    priority: data.priority || LEAD_PRIORITY.MEDIUM,
-    assignedTo: data.assignedTo,
-    followUpDate: data.followUpDate,
-    notes: data.notes,
-    createdBy,
-  });
+  try {
+    lead = await Lead.create({
+      leadId,
+      customerName: data.customerName,
+      companyName: data.companyName,
+      mobile: data.mobile,
+      alternateMobile: data.alternateMobile,
+      email: data.email,
+      address: data.address,
+      city: data.city,
+      state: data.state,
+      pincode: data.pincode,
+      leadSource: data.leadSource || LEAD_SOURCES.WEBSITE,
+      requirement: data.requirement,
+      status: data.status || LEAD_STATUS.NEW,
+      priority: data.priority || LEAD_PRIORITY.MEDIUM,
+      assignedTo: data.assignedTo,
+      followUpDate: data.followUpDate,
+      notes: data.notes,
+      createdBy,
+    });
 
-  await LeadActivity.create({
-    lead: lead._id,
-    activityType: "LEAD_CREATED",
-    title: "Lead created",
-    description: "New lead created in the system",
-    createdBy,
-    assignedTo: lead.assignedTo,
-  });
+    // A lead should immediately have a customer record. Reuse an existing
+    // customer with the same normalized mobile number instead of creating a
+    // duplicate. Keep the customer's existing lead link if it belongs to a
+    // different lead; Lead.convertedCustomer still links this new lead to it.
+    const normalizedMobile = String(data.mobile || "").trim();
+    let customer = normalizedMobile
+      ? await Customer.findOne({ mobile: normalizedMobile })
+          .select("_id mobile lead")
+          .lean()
+      : null;
 
-  return Lead.findById(lead._id)
-    .populate(
-      "assignedTo",
-      "employeeId name email department designation"
-    )
-    .populate("createdBy", "username email role");
+    if (!customer) {
+      const customerId = await generateId("CUS");
+      createdCustomer = await Customer.create({
+        customerId,
+        lead: lead._id,
+        name: data.customerName,
+        companyName: data.companyName || "",
+        mobile: String(data.mobile).trim(),
+        alternateMobile: data.alternateMobile || "",
+        email: String(data.email || "").trim().toLowerCase(),
+        address: data.address || "",
+        city: data.city || "",
+        state: data.state || "",
+        pincode: data.pincode || "",
+        siteAddress: data.address || "",
+        notes: data.notes || "",
+        customerType: data.companyName ? "Business" : "Individual",
+        status: "Active",
+        createdBy,
+      });
+      customer = createdCustomer;
+    } else if (!customer.lead) {
+      await Customer.updateOne(
+        { _id: customer._id, $or: [{ lead: null }, { lead: { $exists: false } }] },
+        { $set: { lead: lead._id, updatedBy: createdBy } }
+      );
+    }
+
+    lead.convertedCustomer = customer._id;
+    lead.updatedBy = createdBy;
+    await lead.save();
+
+    await LeadActivity.create({
+      lead: lead._id,
+      activityType: "LEAD_CREATED",
+      title: "Lead created",
+      description: "Lead created and customer record linked automatically",
+      createdBy,
+      assignedTo: lead.assignedTo,
+    });
+
+    return Lead.findById(lead._id)
+      .populate("assignedTo", "employeeId name email department designation")
+      .populate("createdBy", "username email role")
+      .populate("convertedCustomer", "customerId name mobile email");
+  } catch (error) {
+    // Best-effort cleanup prevents a failed customer/link operation from
+    // leaving a newly-created lead that appears successful but is incomplete.
+    if (createdCustomer?._id) {
+      await Customer.deleteOne({ _id: createdCustomer._id }).catch(() => {});
+    }
+    if (lead?._id) {
+      await LeadActivity.deleteMany({ lead: lead._id }).catch(() => {});
+      await Lead.deleteOne({ _id: lead._id }).catch(() => {});
+    }
+    throw error;
+  }
 };
 
 /**

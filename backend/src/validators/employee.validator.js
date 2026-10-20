@@ -29,9 +29,16 @@ const validateEmployee = (req, res, next) => {
     notes,
     user,
     createdBy,
+    monthlySalary,
+    salary,
   } = req.body;
 
   const errors = [];
+
+  const salaryValue = monthlySalary !== undefined ? monthlySalary : salary;
+  if (salaryValue !== undefined && (!Number.isFinite(Number(salaryValue)) || Number(salaryValue) < 0)) {
+    errors.push({ field: "monthlySalary", message: "Monthly salary must be a valid non-negative number" });
+  }
 
   // Employee ID
 

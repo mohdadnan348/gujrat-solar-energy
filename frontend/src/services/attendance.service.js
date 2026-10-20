@@ -105,12 +105,10 @@ export const getEmployeeAttendance = async (
     throw new Error("Employee ID is required.");
   }
 
-  const response = await api.get(BASE_URL, {
-    params: {
-      ...params,
-      employeeId,
-    },
-  });
+  const response = await api.get(
+    `${BASE_URL}/employee/${encodeURIComponent(employeeId)}`,
+    { params }
+  );
 
   return response.data;
 };

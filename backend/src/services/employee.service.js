@@ -111,6 +111,12 @@ const createEmployee = async (data, createdBy) => {
   ).trim();
 
   const joiningDate = data.joiningDate || null;
+  const monthlySalary = Number(data.monthlySalary ?? data.salary ?? 0);
+  if (!Number.isFinite(monthlySalary) || monthlySalary < 0) {
+    const error = new Error("Monthly salary must be a valid non-negative number");
+    error.statusCode = 400;
+    throw error;
+  }
 
   const status = normalizeStatus(data.status);
 
@@ -312,13 +318,13 @@ const createEmployee = async (data, createdBy) => {
 
         mobile,
 
-        alternatePhone,
-
         department,
 
         designation,
 
         joiningDate,
+
+        monthlySalary,
 
         role,
 
@@ -640,17 +646,6 @@ const updateEmployee = async (
       String(data.mobile).trim();
   }
 
-  if (
-  data.alternatePhone !== undefined ||
-  data.alternateMobile !== undefined
-  ) {
-  employee.alternatePhone = String(
-    data.alternatePhone ??
-      data.alternateMobile ??
-      ""
-  ).trim();
-}
-
   if (data.department !== undefined) {
     employee.department =
       String(data.department).trim();
@@ -664,6 +659,16 @@ const updateEmployee = async (
   if (data.joiningDate !== undefined) {
     employee.joiningDate =
       data.joiningDate || null;
+  }
+
+  if (data.monthlySalary !== undefined || data.salary !== undefined) {
+    const value = Number(data.monthlySalary ?? data.salary);
+    if (!Number.isFinite(value) || value < 0) {
+      const error = new Error("Monthly salary must be a valid non-negative number");
+      error.statusCode = 400;
+      throw error;
+    }
+    employee.monthlySalary = value;
   }
 
   if (data.address !== undefined) {

@@ -1,133 +1,72 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-
 import EmployeeStats from "@/components/dashboard/EmployeeStats";
 import RecentLeads from "@/components/dashboard/RecentLeads";
-import RecentQuotations from "@/components/dashboard/RecentQuotations";
 import RecentTasks from "@/components/dashboard/RecentTasks";
-
 import { useAuth } from "@/hooks/useAuth";
 import dashboardService from "@/services/dashboard.service";
 import "./dashboard.css";
+
 const EmployeeDashboardPage = () => {
   const { user, loading: authLoading } = useAuth();
-
   const [dashboardData, setDashboardData] = useState({});
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState("");
 
   useEffect(() => {
-    if (authLoading || !user) {
-      return;
-    }
-
+    if (authLoading || !user) return;
     let mounted = true;
 
     const loadDashboard = async () => {
       try {
         setDashboardLoading(true);
         setDashboardError("");
-
         const response = await dashboardService.getDashboard();
-
         if (!mounted) return;
-
-        const data = response?.data ?? response ?? {};
-
-        setDashboardData(data);
+        setDashboardData(response?.data ?? response ?? {});
       } catch (error) {
         console.error("Employee dashboard error:", error);
-
         if (!mounted) return;
-
         setDashboardError(
-          error?.response?.data?.message ||
-            error?.message ||
-            "Unable to load dashboard data."
+          error?.response?.data?.message || error?.message || "Unable to load dashboard data."
         );
-
         setDashboardData({});
       } finally {
-        if (mounted) {
-          setDashboardLoading(false);
-        }
+        if (mounted) setDashboardLoading(false);
       }
     };
 
     loadDashboard();
-
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [authLoading, user]);
 
   if (authLoading) {
-    return (
-      <div className="employee-dashboard-loading">
-        Loading dashboard...
-      </div>
-    );
+    return <div className="employee-dashboard-loading">Loading dashboard...</div>;
   }
 
   return (
     <div className="employee-dashboard">
-      {/* Header */}
-      <div className="employee-dashboard-header">
+      <header className="employee-dashboard-header">
         <div>
-          <span className="employee-dashboard-eyebrow">
-            Employee Dashboard
-          </span>
-
-          <h1>
-            Welcome back
-            {user?.name ? `, ${user.name}` : ""}
-          </h1>
-
-          <p>
-            Manage your leads, quotations, tasks and daily activities
-            from one place.
-          </p>
+          <span className="employee-dashboard-eyebrow">Employee Dashboard</span>
+          <h1>Welcome back{user?.name ? `, ${user.name}` : ""}</h1>
+          <p>Quick overview of your leads, tasks, attendance and leaves.</p>
         </div>
-      </div>
+      </header>
 
-      {/* Error */}
-      {dashboardError && (
-        <div
-          style={{
-            marginBottom: "20px",
-            padding: "12px 16px",
-            borderRadius: "10px",
-            background: "#fff1f2",
-            color: "#be123c",
-            border: "1px solid #fecdd3",
-          }}
-        >
-          {dashboardError}
-        </div>
-      )}
+      {dashboardError && <div className="employee-dashboard-error" role="alert">{dashboardError}</div>}
 
-      {/* Stats */}
-      <section className="employee-dashboard-stats">
-        <EmployeeStats
-          stats={dashboardData}
-          loading={dashboardLoading}
-        />
+      <section className="employee-dashboard-stats" aria-label="My work summary">
+        <EmployeeStats stats={dashboardData} loading={dashboardLoading} />
       </section>
-      {/* Recent Activity */}
-      <section className="employee-dashboard-activity">
+
+      <section className="employee-dashboard-activity" aria-label="Recent work">
         <RecentLeads
           leads={dashboardData?.recent?.leads || []}
           loading={dashboardLoading}
           viewAllHref="/employee/leads"
         />
-
-        <RecentQuotations
-          quotations={dashboardData?.recent?.quotations || []}
-          loading={dashboardLoading}
-          viewAllHref="/employee/quotations"
-        />
-
         <RecentTasks
           tasks={dashboardData?.recent?.tasks || []}
           loading={dashboardLoading}

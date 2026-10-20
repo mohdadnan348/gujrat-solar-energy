@@ -299,21 +299,21 @@ const checkIn = async (
      * Never allow an Employee to check-in
      * another employee.
      */
-    const isEmployee =
-      String(req.user?.role || "").toUpperCase() ===
-      "EMPLOYEE";
+    const role = String(req.user?.role || "").toUpperCase();
+    const isSelfServiceRole = role === "EMPLOYEE" || role === "MANAGER";
 
-    const employeeId =
-      isEmployee
-        ? req.user.userId
-        : employee || req.user.userId;
+    const employeeId = isSelfServiceRole
+      ? req.user.userId
+      : employee || req.user.userId;
 
     const attendance =
       await attendanceService.checkInEmployee(
         employeeId,
         {
           attendanceDate,
-          checkIn,
+          // Self-service actions always use server time; only privileged manual actions
+          // may provide a timestamp through a separate manual attendance workflow.
+          checkIn: isSelfServiceRole ? undefined : checkIn,
           lateMinutes,
           remarks,
           status,
@@ -356,21 +356,20 @@ const checkOut = async (
      * Never allow an Employee to check-out
      * another employee.
      */
-    const isEmployee =
-      String(req.user?.role || "").toUpperCase() ===
-      "EMPLOYEE";
+    const role = String(req.user?.role || "").toUpperCase();
+    const isSelfServiceRole = role === "EMPLOYEE" || role === "MANAGER";
 
-    const employeeId =
-      isEmployee
-        ? req.user.userId
-        : employee || req.user.userId;
+    const employeeId = isSelfServiceRole
+      ? req.user.userId
+      : employee || req.user.userId;
 
     const attendance =
       await attendanceService.checkOutEmployee(
         employeeId,
         {
           attendanceDate,
-          checkOut,
+          // Self-service checkout always uses server time.
+          checkOut: isSelfServiceRole ? undefined : checkOut,
           overtimeHours,
           remarks,
         },
@@ -416,14 +415,11 @@ const getAttendanceSummary = async (
       dateTo,
     } = req.query;
 
-    const isEmployee =
-      String(req.user?.role || "").toUpperCase() ===
-      "EMPLOYEE";
+    const role = String(req.user?.role || "").toUpperCase();
+    const isSelfServiceRole = role === "EMPLOYEE" || role === "MANAGER";
 
-    /*
-     * Employee can only see own summary.
-     */
-    const employeeId = isEmployee
+    /* Manager and Employee can only see their own attendance summary. */
+    const employeeId = isSelfServiceRole
       ? req.user.userId
       : employee || undefined;
 

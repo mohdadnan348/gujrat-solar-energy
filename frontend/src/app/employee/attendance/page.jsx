@@ -248,58 +248,47 @@ const EmployeeAttendancePage = () => {
   |--------------------------------------------------------------------------
   */
 
+  // Normalize status values so HALF_DAY, half-day, "Half Day", etc.
+  // are treated as the same status in summary cards and table badges.
+  const normalizeStatus = (status) =>
+    String(status || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+
+  const getAttendanceStatus = (item) =>
+    normalizeStatus(
+      item?.status ??
+      item?.attendanceStatus ??
+      item?.attendance_status ??
+      ""
+    );
+
   const stats = useMemo(() => {
     const total = attendance.length;
 
     const present = attendance.filter(
-      (item) =>
-        String(item?.status || "").toLowerCase() ===
-        "present"
+      (item) => getAttendanceStatus(item) === "present"
     ).length;
 
     const absent = attendance.filter(
-      (item) =>
-        String(item?.status || "").toLowerCase() ===
-        "absent"
+      (item) => getAttendanceStatus(item) === "absent"
     ).length;
 
-    const leave = attendance.filter(
-      (item) => {
-        const status = String(
-          item?.status || ""
-        ).toLowerCase();
-
-        return (
-          status === "leave" ||
-          status === "on_leave"
-        );
-      }
-    ).length;
+    const leave = attendance.filter((item) => {
+      const status = getAttendanceStatus(item);
+      return status === "leave" || status === "on_leave";
+    }).length;
 
     const halfDay = attendance.filter(
-      (item) => {
-        const status = String(
-          item?.status || ""
-        ).toLowerCase();
-
-        return (
-          status === "half_day" ||
-          status === "half-day"
-        );
-      }
+      (item) => getAttendanceStatus(item) === "half_day"
     ).length;
 
-    const totalHours = attendance.reduce(
-      (sum, item) =>
-        sum +
-        Number(
-          item?.totalHours ||
-            item?.workingHours ||
-            item?.hours ||
-            0
-        ),
-      0
-    );
+    const totalHours = attendance.reduce((sum, item) => {
+      const value =
+        item?.totalHours ?? item?.workingHours ?? item?.hours ?? 0;
+      return sum + (Number(value) || 0);
+    }, 0);
 
     return {
       total,
@@ -307,8 +296,7 @@ const EmployeeAttendancePage = () => {
       absent,
       leave,
       halfDay,
-      totalHours:
-        Number(totalHours.toFixed(2)),
+      totalHours: Number(totalHours.toFixed(2)),
     };
   }, [attendance]);
 
@@ -357,14 +345,13 @@ const EmployeeAttendancePage = () => {
   };
 
   const getStatus = (item) =>
-    item?.status ||
-    item?.attendanceStatus ||
+    item?.status ??
+    item?.attendanceStatus ??
+    item?.attendance_status ??
     "Unknown";
 
   const getStatusVariant = (status) => {
-    const value = String(
-      status || ""
-    ).toLowerCase();
+    const value = normalizeStatus(status);
 
     if (value === "present") {
       return "success";
@@ -374,10 +361,7 @@ const EmployeeAttendancePage = () => {
       return "danger";
     }
 
-    if (
-      value === "half_day" ||
-      value === "half-day"
-    ) {
+    if (value === "half_day") {
       return "warning";
     }
 

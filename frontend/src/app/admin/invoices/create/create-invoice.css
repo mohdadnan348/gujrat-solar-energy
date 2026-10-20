@@ -476,3 +476,131 @@
     font-size: 18px;
   }
 }
+/* Inline customer creation on the invoice form */
+.admin-create-invoice-new-customer-action {
+  display: flex;
+  align-items: end;
+  padding-top: 24px;
+}
+
+.admin-create-invoice-new-customer-form {
+  grid-column: 1 / -1;
+  padding: 18px;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  background: #f8fdf9;
+}
+
+.admin-create-invoice-new-customer-form .admin-create-invoice-card-header {
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.admin-create-invoice-new-customer-form .admin-create-invoice-fields {
+  margin-top: 0;
+}
+
+@media (max-width: 850px) {
+  .admin-create-invoice-new-customer-action { padding-top: 0; }
+  .admin-create-invoice-new-customer-form .admin-create-invoice-card-header {
+    align-items: stretch;
+  }
+}
+
+
+/* Customer selector + inline create button stay inside the card */
+.admin-create-invoice-customer-select-grid {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.admin-create-invoice-new-customer-action {
+  min-width: 0;
+  max-width: 100%;
+  padding-top: 0;
+  align-self: end;
+}
+
+.admin-create-invoice-new-customer-action button {
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.admin-create-invoice-editable-select {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .admin-create-invoice-customer-select-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .admin-create-invoice-new-customer-action {
+    justify-content: flex-start;
+  }
+}
+
+
+/* Match the customer dropdown style used on the Quotation form */
+.admin-create-invoice-customer-select-grid {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: end;
+}
+.admin-create-invoice-customer-select-wrap {
+  min-width: 0;
+  width: 100%;
+}
+.admin-create-invoice-customer-select-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+}
+.admin-create-invoice-customer-select-label span { color: #dc2626; }
+.admin-create-invoice-customer-native-select {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid #b9d8c7;
+  border-radius: 12px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  outline: none;
+  cursor: pointer;
+}
+.admin-create-invoice-customer-native-select:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+
+/* Visible native dropdowns for invoice item quantity, unit and tax */
+.admin-create-invoice-native-label {
+  display: block;
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 500;
+}
+.admin-create-invoice-native-label span { color: #dc2626; }
+.admin-create-invoice-native-select,
+.admin-create-invoice-native-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+}
+.admin-create-invoice-native-select:focus,
+.admin-create-invoice-native-input:focus {
+  outline: 2px solid #bbf7d0;
+  border-color: #16a34a;
+}
+.admin-create-invoice-native-input { margin-top: 8px; }

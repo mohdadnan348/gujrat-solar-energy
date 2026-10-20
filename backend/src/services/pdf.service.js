@@ -133,7 +133,7 @@ const getQuotationPdfData = async (
       subtotal:
         quotation.subtotal || 0,
       discount:
-        quotation.discount || 0,
+        quotation.totalDiscount ?? quotation.discount ?? 0,
       taxableAmount:
         quotation.taxableAmount || 0,
       cgst:

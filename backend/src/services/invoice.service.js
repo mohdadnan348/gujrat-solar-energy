@@ -410,7 +410,7 @@ const createInvoice = async (
 
     subtotal: totals.subtotal,
 
-    totalDiscount:
+    discount:
       totals.totalDiscount,
 
     taxableAmount:
@@ -547,7 +547,7 @@ const createInvoiceFromQuotation = async (
 
       subtotal: totals.subtotal,
 
-      totalDiscount:
+      discount:
         totals.totalDiscount,
 
       taxableAmount:
@@ -853,7 +853,7 @@ const updateInvoice = async (
     invoice.subtotal =
       totals.subtotal;
 
-    invoice.totalDiscount =
+    invoice.discount =
       totals.totalDiscount;
 
     invoice.taxableAmount =

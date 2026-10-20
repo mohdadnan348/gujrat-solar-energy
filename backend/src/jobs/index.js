@@ -1,6 +1,7 @@
 const { markOverdueTasks } = require("./overdueTasks.job");
 const { markExpiredQuotations } = require("./quotationExpiry.job");
 const { removeExpiredNotifications } = require("./notifications.job");
+const { startAttendanceScheduler } = require("./attendance.scheduler");
 
 let jobsStarted = false;
 
@@ -41,6 +42,9 @@ const startJobs = () => {
   jobsStarted = true;
 
   console.log("[Jobs] Starting background jobs...");
+  // Attendance scheduler checks for missing check-ins after 3 PM and
+  // backfills missing attendance records for the current month.
+  startAttendanceScheduler();
 
   // Run immediately when server starts
   runAllJobs();

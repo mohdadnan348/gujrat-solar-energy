@@ -59,12 +59,26 @@ const markAllNotificationsAsRead = async () => {
   return response.data;
 };
 
+/** Admin-only announcement broadcast to active employees and managers. */
+const broadcastToStaff = async ({ title, message }) => {
+  const response = await api.post(`${BASE_URL}/broadcast`, { title, message });
+  return response.data;
+};
+
+/** Admin-only sent announcement history. */
+const getBroadcastHistory = async (params = {}) => {
+  const response = await api.get(`${BASE_URL}/broadcast/history`, { params });
+  return response.data;
+};
+
 const notificationService = {
   getNotifications,
   getMyNotifications,
   getUnreadCount,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  broadcastToStaff,
+  getBroadcastHistory,
 };
 
 export default notificationService;

@@ -1,6 +1,7 @@
 const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
 const User = require("../models/User");
+const LeaveRequest = require("../models/LeaveRequest");
 const { ATTENDANCE_STATUS } = require("../config/constants");
 
 /*
@@ -152,7 +153,7 @@ const checkIn = async (
 ) => {
   const employee = await validateEmployee(employeeId);
 
-  // Use the server timestamp by default so clients cannot decide attendance status.
+  // Self-service controller strips client timestamps; privileged manual actions may pass one.
   const checkInTime = data.checkIn ? new Date(data.checkIn) : new Date();
   if (Number.isNaN(checkInTime.getTime())) {
     const error = new Error("Invalid check-in time");
@@ -177,26 +178,13 @@ const checkIn = async (
     throw error;
   }
 
-  // Attendance policy:
-  // Up to 11:00 AM => Present
-  // After 11:00 AM and before 3:00 PM => Half Day
-  // At/after 3:00 PM => Absent for attendance purposes.
-  // The employee's check-in time is still recorded for audit purposes.
-  const hour = checkInTime.getHours();
-  const minute = checkInTime.getMinutes();
-  const minutesSinceMidnight = hour * 60 + minute;
-  const presentCutoff = 11 * 60;
-  const absentCutoff = 15 * 60;
-
-  let computedStatus;
-  if (minutesSinceMidnight <= presentCutoff) {
-    computedStatus = ATTENDANCE_STATUS.PRESENT;
-  } else if (minutesSinceMidnight < absentCutoff) {
-    computedStatus =
-      ATTENDANCE_STATUS.HALF_DAY || "HALF_DAY";
-  } else {
-    computedStatus = ATTENDANCE_STATUS.ABSENT;
-  }
+  // Attendance policy: check-in after 09:00 AM is Late.
+  // Final status is recalculated at checkout using actual worked hours.
+  const minutesSinceMidnight = checkInTime.getHours() * 60 + checkInTime.getMinutes();
+  const lateCutoff = 9 * 60;
+  const computedStatus = minutesSinceMidnight > lateCutoff
+    ? (ATTENDANCE_STATUS.LATE || ATTENDANCE_STATUS.PRESENT)
+    : ATTENDANCE_STATUS.PRESENT;
 
   if (!attendance) {
     attendance = new Attendance({
@@ -266,14 +254,28 @@ const checkOut = async (
     throw error;
   }
 
-  attendance.checkOut =
-    data.checkOut || new Date();
+  // Self-service controller strips client timestamps; privileged manual actions may pass one.
+  const checkOutTime = data.checkOut ? new Date(data.checkOut) : new Date();
+  if (Number.isNaN(checkOutTime.getTime()) || checkOutTime <= new Date(attendance.checkIn)) {
+    const error = new Error("Check-out must be later than check-in");
+    error.statusCode = 400;
+    throw error;
+  }
 
-  attendance.totalHours =
-    calculateTotalHours(
-      attendance.checkIn,
-      attendance.checkOut
-    );
+  attendance.checkOut = checkOutTime;
+  attendance.totalHours = calculateTotalHours(attendance.checkIn, checkOutTime);
+
+  // Final attendance policy:
+  // 1) Less than 8 actual elapsed hours => Half Day.
+  // 2) 8+ hours => Late when check-in was after 09:00 AM, otherwise Present.
+  const checkInTime = new Date(attendance.checkIn);
+  const checkInMinutes = checkInTime.getHours() * 60 + checkInTime.getMinutes();
+  const arrivedLate = checkInMinutes > 9 * 60;
+  attendance.status = attendance.totalHours < 8
+    ? (ATTENDANCE_STATUS.HALF_DAY || "Half Day")
+    : arrivedLate
+      ? (ATTENDANCE_STATUS.LATE || ATTENDANCE_STATUS.PRESENT)
+      : ATTENDANCE_STATUS.PRESENT;
 
   if (data.overtimeHours !== undefined) {
     attendance.overtimeHours =
@@ -864,6 +866,15 @@ const ensureAbsentRecordsForDate = async (
     employee: { $in: employees.map((item) => item._id) },
   }).select("employee status checkIn").lean();
 
+  // Approved leave must not be converted into Absent by the automation.
+  const approvedLeaves = await LeaveRequest.find({
+    employee: { $in: employees.map((item) => item._id) },
+    status: "Approved",
+    startDate: { $lte: new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999) },
+    endDate: { $gte: date },
+  }).select("employee").lean();
+  const employeesOnApprovedLeave = new Set(approvedLeaves.map((leave) => String(leave.employee)));
+
   const existingByEmployee = new Map(
     existingRecords.map((record) => [
       String(record.employee),
@@ -875,6 +886,9 @@ const ensureAbsentRecordsForDate = async (
   let created = 0;
 
   for (const employee of employees) {
+    if (employeesOnApprovedLeave.has(String(employee._id))) {
+      continue;
+    }
     const existing = existingByEmployee.get(String(employee._id));
 
     // Never overwrite a check-in, approved leave, or a manually recorded status.

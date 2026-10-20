@@ -1,495 +1,108 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import notificationService from "@/services/notification.service";
-import Loader from "@/components/common/Loader";
-import Badge from "@/components/common/Badge";
-import Button from "@/components/common/Button";
-import SearchBox from "@/components/common/SearchBox";
-import Pagination from "@/components/common/Pagination";
 import "./notifications.css";
-
-const NOTIFICATION_TYPES = [
-  "ALL",
-  "LEAD",
-  "TASK",
-  "LEAVE",
-  "ATTENDANCE",
-  "SYSTEM",
-];
-
-const getNotificationId = (notification) =>
-  notification?._id ||
-  notification?.id ||
-  notification?.notificationId ||
-  `${notification?.createdAt || "notification"}-${notification?.title || "item"}`;
-
-const getNotificationTitle = (notification) =>
-  notification?.title ||
-  notification?.subject ||
-  notification?.message ||
-  "Notification";
-
-const getNotificationMessage = (notification) =>
-  notification?.message ||
-  notification?.description ||
-  notification?.body ||
-  "You have a new notification.";
-
-const getNotificationType = (notification) => {
-  const type = notification?.type || notification?.category || "SYSTEM";
-  return String(type).toUpperCase();
-};
-
-const getNotificationDate = (notification) =>
-  notification?.createdAt ||
-  notification?.date ||
-  notification?.updatedAt ||
-  null;
-
-const isReadNotification = (notification) =>
-  Boolean(
-    notification?.read === true ||
-      notification?.isRead === true ||
-      notification?.readAt
-  );
-
-const normalizeNotifications = (response) => {
-  const value = response?.data ?? response;
-
-  if (Array.isArray(value)) return value;
-
-  if (Array.isArray(value?.notifications)) return value.notifications;
-  if (Array.isArray(value?.items)) return value.items;
-  if (Array.isArray(value?.data)) return value.data;
-  if (Array.isArray(value?.results)) return value.results;
-
-  return [];
-};
 
 const formatDate = (value) => {
   if (!value) return "—";
-
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit",
   });
 };
 
-const getTypeVariant = (type) => {
-  switch (type) {
-    case "LEAD":
-      return "info";
-    case "TASK":
-      return "warning";
-    case "LEAVE":
-      return "danger";
-    case "ATTENDANCE":
-      return "success";
-    default:
-      return "default";
-  }
-};
-
-const NotificationsPage = () => {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
+export default function AdminNotificationsPage() {
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+  const [audience, setAudience] = useState("ALL");
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("ALL");
-  const [readFilter, setReadFilter] = useState("ALL");
-
-  const [page, setPage] = useState(1);
-  const [itemsPerPage] = useState(10);
-
-  const loadNotifications = useCallback(async () => {
+  const loadHistory = useCallback(async () => {
     try {
-      setLoading(true);
-      setError("");
-
-      const response = await notificationService.getNotifications();
-      const data = normalizeNotifications(response);
-
-      setNotifications(data);
+      setLoadingHistory(true);
+      const response = await notificationService.getSentHistory({ page: 1, limit: 100 });
+      setHistory(Array.isArray(response?.data) ? response.data : []);
     } catch (err) {
-      console.error("Failed to load notifications:", err);
-      setError(
-        err?.message ||
-          "Unable to load notifications. Please try again."
-      );
+      setError(err?.response?.data?.message || err?.message || "Sent notification history load nahi hui.");
     } finally {
-      setLoading(false);
+      setLoadingHistory(false);
     }
   }, []);
 
-  useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
+  useEffect(() => { loadHistory(); }, [loadHistory]);
 
-  const filteredNotifications = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    return notifications.filter((notification) => {
-      const title = getNotificationTitle(notification).toLowerCase();
-      const message = getNotificationMessage(notification).toLowerCase();
-      const type = getNotificationType(notification);
-      const isRead = isReadNotification(notification);
-
-      const matchesSearch =
-        !query ||
-        title.includes(query) ||
-        message.includes(query) ||
-        type.toLowerCase().includes(query);
-
-      const matchesType =
-        typeFilter === "ALL" || type === typeFilter;
-
-      const matchesRead =
-        readFilter === "ALL" ||
-        (readFilter === "READ" && isRead) ||
-        (readFilter === "UNREAD" && !isRead);
-
-      return matchesSearch && matchesType && matchesRead;
-    });
-  }, [notifications, search, typeFilter, readFilter]);
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredNotifications.length / itemsPerPage)
-  );
-
-  const currentPage = Math.min(page, totalPages);
-
-  const paginatedNotifications = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-
-    return filteredNotifications.slice(
-      startIndex,
-      startIndex + itemsPerPage
-    );
-  }, [filteredNotifications, currentPage, itemsPerPage]);
-
-  const unreadCount = useMemo(
-    () =>
-      notifications.filter(
-        (notification) => !isReadNotification(notification)
-      ).length,
-    [notifications]
-  );
-
-  const handleMarkAsRead = async (notification) => {
-    const id = getNotificationId(notification);
-
-    if (!id || isReadNotification(notification)) return;
-
+  const handleSend = async (event) => {
+    event.preventDefault();
+    setError(""); setSuccess("");
+    if (!title.trim() || !message.trim()) {
+      setError("Title aur message dono bharna zaroori hai.");
+      return;
+    }
     try {
-      setActionLoading(true);
-
-      if (typeof notificationService.markAsRead === "function") {
-        await notificationService.markAsRead(id);
-      }
-
-      setNotifications((previous) =>
-        previous.map((item) =>
-          getNotificationId(item) === id
-            ? {
-                ...item,
-                read: true,
-                isRead: true,
-                readAt: new Date().toISOString(),
-              }
-            : item
-        )
-      );
+      setSending(true);
+      const response = await notificationService.sendBroadcast({ title: title.trim(), message: message.trim(), audience });
+      const sent = response?.data;
+      setSuccess(`Notification successfully sent. ${sent?.recipientCount ?? 0} active recipients ko bheja gaya.`);
+      setTitle(""); setMessage("");
+      await loadHistory();
     } catch (err) {
-      console.error("Failed to mark notification as read:", err);
-      setError(
-        err?.message ||
-          "Unable to update the notification."
-      );
+      setError(err?.response?.data?.message || err?.message || "Notification send nahi hui.");
     } finally {
-      setActionLoading(false);
+      setSending(false);
     }
   };
-
-  const handleMarkAllAsRead = async () => {
-    const unreadNotifications = notifications.filter(
-      (notification) => !isReadNotification(notification)
-    );
-
-    if (!unreadNotifications.length) return;
-
-    try {
-      setActionLoading(true);
-      setError("");
-
-      if (typeof notificationService.markAllAsRead === "function") {
-        await notificationService.markAllAsRead();
-      } else if (typeof notificationService.markAsRead === "function") {
-        await Promise.all(
-          unreadNotifications.map((notification) =>
-            notificationService.markAsRead(
-              getNotificationId(notification)
-            )
-          )
-        );
-      }
-
-      const readAt = new Date().toISOString();
-
-      setNotifications((previous) =>
-        previous.map((notification) => ({
-          ...notification,
-          read: true,
-          isRead: true,
-          readAt,
-        }))
-      );
-    } catch (err) {
-      console.error("Failed to mark all notifications as read:", err);
-      setError(
-        err?.message ||
-          "Unable to mark all notifications as read."
-      );
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    await loadNotifications();
-  };
-
-  const handleSearchChange = (value) => {
-    setSearch(value);
-    setPage(1);
-  };
-
-  const handleTypeChange = (event) => {
-    setTypeFilter(event.target.value);
-    setPage(1);
-  };
-
-  const handleReadChange = (event) => {
-    setReadFilter(event.target.value);
-    setPage(1);
-  };
-
 
   return (
+    <main className="admin-notification-page">
+      <header className="admin-notification-header">
+        <div><p className="admin-notification-eyebrow">SOLAR CRM · ADMIN</p><h1>Notifications</h1><p>Employees aur Managers ko announcement bhejo aur sent history yahin dekho.</p></div>
+        <button type="button" className="an-button an-button--secondary" onClick={loadHistory}>Refresh history</button>
+      </header>
 
-      <div className="admin-notifications-page">
-        <div className="admin-notifications-header">
-          <div>
-            <h1>Notifications</h1>
-            <p>
-              Stay updated with important activities and system events.
-            </p>
-          </div>
+      {error && <div className="an-alert an-alert--error" role="alert">{error}</div>}
+      {success && <div className="an-alert an-alert--success" role="status">{success}</div>}
 
-          <div className="admin-notifications-header-actions">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleRefresh}
-              disabled={loading}
-            >
-              Refresh
-            </Button>
+      <section className="an-panel">
+        <div className="an-panel-heading"><div><h2>Send a notification</h2><p>Message save hoga aur selected active users ke notification inbox mein show hoga.</p></div><span className="an-live-badge">In-app notification</span></div>
+        <form className="an-form" onSubmit={handleSend}>
+          <label>Send to
+            <select value={audience} onChange={(event) => setAudience(event.target.value)}>
+              <option value="ALL">All Employees and Managers</option>
+              <option value="EMPLOYEE">Employees only</option>
+              <option value="MANAGER">Managers only</option>
+            </select>
+          </label>
+          <label>Notification title
+            <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={160} placeholder="e.g. Important team announcement" required />
+            <small>{title.length}/160 characters</small>
+          </label>
+          <label>Message
+            <textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={5000} rows={5} placeholder="Write the full notification message…" required />
+            <small>{message.length}/5000 characters</small>
+          </label>
+          <div className="an-form-footer"><span>Sent date and time automatically record hoga.</span><button className="an-button" type="submit" disabled={sending}>{sending ? "Sending…" : "Send notification"}</button></div>
+        </form>
+      </section>
 
-            <Button
-              type="button"
-              onClick={handleMarkAllAsRead}
-              disabled={actionLoading || unreadCount === 0}
-            >
-              Mark All as Read
-            </Button>
-          </div>
-        </div>
-
-        {error && (
-          <div className="admin-notifications-error">
-            {error}
+      <section className="an-panel an-history-panel">
+        <div className="an-panel-heading"><div><h2>Messages you sent</h2><p>Har message ki sent date/time, recipient count aur read count yahan dikhte hain.</p></div><span className="an-history-total">{history.length} messages</span></div>
+        {loadingHistory ? <div className="an-empty">Loading sent history…</div> : history.length === 0 ? <div className="an-empty"><strong>Abhi tak koi broadcast nahi bheja</strong><span>Jab aap notification send karoge, uska record yahan aa jayega.</span></div> : (
+          <div className="an-history-list">
+            {history.map((item) => (
+              <article className="an-history-card" key={item._id || item.broadcastId}>
+                <div className="an-history-card__top"><div><h3>{item.title}</h3><p className="an-sent-date">Sent on {formatDate(item.sentAt)}</p></div><span className="an-sent-badge">Sent</span></div>
+                <p className="an-history-message">{item.message}</p>
+                <div className="an-history-stats"><span><strong>{item.recipientCount || 0}</strong> recipients</span><span><strong>{item.readCount || 0}</strong> read</span><span><strong>{Math.max(0, (item.recipientCount || 0) - (item.readCount || 0))}</strong> unread</span><span>Audience: {item.audience === "ALL" ? "Employees + Managers" : item.audience === "EMPLOYEE" ? "Employees" : "Managers"}</span></div>
+              </article>
+            ))}
           </div>
         )}
-
-        <div className="admin-notifications-summary">
-          <div className="notification-summary-card">
-            <span className="notification-summary-label">
-              Total Notifications
-            </span>
-            <strong>{notifications.length}</strong>
-          </div>
-
-          <div className="notification-summary-card notification-summary-unread">
-            <span className="notification-summary-label">
-              Unread Notifications
-            </span>
-            <strong>{unreadCount}</strong>
-          </div>
-
-          <div className="notification-summary-card">
-            <span className="notification-summary-label">
-              Read Notifications
-            </span>
-            <strong>{notifications.length - unreadCount}</strong>
-          </div>
-        </div>
-
-        <div className="admin-notifications-filters">
-          <div className="notification-search">
-            <SearchBox
-              value={search}
-              onChange={handleSearchChange}
-              placeholder="Search notifications..."
-            />
-          </div>
-
-          <div className="notification-filter">
-            <label htmlFor="notification-type">
-              Notification Type
-            </label>
-            <select
-              id="notification-type"
-              value={typeFilter}
-              onChange={handleTypeChange}
-            >
-              {NOTIFICATION_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type === "ALL"
-                    ? "All Types"
-                    : type.charAt(0) + type.slice(1).toLowerCase()}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="notification-filter">
-            <label htmlFor="notification-read-status">
-              Read Status
-            </label>
-            <select
-              id="notification-read-status"
-              value={readFilter}
-              onChange={handleReadChange}
-            >
-              <option value="ALL">All Notifications</option>
-              <option value="READ">Read</option>
-              <option value="UNREAD">Unread</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="admin-notifications-card">
-          <div className="admin-notifications-card-header">
-            <div>
-              <h2>Notification Center</h2>
-              <span>
-                {filteredNotifications.length} notification
-                {filteredNotifications.length === 1 ? "" : "s"}
-              </span>
-            </div>
-          </div>
-
-          {paginatedNotifications.length === 0 ? (
-            <div className="admin-notifications-empty">
-              <div className="notification-empty-icon">✓</div>
-              <h3>No Notifications Found</h3>
-              <p>
-                There are no notifications matching your current filters.
-              </p>
-            </div>
-          ) : (
-            <div className="admin-notifications-list">
-              {paginatedNotifications.map((notification) => {
-                const id = getNotificationId(notification);
-                const type = getNotificationType(notification);
-                const isRead = isReadNotification(notification);
-
-                return (
-                  <div
-                    className={`admin-notification-item ${
-                      isRead
-                        ? "admin-notification-read"
-                        : "admin-notification-unread"
-                    }`}
-                    key={id}
-                  >
-                    <div className="notification-status-indicator" />
-
-                    <div className="notification-content">
-                      <div className="notification-top-row">
-                        <div className="notification-title-wrap">
-                          <h3>
-                            {getNotificationTitle(notification)}
-                          </h3>
-
-                          <Badge variant={getTypeVariant(type)}>
-                            {type}
-                          </Badge>
-                        </div>
-
-                        {!isRead && (
-                          <span className="notification-unread-label">
-                            Unread
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="notification-message">
-                        {getNotificationMessage(notification)}
-                      </p>
-
-                      <div className="notification-bottom-row">
-                        <span className="notification-date">
-                          {formatDate(
-                            getNotificationDate(notification)
-                          )}
-                        </span>
-
-                        {!isRead && (
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="small"
-                            onClick={() =>
-                              handleMarkAsRead(notification)
-                            }
-                            disabled={actionLoading}
-                          >
-                            Mark as Read
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {filteredNotifications.length > itemsPerPage && (
-            <div className="admin-notifications-pagination">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setPage}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    
+      </section>
+    </main>
   );
-};
-
-export default NotificationsPage;
+}

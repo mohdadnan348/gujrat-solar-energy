@@ -262,7 +262,9 @@ const renderItems = (
 
           <td class="text-right">
             ${formatCurrency(
-              item.discount
+              (Number(item.quantity) || 0) *
+              (Number(item.rate) || 0) *
+              Math.min(100, Math.max(0, Number(item.discount) || 0)) / 100
             )}
           </td>
 
@@ -1170,12 +1172,12 @@ const invoiceTemplate = (data = {}) => {
       <div class="summary-row">
 
         <span>
-          Discount
+          Discount (−)
         </span>
 
         <strong>
           ${formatCurrency(
-            totals.discount
+            -Math.abs(Number(totals.discount || 0))
           )}
         </strong>
 

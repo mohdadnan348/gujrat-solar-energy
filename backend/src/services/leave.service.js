@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const LeaveRequest = require("../models/LeaveRequest");
 const LeaveType = require("../models/LeaveType");
 const Employee = require("../models/Employee");
@@ -51,7 +52,7 @@ const validateEmployee = async (employeeId) => {
    Returns the LeaveType document.
 ----------------------------------------- */
 
-const validateLeaveType = async (leaveTypeInput) => {
+const validateLeaveType = async (leaveTypeInput, createdBy) => {
   if (!leaveTypeInput) {
     const error = new Error("Leave type is required");
     error.statusCode = 400;
@@ -87,11 +88,36 @@ const validateLeaveType = async (leaveTypeInput) => {
   }
 
   /* -----------------------------------------
-     3. Not found
+     3. Backward-compatible bootstrap for the two
+        leave types already used by the UI.
+        This prevents a fresh database from breaking
+        leave requests before the seeder is run.
   ----------------------------------------- */
+  if (!leaveType && typeof leaveTypeInput === "string") {
+    const normalized = leaveTypeInput.trim().toUpperCase();
+    const defaults = {
+      CASUAL: { name: "Casual Leave", code: "CASUAL", description: "Casual leave request" },
+      "CASUAL LEAVE": { name: "Casual Leave", code: "CASUAL", description: "Casual leave request" },
+      SICK: { name: "Sick Leave", code: "SICK", description: "Sick leave request" },
+      "SICK LEAVE": { name: "Sick Leave", code: "SICK", description: "Sick leave request" },
+      ANNUAL: { name: "Annual Leave", code: "ANNUAL", description: "Annual leave request" },
+      "ANNUAL LEAVE": { name: "Annual Leave", code: "ANNUAL", description: "Annual leave request" },
+      EMERGENCY: { name: "Emergency Leave", code: "EMERGENCY", description: "Emergency leave request" },
+      "EMERGENCY LEAVE": { name: "Emergency Leave", code: "EMERGENCY", description: "Emergency leave request" },
+      OTHER: { name: "Other", code: "OTHER", description: "Other leave request" },
+    };
+    const defaultType = defaults[normalized];
+    if (defaultType && createdBy) {
+      leaveType = await LeaveType.findOneAndUpdate(
+        { code: defaultType.code },
+        { $setOnInsert: { ...defaultType, totalDays: 0, isPaid: true, isActive: true, createdBy } },
+        { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true }
+      );
+    }
+  }
 
   if (!leaveType) {
-    const error = new Error("Leave type not found");
+    const error = new Error("Leave type not found. Refresh leave types and select an active type.");
     error.statusCode = 404;
     throw error;
   }
@@ -143,6 +169,26 @@ const checkDateOverlap = async ({
   return LeaveRequest.exists(filter);
 };
 
+const getActiveLeaveTypes = async (createdBy) => {
+  // Idempotently add missing defaults without overwriting company policy.
+  if (createdBy) {
+    for (const type of [
+      { name: "Casual Leave", code: "CASUAL", description: "Casual leave request" },
+      { name: "Sick Leave", code: "SICK", description: "Sick leave request" },
+    ]) {
+      await LeaveType.updateOne(
+        { code: type.code },
+        { $setOnInsert: { ...type, totalDays: 0, isPaid: true, isActive: true, createdBy } },
+        { upsert: true, runValidators: true }
+      );
+    }
+  }
+  return LeaveType.find({ isActive: true })
+    .select("_id name code description totalDays isPaid isActive")
+    .sort({ name: 1 })
+    .lean();
+};
+
 /* -----------------------------------------
    Create Leave Request
 ----------------------------------------- */
@@ -151,7 +197,7 @@ const createLeaveRequest = async (data, createdBy) => {
   await validateEmployee(data.employee);
 
   /* ✅ Validate + resolve leave type */
-  const leaveTypeDoc = await validateLeaveType(data.leaveType);
+  const leaveTypeDoc = await validateLeaveType(data.leaveType, createdBy);
 
   if (!data.startDate || !data.endDate) {
     const error = new Error("Start date and end date are required");
@@ -184,14 +230,21 @@ const createLeaveRequest = async (data, createdBy) => {
 
   const totalDays = calculateTotalDays(startDate, endDate);
 
+  const requestedStatus = String(data.status || LEAVE_STATUS.PENDING).trim().toUpperCase();
+  const normalizedStatus = Object.values(LEAVE_STATUS).find((value) => String(value).toUpperCase() === requestedStatus);
+  if (!normalizedStatus) {
+    const error = new Error("Invalid leave status");
+    error.statusCode = 400;
+    throw error;
+  }
   const leaveRequest = await LeaveRequest.create({
     employee: data.employee,
-    leaveType: leaveTypeDoc._id, // ✅ ObjectId save karo
+    leaveType: leaveTypeDoc._id,
     startDate,
     endDate,
     totalDays,
     reason: data.reason,
-    status: data.status || LEAVE_STATUS.PENDING,
+    status: normalizedStatus,
     notes: data.notes,
     createdBy,
   });
@@ -216,7 +269,7 @@ const getLeaveRequests = async ({
   const filter = {};
 
   if (employee) {
-    filter.employee = employee;
+    filter.employee = Array.isArray(employee) ? { $in: employee } : employee;
   }
 
   /* ✅ leaveType filter bhi flexible banao */
@@ -270,9 +323,13 @@ const getLeaveRequests = async ({
       ],
     }).select("_id");
 
-    filter.employee = {
-      $in: employees.map((item) => item._id),
-    };
+    const searchedIds = employees.map((item) => String(item._id));
+    if (Array.isArray(employee)) {
+      const allowed = new Set(employee.map(String));
+      filter.employee = { $in: searchedIds.filter((id) => allowed.has(id)) };
+    } else {
+      filter.employee = { $in: employees.map((item) => item._id) };
+    }
   }
 
   const pageNumber = Math.max(Number(page), 1);
@@ -412,21 +469,6 @@ const updateLeaveRequest = async (leaveRequestId, data, updatedBy) => {
     leaveRequest.reason = data.reason;
   }
 
-  if (data.status !== undefined) {
-    const normalizedStatus = String(data.status).trim().toLowerCase();
-
-    const validStatus = Object.values(LEAVE_STATUS).find(
-      (s) => String(s).trim().toLowerCase() === normalizedStatus
-    );
-
-    if (!validStatus) {
-      const error = new Error("Invalid leave status");
-      error.statusCode = 400;
-      throw error;
-    }
-
-    leaveRequest.status = validStatus;
-  }
 
   if (data.notes !== undefined) {
     leaveRequest.notes = data.notes;
@@ -698,6 +740,29 @@ const deleteLeaveRequest = async (leaveRequestId, updatedBy) => {
   return { message: "Leave request cancelled successfully" };
 };
 
+const getLeaveBalanceForEmployee = async (employeeId, year = new Date().getFullYear()) => {
+  await validateEmployee(employeeId);
+  const numericYear = Number(year);
+  if (!Number.isInteger(numericYear) || numericYear < 2000 || numericYear > 2100) {
+    const error = new Error("Invalid year"); error.statusCode = 400; throw error;
+  }
+  const from = new Date(numericYear, 0, 1);
+  const to = new Date(numericYear, 11, 31, 23, 59, 59, 999);
+  const [types, usage] = await Promise.all([
+    LeaveType.find({ isActive: true }).select("_id name code totalDays isPaid").lean(),
+    LeaveRequest.aggregate([
+      { $match: { employee: new mongoose.Types.ObjectId(employeeId), startDate: { $lte: to }, endDate: { $gte: from }, status: { $in: [LEAVE_STATUS.APPROVED, LEAVE_STATUS.PENDING] } } },
+      { $group: { _id: { leaveType: "$leaveType", status: "$status" }, days: { $sum: "$totalDays" } } },
+    ]),
+  ]);
+  const balances = types.map((type) => {
+    const approved = usage.find((item) => String(item._id.leaveType) === String(type._id) && item._id.status === LEAVE_STATUS.APPROVED)?.days || 0;
+    const pending = usage.find((item) => String(item._id.leaveType) === String(type._id) && item._id.status === LEAVE_STATUS.PENDING)?.days || 0;
+    return { leaveType: type, allocatedDays: type.totalDays, usedDays: approved, pendingDays: pending, remainingDays: Math.max(0, type.totalDays - approved) };
+  });
+  return { year: numericYear, employee: employeeId, balances };
+};
+
 const getMyLeaveRequests = async (userId, options = {}) => {
   // Resolve logged-in User ID to Employee ID
   const employee = await Employee.findOne({
@@ -792,6 +857,7 @@ const getMyLeaveRequests = async (userId, options = {}) => {
   };
 };
 module.exports = {
+  getActiveLeaveTypes,
   createLeaveRequest,
   getLeaveRequests,
   getLeaveRequestById,
@@ -802,7 +868,7 @@ module.exports = {
   rejectLeaveRequest: rejectLeave,
   cancelLeaveRequest: cancelLeave,
   getMyLeaveRequests,
-  getLeaveBalanceForEmployee: getLeaveStats,
+  getLeaveBalanceForEmployee,
 
   approveLeave,
   rejectLeave,

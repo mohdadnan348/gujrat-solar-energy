@@ -1,1638 +1,1089 @@
 "use client";
 
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-
-import Button from "@/components/common/Button";
-import Input from "@/components/common/Input";
-import Select from "@/components/common/Select";
-import Textarea from "@/components/common/Textarea";
 import Loader from "@/components/common/Loader";
-
 import { quotationService } from "@/services/quotation.service";
 import { customerService } from "@/services/customer.service";
-import systemConfigurationService from "@/services/systemConfiguration.service";
-
 import "./create-quotation.css";
+ const Field = ({ label, children, required = false }) => (
+    <label className="inline-q-field">
+      <span>
+        {label}
+        {required ? " *" : ""}
+      </span>
+      {children}
+    </label>
+  );
+const today = () => new Date().toISOString().slice(0, 10);
+const initialCustomer = {
+  name: "",
+  mobile: "",
+  email: "",
+  companyName: "",
+  address: "",
+  city: "",
+  state: "Uttar Pradesh",
+  pincode: "",
+  siteAddress: "",
+  customerType: "Individual",
+  gstNumber: "",
+};
+const initialRequirement = {
+  monthlyBill: "",
+  monthlyUnits: "",
+  roofType: "RCC",
+  roofArea: "",
+  siteAddress: "",
+  location: "",
+  connectionType: "THREE_PHASE",
+  sanctionedLoad: "",
+  batteryRequired: "false",
+  batteryCapacity: "",
+  siteSurveyRequired: "true",
+  notes: "",
+};
+const initialConfiguration = {
+  phase: "THREE_PHASE",
+  panelMake: "",
+  panelModel: "",
+  panelWattage: "540",
+  panelCount: "",
+  inverterMake: "",
+  inverterModel: "",
+  inverterCapacity: "",
+  batteryMake: "",
+  batteryModel: "",
+  mountingStructure: "GI",
+  installationCost: "",
+  transportationCost: "",
+  otherCost: "",
+};
+const newItem = () => ({
+  id: `${Date.now()}-${Math.random()}`,
+  description: "Solar PV System",
+  quantity: "1",
+  unit: "System",
+  rate: "",
+  taxRate: "0",
+});
+const unwrapList = (response, keys = []) => {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response?.data?.data)) return response.data.data;
+  for (const key of keys) {
+    if (Array.isArray(response?.[key])) return response[key];
+    if (Array.isArray(response?.data?.[key])) return response.data[key];
+  }
+  return [];
+};
+const idOf = (value) =>
+  typeof value === "string" ? value : value?._id || value?.id || "";
+const money = (n) =>
+  `₹${(Number(n) || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
-const CreateQuotationPage = () => {
+export default function CreateQuotationPage() {
   const router = useRouter();
-
-  const [customers, setCustomers] =
-    useState([]);
-
-  const [configurations, setConfigurations] =
-    useState([]);
-
-  const [loadingData, setLoadingData] =
-    useState(true);
-
-  const [saving, setSaving] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [customerId, setCustomerId] = useState("");
+  const [customer, setCustomer] = useState(initialCustomer);
   const [form, setForm] = useState({
-    customerId: "",
-    systemConfigurationId: "",
-
-    quotationDate: new Date()
-      .toISOString()
-      .split("T")[0],
-
+    quotationDate: today(),
     validUntil: "",
-
-    title:
-      "Solar Power System Proposal",
-
+    title: "Solar Power System Proposal",
     systemType: "ON_GRID",
-
     systemSizeKW: "",
-
-    paymentTerms:
-      "As per agreed terms mentioned in the quotation.",
-
-    warranty:
-      "As per manufacturer warranty and company terms.",
-
+    paymentTerms: "As per agreed terms mentioned in the quotation.",
+    warranty: "As per manufacturer warranty and company terms.",
     notes: "",
   });
-
-  const [items, setItems] = useState([
-    {
-      id: 1,
-      description: "Solar PV System",
-      quantity: 1,
-      unit: "System",
-      rate: "",
-      taxRate: 0,
-    },
-  ]);
-
-  const [charges, setCharges] =
-    useState({
-      discount: 0,
-      additionalCharges: 0,
-    });
-
-  /* =========================================
-     LOAD INITIAL DATA
-  ========================================= */
-
-  const loadInitialData = async () => {
-    try {
-      setLoadingData(true);
-      setError("");
-
-      const [
-        customerResponse,
-        configurationResponse,
-      ] = await Promise.all([
-        customerService.getCustomers(),
-        systemConfigurationService.getSystemConfigurations(),
-      ]);
-
-      const normalize = (
-        response,
-        keys = []
-      ) => {
-        if (Array.isArray(response)) {
-          return response;
-        }
-
-        if (
-          Array.isArray(
-            response?.data
-          )
-        ) {
-          return response.data;
-        }
-
-        if (
-          Array.isArray(
-            response?.data?.data
-          )
-        ) {
-          return response.data.data;
-        }
-
-        for (const key of keys) {
-          if (
-            Array.isArray(
-              response?.[key]
-            )
-          ) {
-            return response[key];
-          }
-
-          if (
-            Array.isArray(
-              response?.data?.[key]
-            )
-          ) {
-            return response.data[key];
-          }
-        }
-
-        return [];
-      };
-
-      setCustomers(
-        normalize(
-          customerResponse,
-          ["customers"]
-        )
-      );
-
-      setConfigurations(
-        normalize(
-          configurationResponse,
-          [
-            "configurations",
-            "systemConfigurations",
-          ]
-        )
-      );
-    } catch (err) {
-      console.error(
-        "Failed to load quotation data:",
-        err
-      );
-
-      setError(
-        err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          err?.message ||
-          "Customers aur system configurations load nahi ho paaye."
-      );
-    } finally {
-      setLoadingData(false);
-    }
-  };
+  const [requirement, setRequirement] = useState(initialRequirement);
+  const [configuration, setConfiguration] = useState(initialConfiguration);
+  const [items, setItems] = useState([newItem()]);
+  const [discount, setDiscount] = useState("0");
 
   useEffect(() => {
-    loadInitialData();
+    (async () => {
+      try {
+        const response = await customerService.getCustomers({
+          page: 1,
+          limit: 500,
+        });
+        setCustomers(unwrapList(response, ["customers", "items"]));
+      } catch (e) {
+        setError(
+          e?.response?.data?.message ||
+            "Customer list load nahi ho paayi. Aap naya customer create kar sakte hain.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  /* =========================================
-     HELPERS
-  ========================================= */
-
-  const getId = (item) => {
-    if (!item) {
-      return "";
-    }
-
-    if (typeof item === "string") {
-      return item;
-    }
-
-    return (
-      item?._id ||
-      item?.id ||
-      item?.customerId ||
-      item?.configurationId ||
-      ""
+  const selectedCustomer = customers.find(
+    (c) => String(idOf(c)) === String(customerId),
+  );
+  const updateForm = (key, value) => setForm((p) => ({ ...p, [key]: value }));
+  const updateRequirement = (key, value) =>
+    setRequirement((p) => ({ ...p, [key]: value }));
+  const updateConfiguration = (key, value) =>
+    setConfiguration((p) => ({ ...p, [key]: value }));
+  const updateCustomer = (key, value) =>
+    setCustomer((p) => ({ ...p, [key]: value }));
+  const updateItem = (id, key, value) =>
+    setItems((p) =>
+      p.map((item) => (item.id === id ? { ...item, [key]: value } : item)),
     );
-  };
 
-  const getValue = (
-    object,
-    keys,
-    fallback = ""
-  ) => {
-    if (!object) {
-      return fallback;
-    }
+  const itemsSubtotal = useMemo(
+    () => items.reduce((sum, item) =>
+      sum + Math.max(0, Number(item.quantity) || 0) * Math.max(0, Number(item.rate) || 0), 0),
+    [items],
+  );
+  const additionalCharges = [
+    configuration.installationCost,
+    configuration.transportationCost,
+    configuration.otherCost,
+  ].reduce((sum, n) => sum + Math.max(0, Number(n) || 0), 0);
+  // Keep subtotal and additional charges as separate summary rows. Charges are
+  // also stored as itemized zero-tax lines for the backend/PDF calculation.
+  const subtotal = itemsSubtotal;
+  const discountValue = Math.min(Math.max(0, Number(discount) || 0), itemsSubtotal);
+  // GST is calculated on the full item value. Global discount is deducted
+  // only after GST and additional charges have been added.
+  const taxTotal = items.reduce((sum, item) => {
+    const gross = Math.max(0, Number(item.quantity) || 0) * Math.max(0, Number(item.rate) || 0);
+    return sum + (gross * Math.max(0, Number(item.taxRate) || 0)) / 100;
+  }, 0);
+  const grandTotal = Math.max(0, Number((subtotal - discountValue + taxTotal + additionalCharges).toFixed(2)));
 
-    for (const key of keys) {
-      const value =
-        object?.[key];
-
-      if (
-        value !== undefined &&
-        value !== null &&
-        value !== ""
-      ) {
-        return value;
-      }
-    }
-
-    return fallback;
-  };
-
-  const getName = (item) => {
-    if (!item) {
-      return "";
-    }
-
+  const validate = () => {
+    if (!showNewCustomer && !customerId)
+      return "Existing customer select karein ya New Customer choose karein.";
+    if (showNewCustomer && (!customer.name.trim() || !customer.mobile.trim()))
+      return "New customer ke liye name aur mobile number required hain.";
+    if (!form.quotationDate || !form.validUntil)
+      return "Quotation date aur Valid Until required hain.";
+    if (new Date(form.validUntil) < new Date(form.quotationDate))
+      return "Valid Until, quotation date se pehle nahi ho sakti.";
+    if (!(Number(form.systemSizeKW) > 0))
+      return "System capacity kW mein enter karein.";
     if (
-      typeof item === "string"
-    ) {
-      return item;
-    }
-
-    return (
-      item?.name ||
-      item?.fullName ||
-      item?.customerName ||
-      item?.companyName ||
-      ""
-    );
-  };
-
-  /* =========================================
-     CUSTOMER OPTIONS
-  ========================================= */
-
-  const customerOptions =
-    useMemo(() => {
-      return [
-        {
-          value: "",
-          label: "Select Customer",
-        },
-
-        ...customers.map(
-          (customer) => ({
-            value:
-              getId(customer) || "",
-
-            label:
-              getName(customer) ||
-              getValue(
-                customer,
-                [
-                  "phone",
-                  "mobile",
-                ],
-                "Customer"
-              ),
-          })
-        ),
-      ];
-    }, [customers]);
-
-  /* =========================================
-     CONFIGURATION OPTIONS
-  ========================================= */
-
-  const configurationOptions =
-    useMemo(() => {
-      return [
-        {
-          value: "",
-          label:
-            "Select System Configuration",
-        },
-
-        ...configurations.map(
-          (configuration) => {
-            const id =
-              getId(
-                configuration
-              );
-
-            const number =
-              getValue(
-                configuration,
-                [
-                  "configurationNumber",
-                  "configurationNo",
-                  "configNumber",
-                ],
-                ""
-              );
-
-            const customer =
-              getName(
-                getValue(
-                  configuration,
-                  [
-                    "customer",
-                    "customerName",
-                  ],
-                  null
-                )
-              );
-
-            const size =
-              getValue(
-                configuration,
-                [
-                  "systemSizeKW",
-                  "requiredKW",
-                  "requiredKw",
-                  "capacityKW",
-                  "systemCapacity",
-                ],
-                ""
-              );
-
-            return {
-              value: id || "",
-
-              label: [
-                number,
-                customer,
-                size
-                  ? `${size} kW`
-                  : "",
-              ]
-                .filter(Boolean)
-                .join(" • "),
-            };
-          }
-        ),
-      ];
-    }, [configurations]);
-
-  /* =========================================
-     FORM UPDATE
-  ========================================= */
-
-  const updateField = (
-    field,
-    value
-  ) => {
-    setForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    if (error) {
-      setError("");
-    }
-  };
-
-  /* =========================================
-     CONFIGURATION CHANGE
-  ========================================= */
-
-  const handleConfigurationChange = async (configurationId) => {
-    let selected = configurations.find(
-      (configuration) => String(getId(configuration)) === String(configurationId)
-    );
-
-    if (!configurationId) {
-      setForm((prev) => ({ ...prev, systemConfigurationId: "" }));
-      setItems([
-        {
-          id: Date.now(),
-          description: "Solar PV System",
-          quantity: 1,
-          unit: "System",
-          rate: "",
-          taxRate: 0,
-        },
-      ]);
-      return;
-    }
-
-    setForm((prev) => ({ ...prev, systemConfigurationId: configurationId }));
-    setError("");
-
-    // The list endpoint may return a summary without component pricing.
-    // Fetch the complete configuration before building quotation line items.
-    try {
-      const detailResponse =
-        await systemConfigurationService.getSystemConfigurationById(configurationId);
-      const detailedConfiguration =
-        detailResponse?.data?.data ||
-        detailResponse?.data?.configuration ||
-        detailResponse?.data ||
-        detailResponse?.configuration ||
-        detailResponse;
-
-      if (detailedConfiguration && typeof detailedConfiguration === "object") {
-        selected = detailedConfiguration;
-      }
-    } catch (detailError) {
-      // Continue with the list result if detail loading fails; show the error
-      // only when no usable configuration was available.
-      console.error("Failed to load full system configuration:", detailError);
-    }
-
-    if (!selected) {
-      setError("Selected system configuration load nahi ho paayi. Dobara try karein.");
-      return;
-    }
-
-    const systemSizeKW = getValue(
-      selected,
-      ["systemSizeKW", "systemSize", "requiredKW", "requiredKw", "capacityKW", "systemCapacity"],
-      ""
-    );
-    const systemType = getValue(selected, ["systemType", "system_type", "type"], "");
-    const customer = getValue(selected, ["customerId", "customer"], "");
-
-    const customerId = typeof customer === "string" ? customer : getId(customer);
-
-    setForm((prev) => ({
-      ...prev,
-      systemConfigurationId: configurationId,
-      systemSizeKW: systemSizeKW !== "" ? systemSizeKW : prev.systemSizeKW,
-      systemType: systemType || prev.systemType,
-      customerId: customerId || prev.customerId,
-    }));
-
-    const componentsSource =
-      selected.components ||
-      selected.items ||
-      selected.configuration?.components ||
-      selected.data?.components ||
-      [];
-    const components = Array.isArray(componentsSource) ? componentsSource : [];
-    const nextItems = [];
-
-    // Convert each saved configuration component into a quotation line.
-    components.forEach((component, index) => {
-      const quantity = Number(component.quantity ?? component.qty ?? 1);
-      const rate = Number(component.unitPrice ?? component.rate ?? component.price ?? 0);
-      if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(rate) || rate < 0) return;
-
-      const type = String(component.componentType || component.type || "").toUpperCase();
-      const name = component.name || component.componentName || component.productName ||
-        type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()) ||
-        "Solar Component";
-      const description = [name, component.brand, component.model].filter(Boolean).join(" • ");
-      const isInstallation = type.includes("INSTALL") || /installation|installing|labour|labor/i.test(name);
-
-      nextItems.push({
-        id: `config-${configurationId}-${index}-${Date.now()}`,
-        description,
-        quantity: String(quantity),
-        unit: component.unit || component.unitOfMeasure || "Unit",
-        rate: String(rate),
-        taxRate: Number(component.taxRate) || 0,
-        _pricingSource: isInstallation ? "installation-component" : "component",
-      });
-    });
-
-    const installationCost = Math.max(0, Number(selected.installationCost) || 0);
-    const transportationCost = Math.max(0, Number(selected.transportationCost) || 0);
-    const otherCost = Math.max(0, Number(selected.otherCost) || 0);
-
-    // Do not duplicate installation when it is already listed as a component.
-    const hasInstallation = nextItems.some((item) => item._pricingSource === "installation-component");
-    if (installationCost > 0 && !hasInstallation) {
-      nextItems.push({
-        id: `installation-${configurationId}-${Date.now()}`,
-        description: "Installation Charges",
-        quantity: "1",
-        unit: "Job",
-        rate: String(installationCost),
-        taxRate: 0,
-        _pricingSource: "configuration-charge",
-      });
-    }
-
-    if (transportationCost > 0) {
-      nextItems.push({
-        id: `transport-${configurationId}-${Date.now()}`,
-        description: "Transportation Charges",
-        quantity: "1",
-        unit: "Job",
-        rate: String(transportationCost),
-        taxRate: 0,
-        _pricingSource: "configuration-charge",
-      });
-    }
-
-    if (otherCost > 0) {
-      nextItems.push({
-        id: `other-${configurationId}-${Date.now()}`,
-        description: "Other Configuration Charges",
-        quantity: "1",
-        unit: "Job",
-        rate: String(otherCost),
-        taxRate: 0,
-        _pricingSource: "configuration-charge",
-      });
-    }
-
-    // Use totalAmount only when there is no itemized pricing, avoiding double-counting.
-    if (nextItems.length === 0) {
-      const totalAmount = Math.max(0, Number(selected.totalAmount) || 0);
-      const panelMake = getValue(selected, ["panelMake", "panelBrand", "moduleMake"], "");
-      const panelWattage = getValue(selected, ["panelWattage", "wattage", "panelWp"], "");
-      const panelCount = getValue(selected, ["panelCount", "numberOfPanels", "panelsCount"], "");
-      const inverterMake = getValue(selected, ["inverterMake", "inverterBrand"], "");
-      const inverterCapacity = getValue(selected, ["inverterCapacity", "inverterSize"], "");
-      const description = [
-        "Solar PV System", systemType,
-        systemSizeKW !== "" ? `${systemSizeKW} kW` : "",
-        panelMake ? `Panel: ${panelMake}` : "",
-        panelWattage ? `${panelWattage}W` : "",
-        panelCount ? `${panelCount} Panels` : "",
-        inverterMake ? `Inverter: ${inverterMake}` : "",
-        inverterCapacity || "",
-      ].filter(Boolean).join(" • ");
-
-      nextItems.push({
-        id: `system-${configurationId}-${Date.now()}`,
-        description: description || "Solar PV System",
-        quantity: "1",
-        unit: "System",
-        rate: String(totalAmount),
-        taxRate: 0,
-        _pricingSource: "configuration-total",
-      });
-    }
-
-    // Keep only fields supported by the existing quotation form/API payload.
-    setItems(nextItems.map(({ _pricingSource, ...item }) => item));
-    setCharges({ discount: 0, additionalCharges: 0 });
-    setError("");
-  };
-
-  /* =========================================
-     CUSTOMER CHANGE
-  ========================================= */
-
-  const handleCustomerChange =
-    (customerId) => {
-      updateField(
-        "customerId",
-        customerId
-      );
-    };
-
-  /* =========================================
-     ITEMS
-  ========================================= */
-
-  const updateItem = (
-    itemId,
-    field,
-    value
-  ) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId
-          ? {
-              ...item,
-              [field]: value,
-            }
-          : item
+      !items.length ||
+      items.some(
+        (i) =>
+          !i.description.trim() ||
+          !(Number(i.quantity) > 0) ||
+          Number(i.rate) < 0 ||
+          !Number.isFinite(Number(i.rate)),
       )
-    );
-  };
-
-  const addItem = () => {
-    setItems((prev) => [
-      ...prev,
-
-      {
-        id:
-          Date.now(),
-
-        description: "",
-
-        quantity: 1,
-
-        unit: "Unit",
-
-        rate: "",
-
-        taxRate: 0,
-      },
-    ]);
-  };
-
-  const removeItem = (
-    itemId
-  ) => {
-    if (
-      items.length === 1
-    ) {
-      return;
-    }
-
-    setItems((prev) =>
-      prev.filter(
-        (item) =>
-          item.id !== itemId
-      )
-    );
-  };
-
-  /* =========================================
-     CALCULATIONS
-  ========================================= */
-
-  const subtotal =
-    useMemo(() => {
-      return items.reduce(
-        (sum, item) => {
-          const quantity =
-            Number(
-              item.quantity
-            ) || 0;
-
-          const rate =
-            Number(
-              item.rate
-            ) || 0;
-
-          return (
-            sum +
-            quantity * rate
-          );
-        },
-        0
-      );
-    }, [items]);
-
-  const taxTotal =
-    useMemo(() => {
-      const roundMoney = (value) => Number(Number(value || 0).toFixed(2));
-      const discountValue = Math.min(
-        Math.max(Number(charges.discount) || 0, 0),
-        subtotal
-      );
-      const discountRatio = subtotal > 0 ? discountValue / subtotal : 0;
-
-      // GST is calculated on the taxable amount after proportional discount.
-      return items.reduce((sum, item) => {
-        const quantity = Number(item.quantity) || 0;
-        const rate = Number(item.rate) || 0;
-        const taxRate = Number(item.taxRate) || 0;
-        const lineGross = roundMoney(quantity * rate);
-        const lineDiscount = roundMoney(lineGross * discountRatio);
-        const taxableLine = roundMoney(Math.max(0, lineGross - lineDiscount));
-        return sum + roundMoney((taxableLine * taxRate) / 100);
-      }, 0);
-    }, [items, charges.discount, subtotal]);
-
-  const discount =
-    Number(
-      charges.discount
-    ) || 0;
-
-  const additionalCharges =
-    Number(
-      charges.additionalCharges
-    ) || 0;
-
-  const grandTotal =
-    subtotal -
-    discount +
-    taxTotal +
-    additionalCharges;
-
-  const formatCurrency =
-    (value) =>
-      `₹${Number(
-        value || 0
-      ).toLocaleString(
-        "en-IN",
-        {
-          maximumFractionDigits: 2,
-        }
-      )}`;
-
-  /* =========================================
-     VALIDATION
-  ========================================= */
-
-  const validateForm = () => {
-    if (!form.customerId) {
-      return "Customer select karna required hai.";
-    }
-
-    if (
-      !form.systemConfigurationId
-    ) {
-      return "System Configuration select karna required hai.";
-    }
-
-    if (!form.quotationDate) {
-      return "Quotation date required hai.";
-    }
-
-    if (!form.validUntil) {
-      return "Quotation validity date required hai.";
-    }
-
-    if (
-      new Date(
-        form.validUntil
-      ) <
-      new Date(
-        form.quotationDate
-      )
-    ) {
-      return "Valid Until date quotation date se pehle nahi ho sakti.";
-    }
-
-    if (
-      !form.systemSizeKW ||
-      Number(
-        form.systemSizeKW
-      ) <= 0
-    ) {
-      return "Valid system size enter karein.";
-    }
-
-    const invalidItem =
-      items.find(
-        (item) =>
-          !String(
-            item.description ||
-              ""
-          ).trim() ||
-          Number(
-            item.quantity
-          ) <= 0 ||
-          Number(
-            item.rate
-          ) < 0
-      );
-
-    if (invalidItem) {
-      return "Quotation items ki details properly fill karein.";
-    }
-
+    )
+      return "Quotation items mein description, valid quantity aur rate fill karein.";
     return "";
   };
 
-  /* =========================================
-     SUBMIT
-  ========================================= */
-
-  const handleSubmit =
-    async (event) => {
-      event.preventDefault();
-
-      const validationError = validateForm();
-
-      if (validationError) {
-        setError(validationError);
-        return;
+  const submit = async (event) => {
+    event.preventDefault();
+    const validation = validate();
+    if (validation) {
+      setError(validation);
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      let finalCustomerId = customerId;
+      if (showNewCustomer) {
+        const created = await customerService.createCustomer({
+          ...customer,
+          name: customer.name.trim(),
+          mobile: customer.mobile.trim(),
+          email: customer.email.trim(),
+          siteAddress: customer.siteAddress || customer.address,
+          status: "Active",
+        });
+        const record =
+          created?.data?.customer ||
+          created?.data?.data ||
+          created?.data ||
+          created?.customer ||
+          created;
+        finalCustomerId = idOf(record);
+        if (!finalCustomerId)
+          throw new Error(
+            "Customer create ho gaya ho sakta hai, lekin response mein customer ID nahi mili. Customer list refresh karke dobara try karein.",
+          );
       }
-
-      const selectedConfiguration = configurations.find(
-        (configuration) =>
-          String(getId(configuration)) ===
-          String(form.systemConfigurationId)
-      );
-
-      if (!selectedConfiguration) {
-        setError("Selected system configuration nahi mili.");
-        return;
-      }
-
-      const getReferenceId = (value) => {
-        if (!value) return "";
-        if (typeof value === "string") return value;
-        return value?._id || value?.id || "";
-      };
-
-      const leadId = getReferenceId(
-        selectedConfiguration?.lead
-      );
-
-      const solarRequirementId = getReferenceId(
-        selectedConfiguration?.solarRequirement
-      );
-
-      const customerId =
-        form.customerId ||
-        getReferenceId(selectedConfiguration?.customer);
-
-      const normalizeSystemType = (value) => {
-        const type = String(value || "")
-          .trim()
-          .toUpperCase();
-
-        if (type === "ON_GRID" || type === "ON-GRID") {
-          return "On-grid";
-        }
-
-        if (type === "OFF_GRID" || type === "OFF-GRID") {
-          return "Off-grid";
-        }
-
-        if (type === "HYBRID") {
-          return "Hybrid";
-        }
-
-        return "";
-      };
-
-      const rawItems = items.map((item) => ({
+      const normalizedItems = items.map((item) => ({
         category: "SOLAR_SYSTEM",
-        name:
-          String(item.description || "Solar System")
-            .trim() || "Solar System",
-        description:
-          String(item.description || "").trim(),
-        quantity: Number(item.quantity) || 0,
-        unit: String(item.unit || "pcs").trim() || "pcs",
+        name: item.description.trim(),
+        description: item.description.trim(),
+        quantity: Number(item.quantity),
+        unit: item.unit || "Unit",
         rate: Number(item.rate) || 0,
         taxRate: Number(item.taxRate) || 0,
+        // Global ₹ discount is applied after GST, not against the taxable base.
+        discount: 0,
       }));
+      const quotationItems = [...normalizedItems];
+      [
+        ["Installation Charges", configuration.installationCost],
+        ["Transportation Charges", configuration.transportationCost],
+        ["Other Charges", configuration.otherCost],
+      ].forEach(([description, value]) => {
+        const amount = Math.max(0, Number(value) || 0);
+        if (amount > 0)
+          quotationItems.push({
+            category: "OTHER",
+            name: description,
+            description,
+            quantity: 1,
+            unit: "JOB",
+            rate: amount,
+            taxRate: 0,
+            discount: 0,
+          });
+      });
+      const payload = {
+        customer: finalCustomerId,
+        quotationDate: form.quotationDate,
+        validUntil: form.validUntil,
+        status: "Draft",
+        revisionNumber: 1,
+        proposalTitle: form.title || "Solar Power System Proposal",
+        plantDetails: {
+          capacityKw: Number(form.systemSizeKW),
+          systemType: {
+            ON_GRID: "On-grid",
+            OFF_GRID: "Off-grid",
+            HYBRID: "Hybrid",
+          }[form.systemType],
+          description: form.title || "Solar Power System Proposal",
+        },
+        inlineSolarRequirement: {
+          requiredKw: Number(form.systemSizeKW),
+          monthlyBill: Number(requirement.monthlyBill) || 0,
+          monthlyUnits: Number(requirement.monthlyUnits) || 0,
+          roofType: requirement.roofType,
+          roofArea: Number(requirement.roofArea) || 0,
+          siteAddress:
+            requirement.siteAddress ||
+            (showNewCustomer
+              ? customer.siteAddress
+              : selectedCustomer?.siteAddress || selectedCustomer?.address) ||
+            "",
+          location:
+            requirement.location ||
+            (showNewCustomer ? customer.city : selectedCustomer?.city) ||
+            "",
+          connectionType: requirement.connectionType,
+          sanctionedLoad: Number(requirement.sanctionedLoad) || 0,
+          systemType: form.systemType,
+          batteryRequired: requirement.batteryRequired === "true",
+          batteryCapacity: Number(requirement.batteryCapacity) || 0,
+          siteSurveyRequired: requirement.siteSurveyRequired === "true",
+          siteSurveyCompleted: false,
+          notes: requirement.notes,
+        },
+        inlineSystemConfiguration: {
+          systemCapacity: Number(form.systemSizeKW),
+          capacityUnit: "KW",
+          systemType: form.systemType,
+          phase: configuration.phase,
+          panelMake: configuration.panelMake,
+          panelModel: configuration.panelModel,
+          panelWattage: Number(configuration.panelWattage) || 0,
+          panelCount: Number(configuration.panelCount) || 0,
+          inverterMake: configuration.inverterMake,
+          inverterModel: configuration.inverterModel,
+          inverterCapacity: configuration.inverterCapacity,
+          batteryMake: configuration.batteryMake,
+          batteryModel: configuration.batteryModel,
+          mountingStructure: configuration.mountingStructure,
+          installationCost: Number(configuration.installationCost) || 0,
+          transportationCost: Number(configuration.transportationCost) || 0,
+          otherCost: Number(configuration.otherCost) || 0,
+          components: normalizedItems.map((item) => ({
+            componentType: "OTHER",
+            name: item.name,
+            quantity: item.quantity,
+            unit: item.unit,
+            unitPrice: item.rate,
+            tax: item.taxRate,
+          })),
+          notes: form.notes,
+        },
+        items: quotationItems,
+        globalDiscount: discountValue,
+        paymentTerms: form.paymentTerms || undefined,
+        warrantyDetails: form.warranty || undefined,
+        quotationTerms: form.paymentTerms || undefined,
+        notes:
+          [form.notes, requirement.notes].filter(Boolean).join("\n") ||
+          undefined,
+      };
+      await quotationService.createQuotation(payload);
+      router.push("/admin/quotations");
+    } catch (e) {
+      const message =
+        e?.response?.data?.message ||
+        e?.response?.data?.error ||
+        e?.message ||
+        "Quotation create nahi ho paayi.";
+      setError(Array.isArray(message) ? message.join(", ") : message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
-      // Backend quotation service calculates totals from quotation items.
-      // Therefore the UI's global discount is distributed proportionally
-      // across the items as a percentage discount.
-      const rawSubtotal = rawItems.reduce(
-        (sum, item) =>
-          sum + item.quantity * item.rate,
-        0
-      );
-
-      const globalDiscount = Number(charges.discount) || 0;
-      const discountRatio =
-        rawSubtotal > 0
-          ? Math.min(
-              Math.max(globalDiscount / rawSubtotal, 0),
-              1
-            )
-          : 0;
-
-      const quotationItems = rawItems.map((item) => ({
-        ...item,
-        discount: Number(
-          (discountRatio * 100).toFixed(8)
-        ),
-      }));
-
-      // Backend model does not have an additionalCharges field.
-      // Convert it into a normal quotation item so it is included
-      // in the authoritative backend calculation.
-      const additionalCharges =
-        Number(charges.additionalCharges) || 0;
-
-      if (additionalCharges > 0) {
-        quotationItems.push({
-          category: "OTHER",
-          name: "Additional Charges",
-          description: "Additional Charges",
-          quantity: 1,
-          unit: "JOB",
-          rate: additionalCharges,
-          discount: 0,
-          taxRate: 0,
-        });
-      }
-
-      const normalizedSystemType = normalizeSystemType(
-        form.systemType ||
-          selectedConfiguration?.systemType
-      );
-
-      try {
-        setSaving(true);
-        setError("");
-
-        const payload = {
-          // Backend field names — DO NOT use customerId/systemConfigurationId.
-          customer: customerId || undefined,
-          lead: leadId || undefined,
-          solarRequirement:
-            solarRequirementId || undefined,
-          systemConfiguration:
-            form.systemConfigurationId,
-
-          quotationDate: form.quotationDate,
-          validUntil: form.validUntil,
-
-          status: "Draft",
-          revisionNumber: 1,
-
-          plantDetails: {
-            capacityKw: Number(form.systemSizeKW),
-            systemType: normalizedSystemType,
-            description:
-              form.title ||
-              "Solar Power System Proposal",
-          },
-
-          items: quotationItems,
-
-          paymentTerms:
-            form.paymentTerms || undefined,
-          warrantyDetails:
-            form.warranty || undefined,
-          quotationTerms:
-            form.paymentTerms || undefined,
-          notes:
-            form.notes || undefined,
-          proposalTitle:
-            form.title || undefined,
-        };
-
-        await quotationService.createQuotation(payload);
-
-        router.push("/admin/quotations");
-      } catch (err) {
-        console.error(
-          "Failed to create quotation:",
-          err?.response?.data || err
-        );
-
-        const backendMessage =
-          err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          err?.response?.data?.errors;
-
-        if (Array.isArray(backendMessage)) {
-          setError(backendMessage.join(", "));
-        } else {
-          setError(
-            backendMessage ||
-              err?.message ||
-              "Quotation create nahi ho paayi."
-          );
-        }
-      } finally {
-        setSaving(false);
-      }
-    };
-  /* =========================================
-     LOADING
-  ========================================= */
-
-  if (loadingData) {
+  if (loading)
     return (
       <div className="admin-create-quotation-loading">
         <Loader />
-
-        <p>
-          Customers aur system
-          configurations load ho
-          rahi hain...
-        </p>
+        <p>Customer list load ho rahi hai...</p>
       </div>
     );
-  }
 
-  /* =========================================
-     UI
-  ========================================= */
+ 
+  const input = (value, onChange, props = {}) => (
+    <input
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value)}
+      {...props}
+    />
+  );
+  const select = (value, onChange, options) => (
+    <select value={value} onChange={(e) => onChange(e.target.value)}>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
 
   return (
-    <div className="admin-create-quotation-page">
-      {/* HEADER */}
-
-      <div className="admin-create-quotation-header">
+    <div className="admin-create-quotation-page inline-quotation-page">
+      <header className="admin-create-quotation-header">
         <div>
           <button
             type="button"
             className="admin-create-quotation-back"
-            onClick={() =>
-              router.push(
-                "/admin/quotations"
-              )
-            }
+            onClick={() => router.push("/admin/quotations")}
           >
             ← Back to Quotations
           </button>
-
           <div className="admin-create-quotation-title">
-            <div className="admin-create-quotation-icon">
-              ₹
-            </div>
-
+            <div className="admin-create-quotation-icon">₹</div>
             <div>
-              <h1>
-                Create Quotation
-              </h1>
-
+              <h1>Create Quotation</h1>
               <p>
-                Customer ke liye
-                professional solar
-                quotation / proposal
-                prepare karein.
+                Customer, solar requirement, system configuration aur pricing —
+                sab ek hi page par.
               </p>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* ERROR */}
-
+      </header>
       {error && (
         <div className="admin-create-quotation-error">
-          <div className="admin-create-quotation-error-icon">
-            !
-          </div>
-
-          <div>
-            <strong>
-              Quotation create nahi
-              hui
-            </strong>
-
-            <p>
-              {error}
-            </p>
-          </div>
+          <strong>Action required</strong>
+          <p>{error}</p>
         </div>
       )}
-
-      <form
-        onSubmit={
-          handleSubmit
-        }
-        className="admin-create-quotation-form"
-      >
-        {/* BASIC DETAILS */}
+      <form onSubmit={submit} className="admin-create-quotation-form">
+        <section className="admin-quotation-form-card">
+          <div className="admin-quotation-form-card-header">
+            <div className="admin-quotation-section-number">01</div>
+            <div>
+              <h2>Customer & Quotation</h2>
+              <p>
+                Customer select karein, ya isi page se naya customer add karein.
+              </p>
+            </div>
+          </div>
+          <div className="inline-q-grid">
+            <Field label="Customer" required>
+              {select(
+                showNewCustomer ? "__new__" : customerId,
+                (v) => {
+                  if (v === "__new__") {
+                    setShowNewCustomer(true);
+                    setCustomerId("");
+                    setRequirement((prev) => ({
+                      ...prev,
+                      location: customer.city || prev.location,
+                      siteAddress: customer.siteAddress || prev.siteAddress,
+                    }));
+                  } else {
+                    setShowNewCustomer(false);
+                    setCustomerId(v);
+                    const chosen = customers.find(
+                      (item) => String(idOf(item)) === String(v),
+                    );
+                    if (chosen) {
+                      setRequirement((prev) => ({
+                        ...prev,
+                        location: chosen.city || "",
+                        siteAddress:
+                          chosen.siteAddress || chosen.address || "",
+                      }));
+                    } else {
+                      setRequirement((prev) => ({
+                        ...prev,
+                        location: "",
+                        siteAddress: "",
+                      }));
+                    }
+                  }
+                },
+                [
+                  { value: "", label: "Select existing customer" },
+                  ...customers.map((c) => ({
+                    value: idOf(c),
+                    label: `${c.name || c.customerName || c.companyName || "Customer"} • ${c.mobile || c.phone || "No mobile"}`,
+                  })),
+                  { value: "__new__", label: "+ Create New Customer" },
+                ],
+              )}
+            </Field>
+            <Field label="Quotation Date" required>
+              {input(
+                form.quotationDate,
+                (v) => updateForm("quotationDate", v),
+                { type: "date", required: true },
+              )}
+            </Field>
+            <Field label="Valid Until" required>
+              {input(form.validUntil, (v) => updateForm("validUntil", v), {
+                type: "date",
+                min: form.quotationDate,
+                required: true,
+              })}
+            </Field>
+            <Field label="Quotation Title">
+              {input(form.title, (v) => updateForm("title", v), {
+                placeholder: "Solar Power System Proposal",
+              })}
+            </Field>
+          </div>
+          {showNewCustomer ? (
+            <div className="inline-q-subpanel">
+              <h3>New Customer Details</h3>
+              <div className="inline-q-grid">
+                <Field label="Customer Name" required>
+                  {input(customer.name, (v) => updateCustomer("name", v), {
+                    required: true,
+                    placeholder: "Customer full name",
+                  })}
+                </Field>
+                <Field label="Mobile Number" required>
+                  {input(customer.mobile, (v) => updateCustomer("mobile", v), {
+                    required: true,
+                    inputMode: "numeric",
+                    placeholder: "10 digit mobile",
+                  })}
+                </Field>
+                <Field label="Email">
+                  {input(customer.email, (v) => updateCustomer("email", v), {
+                    type: "email",
+                    placeholder: "name@example.com",
+                  })}
+                </Field>
+                <Field label="Customer Type">
+                  {select(
+                    customer.customerType,
+                    (v) => updateCustomer("customerType", v),
+                    [
+                      { value: "Individual", label: "Individual" },
+                      { value: "Business", label: "Business" },
+                    ],
+                  )}
+                </Field>
+                <Field label="Company Name">
+                  {input(
+                    customer.companyName,
+                    (v) => updateCustomer("companyName", v),
+                    { placeholder: "Optional" },
+                  )}
+                </Field>
+                <Field label="City">
+                  {input(customer.city, (v) => updateCustomer("city", v), {
+                    placeholder: "City",
+                  })}
+                </Field>
+                <Field label="State">
+                  {input(customer.state, (v) => updateCustomer("state", v))}
+                </Field>
+                <Field label="PIN Code">
+                  {input(
+                    customer.pincode,
+                    (v) => updateCustomer("pincode", v),
+                    { inputMode: "numeric" },
+                  )}
+                </Field>
+                <Field label="Site Address">
+                  {input(
+                    customer.siteAddress,
+                    (v) => updateCustomer("siteAddress", v),
+                    { placeholder: "Installation site address" },
+                  )}
+                </Field>
+                <Field label="GST Number">
+                  {input(
+                    customer.gstNumber,
+                    (v) => updateCustomer("gstNumber", v),
+                    { placeholder: "Optional" },
+                  )}
+                </Field>
+              </div>
+              <button
+                type="button"
+                className="inline-q-text-button"
+                onClick={() => setShowNewCustomer(false)}
+              >
+                Use existing customer instead
+              </button>
+            </div>
+          ) : selectedCustomer ? (
+            <div className="inline-q-customer-summary">
+              <strong>
+                {selectedCustomer.name || selectedCustomer.customerName}
+              </strong>
+              <span>{selectedCustomer.mobile}</span>
+              <span>{selectedCustomer.email || "Email not added"}</span>
+              <span>
+                {[selectedCustomer.city, selectedCustomer.state, selectedCustomer.pincode]
+                  .filter(Boolean)
+                  .join(", ") || "Location not added"}
+              </span>
+              {selectedCustomer.gstNumber ? (
+                <span>GST: {selectedCustomer.gstNumber}</span>
+              ) : null}
+              <span>
+                {selectedCustomer.siteAddress ||
+                  selectedCustomer.address ||
+                  "Site address not added"}
+              </span>
+              <small>Saved customer details auto-filled below. Installation location can be edited if different.</small>
+            </div>
+          ) : null}
+        </section>
 
         <section className="admin-quotation-form-card">
           <div className="admin-quotation-form-card-header">
-            <div className="admin-quotation-section-number">
-              01
-            </div>
-
+            <div className="admin-quotation-section-number">02</div>
             <div>
-              <h2>
-                Quotation Details
-              </h2>
-
+              <h2>Solar Requirement</h2>
               <p>
-                Quotation aur
-                customer ki basic
-                information.
+                Sirf relevant details fill karein; dropdowns se process fast
+                rahega.
               </p>
             </div>
           </div>
-
-          <div className="admin-quotation-form-grid">
-            <Select
-              label="Customer"
-              value={
-                form.customerId
-              }
-              onChange={(e) =>
-                handleCustomerChange(
-                  e.target.value
-                )
-              }
-              options={
-                customerOptions
-              }
-              required
-            />
-
-            <Select
-              label="System Configuration"
-              value={
-                form.systemConfigurationId
-              }
-              onChange={(e) =>
-                handleConfigurationChange(
-                  e.target.value
-                )
-              }
-              options={
-                configurationOptions
-              }
-              required
-            />
-
-            <Input
-              label="Quotation Date"
-              type="date"
-              value={
-                form.quotationDate
-              }
-              onChange={(e) =>
-                updateField(
-                  "quotationDate",
-                  e.target.value
-                )
-              }
-              required
-            />
-
-            <Input
-              label="Valid Until"
-              type="date"
-              value={
-                form.validUntil
-              }
-              onChange={(e) =>
-                updateField(
-                  "validUntil",
-                  e.target.value
-                )
-              }
-              required
-            />
-
-            <Input
-              label="Quotation Title"
-              value={
-                form.title
-              }
-              onChange={(e) =>
-                updateField(
-                  "title",
-                  e.target.value
-                )
-              }
-              placeholder="Solar Power System Proposal"
-            />
-
-            <Select
-              label="System Type"
-              value={
-                form.systemType
-              }
-              onChange={(e) =>
-                updateField(
-                  "systemType",
-                  e.target.value
-                )
-              }
-              options={[
+          <div className="inline-q-grid">
+            <Field label="System Type" required>
+              {select(form.systemType, (v) => updateForm("systemType", v), [
+                { value: "ON_GRID", label: "On Grid" },
+                { value: "OFF_GRID", label: "Off Grid" },
+                { value: "HYBRID", label: "Hybrid" },
+              ])}
+            </Field>
+            <Field label="Required Capacity" required>
+              {input(form.systemSizeKW, (v) => updateForm("systemSizeKW", v), {
+                type: "number",
+                min: "0.1",
+                step: "0.1",
+                placeholder: "e.g. 5",
+                required: true,
+              })}
+              <small>kW</small>
+            </Field>
+            <Field label="Monthly Electricity Bill">
+              {input(
+                requirement.monthlyBill,
+                (v) => updateRequirement("monthlyBill", v),
+                { type: "number", min: "0", placeholder: "₹ / month" },
+              )}
+            </Field>
+            <Field label="Monthly Units">
+              {input(
+                requirement.monthlyUnits,
+                (v) => updateRequirement("monthlyUnits", v),
+                { type: "number", min: "0", placeholder: "Units / month" },
+              )}
+            </Field>
+            <Field label="Roof Type">
+              {select(
+                requirement.roofType,
+                (v) => updateRequirement("roofType", v),
+                [
+                  { value: "RCC", label: "RCC / Concrete" },
+                  { value: "TIN", label: "Tin Shed" },
+                  { value: "METAL", label: "Metal Roof" },
+                  { value: "TILE", label: "Tile Roof" },
+                  { value: "GROUND", label: "Ground Mounted" },
+                  { value: "OTHER", label: "Other" },
+                ],
+              )}
+            </Field>
+            <Field label="Roof Area (sq. ft.)">
+              {input(
+                requirement.roofArea,
+                (v) => updateRequirement("roofArea", v),
+                { type: "number", min: "0", placeholder: "Optional" },
+              )}
+            </Field>
+            <Field label="Connection / Phase">
+              {select(
+                requirement.connectionType,
+                (v) => updateRequirement("connectionType", v),
+                [
+                  { value: "SINGLE_PHASE", label: "Single Phase" },
+                  { value: "THREE_PHASE", label: "Three Phase" },
+                  { value: "LT", label: "LT Connection" },
+                  { value: "HT", label: "HT Connection" },
+                ],
+              )}
+            </Field>
+            <Field label="Sanctioned Load (kW)">
+              {input(
+                requirement.sanctionedLoad,
+                (v) => updateRequirement("sanctionedLoad", v),
+                { type: "number", min: "0", placeholder: "Optional" },
+              )}
+            </Field>
+            <Field label="Battery Required">
+              {select(
+                requirement.batteryRequired,
+                (v) => updateRequirement("batteryRequired", v),
+                [
+                  { value: "false", label: "No" },
+                  { value: "true", label: "Yes" },
+                ],
+              )}
+            </Field>
+            {requirement.batteryRequired === "true" && (
+              <Field label="Battery Capacity (kWh)">
+                {select(
+                  requirement.batteryCapacity,
+                  (v) => updateRequirement("batteryCapacity", v),
+                  [
+                    { value: "", label: "Select capacity" },
+                    { value: "2.5", label: "2.5 kWh" },
+                    { value: "5", label: "5 kWh" },
+                    { value: "7.5", label: "7.5 kWh" },
+                    { value: "10", label: "10 kWh" },
+                    { value: "15", label: "15 kWh" },
+                    { value: "20", label: "20 kWh" },
+                  ],
+                )}
+              </Field>
+            )}
+            <Field label="Site Survey Required">
+              {select(
+                requirement.siteSurveyRequired,
+                (v) => updateRequirement("siteSurveyRequired", v),
+                [
+                  { value: "true", label: "Yes — pending survey" },
+                  { value: "false", label: "No" },
+                ],
+              )}
+            </Field>
+            <Field label="Installation City / Location">
+              {input(
+                requirement.location,
+                (v) => updateRequirement("location", v),
                 {
-                  value:
-                    "ON_GRID",
-                  label:
-                    "On Grid",
+                  placeholder: showNewCustomer
+                    ? customer.city
+                    : selectedCustomer?.city || "City / area",
                 },
+              )}
+            </Field>
+            <Field label="Installation Site Address">
+              {input(
+                requirement.siteAddress,
+                (v) => updateRequirement("siteAddress", v),
                 {
-                  value:
-                    "OFF_GRID",
-                  label:
-                    "Off Grid",
+                  placeholder: showNewCustomer
+                    ? customer.siteAddress
+                    : selectedCustomer?.siteAddress ||
+                      selectedCustomer?.address ||
+                      "Site address",
                 },
-                {
-                  value:
-                    "HYBRID",
-                  label:
-                    "Hybrid",
-                },
-              ]}
-              required
-            />
-
-            <Input
-              label="System Size"
-              type="number"
-              min="0"
-              step="0.01"
-              value={
-                form.systemSizeKW
-              }
-              onChange={(e) =>
-                updateField(
-                  "systemSizeKW",
-                  e.target.value
-                )
-              }
-              placeholder="e.g. 5"
-              suffix="kW"
-              required
-            />
+              )}
+            </Field>
           </div>
         </section>
 
-        {/* ITEMS */}
+        <section className="admin-quotation-form-card">
+          <div className="admin-quotation-form-card-header">
+            <div className="admin-quotation-section-number">03</div>
+            <div>
+              <h2>System Configuration</h2>
+              <p>
+                Panel, inverter, battery aur installation ki details — isi
+                quotation mein save hongi.
+              </p>
+            </div>
+          </div>
+          <div className="inline-q-grid">
+            <Field label="Phase">
+              {select(
+                configuration.phase,
+                (v) => updateConfiguration("phase", v),
+                [
+                  { value: "SINGLE_PHASE", label: "Single Phase" },
+                  { value: "THREE_PHASE", label: "Three Phase" },
+                ],
+              )}
+            </Field>
+            <Field label="Panel Brand">
+              {select(
+                configuration.panelMake,
+                (v) => updateConfiguration("panelMake", v),
+                [
+                  { value: "", label: "Select panel brand" },
+                  { value: "Waaree", label: "Waaree" },
+                  { value: "Adani Solar", label: "Adani Solar" },
+                  { value: "Tata Power Solar", label: "Tata Power Solar" },
+                  { value: "Vikram Solar", label: "Vikram Solar" },
+                  { value: "RenewSys", label: "RenewSys" },
+                  { value: "Other", label: "Other" },
+                ],
+              )}
+            </Field>
+            <Field label="Panel Model">
+              {input(
+                configuration.panelModel,
+                (v) => updateConfiguration("panelModel", v),
+                { placeholder: "Optional model" },
+              )}
+            </Field>
+            <Field label="Panel Wattage">
+              {select(
+                configuration.panelWattage,
+                (v) => updateConfiguration("panelWattage", v),
+                [
+                  { value: "450", label: "450 W" },
+                  { value: "500", label: "500 W" },
+                  { value: "530", label: "530 W" },
+                  { value: "540", label: "540 W" },
+                  { value: "550", label: "550 W" },
+                  { value: "575", label: "575 W" },
+                  { value: "600", label: "600 W" },
+                ],
+              )}
+            </Field>
+            <Field label="Panel Count">
+              {input(
+                configuration.panelCount,
+                (v) => updateConfiguration("panelCount", v),
+                { type: "number", min: "0", placeholder: "Auto / optional" },
+              )}
+            </Field>
+            <Field label="Inverter Brand">
+              {select(
+                configuration.inverterMake,
+                (v) => updateConfiguration("inverterMake", v),
+                [
+                  { value: "", label: "Select inverter brand" },
+                  { value: "Sungrow", label: "Sungrow" },
+                  { value: "Growatt", label: "Growatt" },
+                  { value: "GoodWe", label: "GoodWe" },
+                  { value: "Solis", label: "Solis" },
+                  { value: "Deye", label: "Deye" },
+                  { value: "Luminous", label: "Luminous" },
+                  { value: "Other", label: "Other" },
+                ],
+              )}
+            </Field>
+            <Field label="Inverter Model">
+              {input(
+                configuration.inverterModel,
+                (v) => updateConfiguration("inverterModel", v),
+                { placeholder: "Optional model" },
+              )}
+            </Field>
+            <Field label="Inverter Capacity">
+              {select(
+                configuration.inverterCapacity,
+                (v) => updateConfiguration("inverterCapacity", v),
+                [
+                  { value: "", label: "Select capacity" },
+                  { value: "3 kW", label: "3 kW" },
+                  { value: "5 kW", label: "5 kW" },
+                  { value: "6 kW", label: "6 kW" },
+                  { value: "8 kW", label: "8 kW" },
+                  { value: "10 kW", label: "10 kW" },
+                  { value: "15 kW", label: "15 kW" },
+                  { value: "20 kW", label: "20 kW" },
+                  { value: "25 kW+", label: "25 kW+" },
+                ],
+              )}
+            </Field>
+            {requirement.batteryRequired === "true" && (
+              <>
+                <Field label="Battery Brand">
+                  {select(
+                    configuration.batteryMake,
+                    (v) => updateConfiguration("batteryMake", v),
+                    [
+                      { value: "", label: "Select battery brand" },
+                      { value: "Exide", label: "Exide" },
+                      { value: "Luminous", label: "Luminous" },
+                      { value: "Livguard", label: "Livguard" },
+                      { value: "Other", label: "Other" },
+                    ],
+                  )}
+                </Field>
+                <Field label="Battery Model">
+                  {input(configuration.batteryModel, (v) =>
+                    updateConfiguration("batteryModel", v),
+                  )}
+                </Field>
+              </>
+            )}
+            <Field label="Mounting Structure">
+              {select(
+                configuration.mountingStructure,
+                (v) => updateConfiguration("mountingStructure", v),
+                [
+                  { value: "GI", label: "GI Structure" },
+                  { value: "ALUMINIUM", label: "Aluminium" },
+                  { value: "ELEVATED", label: "Elevated Structure" },
+                  { value: "GROUND", label: "Ground Mount" },
+                  { value: "CUSTOM", label: "Custom" },
+                ],
+              )}
+            </Field>
+            <Field label="Installation Charges (₹)">
+              {input(
+                configuration.installationCost,
+                (v) => updateConfiguration("installationCost", v),
+                { type: "number", min: "0", placeholder: "0" },
+              )}
+            </Field>
+            <Field label="Transportation (₹)">
+              {input(
+                configuration.transportationCost,
+                (v) => updateConfiguration("transportationCost", v),
+                { type: "number", min: "0", placeholder: "0" },
+              )}
+            </Field>
+            <Field label="Other Charges (₹)">
+              {input(
+                configuration.otherCost,
+                (v) => updateConfiguration("otherCost", v),
+                { type: "number", min: "0", placeholder: "0" },
+              )}
+            </Field>
+          </div>
+        </section>
 
         <section className="admin-quotation-form-card">
           <div className="admin-quotation-form-card-header">
-            <div className="admin-quotation-section-number">
-              02
-            </div>
-
+            <div className="admin-quotation-section-number">04</div>
             <div>
-              <h2>
-                Quotation Items
-              </h2>
-
+              <h2>Quotation Items & Pricing</h2>
               <p>
-                Solar system ke
-                products/services aur
-                pricing add karein.
+                Rate aur tax enter karein. Totals automatically calculate honge.
               </p>
             </div>
-
-            <Button
+            <button
+              className="inline-q-add"
               type="button"
-              variant="secondary"
-              onClick={
-                addItem
+              onClick={() =>
+                setItems((p) => [
+                  ...p,
+                  { ...newItem(), description: "", unit: "Unit" },
+                ])
               }
             >
               + Add Item
-            </Button>
+            </button>
           </div>
-
-          <div className="admin-quotation-items-wrapper">
-            <div className="admin-quotation-items-table">
-              <div className="admin-quotation-item-head">
-                <span>
-                  Description
-                </span>
-
-                <span>
-                  Qty
-                </span>
-
-                <span>
-                  Unit
-                </span>
-
-                <span>
-                  Rate
-                </span>
-
-                <span>
-                  Tax %
-                </span>
-
-                <span>
-                  Total
-                </span>
-
-                <span />
-              </div>
-
-              {items.map(
-                (item) => {
-                  const lineSubtotal =
-                    (Number(
-                      item.quantity
-                    ) || 0) *
-                    (Number(
-                      item.rate
-                    ) || 0);
-
-                  return (
-                    <div
-                      className="admin-quotation-item-row"
-                      key={
-                        item.id
-                      }
-                    >
-                      <Input
-                        value={
-                          item.description
-                        }
-                        onChange={(e) =>
-                          updateItem(
-                            item.id,
-                            "description",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Product / service description"
-                      />
-
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={
-                          item.quantity
-                        }
-                        onChange={(e) =>
-                          updateItem(
-                            item.id,
-                            "quantity",
-                            e.target.value
-                          )
-                        }
-                      />
-
-                      <Input
-                        value={
-                          item.unit
-                        }
-                        onChange={(e) =>
-                          updateItem(
-                            item.id,
-                            "unit",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Unit"
-                      />
-
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={
-                          item.rate
-                        }
-                        onChange={(e) =>
-                          updateItem(
-                            item.id,
-                            "rate",
-                            e.target.value
-                          )
-                        }
-                        placeholder="0.00"
-                      />
-
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={
-                          item.taxRate
-                        }
-                        onChange={(e) =>
-                          updateItem(
-                            item.id,
-                            "taxRate",
-                            e.target.value
-                          )
-                        }
-                      />
-
-                      <div className="admin-quotation-line-total">
-                        {formatCurrency(
-                          lineSubtotal
-                        )}
-                      </div>
-
-                      <button
-                        type="button"
-                        className="admin-quotation-remove-item"
-                        onClick={() =>
-                          removeItem(
-                            item.id
-                          )
-                        }
-                        disabled={
-                          items.length ===
-                          1
-                        }
-                        title="Remove item"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  );
-                }
-              )}
+          <div className="inline-q-items">
+            <div className="inline-q-item-head">
+              <span>Description</span>
+              <span>Qty</span>
+              <span>Unit</span>
+              <span>Rate (₹)</span>
+              <span>Tax %</span>
+              <span>Total</span>
+              <span />
             </div>
-          </div>
-        </section>
-
-        {/* PRICING */}
-
-        <section className="admin-quotation-form-card">
-          <div className="admin-quotation-form-card-header">
-            <div className="admin-quotation-section-number">
-              03
-            </div>
-
-            <div>
-              <h2>
-                Pricing Summary
-              </h2>
-
-              <p>
-                Discount, tax aur
-                additional charges ka
-                final calculation.
-              </p>
-            </div>
-          </div>
-
-          <div className="admin-quotation-pricing-layout">
-            <div className="admin-quotation-pricing-inputs">
-              <Input
-                label="Discount"
-                type="number"
-                min="0"
-                step="0.01"
-                value={
-                  charges.discount
-                }
-                onChange={(e) =>
-                  setCharges(
-                    (prev) => ({
-                      ...prev,
-                      discount:
-                        e.target
-                          .value,
-                    })
-                  )
-                }
-                placeholder="0"
-              />
-
-              <Input
-                label="Additional Charges"
-                type="number"
-                min="0"
-                step="0.01"
-                value={
-                  charges.additionalCharges
-                }
-                onChange={(e) =>
-                  setCharges(
-                    (prev) => ({
-                      ...prev,
-                      additionalCharges:
-                        e.target
-                          .value,
-                    })
-                  )
-                }
-                placeholder="0"
-              />
-            </div>
-
-            <div className="admin-quotation-total-box">
-              <div>
-                <span>
-                  Subtotal
-                </span>
-
+            {items.map((item) => (
+              <div className="inline-q-item-row" key={item.id}>
+                <input
+                  aria-label="Description"
+                  value={item.description}
+                  onChange={(e) =>
+                    updateItem(item.id, "description", e.target.value)
+                  }
+                  placeholder="Solar panel, inverter, installation..."
+                  required
+                />
+                <input
+                  aria-label="Quantity"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={item.quantity}
+                  onChange={(e) =>
+                    updateItem(item.id, "quantity", e.target.value)
+                  }
+                  required
+                />
+                <select
+                  aria-label="Unit"
+                  value={item.unit}
+                  onChange={(e) => updateItem(item.id, "unit", e.target.value)}
+                >
+                  {[
+                    "System",
+                    "PCS",
+                    "Panel",
+                    "Set",
+                    "Job",
+                    "Meter",
+                    "Unit",
+                  ].map((u) => (
+                    <option key={u}>{u}</option>
+                  ))}
+                </select>
+                <input
+                  aria-label="Rate"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={item.rate}
+                  onChange={(e) => updateItem(item.id, "rate", e.target.value)}
+                  required
+                />
+                <select
+                  aria-label="Tax percentage"
+                  value={item.taxRate}
+                  onChange={(e) =>
+                    updateItem(item.id, "taxRate", e.target.value)
+                  }
+                >
+                  {[0, 5, 12, 18, 28].map((t) => (
+                    <option key={t} value={t}>
+                      {t}%
+                    </option>
+                  ))}
+                </select>
                 <strong>
-                  {formatCurrency(
-                    subtotal
+                  {money(
+                    (Number(item.quantity) || 0) * (Number(item.rate) || 0),
                   )}
                 </strong>
-              </div>
-
-              <div>
-                <span>
-                  Discount
-                </span>
-
-                <strong>
-                  -{" "}
-                  {formatCurrency(
-                    discount
-                  )}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Tax
-                </span>
-
-                <strong>
-                  {formatCurrency(
-                    taxTotal
-                  )}
-                </strong>
-              </div>
-
-              <div>
-                <span>
-                  Additional Charges
-                </span>
-
-                <strong>
-                  {formatCurrency(
-                    additionalCharges
-                  )}
-                </strong>
-              </div>
-
-              <div className="admin-quotation-grand-total">
-                <span>
-                  Grand Total
-                </span>
-
-                <strong>
-                  {formatCurrency(
-                    Math.max(
-                      0,
-                      grandTotal
+                <button
+                  type="button"
+                  aria-label="Remove item"
+                  onClick={() =>
+                    setItems((p) =>
+                      p.length > 1 ? p.filter((i) => i.id !== item.id) : p,
                     )
-                  )}
-                </strong>
+                  }
+                  className="inline-q-remove"
+                >
+                  ×
+                </button>
               </div>
+            ))}
+          </div>
+          <div className="inline-q-grid inline-q-pricing-fields">
+            <Field label="Discount (₹)">
+              {input(discount, setDiscount, {
+                type: "number",
+                min: "0",
+                max: itemsSubtotal,
+                step: "0.01",
+              })}
+            </Field>
+          </div>
+          <div className="inline-q-summary">
+            <div>
+              <span>Subtotal</span>
+              <strong>{money(subtotal)}</strong>
+            </div>
+            <div>
+              <span>Discount</span>
+              <strong>− {money(discountValue)}</strong>
+            </div>
+            <div>
+              <span>GST / Tax</span>
+              <strong>{money(taxTotal)}</strong>
+            </div>
+            <div>
+              <span>Additional Charges</span>
+              <strong>{money(additionalCharges)}</strong>
+            </div>
+            <div className="inline-q-grand-total">
+              <span>Grand Total</span>
+              <strong>{money(grandTotal)}</strong>
             </div>
           </div>
         </section>
-
-        {/* TERMS */}
 
         <section className="admin-quotation-form-card">
           <div className="admin-quotation-form-card-header">
-            <div className="admin-quotation-section-number">
-              04
-            </div>
-
+            <div className="admin-quotation-section-number">05</div>
             <div>
-              <h2>
-                Terms & Additional
-                Information
-              </h2>
-
-              <p>
-                Quotation document mein
-                show hone wali important
-                information.
-              </p>
+              <h2>Terms & Additional Information</h2>
+              <p>Optional details quotation PDF mein show hongi.</p>
             </div>
           </div>
-
-          <div className="admin-quotation-form-textareas">
-            <Textarea
-              label="Payment Terms"
-              value={
-                form.paymentTerms
-              }
-              onChange={(e) =>
-                updateField(
-                  "paymentTerms",
-                  e.target.value
-                )
-              }
-              rows={4}
-              placeholder="Payment terms..."
-            />
-
-            <Textarea
-              label="Warranty"
-              value={
-                form.warranty
-              }
-              onChange={(e) =>
-                updateField(
-                  "warranty",
-                  e.target.value
-                )
-              }
-              rows={4}
-              placeholder="Warranty details..."
-            />
-
-            <Textarea
-              label="Additional Notes"
-              value={
-                form.notes
-              }
-              onChange={(e) =>
-                updateField(
-                  "notes",
-                  e.target.value
-                )
-              }
-              rows={5}
-              placeholder="Additional quotation notes..."
-            />
+          <div className="inline-q-grid">
+            <Field label="Payment Terms">
+              <textarea
+                rows="3"
+                value={form.paymentTerms}
+                onChange={(e) => updateForm("paymentTerms", e.target.value)}
+              />
+            </Field>
+            <Field label="Warranty">
+              <textarea
+                rows="3"
+                value={form.warranty}
+                onChange={(e) => updateForm("warranty", e.target.value)}
+              />
+            </Field>
+            <Field label="Additional Notes">
+              <textarea
+                rows="3"
+                value={form.notes}
+                onChange={(e) => updateForm("notes", e.target.value)}
+              />
+            </Field>
           </div>
         </section>
-
-        {/* ACTIONS */}
-
-        <div className="admin-create-quotation-actions">
-          <div className="admin-create-quotation-final">
-            <span>
-              Final Quotation Value
-            </span>
-
-            <strong>
-              {formatCurrency(
-                Math.max(
-                  0,
-                  grandTotal
-                )
-              )}
-            </strong>
+        <div className="inline-q-footer">
+          <div>
+            <span>Final Quotation Value</span>
+            <strong>{money(grandTotal)}</strong>
           </div>
-
-          <div className="admin-create-quotation-buttons">
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={saving}
-              onClick={() =>
-                router.push(
-                  "/admin/quotations"
-                )
-              }
-            >
-              Cancel
-            </Button>
-
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={saving}
-            >
-              {saving
-                ? "Creating..."
-                : "Create Quotation"}
-            </Button>
-          </div>
+          <button
+            type="button"
+            className="inline-q-cancel"
+            onClick={() => router.push("/admin/quotations")}
+            disabled={saving}
+          >
+            Cancel
+          </button>
+          <button type="submit" className="inline-q-submit" disabled={saving}>
+            {saving ? "Creating Quotation..." : "Create Quotation & PDF Record"}
+          </button>
         </div>
       </form>
     </div>
   );
-};
-
-export default CreateQuotationPage;
+}

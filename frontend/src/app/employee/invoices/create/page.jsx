@@ -435,31 +435,29 @@ const CreateInvoicePage = () => {
   /* ------------------------------------------------------------------ */
 
   const calculations = useMemo(() => {
-    const subtotal = form.items.reduce((sum, item) => {
-      const quantity = Number(item.quantity) || 0;
-      const rate = Number(item.rate) || 0;
-      return sum + quantity * rate;
+    const roundMoney = (value) => Number(Number(value || 0).toFixed(2));
+    const itemsSubtotal = roundMoney(form.items.reduce((sum, item) =>
+      sum + (Number(item.quantity) || 0) * (Number(item.rate) || 0), 0));
+    const requestedDiscount = Math.max(Number(form.discount) || 0, 0);
+    const discount = Math.min(requestedDiscount, itemsSubtotal);
+    const discountRatio = itemsSubtotal > 0 ? discount / itemsSubtotal : 0;
+    const itemDiscount = form.items.reduce((sum, item) => {
+      const gross = roundMoney((Number(item.quantity) || 0) * (Number(item.rate) || 0));
+      const existing = roundMoney(gross * Math.min(Math.max(Number(item.discount) || 0, 0), 100) / 100);
+      return sum + existing;
     }, 0);
-
-    const taxTotal = form.items.reduce((sum, item) => {
-      const quantity = Number(item.quantity) || 0;
-      const rate = Number(item.rate) || 0;
-      const taxRate = Number(item.taxRate) || 0;
-      const lineAmount = quantity * rate;
-      return sum + (lineAmount * taxRate) / 100;
-    }, 0);
-
-    const discount = Number(form.discount) || 0;
-    const additionalCharges = Number(form.additionalCharges) || 0;
-    const grandTotal = subtotal + taxTotal - discount + additionalCharges;
-
-    return {
-      subtotal,
-      taxTotal,
-      discount,
-      additionalCharges,
-      grandTotal: Math.max(grandTotal, 0),
-    };
+    const taxTotal = roundMoney(form.items.reduce((sum, item) => {
+      const gross = roundMoney((Number(item.quantity) || 0) * (Number(item.rate) || 0));
+      const existingDiscount = roundMoney(gross * Math.min(Math.max(Number(item.discount) || 0, 0), 100) / 100);
+      const globalAllocation = roundMoney(Math.min(Math.max(gross - existingDiscount, 0), gross * discountRatio));
+      const taxable = Math.max(gross - existingDiscount - globalAllocation, 0);
+      return sum + (taxable * Math.max(Number(item.taxRate) || 0, 0)) / 100;
+    }, 0));
+    const additionalCharges = roundMoney(Math.max(Number(form.additionalCharges) || 0, 0));
+    const subtotal = roundMoney(itemsSubtotal + additionalCharges);
+    const totalDiscount = roundMoney(itemDiscount + discount);
+    const grandTotal = roundMoney(Math.max(subtotal - totalDiscount + taxTotal, 0));
+    return { subtotal, taxTotal, discount: totalDiscount, additionalCharges, grandTotal };
   }, [form]);
 
   const customerOptions = useMemo(
@@ -591,14 +589,33 @@ const CreateInvoicePage = () => {
 
       title: form.title,
 
-      items: form.items.map((item) => ({
-        description: String(item.description || "").trim(),
-        itemName: String(item.description || "").trim(),
-        quantity: Number(item.quantity) || 0,
-        unit: item.unit || "Unit",
-        rate: Number(item.rate) || 0,
-        taxRate: Number(item.taxRate) || 0,
-      })),
+      items: (() => {
+        const rawItems = form.items.map((item) => ({
+          description: String(item.description || "").trim(),
+          itemName: String(item.description || "").trim(),
+          quantity: Number(item.quantity) || 0,
+          unit: item.unit || "Unit",
+          rate: Number(item.rate) || 0,
+          taxRate: Number(item.taxRate) || 0,
+          discount: Math.min(100, Math.max(Number(item.discount) || 0, 0)),
+        }));
+        const itemsSubtotal = rawItems.reduce((sum, item) => sum + item.quantity * item.rate, 0);
+        const globalDiscount = Math.min(Math.max(Number(form.discount) || 0, 0), itemsSubtotal);
+        const ratio = itemsSubtotal > 0 ? globalDiscount / itemsSubtotal : 0;
+        const adjustedItems = rawItems.map((item) => {
+          const gross = item.quantity * item.rate;
+          if (gross <= 0 || globalDiscount <= 0) return item;
+          const existingDiscount = gross * item.discount / 100;
+          const allocatedDiscount = Math.min(Math.max(gross - existingDiscount, 0), globalDiscount * gross / itemsSubtotal);
+          return { ...item, discount: Math.min(100, ((existingDiscount + allocatedDiscount) / gross) * 100) };
+        });
+        const extraCharges = Math.max(Number(form.additionalCharges) || 0, 0);
+        if (extraCharges > 0) adjustedItems.push({
+          description: "Additional Charges", itemName: "Additional Charges",
+          quantity: 1, unit: "JOB", rate: extraCharges, taxRate: 0, discount: 0,
+        });
+        return adjustedItems;
+      })(),
 
       discount: Number(form.discount) || 0,
       additionalCharges: Number(form.additionalCharges) || 0,

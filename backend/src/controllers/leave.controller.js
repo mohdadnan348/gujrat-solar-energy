@@ -1,4 +1,29 @@
 const leaveService = require("../services/leave.service");
+const Employee = require("../models/Employee");
+const LeaveRequest = require("../models/LeaveRequest");
+const { ROLES, LEAVE_STATUS } = require("../config/constants");
+
+const getLeaveTypes = async (req, res, next) => {
+  try {
+    const types = await leaveService.getActiveLeaveTypes(req.user.userId);
+    return res.status(200).json({ success: true, message: "Leave types fetched successfully", data: types });
+  } catch (error) { next(error); }
+};
+
+const getOwnEmployee = async (userId) => Employee.findOne({ user: userId });
+
+const canAccessRequest = async (req, request, { managerTeam = false } = {}) => {
+  const role = req.user.role;
+  if ([ROLES.ADMIN, ROLES.HR].includes(role)) return true;
+  const ownEmployee = await getOwnEmployee(req.user.userId);
+  if (!ownEmployee) return false;
+  if (String(request.employee?._id || request.employee) === String(ownEmployee._id)) return true;
+  if (role === ROLES.MANAGER && managerTeam) {
+    const targetEmployee = await Employee.findById(request.employee?._id || request.employee).select("manager").lean();
+    return Boolean(targetEmployee && String(targetEmployee.manager || "") === String(ownEmployee._id));
+  }
+  return false;
+};
 
 const createLeaveRequest = async (
   req,
@@ -6,11 +31,17 @@ const createLeaveRequest = async (
   next
 ) => {
   try {
-    const leaveRequest =
-      await leaveService.createLeaveRequest(
-        req.body,
-        req.user.userId
-      );
+    const payload = { ...req.body };
+    if ([ROLES.EMPLOYEE, ROLES.MANAGER].includes(req.user.role)) {
+      const ownEmployee = await getOwnEmployee(req.user.userId);
+      if (!ownEmployee) {
+        return res.status(404).json({ success: false, message: "Employee profile not found for this account." });
+      }
+      payload.employee = ownEmployee._id.toString();
+      // Employee/manager leave applications always start pending.
+      payload.status = LEAVE_STATUS.PENDING;
+    }
+    const leaveRequest = await leaveService.createLeaveRequest(payload, req.user.userId);
 
     return res.status(201).json({
       success: true,
@@ -28,10 +59,10 @@ const getLeaveRequest = async (
   next
 ) => {
   try {
-    const leaveRequest =
-      await leaveService.getLeaveRequestById(
-        req.params.id
-      );
+    const leaveRequest = await leaveService.getLeaveRequestById(req.params.id);
+    if (!(await canAccessRequest(req, leaveRequest, { managerTeam: true }))) {
+      return res.status(403).json({ success: false, message: "You do not have permission to view this leave request." });
+    }
 
     return res.status(200).json({
       success: true,
@@ -59,16 +90,14 @@ const getLeaveRequests = async (
       endDate,
     } = req.query;
 
-    const result =
-      await leaveService.getLeaveRequests({
-        page,
-        limit,
-        employee,
-        leaveType,
-        status,
-        startDate,
-        endDate,
-      });
+    let employeeFilter = employee;
+    if (req.user.role === ROLES.MANAGER) {
+      const ownEmployee = await getOwnEmployee(req.user.userId);
+      if (!ownEmployee) return res.status(404).json({ success: false, message: "Manager employee profile not found." });
+      const team = await Employee.find({ manager: ownEmployee._id }).select("_id").lean();
+      employeeFilter = [ownEmployee._id.toString(), ...team.map((item) => item._id.toString())];
+    }
+    const result = await leaveService.getLeaveRequests({ page, limit, employee: employeeFilter, leaveType, status, dateFrom: startDate, dateTo: endDate });
 
     return res.status(200).json({
       success: true,
@@ -126,12 +155,14 @@ const updateLeaveRequest = async (
   next
 ) => {
   try {
-    const leaveRequest =
-      await leaveService.updateLeaveRequest(
-        req.params.id,
-        req.body,
-        req.user.userId
-      );
+    const existing = await leaveService.getLeaveRequestById(req.params.id);
+    if (!(await canAccessRequest(req, existing, { managerTeam: false }))) {
+      return res.status(403).json({ success: false, message: "You can only edit your own leave request." });
+    }
+    const payload = { ...req.body };
+    delete payload.status;
+    delete payload.employee;
+    const leaveRequest = await leaveService.updateLeaveRequest(req.params.id, payload, req.user.userId);
 
     return res.status(200).json({
       success: true,
@@ -149,11 +180,14 @@ const approveLeaveRequest = async (
   next
 ) => {
   try {
-    const leaveRequest =
-      await leaveService.approveLeaveRequest(
-        req.params.id,
-        req.user.userId
-      );
+    const existing = await leaveService.getLeaveRequestById(req.params.id);
+    if (!(await canAccessRequest(req, existing, { managerTeam: true })) || req.user.role === ROLES.EMPLOYEE) {
+      return res.status(403).json({ success: false, message: "You do not have permission to approve this leave request." });
+    }
+    if (req.user.role === ROLES.MANAGER && String(existing.employee?._id || existing.employee) === String((await getOwnEmployee(req.user.userId))?._id)) {
+      return res.status(403).json({ success: false, message: "Managers cannot approve their own leave request." });
+    }
+    const leaveRequest = await leaveService.approveLeaveRequest(req.params.id, req.user.userId);
 
     return res.status(200).json({
       success: true,
@@ -173,12 +207,14 @@ const rejectLeaveRequest = async (
   try {
     const { reason } = req.body;
 
-    const leaveRequest =
-      await leaveService.rejectLeaveRequest(
-        req.params.id,
-        reason,
-        req.user.userId
-      );
+    const existing = await leaveService.getLeaveRequestById(req.params.id);
+    if (!(await canAccessRequest(req, existing, { managerTeam: true })) || req.user.role === ROLES.EMPLOYEE) {
+      return res.status(403).json({ success: false, message: "You do not have permission to reject this leave request." });
+    }
+    if (req.user.role === ROLES.MANAGER && String(existing.employee?._id || existing.employee) === String((await getOwnEmployee(req.user.userId))?._id)) {
+      return res.status(403).json({ success: false, message: "Managers cannot reject their own leave request." });
+    }
+    const leaveRequest = await leaveService.rejectLeaveRequest(req.params.id, req.user.userId, reason || req.body.rejectionReason);
 
     return res.status(200).json({
       success: true,
@@ -198,12 +234,14 @@ const cancelLeaveRequest = async (
   try {
     const { reason } = req.body;
 
-    const leaveRequest =
-      await leaveService.cancelLeaveRequest(
-        req.params.id,
-        reason,
-        req.user.userId
-      );
+    const existing = await leaveService.getLeaveRequestById(req.params.id);
+    if (!(await canAccessRequest(req, existing, { managerTeam: false }))) {
+      return res.status(403).json({ success: false, message: "You can only cancel your own leave request." });
+    }
+    if (![ROLES.ADMIN, ROLES.HR].includes(req.user.role) && existing.status !== LEAVE_STATUS.PENDING) {
+      return res.status(400).json({ success: false, message: "Only pending leave requests can be cancelled by the requester." });
+    }
+    const leaveRequest = await leaveService.cancelLeaveRequest(req.params.id, req.user.userId, reason || req.body.cancellationReason);
 
     return res.status(200).json({
       success: true,
@@ -225,11 +263,14 @@ const getLeaveBalance = async (
       year = new Date().getFullYear(),
     } = req.query;
 
-    const balance =
-      await leaveService.getLeaveBalanceForEmployee(
-        req.params.employeeId,
-        Number(year)
-      );
+    if (req.user.role === ROLES.MANAGER) {
+      const ownEmployee = await getOwnEmployee(req.user.userId);
+      const targetEmployee = await Employee.findById(req.params.employeeId).select("manager").lean();
+      const isOwn = ownEmployee && String(ownEmployee._id) === String(req.params.employeeId);
+      const isTeamMember = ownEmployee && targetEmployee && String(targetEmployee.manager || "") === String(ownEmployee._id);
+      if (!isOwn && !isTeamMember) return res.status(403).json({ success: false, message: "You can only view leave balances for your own team." });
+    }
+    const balance = await leaveService.getLeaveBalanceForEmployee(req.params.employeeId, Number(year));
 
     return res.status(200).json({
       success: true,
@@ -251,11 +292,9 @@ const getMyLeaveBalance = async (
       year = new Date().getFullYear(),
     } = req.query;
 
-    const balance =
-      await leaveService.getLeaveBalanceForEmployee(
-        req.user.userId,
-        Number(year)
-      );
+    const ownEmployee = await getOwnEmployee(req.user.userId);
+    if (!ownEmployee) return res.status(404).json({ success: false, message: "Employee profile not found for this account." });
+    const balance = await leaveService.getLeaveBalanceForEmployee(ownEmployee._id, Number(year));
 
     return res.status(200).json({
       success: true,
@@ -268,6 +307,7 @@ const getMyLeaveBalance = async (
 };
 
 module.exports = {
+  getLeaveTypes,
   createLeaveRequest,
   getLeaveRequest,
   getLeaveRequests,

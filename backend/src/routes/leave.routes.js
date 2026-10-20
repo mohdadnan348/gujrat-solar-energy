@@ -1,6 +1,7 @@
 const express = require("express");
 
 const {
+  getLeaveTypes,
   createLeaveRequest,
   getLeaveRequest,
   getLeaveRequests,
@@ -27,6 +28,9 @@ const { ROLES } = require("../config/constants");
 const router = express.Router();
 
 router.use(protect);
+
+// Active leave types must be registered before /:id routes.
+router.get("/types", getLeaveTypes);
 
 // My leave requests
 router.get(

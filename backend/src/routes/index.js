@@ -19,6 +19,7 @@ const reportRoutes = require("./report.routes");
 const activityLogRoutes = require("./activityLog.routes");
 const notificationRoutes = require("./notification.routes");
 const pdfRoutes = require("./pdf.routes");
+const payrollRoutes = require("./payroll.routes");
 
 const router = express.Router();
 
@@ -41,5 +42,6 @@ router.use("/reports", reportRoutes);
 router.use("/activity-logs", activityLogRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/pdf", pdfRoutes);
+router.use("/payroll", payrollRoutes);
 
 module.exports = router;

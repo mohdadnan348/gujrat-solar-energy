@@ -118,7 +118,6 @@ router.get(
   "/employee/:employeeId",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
     ROLES.HR
   ),
   getEmployeeAttendance
@@ -134,7 +133,6 @@ router.get(
   "/employee/:employeeId/date/:date",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
     ROLES.HR
   ),
   getAttendanceByDate
@@ -166,7 +164,6 @@ router.get(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
     ROLES.HR
   ),
   getAttendances
@@ -198,7 +195,6 @@ router.get(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
     ROLES.HR
   ),
   getAttendance

@@ -35,12 +35,6 @@ const employeeSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    
-    alternatePhone: {
-      type: String,
-      trim: true,
-      default: "",
-    },
 
     department: {
       type: String,
@@ -54,6 +48,12 @@ const employeeSchema = new mongoose.Schema(
 
     joiningDate: {
       type: Date,
+    },
+
+    monthlySalary: {
+      type: Number,
+      min: [0, "Monthly salary cannot be negative"],
+      default: 0,
     },
 
     role: {

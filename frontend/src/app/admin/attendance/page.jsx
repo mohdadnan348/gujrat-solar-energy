@@ -880,11 +880,17 @@ if (date) {
                                 </div>
 
                                 <div>
-                                  <strong>
-                                    {
-                                      employeeName
-                                    }
-                                  </strong>
+                                  {getEmployeeId(record) !== "—" ? (
+                                    <Link
+                                      href={`/admin/attendance/${encodeURIComponent(getEmployeeId(record))}`}
+                                      className="admin-attendance-employee-link"
+                                      title={`View full attendance for ${employeeName}`}
+                                    >
+                                      <strong>{employeeName}</strong>
+                                    </Link>
+                                  ) : (
+                                    <strong>{employeeName}</strong>
+                                  )}
 
                                   <span>
                                     {getEmployeeId(

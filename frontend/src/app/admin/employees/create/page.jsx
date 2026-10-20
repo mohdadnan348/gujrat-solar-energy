@@ -41,6 +41,7 @@ const CreateEmployeePage = () => {
     state: "",
     pincode: "",
     notes: "",
+    monthlySalary: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -223,6 +224,7 @@ const CreateEmployeePage = () => {
             "remarks",
           ]
         ),
+        monthlySalary: String(getValue(employee, ["monthlySalary", "salary"], "0")),
       });
     } catch (err) {
       console.error(
@@ -322,6 +324,10 @@ const CreateEmployeePage = () => {
         "Pincode must contain 6 digits.";
     }
 
+    if (form.monthlySalary === "" || !Number.isFinite(Number(form.monthlySalary)) || Number(form.monthlySalary) < 0) {
+      nextErrors.monthlySalary = "Enter a valid monthly salary (0 or more).";
+    }
+
     if (!form.joiningDate) {
       nextErrors.joiningDate =
         "Joining date is required.";
@@ -360,6 +366,7 @@ const CreateEmployeePage = () => {
         form.pincode.trim(),
       notes:
         form.notes.trim(),
+      monthlySalary: Number(form.monthlySalary || 0),
     };
   };
 
@@ -794,6 +801,33 @@ const CreateEmployeePage = () => {
                       statusOptions
                     }
                     required
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="admin-create-employee-card">
+            <div className="admin-create-employee-card-header">
+              <div>
+                <h2>Salary Information</h2>
+                <p>Set the employee’s monthly salary used by the Payroll calculation.</p>
+              </div>
+            </div>
+            <div className="admin-create-employee-card-body">
+              <div className="admin-create-employee-grid">
+                <div className="admin-create-employee-field">
+                  <Input
+                    label="Monthly Salary (₹)"
+                    name="monthlySalary"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.monthlySalary}
+                    onChange={(event) => updateField("monthlySalary", event.target.value)}
+                    placeholder="e.g. 15000"
+                    required
+                    error={errors.monthlySalary}
                   />
                 </div>
               </div>

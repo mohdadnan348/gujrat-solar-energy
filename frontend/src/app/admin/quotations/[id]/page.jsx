@@ -776,7 +776,7 @@ const QuotationDetailsPage = () => {
   const discount = numberValue(
     firstValue(
       quotation,
-      ["discount"],
+      ["totalDiscount", "discount"],
       0
     )
   );
@@ -1412,17 +1412,13 @@ const handleDownloadPDF = async () => {
                           )
                         );
 
-                      const discountValue =
-                        numberValue(
-                          firstValue(
-                            item,
-                            [
-                              "discount",
-                              "discountAmount",
-                            ],
-                            0
-                          )
-                        );
+                      const discountPercent = numberValue(
+                        firstValue(item, ["discount"], 0)
+                      );
+                      // Item discount is stored as a percentage; display its currency amount.
+                      const discountValue = Number((
+                        quantity * rate * Math.min(100, Math.max(0, discountPercent)) / 100
+                      ).toFixed(2));
 
                       const taxRate =
                         numberValue(
@@ -1433,20 +1429,15 @@ const handleDownloadPDF = async () => {
                           )
                         );
 
-                      const lineTotal =
-                        numberValue(
-                          firstValue(
-                            item,
-                            [
-                              "total",
-                              "amount",
-                              "lineTotal",
-                              "totalAmount",
-                            ],
-                            quantity * rate -
-                              discountValue
-                          )
-                        );
+                      // Recalculate the line total from the actual currency discount.
+                      // Tax is applied after discount, matching the create-quotation form.
+                      const taxableAmount = Math.max(
+                        0,
+                        quantity * rate - discountValue,
+                      );
+                      const calculatedLineTotal =
+                        taxableAmount + (taxableAmount * taxRate) / 100;
+                      const lineTotal = calculatedLineTotal;
 
                       return (
                         <tr

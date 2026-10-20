@@ -46,6 +46,12 @@ const CreateInvoicePage = () => {
 
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: "", mobile: "", email: "", customerType: "Individual",
+    companyName: "", city: "", state: "Uttar Pradesh", pincode: "",
+    siteAddress: "", gstNumber: "", address: "",
+  });
 
   const [quotations, setQuotations] = useState([]);
   const [selectedQuotation, setSelectedQuotation] = useState(null);
@@ -117,6 +123,8 @@ const CreateInvoicePage = () => {
   const normalizeCustomer = useCallback((response) => {
     if (!response) return null;
     if (response?.data?.customer) return response.data.customer;
+    if (response?.data?.data?.customer) return response.data.data.customer;
+    if (response?.data?.data && !Array.isArray(response.data.data)) return response.data.data;
     if (response?.customer) return response.customer;
     if (response?.data && !Array.isArray(response.data)) return response.data;
     return response;
@@ -492,13 +500,8 @@ const CreateInvoicePage = () => {
 
   const customerOptions = useMemo(
     () => [
-      { label: "Select Customer", value: "" },
       ...customers.map((customer) => ({
-        label: getValue(
-          customer,
-          ["name", "fullName", "customerName", "companyName"],
-          "Unnamed Customer"
-        ),
+        label: `${getValue(customer, ["name", "fullName", "customerName", "companyName"], "Unnamed Customer")}${getValue(customer, ["mobile", "phone", "mobileNumber", "phoneNumber"], "") ? ` • ${getValue(customer, ["mobile", "phone", "mobileNumber", "phoneNumber"], "")}` : ""}`,
         value: getId(customer),
       })),
     ],
@@ -547,8 +550,14 @@ const CreateInvoicePage = () => {
   /* ------------------------------------------------------------------ */
 
   const validateForm = () => {
-    if (!form.customerId) return "Please select a customer.";
-    if (!selectedCustomer) return "Customer details could not be loaded.";
+    if (isCreatingCustomer) {
+      if (!String(newCustomer.name || "").trim() || !String(newCustomer.mobile || "").trim()) {
+        return "New customer ke liye Customer Name aur Mobile Number required hain.";
+      }
+    } else {
+      if (!form.customerId) return "Please select a customer or create a new customer.";
+      if (!selectedCustomer) return "Customer details could not be loaded.";
+    }
     if (!form.invoiceDate) return "Please select an invoice date.";
 
     if (form.dueDate && new Date(form.dueDate) < new Date(form.invoiceDate)) {
@@ -573,42 +582,42 @@ const CreateInvoicePage = () => {
     return "";
   };
 
-  const buildPayload = () => {
+  const buildPayload = (customerRecord = selectedCustomer, customerIdOverride = form.customerId) => {
     return {
-      customerId: form.customerId,
-      customer: form.customerId,
+      customerId: customerIdOverride,
+      customer: customerIdOverride,
 
       customerDetails: {
         name: getValue(
-          selectedCustomer,
+          customerRecord,
           ["name", "fullName", "customerName", "companyName"],
           ""
         ),
-        companyName: getValue(selectedCustomer, ["companyName", "company"], ""),
+        companyName: getValue(customerRecord, ["companyName", "company"], ""),
         mobile: getValue(
-          selectedCustomer,
+          customerRecord,
           ["mobile", "phone", "mobileNumber", "phoneNumber"],
           ""
         ),
-        email: getValue(selectedCustomer, ["email"], ""),
+        email: getValue(customerRecord, ["email"], ""),
         address: getValue(
-          selectedCustomer,
-          ["address", "fullAddress", "billingAddress"],
+          customerRecord,
+          ["address", "fullAddress", "billingAddress", "siteAddress"],
           ""
         ),
-        city: getValue(selectedCustomer, ["city"], ""),
-        state: getValue(selectedCustomer, ["state"], ""),
+        city: getValue(customerRecord, ["city"], ""),
+        state: getValue(customerRecord, ["state"], ""),
         pincode: getValue(
-          selectedCustomer,
+          customerRecord,
           ["pincode", "pinCode", "postalCode", "zipCode"],
           ""
         ),
         gstin: getValue(
-          selectedCustomer,
+          customerRecord,
           ["gstNumber", "gstin", "GSTIN", "gstNo"],
           ""
         ),
-        pan: getValue(selectedCustomer, ["panNumber", "pan", "PAN"], ""),
+        pan: getValue(customerRecord, ["panNumber", "pan", "PAN"], ""),
       },
 
       ...(form.quotationId ? { quotation: form.quotationId } : {}),
@@ -696,7 +705,29 @@ const CreateInvoicePage = () => {
 
       setSaving(true);
 
-      const payload = buildPayload();
+      let customerForInvoice = selectedCustomer;
+      let customerIdForInvoice = form.customerId;
+
+      if (!isEditMode && isCreatingCustomer) {
+        const createdResponse = await customerService.createCustomer({
+          ...newCustomer,
+          name: String(newCustomer.name || "").trim(),
+          mobile: String(newCustomer.mobile || "").trim(),
+          email: String(newCustomer.email || "").trim(),
+          siteAddress: newCustomer.siteAddress || newCustomer.address || "",
+          status: "Active",
+        });
+        customerForInvoice = normalizeCustomer(createdResponse);
+        customerIdForInvoice = getId(customerForInvoice);
+        if (!customerForInvoice || !customerIdForInvoice) {
+          throw new Error("Customer create response mein customer ID nahi mili. Customer list refresh karke check karein.");
+        }
+        setCustomers((previous) => [...previous, customerForInvoice]);
+        setSelectedCustomer(customerForInvoice);
+        setForm((previous) => ({ ...previous, customerId: customerIdForInvoice }));
+      }
+
+      const payload = buildPayload(customerForInvoice, customerIdForInvoice);
 
       if (isEditMode) {
         if (typeof invoiceService.updateInvoice !== "function") {
@@ -708,7 +739,7 @@ const CreateInvoicePage = () => {
       } else {
         if (form.quotationId) {
           await invoiceService.createInvoiceFromQuotation(form.quotationId, {
-            customer: form.customerId,
+            customer: customerIdForInvoice,
             invoiceDate: form.invoiceDate,
             ...(form.dueDate ? { dueDate: form.dueDate } : {}),
             notes: form.notes || "",
@@ -716,7 +747,7 @@ const CreateInvoicePage = () => {
         } else {
           await invoiceService.createInvoice({
             ...payload,
-            customer: form.customerId,
+            customer: customerIdForInvoice,
             ...(form.quotationId ? { quotation: form.quotationId } : {}),
           });
         }
@@ -862,20 +893,57 @@ const CreateInvoicePage = () => {
                 </div>
               </div>
 
-              <div className="admin-create-invoice-fields">
-                <Select
-                  label="Customer"
-                  value={form.customerId}
-                  onChange={(event) =>
-                    handleCustomerChange(
-                      event?.target ? event.target.value : event
-                    )
-                  }
-                  options={customerOptions}
-                  required
-                />
+              <div className={`admin-create-invoice-fields ${!isCreatingCustomer ? "admin-create-invoice-customer-select-grid" : ""}`}>
+                {!isCreatingCustomer ? (
+                  <div className="admin-create-invoice-customer-select-wrap">
+                    <label className="admin-create-invoice-customer-select-label" htmlFor="invoice-customer-select">Customer <span>*</span></label>
+                    <select
+                      id="invoice-customer-select"
+                      className="admin-create-invoice-customer-native-select"
+                      value={form.customerId || ""}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        if (value === "__create_new_customer__") {
+                          setIsCreatingCustomer(true);
+                          setSelectedCustomer(null);
+                          setForm((previous) => ({ ...previous, customerId: "", quotationId: "" }));
+                          setQuotations([]);
+                          setSelectedQuotation(null);
+                          return;
+                        }
+                        handleCustomerChange(value);
+                      }}
+                      required
+                    >
+                      <option value="">Select existing customer</option>
+                      {customerOptions.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                      {!isEditMode && <option value="__create_new_customer__">+ Create New Customer</option>}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="admin-create-invoice-new-customer-form">
+                    <div className="admin-create-invoice-card-header">
+                      <div><h2>New Customer Details</h2><p>Customer invoice banate waqt hi create ho jayega.</p></div>
+                      <Button type="button" variant="secondary" onClick={() => setIsCreatingCustomer(false)}>Use Existing Customer</Button>
+                    </div>
+                    <div className="admin-create-invoice-fields">
+                      <Input label="Customer Name" value={newCustomer.name} onChange={(event) => setNewCustomer((p) => ({ ...p, name: event.target.value }))} required />
+                      <Input label="Mobile Number" value={newCustomer.mobile} onChange={(event) => setNewCustomer((p) => ({ ...p, mobile: event.target.value }))} required />
+                      <Input label="Email" type="email" value={newCustomer.email} onChange={(event) => setNewCustomer((p) => ({ ...p, email: event.target.value }))} />
+                      <Input label="Company Name" value={newCustomer.companyName} onChange={(event) => setNewCustomer((p) => ({ ...p, companyName: event.target.value }))} />
+                      <Select label="Customer Type" value={newCustomer.customerType} onChange={(event) => setNewCustomer((p) => ({ ...p, customerType: event?.target ? event.target.value : event }))} options={[{label:"Individual",value:"Individual"},{label:"Business",value:"Business"}]} />
+                      <Input label="City" value={newCustomer.city} onChange={(event) => setNewCustomer((p) => ({ ...p, city: event.target.value }))} />
+                      <Input label="State" value={newCustomer.state} onChange={(event) => setNewCustomer((p) => ({ ...p, state: event.target.value }))} />
+                      <Input label="PIN Code" value={newCustomer.pincode} onChange={(event) => setNewCustomer((p) => ({ ...p, pincode: event.target.value }))} />
+                      <Input label="Site Address" value={newCustomer.siteAddress} onChange={(event) => setNewCustomer((p) => ({ ...p, siteAddress: event.target.value }))} />
+                      <Input label="GST Number" value={newCustomer.gstNumber} onChange={(event) => setNewCustomer((p) => ({ ...p, gstNumber: event.target.value }))} />
+                    </div>
+                  </div>
+                )}
 
-                {form.customerId && (
+                {!isCreatingCustomer && form.customerId && (
                   <Select
                     label="Quotation (optional)"
                     value={form.quotationId}
@@ -977,26 +1045,34 @@ const CreateInvoicePage = () => {
                         />
                       </div>
 
-                      <Input
-                        label="Quantity"
-                        type="number"
-                        min="0.01"
-                        step="0.01"
-                        value={item.quantity}
-                        onChange={(event) =>
-                          updateItem(index, "quantity", event.target.value)
-                        }
-                        required
-                      />
+                      <div className="admin-create-invoice-editable-select">
+                        <label className="admin-create-invoice-native-label" htmlFor={`invoice-quantity-${index}`}>Quantity <span>*</span></label>
+                        <select
+                          id={`invoice-quantity-${index}`}
+                          className="admin-create-invoice-native-select"
+                          value={[1, 2, 3, 4, 5, 10, 20, 25, 50, 100].map(String).includes(String(item.quantity)) ? String(item.quantity) : "custom"}
+                          onChange={(event) => updateItem(index, "quantity", event.target.value === "custom" ? "" : event.target.value)}
+                          required
+                        >
+                          {[1, 2, 3, 4, 5, 10, 20, 25, 50, 100].map((value) => <option key={value} value={value}>{value}</option>)}
+                          <option value="custom">Custom…</option>
+                        </select>
+                        {(![1, 2, 3, 4, 5, 10, 20, 25, 50, 100].map(String).includes(String(item.quantity))) && <input className="admin-create-invoice-native-input" aria-label="Custom quantity" type="number" min="0.01" step="0.01" value={item.quantity} onChange={(event) => updateItem(index, "quantity", event.target.value)} placeholder="Enter quantity" required />}
+                      </div>
 
-                      <Input
-                        label="Unit"
-                        value={item.unit}
-                        onChange={(event) =>
-                          updateItem(index, "unit", event.target.value)
-                        }
-                        placeholder="Unit"
-                      />
+                      <div className="admin-create-invoice-editable-select">
+                        <label className="admin-create-invoice-native-label" htmlFor={`invoice-unit-${index}`}>Unit</label>
+                        <select
+                          id={`invoice-unit-${index}`}
+                          className="admin-create-invoice-native-select"
+                          value={["Unit", "Piece", "Panel", "Set", "Watt", "kW", "Meter", "Foot", "Job", "Lot", "Pair", "Box", "Nos"].includes(item.unit) ? item.unit : "custom"}
+                          onChange={(event) => updateItem(index, "unit", event.target.value === "custom" ? "" : event.target.value)}
+                        >
+                          {["Unit", "Piece", "Panel", "Set", "Watt", "kW", "Meter", "Foot", "Job", "Lot", "Pair", "Box", "Nos"].map((value) => <option key={value} value={value}>{value}</option>)}
+                          <option value="custom">Custom…</option>
+                        </select>
+                        {(!["Unit", "Piece", "Panel", "Set", "Watt", "kW", "Meter", "Foot", "Job", "Lot", "Pair", "Box", "Nos"].includes(item.unit)) && <input className="admin-create-invoice-native-input" aria-label="Custom unit" value={item.unit} onChange={(event) => updateItem(index, "unit", event.target.value)} placeholder="Type unit" />}
+                      </div>
 
                       <Input
                         label="Rate"
@@ -1010,16 +1086,19 @@ const CreateInvoicePage = () => {
                         required
                       />
 
-                      <Input
-                        label="Tax %"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.taxRate}
-                        onChange={(event) =>
-                          updateItem(index, "taxRate", event.target.value)
-                        }
-                      />
+                      <div className="admin-create-invoice-editable-select">
+                        <label className="admin-create-invoice-native-label" htmlFor={`invoice-tax-${index}`}>Tax %</label>
+                        <select
+                          id={`invoice-tax-${index}`}
+                          className="admin-create-invoice-native-select"
+                          value={[0, 5, 12, 18, 28].map(String).includes(String(item.taxRate)) ? String(item.taxRate) : "custom"}
+                          onChange={(event) => updateItem(index, "taxRate", event.target.value === "custom" ? "" : event.target.value)}
+                        >
+                          {[0, 5, 12, 18, 28].map((value) => <option key={value} value={value}>{value}%</option>)}
+                          <option value="custom">Custom…</option>
+                        </select>
+                        {(![0, 5, 12, 18, 28].map(String).includes(String(item.taxRate))) && <input className="admin-create-invoice-native-input" aria-label="Custom tax percentage" type="number" min="0" max="100" step="0.01" value={item.taxRate} onChange={(event) => updateItem(index, "taxRate", event.target.value)} placeholder="Enter tax %" />}
+                      </div>
 
                       <div className="admin-create-invoice-line-total">
                         <span>Line Total</span>
@@ -1045,6 +1124,7 @@ const CreateInvoicePage = () => {
                   </div>
                 ))}
               </div>
+
             </section>
 
             {/* Notes */}
@@ -1140,7 +1220,7 @@ const CreateInvoicePage = () => {
                   saving ||
                   customerLoading ||
                   quotationLoading ||
-                  !selectedCustomer
+                  (!isCreatingCustomer && !selectedCustomer)
                 }
               >
                 {saving

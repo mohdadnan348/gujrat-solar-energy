@@ -605,54 +605,19 @@ const CreateQuotationPage = () => {
       );
     }, [items]);
 
-  const taxTotal =
-    useMemo(() => {
-      return items.reduce(
-        (sum, item) => {
-          const quantity =
-            Number(
-              item.quantity
-            ) || 0;
+  const discount = Math.min(
+    Math.max(Number(charges.discount) || 0, 0),
+    subtotal
+  );
+  // GST is calculated before applying the global flat-amount discount.
+  const taxTotal = useMemo(() => items.reduce((sum, item) => {
+    const gross = Math.max(0, Number(item.quantity) || 0) * Math.max(0, Number(item.rate) || 0);
+    const taxRate = Math.max(0, Number(item.taxRate) || 0);
+    return sum + (gross * taxRate) / 100;
+  }, 0), [items]);
 
-          const rate =
-            Number(
-              item.rate
-            ) || 0;
-
-          const taxRate =
-            Number(
-              item.taxRate
-            ) || 0;
-
-          const lineTotal =
-            quantity * rate;
-
-          return (
-            sum +
-            (lineTotal *
-              taxRate) /
-              100
-          );
-        },
-        0
-      );
-    }, [items]);
-
-  const discount =
-    Number(
-      charges.discount
-    ) || 0;
-
-  const additionalCharges =
-    Number(
-      charges.additionalCharges
-    ) || 0;
-
-  const grandTotal =
-    subtotal -
-    discount +
-    taxTotal +
-    additionalCharges;
+  const additionalCharges = Math.max(Number(charges.additionalCharges) || 0, 0);
+  const grandTotal = Math.max(0, Number((subtotal - discount + taxTotal + additionalCharges).toFixed(2)));
 
   const formatCurrency =
     (value) =>
@@ -884,6 +849,7 @@ const CreateQuotationPage = () => {
           },
 
           items: quotationItems,
+          globalDiscount,
 
           paymentTerms:
             form.paymentTerms || undefined,

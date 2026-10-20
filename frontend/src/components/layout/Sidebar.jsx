@@ -28,16 +28,6 @@ const Sidebar = ({
         icon: "leads",
       },
       {
-        label: "Solar Requirements",
-        href: "/admin/solar-requirements",
-        icon: "solar",
-      },
-      {
-        label: "System Configurations",
-        href: "/admin/system-configurations",
-        icon: "configuration",
-      },
-      {
         label: "Quotations",
         href: "/admin/quotations",
         icon: "quotation",
@@ -66,6 +56,11 @@ const Sidebar = ({
         label: "Attendance",
         href: "/admin/attendance",
         icon: "attendance",
+      },
+      {
+        label: "Salary / Payroll",
+        href: "/admin/payroll",
+        icon: "reports",
       },
       {
         label: "Leaves",
@@ -146,6 +141,11 @@ const Sidebar = ({
         icon: "attendance",
       },
       {
+        label: "Leaves",
+        href: "/manager/leaves",
+        icon: "leaves",
+      },
+      {
         label: "Reports",
         href: "/manager/reports",
         icon: "reports",
@@ -205,31 +205,6 @@ const Sidebar = ({
         label: "Leads",
         href: "/employee/leads",
         icon: "leads",
-      },
-      {
-        label: "Solar Requirements",
-        href: "/employee/solar-requirements",
-        icon: "solar",
-      },
-      {
-        label: "System Configurations",
-        href: "/employee/system-configurations",
-        icon: "configuration",
-      },
-      {
-        label: "Quotations",
-        href: "/employee/quotations",
-        icon: "quotation",
-      },
-      {
-        label: "Customers",
-        href: "/employee/customers",
-        icon: "customers",
-      },
-      {
-        label: "Invoices",
-        href: "/employee/invoices",
-        icon: "invoice",
       },
       {
         label: "Tasks",

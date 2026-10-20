@@ -15,7 +15,7 @@ const solarRequirementSchema = new mongoose.Schema(
     lead: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Lead",
-      required: [true, "Lead reference is required"],
+      required: false,
       index: true,
     },
 
