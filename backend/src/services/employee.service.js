@@ -38,11 +38,7 @@ const generateEmployeeId = async (role) => {
 
   if (roleValue === ROLES.ADMIN) {
     prefix = "ADM";
-  } else if (roleValue === ROLES.MANAGER) {
-    prefix = "MGR";
-  } else if (roleValue === ROLES.HR) {
-    prefix = "HR";
-  } else if (roleValue === ROLES.EMPLOYEE) {
+  } else {
     prefix = "EMP";
   }
 
@@ -275,12 +271,14 @@ const createEmployee = async (data, createdBy) => {
   |--------------------------------------------------------------------------
   */
 
-  const rawPassword =
-    data.password ||
-    "Employee@123";
+  const rawPassword = String(data.password || "");
+  if (rawPassword.length < 8) {
+    const error = new Error("Password is required and must be at least 8 characters long");
+    error.statusCode = 400;
+    throw error;
+  }
 
-  const hashedPassword =
-    await hashPassword(rawPassword);
+  const hashedPassword = await hashPassword(rawPassword);
 
   /*
   |--------------------------------------------------------------------------

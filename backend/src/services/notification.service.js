@@ -45,10 +45,10 @@ const broadcastToStaff = async ({ title, message, audience = "ALL", createdBy })
   if (!cleanTitle || !cleanMessage) throw makeError("Title and message are required");
   if (cleanTitle.length > 160) throw makeError("Title must be 160 characters or fewer");
   if (cleanMessage.length > 5000) throw makeError("Message must be 5000 characters or fewer");
-  if (!["ALL", "EMPLOYEE", "MANAGER"].includes(audience)) throw makeError("Invalid audience");
-  const roles = audience === "ALL" ? [ROLES.EMPLOYEE, ROLES.MANAGER] : [audience];
+  if (!["ALL", "EMPLOYEE"].includes(audience)) throw makeError("Invalid audience");
+  const roles = [ROLES.EMPLOYEE];
   const recipients = await User.find({ role: { $in: roles }, status: USER_STATUS.ACTIVE }).select("_id").lean();
-  if (!recipients.length) throw makeError("No active Employees or Managers were found", 404);
+  if (!recipients.length) throw makeError("No active employees were found", 404);
   const broadcastId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${crypto.randomBytes(8).toString("hex")}`;
   const sentAt = new Date();
   const result = await Notification.insertMany(recipients.map(({ _id }) => ({

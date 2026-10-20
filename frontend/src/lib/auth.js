@@ -116,13 +116,16 @@ export const getUserRole = () => {
 
   if (!user) return null;
 
-  return (
+  const rawRole =
     user?.role?.name ??
     user?.role?.key ??
     user?.role ??
     user?.userRole ??
-    null
-  );
+    null;
+  const normalized = String(rawRole || "").trim().toLowerCase();
+  // Legacy Manager/HR accounts are treated as Employee until migrated.
+  if (normalized === "manager" || normalized === "hr") return "employee";
+  return rawRole;
 };
 
 /**
@@ -151,12 +154,6 @@ export const getDashboardPath = (role) => {
   switch (normalizedRole) {
     case "admin":
       return "/admin/dashboard";
-
-    case "manager":
-      return "/manager/dashboard";
-
-    case "hr":
-      return "/hr/dashboard";
 
     case "employee":
       return "/employee/dashboard";

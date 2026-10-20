@@ -27,7 +27,7 @@ router.use(protect);
 // Create Employee - Admin / HR
 router.post(
   "/",
-  allowRoles(ROLES.ADMIN, ROLES.HR),
+  allowRoles(ROLES.ADMIN, ROLES.ADMIN),
   validateEmployee,
   createEmployee
 );
@@ -35,7 +35,7 @@ router.post(
 // List Employees
 router.get(
   "/",
-  allowRoles(ROLES.ADMIN, ROLES.HR, ROLES.MANAGER),
+  allowRoles(ROLES.ADMIN, ROLES.ADMIN, ROLES.ADMIN),
   getEmployees
 );
 
@@ -44,8 +44,8 @@ router.get(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.HR,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getEmployee
@@ -54,7 +54,7 @@ router.get(
 // Update Employee - Admin / HR
 router.put(
   "/:id",
-  allowRoles(ROLES.ADMIN, ROLES.HR),
+  allowRoles(ROLES.ADMIN, ROLES.ADMIN),
   validateEmployeeUpdate,
   updateEmployee
 );
@@ -62,14 +62,14 @@ router.put(
 // Activate / Deactivate Employee - Admin / HR
 router.patch(
   "/:id/status",
-  allowRoles(ROLES.ADMIN, ROLES.HR),
+  allowRoles(ROLES.ADMIN, ROLES.ADMIN),
   updateEmployeeStatus
 );
 
 // Deactivate Employee - Admin / HR
 router.delete(
   "/:id",
-  allowRoles(ROLES.ADMIN, ROLES.HR),
+  allowRoles(ROLES.ADMIN, ROLES.ADMIN),
   deleteEmployee
 );
 

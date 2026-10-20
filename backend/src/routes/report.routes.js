@@ -25,8 +25,8 @@ router.get(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   getOverallReport
 );
@@ -36,8 +36,8 @@ router.get(
   "/leads",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   getLeadReport
 );
@@ -47,8 +47,8 @@ router.get(
   "/quotations",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   getQuotationReport
 );
@@ -58,8 +58,8 @@ router.get(
   "/invoices",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   getInvoiceReport
 );
@@ -69,8 +69,8 @@ router.get(
   "/tasks",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   getTaskReport
 );
@@ -80,8 +80,8 @@ router.get(
   "/attendance",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   getAttendanceReport
 );
@@ -91,8 +91,8 @@ router.get(
   "/leaves",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   getLeaveReport
 );
@@ -102,8 +102,8 @@ router.get(
   "/employees",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   getEmployeeReport
 );
@@ -113,7 +113,7 @@ router.get(
   "/sales-performance",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   getSalesPerformanceReport
 );

@@ -1497,7 +1497,7 @@ body {
 
   background: #fff;
 
-  color: #222;
+  color: #20264f;
 
   font-family:
     Arial,
@@ -1579,7 +1579,7 @@ body {
 .logo-placeholder {
   width: 28mm;
 
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 9px;
 
@@ -1593,7 +1593,7 @@ body {
 }
 
 .brand-sub {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 7px;
 
@@ -1609,7 +1609,7 @@ body {
 }
 
 .document-title {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 15px;
 
@@ -1665,7 +1665,7 @@ body {
   width: 25mm;
 
   border-bottom:
-    3px solid #c62828;
+    3px solid #e31b23;
 
   margin-top: 2mm;
 }
@@ -1689,7 +1689,7 @@ body {
 }
 
 .info-card-title {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 10px;
 
@@ -1728,7 +1728,7 @@ body {
 }
 
 .red-card {
-  background: #c62828;
+  background: #e31b23;
 
   color: #fff;
 
@@ -1777,7 +1777,7 @@ body {
 
   justify-content: center;
 
-  background: #c62828;
+  background: #e31b23;
 
   color: #fff;
 
@@ -1878,7 +1878,7 @@ body {
 }
 
 .cover-company {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 9px;
 
@@ -1898,7 +1898,7 @@ body {
 }
 
 .cover-estimate-number {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 15px;
 
@@ -1915,7 +1915,7 @@ body {
 }
 
 .cover-kicker {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 9px;
 
@@ -1939,7 +1939,7 @@ body {
 }
 
 .cover-title span {
-  color: #c62828;
+  color: #e31b23;
 }
 
 .cover-subtitle {
@@ -1975,7 +1975,7 @@ body {
   background: #fff;
 
   border-left:
-    4px solid #c62828;
+    4px solid #e31b23;
 
   box-shadow:
     0 2px 10px
@@ -2043,7 +2043,7 @@ body {
 
   justify-content: center;
 
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 45px;
 
@@ -2071,7 +2071,7 @@ body {
 
   justify-content: space-between;
 
-  background: #c62828;
+  background: #e31b23;
 
   color: #fff;
 }
@@ -2170,7 +2170,7 @@ body {
 }
 
 .photo-icon {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 32px;
 
@@ -2193,10 +2193,10 @@ th {
 
   color: #fff;
 
-  background: #c62828;
+  background: #e31b23;
 
   border:
-    1px solid #c62828;
+    1px solid #e31b23;
 
   font-size: 7px;
 
@@ -2263,7 +2263,7 @@ tbody tr:nth-child(even) td {
 
   color: #fff;
 
-  background: #c62828;
+  background: #e31b23;
 
   font-size: 12px;
 
@@ -2318,7 +2318,7 @@ tbody tr:nth-child(even) td {
 }
 
 .diagram-title {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 11px;
 
@@ -2337,7 +2337,7 @@ tbody tr:nth-child(even) td {
 
 .diagram-capacity,
 .flow-capacity {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 17px;
 
@@ -2553,13 +2553,13 @@ tbody tr:nth-child(even) td {
 }
 
 .solar-node {
-  border-color: #c62828;
+  border-color: #e31b23;
 
   background: #fff8f8;
 }
 
 .inverter-node {
-  border-color: #c62828;
+  border-color: #e31b23;
 
   background: #fff;
 }
@@ -2581,7 +2581,7 @@ tbody tr:nth-child(even) td {
 }
 
 .load-node {
-  border-color: #c62828;
+  border-color: #e31b23;
 
   background: #fff8f8;
 }
@@ -2597,7 +2597,7 @@ tbody tr:nth-child(even) td {
 .flow-icon {
   font-size: 17px;
 
-  color: #c62828;
+  color: #e31b23;
 
   margin-bottom: 2px;
 }
@@ -2619,7 +2619,7 @@ tbody tr:nth-child(even) td {
 }
 
 .flow-node-capacity {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 7px;
 
@@ -2639,7 +2639,7 @@ tbody tr:nth-child(even) td {
 
   justify-content: center;
 
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 15px;
 
@@ -2667,7 +2667,7 @@ tbody tr:nth-child(even) td {
 }
 
 .battery-line {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 15px;
 
@@ -2692,7 +2692,7 @@ tbody tr:nth-child(even) td {
   width: 30mm;
 
   border-top:
-    2px dashed #c62828;
+    2px dashed #e31b23;
 }
 
 .grid-node {
@@ -2701,9 +2701,9 @@ tbody tr:nth-child(even) td {
     5mm;
 
   border:
-    2px solid #c62828;
+    2px solid #e31b23;
 
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 8px;
 
@@ -2720,7 +2720,7 @@ tbody tr:nth-child(even) td {
   background: #fff8f8;
 
   border-left:
-    3px solid #c62828;
+    3px solid #e31b23;
 
   font-size: 7.5px;
 }
@@ -2765,7 +2765,7 @@ tbody tr:nth-child(even) td {
 
   margin-top: 1mm;
 
-  color: #222;
+  color: #20264f;
 
   font-size: 8px;
 }
@@ -2788,7 +2788,7 @@ tbody tr:nth-child(even) td {
   margin:
     0 0 3mm;
 
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 10px;
 
@@ -2821,7 +2821,7 @@ tbody tr:nth-child(even) td {
 }
 
 .box-title {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 10px;
 
@@ -2857,7 +2857,7 @@ tbody tr:nth-child(even) td {
   padding-top: 2mm;
 
   border-top:
-    1px solid #222;
+    1px solid #20264f;
 }
 
 
@@ -2906,7 +2906,7 @@ tbody tr:nth-child(even) td {
 
   border-radius: 50%;
 
-  background: #c62828;
+  background: #e31b23;
 
   color: #fff;
 
@@ -2914,7 +2914,7 @@ tbody tr:nth-child(even) td {
 }
 
 .stars {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 8px;
 
@@ -2945,7 +2945,7 @@ tbody tr:nth-child(even) td {
 }
 
 .testimonial-star {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 35px;
 }
@@ -2966,7 +2966,7 @@ tbody tr:nth-child(even) td {
     20mm
     18mm;
 
-  background: #c62828;
+  background: #e31b23;
 
   color: #fff;
 }
@@ -3011,7 +3011,7 @@ tbody tr:nth-child(even) td {
 }
 
 .contact-title {
-  color: #c62828;
+  color: #e31b23;
 
   font-size: 18px;
 
@@ -3070,12 +3070,118 @@ tbody tr:nth-child(even) td {
 
   justify-content: space-between;
 
-  background: #222;
+  background: #20264f;
 
   color: #fff;
 
   font-size: 7.5px;
 }
+
+
+
+/* Premium proposal polish: clean solar-green identity, refined cards and tables */
+:root { color-scheme:light; }
+html, body { color:#243447; font-family:Arial, Helvetica, sans-serif; }
+.page { padding:13mm 15mm 18mm; }
+.page-header { border-bottom:1.5px solid #d7e6dd; position:relative; }
+.page-header:after { content:""; position:absolute; left:0; bottom:-1.5px; height:2px; width:36mm; background:#e31b23; }
+.brand-name { color:#163c2e; letter-spacing:.25px; }
+.brand-sub { color:#e31b23; letter-spacing:1.25px; }
+.document-title { color:#e31b23; letter-spacing:.6px; }
+.document-number { color:#687789; font-weight:700; }
+.section-title { color:#173d30; border-bottom:2px solid #e31b23; letter-spacing:.15px; }
+.cover-title, .hero-title, .proposal-title { color:#173d30; }
+.info-row { color:#324457; }
+.info-label, .muted, .small-text { color:#6b7887; }
+.terms-box, .bank-box, .signature-box, .technical-summary, .panel-layout-card, .electrical-diagram { border-color:#dce8e1; border-radius:8px; }
+.terms-box, .bank-box, .signature-box { background:#fbfdfc; }
+.box-title, .diagram-title { color:#e31b23; }
+.feature, .testimonial, .technical-item { border:1px solid #e0ebe5; border-radius:8px; background:#fbfdfc; }
+.feature-icon, .avatar { background:#e7f6ed; color:#e31b23; border-radius:9px; }
+.red-card { background:#edf8f1; border:1px solid #d3e9dc; color:#234335; border-radius:10px; }
+.red-card h3 { color:#e31b23; }
+.roof-area { border-color:#d6e6dc; background:#f7fbf8; border-radius:9px; }
+.solar-panel { border-color:#7fae96; }
+.panel-cell { background:#dff1e6; }
+.flow-node { border-radius:8px; }
+.flow-note { background:#f0f8f3; border-left:3px solid #e31b23; padding:10px 12px; border-radius:4px; }
+table { border-collapse:separate; border-spacing:0; border:1px solid #dce7e1; border-radius:7px; overflow:hidden; }
+th { background:#eaf5ef; color:#234a3a; border-color:#d8e7de; }
+td { border-color:#e6eee9; }
+tbody tr:nth-child(even) { background:#f8fbf9; }
+.footer { border-top:1px solid #d9e6de; color:#718176; }
+.testimonial-empty { border:1px solid #dce8e1; border-radius:10px; background:#f8fcf9; }
+@media print { .page { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+
+
+/* GUJRAT SOLAR ENERGY — premium proposal styling */
+@page { size:A4; margin:0; }
+html, body { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+body { font-family:Arial, Helvetica, sans-serif; color:#18362a; background:#fff; }
+.page { background:#fff; color:#18362a; padding:13mm 14mm 17mm; }
+.page-header { border-bottom:1px solid #d9e9df; height:23mm; margin-bottom:7mm; position:relative; }
+.page-header:after { content:""; position:absolute; left:0; bottom:-1px; width:42mm; height:2px; background:#07834f; }
+.brand { gap:10px; }
+.header-logo { width:25mm; max-height:15mm; object-fit:contain; }
+.logo-placeholder { color:#087f4d; font-size:10px; }
+.brand-name { color:#0b4b34; font-size:13px; letter-spacing:.2px; }
+.brand-sub { color:#16865a; font-size:6.5px; letter-spacing:1.1px; }
+.document-title { color:#087f4d; font-size:13px; letter-spacing:.8px; }
+.document-number { color:#65796e; font-size:8px; margin-top:3px; }
+.page-footer, .footer { border-top:1px solid #dce9e1; color:#74867b; font-size:7.5px; }
+.section-title { color:#0b4b34; font-size:14px; font-weight:800; border-left:4px solid #0a965b; padding-left:3mm; margin:0 0 5mm; }
+.cover { background:#fff; }
+.cover-top { border-bottom:3px solid #07834f; padding-bottom:5mm; }
+.cover-logo { max-width:42mm; max-height:23mm; object-fit:contain; }
+.cover-title, .proposal-title { color:#0b4b34; letter-spacing:-.4px; }
+.cover-subtitle, .proposal-subtitle { color:#647a6d; }
+.cover-customer, .customer-highlight { border:1px solid #d7eee0; border-left:4px solid #07834f; border-radius:10px; background:#f4fbf6; padding:6mm; }
+.cover-company, .company-panel { background:#0b4b34; color:#fff; border-radius:12px; padding:6mm; }
+.cover-company *, .company-panel * { color:inherit; }
+.info-card, .customer-card, .details-card, .terms-box, .bank-box, .signature-box, .feature, .testimonial, .technical-card, .spec-card { border:1px solid #dce9e1; border-radius:9px; background:#fff; }
+.info-card, .customer-card, .details-card, .terms-box, .bank-box, .signature-box { padding:4mm; }
+.info-label, .muted, .small-text, .diagram-subtitle { color:#6d8175; }
+.info-value { color:#1c382b; font-weight:600; overflow-wrap:anywhere; }
+table { width:100%; border-collapse:separate; border-spacing:0; }
+thead { display:table-header-group; }
+th { background:#0b4b34; color:#fff; border:0; padding:8px 6px; font-size:7.5px; text-align:left; letter-spacing:.2px; }
+th:first-child { border-radius:6px 0 0 0; }
+th:last-child { border-radius:0 6px 0 0; }
+td { border:0; border-bottom:1px solid #e3eee7; padding:7px 6px; color:#294237; font-size:8.5px; vertical-align:top; }
+tbody tr:nth-child(even) td { background:#f7fbf8; }
+tbody tr { break-inside:avoid; }
+.empty { text-align:center; color:#718479; padding:12px; }
+.right, .text-right { text-align:right; }
+.center, .text-center { text-align:center; }
+.bold, strong { color:#173a2a; }
+.summary, .totals-box { border:1px solid #d7eade; border-radius:10px; background:#f5fbf7; padding:4mm; }
+.summary-row, .total-row { border-bottom:1px solid #dfede4; padding:6px 0; }
+.summary-row.total, .total-row.grand-total { background:#0b4b34; color:#fff; border-radius:7px; padding:10px; margin-top:4px; }
+.summary-row.total *, .total-row.grand-total * { color:#fff; }
+.terms-box h3, .box-title { color:#087f4d; font-size:10px; margin:0 0 2mm; }
+.terms-box p { color:#4c6256; line-height:1.55; }
+.panel-layout-card, .electrical-diagram { border:1px solid #dce9e1; border-radius:12px; padding:5mm; background:#fbfefc; }
+.diagram-heading { border-bottom:1px solid #dce9e1; padding-bottom:3mm; margin-bottom:4mm; }
+.diagram-title { color:#0b4b34; font-size:10px; font-weight:800; letter-spacing:.5px; }
+.diagram-capacity, .flow-capacity { color:#087f4d; background:#e7f8ee; border-radius:7px; padding:3mm; font-weight:800; }
+.roof-area { border:1px dashed #a9cdb8; border-radius:8px; background:#f3faf5; padding:4mm; }
+.solar-panel { border:1px solid #4b8e70; border-radius:3px; background:#164d3c; }
+.panel-number { color:#fff; }
+.flow-node { border:1px solid #cfe5d7; border-radius:8px; background:#fff; padding:3mm; }
+.flow-node-title { color:#0b4b34; font-weight:800; }
+.flow-node-sub { color:#63796c; }
+.flow-arrow { color:#07834f; font-weight:800; }
+.feature-grid { gap:4mm; }
+.feature { padding:4mm; }
+.feature-icon { background:#e8f8ef; color:#087f4d; border-radius:8px; }
+.testimonial { padding:4mm; }
+.avatar { background:#e8f8ef; color:#087f4d; }
+.stars { color:#e3a008; }
+.bank-signature { gap:5mm; }
+.bank-box, .signature-box { border-color:#dce9e1; border-radius:9px; }
+.signature-line { border-top:1px solid #a9c8b6; padding-top:3mm; }
+.contact-bottom { border-top:1px solid #dce9e1; color:#6d8175; padding-top:3mm; font-size:7.5px; }
+@media print { .page { break-after:page; } .page:last-of-type { break-after:auto; } }
 
 </style>
 
@@ -5041,7 +5147,7 @@ ${pageFooter(
         : `
           <div
             style="
-              color:#c62828;
+              color:#e31b23;
               font-size:18px;
               font-weight:900;
             "

@@ -523,40 +523,7 @@ export default function EmployeeForm({
                   disabled={saving}
                 >
                   <option value="Admin">Admin</option>
-                  <option value="Manager">Manager</option>
-                  <option value="HR">HR</option>
                   <option value="Employee">Employee</option>
-                </select>
-              </div>
-
-              <div className="employee-form__field">
-                <label
-                  className="employee-form__label"
-                  htmlFor="manager"
-                >
-                  Reporting Manager
-                </label>
-
-                <select
-                  id="manager"
-                  name="manager"
-                  className="employee-form__select"
-                  value={form.manager}
-                  onChange={handleChange}
-                  disabled={saving}
-                >
-                  <option value="">
-                    Select reporting manager
-                  </option>
-
-                  {managers.map((item) => (
-                    <option
-                      key={getOptionValue(item)}
-                      value={getOptionValue(item)}
-                    >
-                      {getOptionLabel(item)}
-                    </option>
-                  ))}
                 </select>
               </div>
 

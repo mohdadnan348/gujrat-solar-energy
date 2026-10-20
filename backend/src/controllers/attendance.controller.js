@@ -300,7 +300,7 @@ const checkIn = async (
      * another employee.
      */
     const role = String(req.user?.role || "").toUpperCase();
-    const isSelfServiceRole = role === "EMPLOYEE" || role === "MANAGER";
+    const isSelfServiceRole = role === "EMPLOYEE" || role === "ADMIN";
 
     const employeeId = isSelfServiceRole
       ? req.user.userId
@@ -357,7 +357,7 @@ const checkOut = async (
      * another employee.
      */
     const role = String(req.user?.role || "").toUpperCase();
-    const isSelfServiceRole = role === "EMPLOYEE" || role === "MANAGER";
+    const isSelfServiceRole = role === "EMPLOYEE" || role === "ADMIN";
 
     const employeeId = isSelfServiceRole
       ? req.user.userId
@@ -416,7 +416,7 @@ const getAttendanceSummary = async (
     } = req.query;
 
     const role = String(req.user?.role || "").toUpperCase();
-    const isSelfServiceRole = role === "EMPLOYEE" || role === "MANAGER";
+    const isSelfServiceRole = role === "EMPLOYEE" || role === "ADMIN";
 
     /* Manager and Employee can only see their own attendance summary. */
     const employeeId = isSelfServiceRole

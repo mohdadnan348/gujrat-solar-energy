@@ -10,15 +10,11 @@ export const APP_CONFIG = {
 
 export const ROLES = {
   ADMIN: "ADMIN",
-  MANAGER: "MANAGER",
-  HR: "HR",
   EMPLOYEE: "EMPLOYEE",
 };
 
 export const ROLE_LABELS = {
   [ROLES.ADMIN]: "Admin",
-  [ROLES.MANAGER]: "Manager",
-  [ROLES.HR]: "HR",
   [ROLES.EMPLOYEE]: "Employee",
 };
 
@@ -300,7 +296,6 @@ export const LEAD_ACTIVITY_TYPE_LABELS = {
 export const DEPARTMENTS = [
   "Sales",
   "Operations",
-  "HR",
   "Finance",
   "Administration",
   "Technical",

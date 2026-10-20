@@ -37,8 +37,8 @@ router.get(
   "/my",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getMyLeaveRequests
@@ -49,8 +49,8 @@ router.get(
   "/my/balance",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getMyLeaveBalance
@@ -61,8 +61,8 @@ router.get(
   "/employee/:employeeId/balance",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   getLeaveBalance
 );
@@ -72,8 +72,8 @@ router.post(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   validateLeave,
@@ -85,8 +85,8 @@ router.get(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   getLeaveRequests
 );
@@ -96,8 +96,8 @@ router.patch(
   "/:id/approve",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   approveLeaveRequest
 );
@@ -107,8 +107,8 @@ router.patch(
   "/:id/reject",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   validateLeaveAction,
   rejectLeaveRequest
@@ -119,8 +119,8 @@ router.patch(
   "/:id/cancel",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   validateLeaveAction,
@@ -132,8 +132,8 @@ router.put(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   validateLeaveUpdate,
@@ -145,8 +145,8 @@ router.get(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getLeaveRequest

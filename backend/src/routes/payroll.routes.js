@@ -5,5 +5,5 @@ const { allowRoles } = require("../middleware/role.middleware");
 const { ROLES } = require("../config/constants");
 const router = express.Router();
 router.use(protect);
-router.get("/monthly", allowRoles(ROLES.ADMIN, ROLES.HR), getMonthlyPayroll);
+router.get("/monthly", allowRoles(ROLES.ADMIN, ROLES.ADMIN), getMonthlyPayroll);
 module.exports = router;

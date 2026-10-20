@@ -30,7 +30,7 @@ router.post(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   validateSystemConfiguration,
@@ -44,8 +44,8 @@ router.get(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getSystemConfigurations
@@ -56,8 +56,8 @@ router.get(
   "/lead/:leadId",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getConfigurationsByLead
@@ -68,8 +68,8 @@ router.get(
   "/lead/:leadId/latest",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getLatestConfigurationByLead
@@ -80,8 +80,8 @@ router.get(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getSystemConfiguration
@@ -92,7 +92,7 @@ router.put(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   validateSystemConfigurationUpdate,

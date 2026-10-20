@@ -28,8 +28,8 @@ router.get(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getDashboard
@@ -40,8 +40,8 @@ router.get(
   "/summary",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getDashboardSummary
@@ -52,8 +52,8 @@ router.get(
   "/leads",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getLeadStatusSummary
@@ -64,8 +64,8 @@ router.get(
   "/quotations",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getQuotationSummary
@@ -76,8 +76,8 @@ router.get(
   "/invoices",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getInvoiceSummary
@@ -88,8 +88,8 @@ router.get(
   "/tasks",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getTaskSummary
@@ -100,8 +100,8 @@ router.get(
   "/employee-performance",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   getEmployeePerformance
 );
@@ -111,8 +111,8 @@ router.get(
   "/recent/leads",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getRecentLeads
@@ -123,8 +123,8 @@ router.get(
   "/recent/quotations",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getRecentQuotations
@@ -135,8 +135,8 @@ router.get(
   "/recent/invoices",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getRecentInvoices
@@ -147,8 +147,8 @@ router.get(
   "/upcoming-tasks",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getUpcomingTasks

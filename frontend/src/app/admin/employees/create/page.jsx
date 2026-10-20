@@ -28,6 +28,7 @@ const CreateEmployeePage = () => {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    password: "",
     phone: "",
     alternatePhone: "",
     employeeCode: "",
@@ -292,6 +293,12 @@ const CreateEmployeePage = () => {
         "Enter a valid email address.";
     }
 
+    if (!isEditMode && !form.password) {
+      nextErrors.password = "Set a password for this employee.";
+    } else if (!isEditMode && form.password.length < 8) {
+      nextErrors.password = "Password must be at least 8 characters long.";
+    }
+
     if (!form.phone.trim()) {
       nextErrors.phone =
         "Phone number is required.";
@@ -345,6 +352,7 @@ const CreateEmployeePage = () => {
     return {
       name: form.name.trim(),
       email: form.email.trim(),
+      ...(!isEditMode ? { password: form.password } : {}),
       phone: form.phone.trim(),
       alternatePhone:
         form.alternatePhone.trim(),
@@ -453,14 +461,6 @@ const CreateEmployeePage = () => {
       {
         label: "Employee",
         value: "EMPLOYEE",
-      },
-      {
-        label: "Manager",
-        value: "MANAGER",
-      },
-      {
-        label: "HR",
-        value: "HR",
       },
       {
         label: "Admin",
@@ -613,6 +613,24 @@ const CreateEmployeePage = () => {
                     }
                   />
                 </div>
+
+                {!isEditMode && (
+                  <div className="admin-create-employee-field">
+                    <Input
+                      label="Login Password"
+                      name="password"
+                      type="password"
+                      value={form.password}
+                      onChange={(event) => updateField("password", event.target.value)}
+                      placeholder="Set employee login password"
+                      required
+                      minLength={8}
+                      autoComplete="new-password"
+                      helperText="Minimum 8 characters. This password will be used to sign in."
+                      error={errors.password}
+                    />
+                  </div>
+                )}
 
                 <div className="admin-create-employee-field">
                   <Input

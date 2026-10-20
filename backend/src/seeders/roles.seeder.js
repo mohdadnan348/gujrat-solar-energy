@@ -5,15 +5,7 @@ const seedRoles = async () => {
   const roles = [
     {
       name: ROLES.ADMIN,
-      description: "Complete system access and control",
-    },
-    {
-      name: ROLES.MANAGER,
-      description: "Sales, operations and team management access",
-    },
-    {
-      name: ROLES.HR,
-      description: "Employee, attendance and leave management access",
+      description: "Full system access and control",
     },
     {
       name: ROLES.EMPLOYEE,

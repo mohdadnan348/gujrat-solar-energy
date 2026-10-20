@@ -14,11 +14,11 @@ const getOwnEmployee = async (userId) => Employee.findOne({ user: userId });
 
 const canAccessRequest = async (req, request, { managerTeam = false } = {}) => {
   const role = req.user.role;
-  if ([ROLES.ADMIN, ROLES.HR].includes(role)) return true;
+  if ([ROLES.ADMIN, ROLES.ADMIN].includes(role)) return true;
   const ownEmployee = await getOwnEmployee(req.user.userId);
   if (!ownEmployee) return false;
   if (String(request.employee?._id || request.employee) === String(ownEmployee._id)) return true;
-  if (role === ROLES.MANAGER && managerTeam) {
+  if (role === ROLES.ADMIN && managerTeam) {
     const targetEmployee = await Employee.findById(request.employee?._id || request.employee).select("manager").lean();
     return Boolean(targetEmployee && String(targetEmployee.manager || "") === String(ownEmployee._id));
   }
@@ -32,14 +32,24 @@ const createLeaveRequest = async (
 ) => {
   try {
     const payload = { ...req.body };
-    if ([ROLES.EMPLOYEE, ROLES.MANAGER].includes(req.user.role)) {
+
+    // Employees can only submit leave for their own employee profile.
+    // Admins may submit a request for the employee selected in the admin form;
+    // they do not need a separate Employee profile for their admin account.
+    if (req.user.role === ROLES.EMPLOYEE) {
       const ownEmployee = await getOwnEmployee(req.user.userId);
       if (!ownEmployee) {
         return res.status(404).json({ success: false, message: "Employee profile not found for this account." });
       }
       payload.employee = ownEmployee._id.toString();
-      // Employee/manager leave applications always start pending.
       payload.status = LEAVE_STATUS.PENDING;
+    }
+
+    if (req.user.role === ROLES.ADMIN && !payload.employee) {
+      return res.status(400).json({
+        success: false,
+        message: "Select an employee for the leave request.",
+      });
     }
     const leaveRequest = await leaveService.createLeaveRequest(payload, req.user.userId);
 
@@ -90,13 +100,11 @@ const getLeaveRequests = async (
       endDate,
     } = req.query;
 
-    let employeeFilter = employee;
-    if (req.user.role === ROLES.MANAGER) {
-      const ownEmployee = await getOwnEmployee(req.user.userId);
-      if (!ownEmployee) return res.status(404).json({ success: false, message: "Manager employee profile not found." });
-      const team = await Employee.find({ manager: ownEmployee._id }).select("_id").lean();
-      employeeFilter = [ownEmployee._id.toString(), ...team.map((item) => item._id.toString())];
-    }
+    // Admin leave management must show all company requests. Do not require
+    // the admin account to also have an Employee document (that caused the
+    // "Manager employee profile not found" error on /admin/leaves).
+    // Respect an explicit employee filter if the admin selected one.
+    const employeeFilter = employee || undefined;
     const result = await leaveService.getLeaveRequests({ page, limit, employee: employeeFilter, leaveType, status, dateFrom: startDate, dateTo: endDate });
 
     return res.status(200).json({
@@ -184,7 +192,7 @@ const approveLeaveRequest = async (
     if (!(await canAccessRequest(req, existing, { managerTeam: true })) || req.user.role === ROLES.EMPLOYEE) {
       return res.status(403).json({ success: false, message: "You do not have permission to approve this leave request." });
     }
-    if (req.user.role === ROLES.MANAGER && String(existing.employee?._id || existing.employee) === String((await getOwnEmployee(req.user.userId))?._id)) {
+    if (req.user.role === ROLES.ADMIN && String(existing.employee?._id || existing.employee) === String((await getOwnEmployee(req.user.userId))?._id)) {
       return res.status(403).json({ success: false, message: "Managers cannot approve their own leave request." });
     }
     const leaveRequest = await leaveService.approveLeaveRequest(req.params.id, req.user.userId);
@@ -211,7 +219,7 @@ const rejectLeaveRequest = async (
     if (!(await canAccessRequest(req, existing, { managerTeam: true })) || req.user.role === ROLES.EMPLOYEE) {
       return res.status(403).json({ success: false, message: "You do not have permission to reject this leave request." });
     }
-    if (req.user.role === ROLES.MANAGER && String(existing.employee?._id || existing.employee) === String((await getOwnEmployee(req.user.userId))?._id)) {
+    if (req.user.role === ROLES.ADMIN && String(existing.employee?._id || existing.employee) === String((await getOwnEmployee(req.user.userId))?._id)) {
       return res.status(403).json({ success: false, message: "Managers cannot reject their own leave request." });
     }
     const leaveRequest = await leaveService.rejectLeaveRequest(req.params.id, req.user.userId, reason || req.body.rejectionReason);
@@ -238,7 +246,7 @@ const cancelLeaveRequest = async (
     if (!(await canAccessRequest(req, existing, { managerTeam: false }))) {
       return res.status(403).json({ success: false, message: "You can only cancel your own leave request." });
     }
-    if (![ROLES.ADMIN, ROLES.HR].includes(req.user.role) && existing.status !== LEAVE_STATUS.PENDING) {
+    if (![ROLES.ADMIN, ROLES.ADMIN].includes(req.user.role) && existing.status !== LEAVE_STATUS.PENDING) {
       return res.status(400).json({ success: false, message: "Only pending leave requests can be cancelled by the requester." });
     }
     const leaveRequest = await leaveService.cancelLeaveRequest(req.params.id, req.user.userId, reason || req.body.cancellationReason);
@@ -263,13 +271,8 @@ const getLeaveBalance = async (
       year = new Date().getFullYear(),
     } = req.query;
 
-    if (req.user.role === ROLES.MANAGER) {
-      const ownEmployee = await getOwnEmployee(req.user.userId);
-      const targetEmployee = await Employee.findById(req.params.employeeId).select("manager").lean();
-      const isOwn = ownEmployee && String(ownEmployee._id) === String(req.params.employeeId);
-      const isTeamMember = ownEmployee && targetEmployee && String(targetEmployee.manager || "") === String(ownEmployee._id);
-      if (!isOwn && !isTeamMember) return res.status(403).json({ success: false, message: "You can only view leave balances for your own team." });
-    }
+    // Admins can review leave balances across the company; they are not
+    // required to have a linked Employee profile.
     const balance = await leaveService.getLeaveBalanceForEmployee(req.params.employeeId, Number(year));
 
     return res.status(200).json({

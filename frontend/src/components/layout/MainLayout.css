@@ -109,3 +109,7 @@
     transition: none;
   }
 }
+
+/* Modern Solar CRM workspace canvas */
+.gse-main-layout,.gse-main-layout-content{background:#f4f8f5!important}
+.gse-main-content{background:radial-gradient(ellipse at 95% 0%,rgba(34,166,91,.055),transparent 34%),#f4f8f5!important}

@@ -531,3 +531,204 @@
     transition: none;
   }
 }
+/* Deep green, modern solar-company navigation theme */
+.gse-sidebar {
+  color: #e8f5eb;
+  background: linear-gradient(180deg, #063b25 0%, #075332 52%, #04351f 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 8px 0 28px rgba(5, 45, 27, 0.09);
+}
+.gse-sidebar-brand {
+  border-bottom-color: rgba(255, 255, 255, 0.11);
+}
+.gse-sidebar-brand-text strong {
+  color: #f0fff4;
+}
+.gse-sidebar-brand-text small {
+  color: #a8cbb5;
+}
+.gse-sidebar-close {
+  color: #d5eadb;
+}
+.gse-sidebar-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+.gse-sidebar-profile {
+  background: rgba(255, 255, 255, 0.075);
+  border-color: rgba(255, 255, 255, 0.11);
+  border-radius: 14px;
+}
+.gse-sidebar-user strong {
+  color: #f6fff8;
+}
+.gse-sidebar-user span {
+  color: #8be0a8;
+}
+.gse-sidebar-avatar {
+  color: #07532e;
+  background: #b9f4ca;
+}
+.gse-sidebar-section-title {
+  color: #8fb8a0;
+}
+.gse-sidebar-nav {
+  scrollbar-color: rgba(211, 239, 220, 0.3) transparent;
+}
+.gse-sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(211, 239, 220, 0.28);
+}
+.gse-sidebar-link {
+  color: #c0d8c8;
+  border-radius: 10px;
+  margin-bottom: 4px;
+}
+.gse-sidebar-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.09);
+}
+.gse-sidebar-link-active {
+  color: #063b25;
+  background: #c7f5d3;
+  font-weight: 750;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+.gse-sidebar-link-active::before {
+  background: #34d399;
+}
+@media (max-width: 768px) {
+  .gse-sidebar {
+    box-shadow: 16px 0 38px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Modern Solar CRM theme overrides */
+.gse-sidebar {
+  color: #e4f2e9 !important;
+  background: linear-gradient(
+    180deg,
+    #06472e 0%,
+    #06452d 62%,
+    #043c27 100%
+  ) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 8px 0 28px rgba(4, 49, 31, 0.09) !important;
+}
+.gse-sidebar-brand {
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+.gse-sidebar-logo-icon {
+  background: #18a957 !important;
+  border-radius: 12px !important;
+}
+.gse-sidebar-brand-text strong {
+  color: #fff !important;
+}
+.gse-sidebar-brand-text small {
+  color: #a8cbb7 !important;
+}
+.gse-sidebar-profile {
+  background: rgba(255, 255, 255, 0.075) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  border-radius: 15px !important;
+}
+.gse-sidebar-avatar {
+  background: #baf4cf !important;
+  color: #075c38 !important;
+}
+.gse-sidebar-user strong {
+  color: #fff !important;
+}
+.gse-sidebar-user span {
+  color: #9be2b4 !important;
+}
+.gse-sidebar-section-title {
+  color: #91b8a1 !important;
+  letter-spacing: 0.12em !important;
+}
+.gse-sidebar-nav {
+  scrollbar-color: rgba(188, 230, 203, 0.35) transparent !important;
+}
+.gse-sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(188, 230, 203, 0.35) !important;
+}
+.gse-sidebar-link {
+  color: #c4ddce !important;
+  border-radius: 11px !important;
+  font-weight: 600 !important;
+}
+.gse-sidebar-link:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.095) !important;
+}
+.gse-sidebar-link.active,
+.gse-sidebar-link[aria-current="page"] {
+  color: #073d27 !important;
+  background: #bdf3cf !important;
+  box-shadow: 0 4px 12px rgba(1, 35, 20, 0.1) !important;
+  font-weight: 800 !important;
+}
+.gse-sidebar-link.active svg,
+.gse-sidebar-link[aria-current="page"] svg {
+  color: #075c38 !important;
+}
+
+/* Fix active sidebar item contrast */
+.sidebar a.active,
+.sidebar a[aria-current="page"],
+.sidebar .active {
+  color: #064e35 !important;
+  background: #c6f6d5 !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+}
+
+.sidebar a.active svg,
+.sidebar a[aria-current="page"] svg,
+.sidebar .active svg {
+  color: #064e35 !important;
+  stroke: #064e35 !important;
+  opacity: 1 !important;
+}
+
+.sidebar a.active span,
+.sidebar a[aria-current="page"] span,
+.sidebar .active span {
+  color: #064e35 !important;
+  opacity: 1 !important;
+}
+
+
+
+/* ===== Active navigation contrast fix (actual Sidebar.jsx classes) ===== */
+.gse-sidebar .gse-sidebar-link.gse-sidebar-link-active {
+  color: #064e35 !important;
+  background: #c6f6d5 !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+}
+
+.gse-sidebar .gse-sidebar-link.gse-sidebar-link-active .gse-sidebar-link-label {
+  color: #064e35 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.gse-sidebar .gse-sidebar-link.gse-sidebar-link-active .gse-sidebar-link-icon,
+.gse-sidebar .gse-sidebar-link.gse-sidebar-link-active .gse-sidebar-link-icon svg {
+  color: #064e35 !important;
+  stroke: #064e35 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.gse-sidebar .gse-sidebar-link.gse-sidebar-link-active .gse-sidebar-link-icon svg * {
+  stroke: #064e35 !important;
+  opacity: 1 !important;
+}
+
+.gse-sidebar .gse-sidebar-link.gse-sidebar-link-active:hover {
+  color: #043b28 !important;
+  background: #b6efc8 !important;
+}
+

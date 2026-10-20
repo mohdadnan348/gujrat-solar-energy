@@ -412,7 +412,6 @@ const EmployeeReportPage = () => {
                 { value: "", label: "All Departments" },
                 { value: "SALES", label: "Sales" },
                 { value: "OPERATIONS", label: "Operations" },
-                { value: "HR", label: "Human Resources" },
                 { value: "ADMIN", label: "Administration" },
               ]}
             />

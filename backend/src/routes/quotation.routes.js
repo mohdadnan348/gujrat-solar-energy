@@ -33,7 +33,7 @@ router.use(protect);
 router.get(
   "/",
   validate([quotationListValidator]),
-  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
+  allowRoles("ADMIN", "ADMIN", "EMPLOYEE"),
   getQuotations
 );
 
@@ -41,14 +41,14 @@ router.get(
 router.post(
   "/",
   validate([createQuotationValidator]),
-  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
+  allowRoles("ADMIN", "ADMIN", "EMPLOYEE"),
   createQuotation
 );
 
 // Mark expired quotations
 router.patch(
   "/mark-expired",
-  allowRoles("ADMIN", "MANAGER"),
+  allowRoles("ADMIN", "ADMIN"),
   markExpiredQuotations
 );
 
@@ -56,7 +56,7 @@ router.patch(
 router.get(
   "/:id/items",
   validate([quotationIdValidator]),
-  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
+  allowRoles("ADMIN", "ADMIN", "EMPLOYEE"),
   getQuotationItems
 );
 
@@ -64,7 +64,7 @@ router.get(
 router.get(
   "/:id/bom",
   validate([quotationIdValidator]),
-  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
+  allowRoles("ADMIN", "ADMIN", "EMPLOYEE"),
   getQuotationBOM
 );
 
@@ -72,7 +72,7 @@ router.get(
 router.get(
   "/:id",
   validate([quotationIdValidator]),
-  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
+  allowRoles("ADMIN", "ADMIN", "EMPLOYEE"),
   getQuotation
 );
 
@@ -80,7 +80,7 @@ router.get(
 router.put(
   "/:id",
   validate([updateQuotationValidator]),
-  allowRoles("ADMIN", "MANAGER"),
+  allowRoles("ADMIN", "ADMIN"),
   updateQuotation
 );
 
@@ -88,7 +88,7 @@ router.put(
 router.patch(
   "/:id/send",
   validate([quotationIdValidator]),
-  allowRoles("ADMIN", "MANAGER"),
+  allowRoles("ADMIN", "ADMIN"),
   sendQuotation
 );
 
@@ -96,7 +96,7 @@ router.patch(
 router.patch(
   "/:id/accept",
   validate([quotationIdValidator]),
-  allowRoles("ADMIN", "MANAGER"),
+  allowRoles("ADMIN", "ADMIN"),
   acceptQuotation
 );
 
@@ -104,7 +104,7 @@ router.patch(
 router.patch(
   "/:id/reject",
   validate([rejectQuotationValidator]),
-  allowRoles("ADMIN", "MANAGER"),
+  allowRoles("ADMIN", "ADMIN"),
   rejectQuotation
 );
 

@@ -3,6 +3,7 @@
 import React, { useContext, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AuthContext from "@/context/AuthContext";
+import { useNotificationContext } from "@/context/NotificationContext";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import "./MainLayout.css";
@@ -15,6 +16,7 @@ const MainLayout = ({
   notificationCount = 0,
 }) => {
   const auth = useContext(AuthContext);
+  const notificationState = useNotificationContext();
   const router = useRouter();
 
   // Prefer the authenticated user over placeholder props such as "User".
@@ -109,7 +111,7 @@ const MainLayout = ({
           sidebarCollapsed={sidebarCollapsed}
           onSearch={onSearch}
           onLogout={handleLogout}
-          notificationCount={notificationCount}
+          notificationCount={notificationState.unreadCount ?? notificationCount}
         />
 
         <main className="gse-main-content">

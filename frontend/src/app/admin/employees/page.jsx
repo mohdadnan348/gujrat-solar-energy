@@ -570,7 +570,7 @@ const AdminEmployeesPage = () => {
 
           <div>
             <span>
-              Managers
+              Employees
             </span>
 
             <strong>

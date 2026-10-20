@@ -20,7 +20,7 @@ const notificationSchema = new mongoose.Schema(
     expiresAt: { type: Date, default: null },
     isBroadcast: { type: Boolean, default: false, index: true },
     broadcastId: { type: String, default: null, index: true },
-    audienceRole: { type: String, enum: ["EMPLOYEE", "MANAGER", "ALL", null], default: null },
+    audienceRole: { type: String, enum: ["EMPLOYEE", "ALL", null], default: null },
     isRead: { type: Boolean, default: false, index: true },
     readAt: { type: Date, default: null },
     metadata: { type: mongoose.Schema.Types.Mixed, default: {} },

@@ -60,7 +60,7 @@ export default function AdminNotificationsPage() {
   return (
     <main className="admin-notification-page">
       <header className="admin-notification-header">
-        <div><p className="admin-notification-eyebrow">SOLAR CRM · ADMIN</p><h1>Notifications</h1><p>Employees aur Managers ko announcement bhejo aur sent history yahin dekho.</p></div>
+        <div><p className="admin-notification-eyebrow">SOLAR CRM · ADMIN</p><h1>Notifications</h1><p>Employees ko announcement bhejo aur sent history yahin dekho.</p></div>
         <button type="button" className="an-button an-button--secondary" onClick={loadHistory}>Refresh history</button>
       </header>
 
@@ -72,10 +72,8 @@ export default function AdminNotificationsPage() {
         <form className="an-form" onSubmit={handleSend}>
           <label>Send to
             <select value={audience} onChange={(event) => setAudience(event.target.value)}>
-              <option value="ALL">All Employees and Managers</option>
-              <option value="EMPLOYEE">Employees only</option>
-              <option value="MANAGER">Managers only</option>
-            </select>
+              <option value="ALL">All active employees</option>
+                </select>
           </label>
           <label>Notification title
             <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={160} placeholder="e.g. Important team announcement" required />
@@ -97,7 +95,7 @@ export default function AdminNotificationsPage() {
               <article className="an-history-card" key={item._id || item.broadcastId}>
                 <div className="an-history-card__top"><div><h3>{item.title}</h3><p className="an-sent-date">Sent on {formatDate(item.sentAt)}</p></div><span className="an-sent-badge">Sent</span></div>
                 <p className="an-history-message">{item.message}</p>
-                <div className="an-history-stats"><span><strong>{item.recipientCount || 0}</strong> recipients</span><span><strong>{item.readCount || 0}</strong> read</span><span><strong>{Math.max(0, (item.recipientCount || 0) - (item.readCount || 0))}</strong> unread</span><span>Audience: {item.audience === "ALL" ? "Employees + Managers" : item.audience === "EMPLOYEE" ? "Employees" : "Managers"}</span></div>
+                <div className="an-history-stats"><span><strong>{item.recipientCount || 0}</strong> recipients</span><span><strong>{item.readCount || 0}</strong> read</span><span><strong>{Math.max(0, (item.recipientCount || 0) - (item.readCount || 0))}</strong> unread</span><span>Audience: All active employees</span></div>
               </article>
             ))}
           </div>

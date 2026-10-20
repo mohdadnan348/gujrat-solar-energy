@@ -552,3 +552,11 @@
     animation: none !important;
   }
 }
+
+/* Modern Solar CRM topbar */
+.gse-header{background:rgba(255,255,255,.96)!important;border-bottom:1px solid #e4ece6!important;box-shadow:0 3px 12px rgba(17,53,33,.035)!important;backdrop-filter:blur(14px)}
+.gse-header-menu-button,.gse-header-sidebar-toggle,.gse-header-notification{border-color:#dce7df!important;border-radius:11px!important;color:#64756b!important;background:#fff!important}
+.gse-header-menu-button:hover,.gse-header-sidebar-toggle:hover,.gse-header-notification:hover{border-color:#b8e5c8!important;color:#087b43!important;background:#f0fbf3!important}
+.gse-header-title-main{color:#172a20!important;font-weight:800!important}
+.gse-header-title-subtitle{color:#89968e!important}
+.gse-header-profile-button:hover,.gse-header-profile-button[aria-expanded="true"]{background:#f0fbf3!important;border-color:#d8efdf!important}

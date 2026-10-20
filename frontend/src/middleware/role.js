@@ -5,8 +5,6 @@ import { getUserRole, hasRole } from "@/lib/auth";
  */
 export const ROLES = Object.freeze({
   ADMIN: "admin",
-  MANAGER: "manager",
-  HR: "hr",
   EMPLOYEE: "employee",
 });
 
@@ -79,11 +77,6 @@ export const getRoleDashboard = (role) => {
     case ROLES.ADMIN:
       return "/admin/dashboard";
 
-    case ROLES.MANAGER:
-      return "/manager/dashboard";
-
-    case ROLES.HR:
-      return "/hr/dashboard";
 
     case ROLES.EMPLOYEE:
       return "/employee/dashboard";

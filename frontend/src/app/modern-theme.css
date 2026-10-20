@@ -1,0 +1,283 @@
+/* Modern Solar CRM Theme — visual-only overrides for Admin and Employee pages */
+:root {
+  --primary: #13834b;
+  --primary-dark: #075c38;
+  --primary-light: #d9f8e4;
+  --secondary: #10251b;
+  --accent: #22a65b;
+  --background: #f4f8f5;
+  --surface: #ffffff;
+  --surface-soft: #eef6f0;
+  --text-primary: #132a20;
+  --text-secondary: #52665a;
+  --text-muted: #849188;
+  --border: #e0eae3;
+  --border-light: #edf3ef;
+  --success: #13834b;
+  --shadow-sm: 0 2px 8px rgba(18, 54, 34, .035);
+  --shadow-md: 0 8px 24px rgba(18, 54, 34, .055);
+  --shadow-lg: 0 18px 44px rgba(18, 54, 34, .10);
+}
+
+body {
+  background: #f4f8f5;
+  color: #132a20;
+}
+
+.gse-main-layout { background: #f4f8f5 !important; }
+.gse-main-content {
+  background:
+    radial-gradient(ellipse at 95% 0%, rgba(34, 166, 91, .055), transparent 34%),
+    #f4f8f5 !important;
+}
+.gse-main-layout-content { background: #f4f8f5 !important; }
+
+/* Dark forest-green navigation, inspired by the provided dashboard reference */
+.gse-sidebar {
+  color: #e4f2e9 !important;
+  background: linear-gradient(180deg, #06472e 0%, #06452d 62%, #043c27 100%) !important;
+  border-right: 1px solid rgba(255,255,255,.08) !important;
+  box-shadow: 8px 0 28px rgba(4, 49, 31, .09) !important;
+}
+.gse-sidebar-brand { border-bottom-color: rgba(255,255,255,.10) !important; }
+.gse-sidebar-logo-icon {
+  background: #18a957 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 5px 14px rgba(24,169,87,.22) !important;
+}
+.gse-sidebar-brand-text strong { color: #fff !important; }
+.gse-sidebar-brand-text small { color: #a8cbb7 !important; }
+.gse-sidebar-close { color: #d7eee0 !important; }
+.gse-sidebar-close:hover { color: #fff !important; background: rgba(255,255,255,.10) !important; }
+.gse-sidebar-profile {
+  background: rgba(255,255,255,.075) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  border-radius: 15px !important;
+}
+.gse-sidebar-avatar { background: #baf4cf !important; color: #075c38 !important; }
+.gse-sidebar-user strong { color: #fff !important; }
+.gse-sidebar-user span { color: #9be2b4 !important; }
+.gse-sidebar-section-title { color: #91b8a1 !important; letter-spacing: .12em !important; }
+.gse-sidebar-nav { scrollbar-color: rgba(188,230,203,.35) transparent !important; }
+.gse-sidebar-nav::-webkit-scrollbar-thumb { background: rgba(188,230,203,.35) !important; }
+.gse-sidebar-link {
+  color: #c4ddce !important;
+  border-radius: 11px !important;
+  font-weight: 600 !important;
+  transition: background .18s ease, color .18s ease, transform .18s ease !important;
+}
+.gse-sidebar-link:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,.095) !important;
+  transform: translateX(2px);
+}
+.gse-sidebar-link.active,
+.gse-sidebar-link[aria-current="page"] {
+  color: #073d27 !important;
+  background: #bdf3cf !important;
+  box-shadow: 0 4px 12px rgba(1,35,20,.10) !important;
+  font-weight: 800 !important;
+}
+.gse-sidebar-link.active svg,
+.gse-sidebar-link[aria-current="page"] svg { color: #075c38 !important; }
+.gse-sidebar-footer { border-top-color: rgba(255,255,255,.12) !important; }
+.gse-sidebar-footer * { color: inherit; }
+
+/* Clean white topbar */
+.gse-header {
+  background: rgba(255,255,255,.96) !important;
+  border-bottom: 1px solid #e4ece6 !important;
+  box-shadow: 0 3px 12px rgba(17, 53, 33, .035) !important;
+  backdrop-filter: blur(14px);
+}
+.gse-header-menu-button,
+.gse-header-sidebar-toggle,
+.gse-header-notification {
+  border-color: #dce7df !important;
+  border-radius: 11px !important;
+  color: #64756b !important;
+  background: #fff !important;
+}
+.gse-header-menu-button:hover,
+.gse-header-sidebar-toggle:hover,
+.gse-header-notification:hover {
+  border-color: #b8e5c8 !important;
+  color: #087b43 !important;
+  background: #f0fbf3 !important;
+}
+.gse-header-title-main { color: #172a20 !important; font-weight: 800 !important; }
+.gse-header-title-subtitle { color: #89968e !important; }
+.gse-header-profile-button:hover,
+.gse-header-profile-button[aria-expanded="true"] {
+  background: #f0fbf3 !important;
+  border-color: #d8efdf !important;
+}
+
+/* Common page headers */
+.gse-main-content [class$="-header"] h1,
+.gse-main-content [class*="-page-header"] h1,
+.gse-main-content [class$="-header"] h2 {
+  letter-spacing: -.025em;
+}
+.gse-main-content [class$="-page"],
+.gse-main-content [class*="-page-container"] {
+  color: #132a20;
+}
+.gse-main-content [class$="-page"] {
+  background-color: transparent;
+}
+.gse-main-content [class$="-page"] > header,
+.gse-main-content [class$="-page"] > .admin-leads-header,
+.gse-main-content [class$="-page"] > .admin-dashboard-header,
+.gse-main-content [class$="-page"] > .employee-attendance-header {
+  margin-bottom: 24px;
+}
+
+/* Common cards/panels on all role pages */
+.gse-main-content [class*="-table-card"],
+.gse-main-content [class*="-list-card"],
+.gse-main-content [class*="-filter-card"],
+.gse-main-content [class*="-form-card"],
+.gse-main-content [class*="-details-card"],
+.gse-main-content [class*="-section-card"],
+.gse-main-content [class*="-content-card"],
+.gse-main-content [class*="-stat-card"],
+.gse-main-content [class*="-summary-card"],
+.gse-main-content [class*="-recent-card"],
+.gse-main-content .card,
+.gse-main-content .admin-dashboard-section,
+.gse-main-content .employee-attendance-card {
+  border-color: #e0eae3;
+  border-radius: 17px;
+  box-shadow: 0 7px 24px rgba(17, 58, 35, .045);
+}
+.gse-main-content [class*="-table-header"],
+.gse-main-content [class*="-section-header"] {
+  border-bottom-color: #edf3ef;
+}
+
+/* Form fields across leads, tasks, attendance, quotations, settings, etc. */
+.gse-main-content input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.gse-main-content select,
+.gse-main-content textarea {
+  border-color: #d9e5dd;
+  border-radius: 10px;
+  background-color: #fff;
+  color: #1d3829;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.gse-main-content input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+.gse-main-content select:focus,
+.gse-main-content textarea:focus {
+  border-color: #31a765 !important;
+  box-shadow: 0 0 0 3px rgba(19,131,75,.11) !important;
+  outline: none;
+}
+.gse-main-content label { color: #3e5949; font-weight: 650; }
+
+/* Buttons retain their variants, but get consistent radius and interactions */
+.gse-main-content button,
+.gse-main-content [role="button"] {
+  border-radius: 10px;
+  transition: box-shadow .18s ease, border-color .18s ease, background-color .18s ease, transform .18s ease;
+}
+.gse-main-content button:focus-visible,
+.gse-main-content a:focus-visible,
+.gse-main-content select:focus-visible {
+  outline: 3px solid rgba(19,131,75,.22);
+  outline-offset: 2px;
+}
+.gse-main-content button:disabled { opacity: .58; cursor: not-allowed; }
+
+/* Tables: subtle header, readable rows, light hover */
+.gse-main-content table thead th {
+  background: #f3f8f4;
+  color: #65776b;
+  border-bottom-color: #e2ebe5;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+.gse-main-content table tbody td { border-bottom-color: #edf3ef; }
+.gse-main-content table tbody tr:hover { background: #f7fcf8; }
+
+/* Pills/badges and alerts */
+.gse-main-content [class*="badge"],
+.gse-main-content [class*="status-badge"],
+.gse-main-content [class*="-status"] { border-radius: 999px; }
+.gse-main-content [class*="-error"],
+.gse-main-content [role="alert"] { border-radius: 12px; }
+
+/* Admin dashboard */
+.admin-dashboard-page {
+  padding: clamp(16px, 2vw, 30px) !important;
+  background: radial-gradient(ellipse at 95% 0%, rgba(34,166,91,.075), transparent 32%), #f4f8f5 !important;
+  color: #132a20 !important;
+}
+.admin-dashboard-header {
+  align-items: center !important;
+  padding: 2px 2px 20px;
+  border-bottom: 1px solid #e2ebe5;
+}
+.admin-dashboard-breadcrumb { color: #13834b !important; font-weight: 800 !important; }
+.admin-dashboard-header h1 { color: #10251b !important; font-size: clamp(28px, 2.25vw, 36px) !important; font-weight: 850 !important; letter-spacing: -.045em !important; }
+.admin-dashboard-header p { color: #748279 !important; }
+.admin-dashboard-section {
+  border-radius: 20px !important;
+  border-color: #e0eae3 !important;
+  box-shadow: 0 10px 30px rgba(20,58,37,.045) !important;
+}
+.admin-dashboard-section-header { padding-bottom: 18px; border-bottom: 1px solid #edf3ef; }
+.admin-dashboard-section-header h2,
+.admin-dashboard-card-header h2 { color: #153b28 !important; font-weight: 800 !important; }
+.admin-dashboard-recent-grid { gap: 20px !important; }
+.admin-dashboard-recent-card {
+  border-radius: 19px !important;
+  border-color: #e0eae3 !important;
+  box-shadow: 0 8px 26px rgba(20,58,37,.045) !important;
+}
+.admin-dashboard-recent-card .admin-dashboard-card-header {
+  padding-bottom: 15px;
+  border-bottom: 1px solid #edf3ef;
+}
+.admin-dashboard-footer-summary {
+  padding: 14px;
+  border: 1px solid #d9eee0;
+  border-radius: 18px;
+  background: linear-gradient(120deg,#edf9f1,#f8fcf9);
+}
+.admin-dashboard-footer-summary > div {
+  border-color: #e1eee5 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 15px rgba(20,58,37,.035) !important;
+}
+
+/* Employee dashboard */
+.employee-dashboard {
+  padding: clamp(14px, 2vw, 28px) !important;
+  border-radius: 18px;
+  background: radial-gradient(ellipse at 95% 0%, rgba(34,166,91,.06), transparent 30%), #f4f8f5 !important;
+  color: #132a20 !important;
+}
+.employee-dashboard .employee-dashboard-header {
+  padding: 20px 22px !important;
+  margin-bottom: 22px !important;
+  border: 1px solid #e2ece5;
+  border-radius: 18px;
+  background: linear-gradient(115deg,#fff 0%,#f5fcf6 100%);
+  box-shadow: 0 8px 24px rgba(19,55,35,.04);
+}
+.employee-dashboard .employee-dashboard-header h1 { color: #10251b !important; font-weight: 850 !important; }
+.employee-dashboard .employee-dashboard-eyebrow { background: #e7f7ec; color: #137342 !important; border-radius: 999px; }
+
+/* Responsive all pages */
+@media (max-width: 900px) {
+  .gse-main-content { padding: 18px !important; }
+}
+@media (max-width: 640px) {
+  .gse-main-content { padding: 12px !important; }
+  .gse-main-content [class$="-page"] { padding: 14px !important; }
+  .gse-main-content [class$="-header"] { gap: 12px; }
+  .gse-main-content [class$="-header"] h1 { font-size: 25px; }
+}

@@ -20,7 +20,7 @@ router.use(protect);
 // Get all users
 router.get(
   "/",
-  allowRoles("ADMIN", "MANAGER", "HR"),
+  allowRoles("ADMIN"),
   getUsers
 );
 
@@ -34,7 +34,7 @@ router.patch(
 // Get user by ID
 router.get(
   "/:id",
-  allowRoles("ADMIN", "MANAGER", "HR"),
+  allowRoles("ADMIN"),
   getUser
 );
 

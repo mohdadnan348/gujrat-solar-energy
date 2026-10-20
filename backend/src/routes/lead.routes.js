@@ -35,7 +35,7 @@ router.post(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   validateLead,
@@ -48,8 +48,8 @@ router.get(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   getLeads
 );
@@ -66,8 +66,8 @@ router.get(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getLead
@@ -78,7 +78,7 @@ router.put(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   validateLeadUpdate,
@@ -91,7 +91,7 @@ router.patch(
   "/:id/assign",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   validateLeadAssignment,
   assignLead
@@ -103,7 +103,7 @@ router.patch(
   "/:id/transfer",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   validateLeadAssignment,
   transferLead
@@ -114,7 +114,7 @@ router.patch(
   "/:id/status",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   validateLeadStatus,
@@ -126,7 +126,7 @@ router.patch(
   "/:id/close",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   closeLead
 );

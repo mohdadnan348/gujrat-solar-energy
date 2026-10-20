@@ -25,7 +25,7 @@ router.post(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   createActivityLog
 );
@@ -35,7 +35,7 @@ router.get(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   getActivityLogs
 );
@@ -45,7 +45,7 @@ router.get(
   "/record/:recordId",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   getRecordActivityLogs
 );
@@ -55,7 +55,7 @@ router.get(
   "/user/:userId",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   getUserActivityLogs
 );
@@ -65,7 +65,7 @@ router.get(
   "/module/:module",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   getModuleActivityLogs
 );
@@ -75,7 +75,7 @@ router.get(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   getActivityLog
 );

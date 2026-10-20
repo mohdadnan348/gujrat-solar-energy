@@ -23,7 +23,7 @@ const createUserValidator = [
 
   body("role")
     .optional()
-    .isIn(["Admin", "Manager", "HR", "Employee"])
+    .isIn(["Admin", "Employee"])
     .withMessage("Invalid user role."),
 
   body("status")
@@ -57,7 +57,7 @@ const updateUserValidator = [
 
   body("role")
     .optional()
-    .isIn(["Admin", "Manager", "HR", "Employee"])
+    .isIn(["Admin", "Employee"])
     .withMessage("Invalid user role."),
 
   body("status")

@@ -23,7 +23,7 @@ router.get(
   "/follow-ups",
   allowRoles(
     "ADMIN",
-    "MANAGER",
+    "ADMIN",
     "EMPLOYEE"
   ),
   getFollowUps
@@ -35,7 +35,7 @@ router.post(
   "/lead/:leadId",
   allowRoles(
     "ADMIN",
-    "MANAGER",
+    "ADMIN",
     "EMPLOYEE"
   ),
   createActivity
@@ -47,7 +47,7 @@ router.get(
   "/lead/:leadId",
   allowRoles(
     "ADMIN",
-    "MANAGER",
+    "ADMIN",
     "EMPLOYEE"
   ),
   getLeadActivities
@@ -58,7 +58,7 @@ router.get(
   "/:id",
   allowRoles(
     "ADMIN",
-    "MANAGER",
+    "ADMIN",
     "EMPLOYEE"
   ),
   getActivityById
@@ -69,7 +69,7 @@ router.put(
   "/:id",
   allowRoles(
     "ADMIN",
-    "MANAGER",
+    "ADMIN",
     "EMPLOYEE"
   ),
   updateActivity
@@ -81,7 +81,7 @@ router.delete(
   "/:id",
   allowRoles(
     "ADMIN",
-    "MANAGER"
+    "ADMIN"
   ),
   deleteActivity
 );

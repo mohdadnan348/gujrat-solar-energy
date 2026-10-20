@@ -392,3 +392,256 @@
     font-size: 21px;
   }
 }
+/* Modern Solar CRM dashboard refresh — presentation only; all metrics remain API-driven. */
+.admin-dashboard-page{padding:clamp(16px,2vw,30px);background:radial-gradient(circle at 90% 0%,rgba(22,163,74,.055),transparent 28%),#f5f8f7;color:#132a20}
+.admin-dashboard-header{align-items:center;margin-bottom:26px;padding:2px 0 18px;border-bottom:1px solid #e4ece7}
+.admin-dashboard-breadcrumb{color:#16834b;font-weight:700;letter-spacing:.02em}
+.admin-dashboard-header h1{font-size:clamp(26px,2.3vw,34px);font-weight:800;letter-spacing:-.04em;color:#10251b}
+.admin-dashboard-header p{color:#708077;font-size:14px;line-height:1.65}
+.admin-dashboard-section,.admin-dashboard-recent-card{border:1px solid #e1ebe4!important;border-radius:18px!important;background:rgba(255,255,255,.96)!important;box-shadow:0 8px 28px rgba(19,55,35,.045)!important;overflow:hidden;transition:box-shadow .2s ease,transform .2s ease}
+.admin-dashboard-section:hover,.admin-dashboard-recent-card:hover{box-shadow:0 12px 32px rgba(19,55,35,.075)!important}
+.admin-dashboard-section-header,.admin-dashboard-card-header{padding:18px 20px!important;border-bottom:1px solid #edf2ee!important}
+.admin-dashboard-section-header h2,.admin-dashboard-card-header h2{color:#153b28!important;font-size:15px!important;font-weight:800!important;letter-spacing:-.015em}
+.admin-dashboard-recent-grid{gap:18px!important}
+.admin-dashboard-footer-summary{border-radius:14px;background:#edf8f0;border:1px solid #d8efdf;padding:14px 16px;color:#285d3d}
+.admin-dashboard-error{border-radius:13px;box-shadow:0 4px 15px rgba(190,24,93,.04)}
+.admin-dashboard-page button,.admin-dashboard-page select{border-radius:10px;transition:all .18s ease}
+.admin-dashboard-page button:focus-visible,.admin-dashboard-page a:focus-visible,.admin-dashboard-page select:focus-visible{outline:3px solid rgba(22,163,74,.25);outline-offset:2px}
+@media(max-width:768px){.admin-dashboard-page{padding:15px}.admin-dashboard-header{align-items:flex-start;flex-direction:column}.admin-dashboard-section-header,.admin-dashboard-card-header{padding:15px!important}}
+
+
+/* ===== Premium Solar CRM dashboard polish (presentation only) ===== */
+.admin-dashboard-page {
+  --gse-green: #078348;
+  --gse-green-dark: #075c38;
+  --gse-ink: #132a20;
+  --gse-muted: #718078;
+  --gse-border: #e2ebe5;
+  width: 100%;
+  min-width: 0;
+  padding: clamp(18px, 2.1vw, 34px);
+  background:
+    radial-gradient(ellipse at 92% 0%, rgba(16, 185, 129, .09), transparent 32%),
+    linear-gradient(180deg, #f8fbf9 0%, #f2f7f4 100%);
+  color: var(--gse-ink);
+  box-sizing: border-box;
+}
+
+.admin-dashboard-page * {
+  box-sizing: border-box;
+}
+
+.admin-dashboard-header {
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 26px;
+  padding: 4px 2px 22px;
+  border-bottom: 1px solid #e2ebe5;
+}
+
+.admin-dashboard-breadcrumb {
+  margin-bottom: 10px;
+  color: var(--gse-green);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .045em;
+}
+
+.admin-dashboard-header h1 {
+  margin: 0;
+  color: #10251b;
+  font-size: clamp(28px, 2.25vw, 36px);
+  font-weight: 850;
+  line-height: 1.12;
+  letter-spacing: -.045em;
+}
+
+.admin-dashboard-header p {
+  margin-top: 10px;
+  color: #748279;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.admin-dashboard-page .admin-dashboard-section {
+  margin-bottom: 22px;
+  padding: 22px;
+  border: 1px solid var(--gse-border);
+  border-radius: 20px;
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 10px 30px rgba(20, 58, 37, .045);
+}
+
+.admin-dashboard-section-header,
+.admin-dashboard-card-header {
+  gap: 16px;
+}
+
+.admin-dashboard-section-header {
+  margin: 0 0 18px;
+  padding: 0 0 18px;
+  border-bottom: 1px solid #edf2ee;
+}
+
+.admin-dashboard-section-header h2,
+.admin-dashboard-card-header h2 {
+  margin: 0;
+  color: #153b28;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.015em;
+}
+
+.admin-dashboard-section-header p,
+.admin-dashboard-card-header p {
+  margin-top: 6px;
+  color: #849188;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.admin-dashboard-page .gse-stats-grid {
+  gap: 16px;
+}
+
+.admin-dashboard-page .gse-stat-grid-item {
+  min-width: 0;
+  border: 1px solid #e2ebe5;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #fff 0%, #fbfefc 100%);
+  box-shadow: 0 5px 18px rgba(21, 59, 40, .04);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.admin-dashboard-page .gse-stat-grid-item:hover {
+  transform: translateY(-3px);
+  border-color: #c7e7d3;
+  box-shadow: 0 12px 26px rgba(21, 59, 40, .09);
+}
+
+.admin-dashboard-page .admin-dashboard-recent-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.admin-dashboard-page .admin-dashboard-recent-card {
+  min-width: 0;
+  min-height: 100%;
+  margin: 0;
+  padding: 20px;
+  border: 1px solid var(--gse-border);
+  border-radius: 19px;
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 8px 26px rgba(20, 58, 37, .045);
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+
+.admin-dashboard-page .admin-dashboard-recent-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px rgba(20, 58, 37, .075);
+}
+
+.admin-dashboard-page .admin-dashboard-recent-card .admin-dashboard-card-header {
+  margin: 0 0 14px;
+  padding: 0 0 16px;
+  border-bottom: 1px solid #edf2ee;
+}
+
+.admin-dashboard-page .admin-dashboard-footer-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 0;
+  padding: 14px;
+  border: 1px solid #d9eee0;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #edf9f1, #f8fcf9);
+}
+
+.admin-dashboard-page .admin-dashboard-footer-summary > div {
+  min-width: 0;
+  padding: 20px 22px;
+  border: 1px solid #e1eee5;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 15px rgba(20, 58, 37, .035);
+}
+
+.admin-dashboard-page .admin-dashboard-footer-summary span {
+  color: #748279;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.admin-dashboard-page .admin-dashboard-footer-summary strong {
+  color: #123e29;
+  font-size: 26px;
+  font-weight: 850;
+}
+
+.admin-dashboard-page button,
+.admin-dashboard-page select {
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.admin-dashboard-page button:hover:not(:disabled) {
+  filter: brightness(.985);
+}
+
+.admin-dashboard-page button:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
+
+.admin-dashboard-page .admin-dashboard-error {
+  border-radius: 14px;
+  box-shadow: 0 5px 18px rgba(190, 24, 93, .05);
+}
+
+@media (max-width: 1250px) {
+  .admin-dashboard-page .admin-dashboard-recent-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-dashboard-page {
+    padding: 20px;
+  }
+  .admin-dashboard-page .admin-dashboard-recent-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-dashboard-page .admin-dashboard-section {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-dashboard-page {
+    padding: 14px;
+  }
+  .admin-dashboard-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: 18px;
+  }
+  .admin-dashboard-page .admin-dashboard-section {
+    padding: 15px;
+    border-radius: 15px;
+  }
+  .admin-dashboard-page .gse-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .admin-dashboard-page .admin-dashboard-footer-summary {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+  .admin-dashboard-page .admin-dashboard-footer-summary > div {
+    padding: 16px;
+  }
+}

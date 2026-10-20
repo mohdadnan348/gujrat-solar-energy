@@ -17,3 +17,30 @@
     gap: 12px;
   }
 }
+
+/* Premium stat grid polish */
+.gse-stats-grid {
+  align-items: stretch;
+}
+
+.gse-stats-grid .gse-stat-grid-item {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #e2ebe5;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff 0%, #fbfefc 100%);
+  box-shadow: 0 5px 18px rgba(21, 59, 40, .045);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.gse-stats-grid .gse-stat-grid-item:hover {
+  transform: translateY(-3px);
+  border-color: #c7e7d3;
+  box-shadow: 0 12px 26px rgba(21, 59, 40, .09);
+}
+
+@media (max-width: 600px) {
+  .gse-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

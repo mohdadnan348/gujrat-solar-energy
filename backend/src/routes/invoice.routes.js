@@ -26,7 +26,7 @@ router.use(protect);
 router.get(
   "/",
   validate([invoiceListValidator]),
-  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
+  allowRoles("ADMIN", "ADMIN", "EMPLOYEE"),
   invoiceController.getInvoices
 );
 
@@ -38,7 +38,7 @@ router.get(
 router.post(
   "/",
   validate([createInvoiceValidator]),
-  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
+  allowRoles("ADMIN", "ADMIN", "EMPLOYEE"),
   invoiceController.createInvoice
 );
 
@@ -49,7 +49,7 @@ router.post(
 */
 router.post(
   "/from-quotation/:quotationId",
-  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
+  allowRoles("ADMIN", "ADMIN", "EMPLOYEE"),
   invoiceController.createInvoiceFromQuotation
 );
 
@@ -60,7 +60,7 @@ router.post(
 */
 router.patch(
   "/mark-overdue",
-  allowRoles("ADMIN", "MANAGER"),
+  allowRoles("ADMIN", "ADMIN"),
   invoiceController.markInvoicesOverdue
 );
 
@@ -72,7 +72,7 @@ router.patch(
 router.get(
   "/:id/items",
   validate([invoiceIdValidator]),
-  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
+  allowRoles("ADMIN", "ADMIN", "EMPLOYEE"),
   invoiceController.getInvoiceItems
 );
 
@@ -84,7 +84,7 @@ router.get(
 router.get(
   "/:id",
   validate([invoiceIdValidator]),
-  allowRoles("ADMIN", "MANAGER", "EMPLOYEE"),
+  allowRoles("ADMIN", "ADMIN", "EMPLOYEE"),
   invoiceController.getInvoice
 );
 
@@ -96,7 +96,7 @@ router.get(
 router.put(
   "/:id",
   validate([updateInvoiceValidator]),
-  allowRoles("ADMIN", "MANAGER"),
+  allowRoles("ADMIN", "ADMIN"),
   invoiceController.updateInvoice
 );
 
@@ -108,7 +108,7 @@ router.put(
 router.patch(
   "/:id/issue",
   validate([invoiceIdValidator]),
-  allowRoles("ADMIN", "MANAGER"),
+  allowRoles("ADMIN", "ADMIN"),
   invoiceController.issueInvoice
 );
 
@@ -134,7 +134,7 @@ router.delete(
 router.patch(
   "/:id/cancel",
   validate([cancelInvoiceValidator]),
-  allowRoles("ADMIN", "MANAGER"),
+  allowRoles("ADMIN", "ADMIN"),
   invoiceController.cancelInvoice
 );
 

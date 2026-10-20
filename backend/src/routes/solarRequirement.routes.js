@@ -32,7 +32,7 @@ router.post(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   validateSolarRequirement,
@@ -48,8 +48,8 @@ router.get(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getSolarRequirements
@@ -61,8 +61,8 @@ router.get(
   "/lead/:leadId",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getSolarRequirementByLead
@@ -73,8 +73,8 @@ router.get(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getSolarRequirement
@@ -85,7 +85,7 @@ router.put(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   validateSolarRequirementUpdate,
@@ -97,7 +97,7 @@ router.patch(
   "/:id/survey-status",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   updateSurveyStatus
@@ -108,7 +108,7 @@ router.patch(
   "/:id/photos",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   addPhotos
@@ -119,7 +119,7 @@ router.patch(
   "/:id/documents",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   addDocuments

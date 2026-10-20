@@ -64,10 +64,6 @@ export default function LoginPage() {
 
       if (normalizedRole === "admin") {
         router.push("/admin/dashboard");
-      } else if (normalizedRole === "manager") {
-        router.push("/manager/dashboard");
-      } else if (normalizedRole === "hr") {
-        router.push("/hr/dashboard");
       } else if (normalizedRole === "employee") {
         router.push("/employee/dashboard");
       } else {

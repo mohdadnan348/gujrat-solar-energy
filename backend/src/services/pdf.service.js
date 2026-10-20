@@ -84,11 +84,31 @@ const getQuotationPdfData = async (
     getActiveSettings(),
   ]);
 
-  const company =
-    settings?.company || {};
+  // Brand defaults are based on the approved EST-00215 proposal.
+  // Values saved in Settings always take priority over these fallbacks.
+  const configuredCompany = settings?.company || {};
+  const company = {
+    name: "Gujrat Solar Energy",
+    legalName: "Gujrat Solar Energy",
+    address: "83/161-3, Parampurwa, Juhi",
+    city: "Kanpur Nagar",
+    state: "Uttar Pradesh",
+    pincode: "208014",
+    phone: "+91 8401187313",
+    email: "Wasimdanish0311@gmail.com",
+    gstin: "09GBQPS0127B1ZL",
+    ...configuredCompany,
+  };
 
-  const bankDetails =
-    settings?.bankDetails || {};
+  const configuredBankDetails = settings?.bankDetails || {};
+  const bankDetails = {
+    bankName: "Punjab and Sind Bank",
+    accountName: "GUJRAT SOLAR ENERGY",
+    accountNumber: "06241100006312",
+    ifsc: "PSIB0000624",
+    branch: "Harjinder Nagar, Kanpur",
+    ...configuredBankDetails,
+  };
 
   const signature =
     settings?.signature || {};
@@ -257,11 +277,31 @@ const getInvoicePdfData = async (
     getActiveSettings(),
   ]);
 
-  const company =
-    settings?.company || {};
+  // Brand defaults are based on the approved EST-00215 proposal.
+  // Values saved in Settings always take priority over these fallbacks.
+  const configuredCompany = settings?.company || {};
+  const company = {
+    name: "Gujrat Solar Energy",
+    legalName: "Gujrat Solar Energy",
+    address: "83/161-3, Parampurwa, Juhi",
+    city: "Kanpur Nagar",
+    state: "Uttar Pradesh",
+    pincode: "208014",
+    phone: "+91 8401187313",
+    email: "Wasimdanish0311@gmail.com",
+    gstin: "09GBQPS0127B1ZL",
+    ...configuredCompany,
+  };
 
-  const bankDetails =
-    settings?.bankDetails || {};
+  const configuredBankDetails = settings?.bankDetails || {};
+  const bankDetails = {
+    bankName: "Punjab and Sind Bank",
+    accountName: "GUJRAT SOLAR ENERGY",
+    accountNumber: "06241100006312",
+    ifsc: "PSIB0000624",
+    branch: "Harjinder Nagar, Kanpur",
+    ...configuredBankDetails,
+  };
 
   const signature =
     settings?.signature || {};

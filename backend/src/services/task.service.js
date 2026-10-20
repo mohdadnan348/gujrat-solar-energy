@@ -218,7 +218,7 @@ const canManageTask = async (
 
   return (
     user.role === ROLES.ADMIN ||
-    user.role === ROLES.MANAGER
+    user.role === ROLES.ADMIN
   );
 };
 

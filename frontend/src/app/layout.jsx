@@ -1,5 +1,7 @@
 import "./globals.css";
+import "./modern-theme.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 
 export const metadata = {
   title: "GUJRAT SOLAR ENERGY",
@@ -12,7 +14,9 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <AuthProvider>
-          {children}
+          <NotificationProvider>
+            {children}
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>

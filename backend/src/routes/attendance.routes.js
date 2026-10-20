@@ -43,8 +43,8 @@ router.get(
   "/my",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getMyAttendance
@@ -60,8 +60,8 @@ router.post(
   "/check-in",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   checkIn
@@ -77,8 +77,8 @@ router.post(
   "/check-out",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   checkOut
@@ -101,8 +101,8 @@ router.get(
   "/summary",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getAttendanceSummary
@@ -118,7 +118,7 @@ router.get(
   "/employee/:employeeId",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.HR
+    ROLES.ADMIN
   ),
   getEmployeeAttendance
 );
@@ -133,7 +133,7 @@ router.get(
   "/employee/:employeeId/date/:date",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.HR
+    ROLES.ADMIN
   ),
   getAttendanceByDate
 );
@@ -148,7 +148,7 @@ router.post(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.HR
+    ROLES.ADMIN
   ),
   validateAttendance,
   createAttendance
@@ -164,7 +164,7 @@ router.get(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.HR
+    ROLES.ADMIN
   ),
   getAttendances
 );
@@ -179,7 +179,7 @@ router.put(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.HR
+    ROLES.ADMIN
   ),
   validateAttendanceUpdate,
   updateAttendance
@@ -195,7 +195,7 @@ router.get(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.HR
+    ROLES.ADMIN
   ),
   getAttendance
 );

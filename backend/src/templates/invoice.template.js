@@ -759,6 +759,118 @@ const invoiceTemplate = (data = {}) => {
     font-size: 8px;
   }
 
+
+
+  /* Premium solar-energy invoice styling */
+  :root { color-scheme: light; }
+  body { color:#182638; font-family: Arial, Helvetica, sans-serif; letter-spacing:.05px; }
+  .page { padding:13mm 13mm 15mm; }
+  .top-header { border-bottom:3px solid #e31b23; padding-bottom:6mm; position:relative; }
+  .top-header:after { content:""; position:absolute; bottom:-3px; right:0; width:27%; height:3px; background:#f4bfc3; }
+  .company-name { color:#123329; font-size:21px; letter-spacing:.3px; }
+  .company-address,.company-contact { color:#5b6877; font-size:9px; line-height:1.55; }
+  .invoice-title { color:#e31b23; font-size:27px; letter-spacing:1.1px; }
+  .invoice-meta { gap:4px 10px; margin-top:5px; font-size:9px; }
+  .invoice-meta-label { color:#687789; }
+  .invoice-meta-value { color:#172a40; }
+  .status { background:#fff0f1; border:1px solid #f4bfc3; color:#e31b23; border-radius:999px; padding:4px 10px; }
+  .parties { margin-top:6mm; gap:5mm; grid-template-columns:1fr 1fr; align-items:stretch; }
+  .party-card { border:1px solid #eadcdd; border-radius:8px; padding:4mm; background:#fbfdfc; break-inside:avoid; }
+  .party-title { color:#e31b23; font-size:9px; letter-spacing:.7px; border-bottom:1px solid #eadcdd; padding-bottom:2.5mm; margin-bottom:3mm; }
+  .party-name { color:#142c25; font-size:12px; margin-bottom:2.5mm; }
+  .info-row { gap:6px; margin-bottom:1.6mm; font-size:8.7px; }
+  .info-label { width:29%; color:#6a7786; }
+  .info-value { width:71%; color:#243548; overflow-wrap:anywhere; }
+  .section { margin-top:6mm; }
+  .section-title { color:#143d30; font-size:12px; border-bottom:2px solid #e31b23; padding-bottom:2mm; margin-bottom:3mm; }
+  table { border-collapse:separate; border-spacing:0; overflow:hidden; border:1px solid #eadcdd; border-radius:7px; }
+  th { background:#fff5f5; color:#214a3b; border:0; border-bottom:1px solid #eadcdd; padding:8px 5px; font-size:7.2px; letter-spacing:.35px; }
+  td { border:0; border-bottom:1px solid #e8eeeb; padding:7px 5px; color:#273748; font-size:8.5px; }
+  tbody tr:nth-child(even) { background:#f8fbf9; }
+  tbody tr:last-child td { border-bottom:0; }
+  .small-text { color:#6b7886; font-size:7.7px; }
+  .summary-wrapper { margin-top:5mm; }
+  .summary { width:78mm; background:#fbfdfc; border:1px solid #eadcdd; border-radius:8px; padding:3mm 4mm; }
+  .summary-row { border-bottom:1px solid #e8eeeb; padding:6px 0; color:#536273; }
+  .summary-row strong { color:#1b2c3e; }
+  .summary-row.total { border-top:2px solid #e31b23; border-bottom:0; color:#e31b23; padding:9px 0 4px; font-size:13px; }
+  .summary-row.total strong { color:#e31b23; font-size:14px; }
+  .amount-words { margin-top:5mm; border:1px solid #cfe3d7; border-left:4px solid #e31b23; border-radius:6px; padding:3.5mm 4mm; background:#f5fbf7; }
+  .amount-words-title { color:#648071; font-size:8px; letter-spacing:.7px; }
+  .amount-words-value { color:#20382d; font-size:9px; }
+  .bank-and-notes { gap:5mm; margin-top:5mm; }
+  .box,.terms { border:1px solid #eadcdd; border-radius:7px; background:#fcfdfc; padding:4mm; }
+  .box-title,.terms-title { color:#e31b23; font-size:10px; }
+  .bank-row { font-size:8.5px; margin-bottom:1.5mm; }
+  .bank-label { color:#6b7886; }
+  .bank-value { color:#243548; overflow-wrap:anywhere; }
+  .signature-line { border-color:#a9cbb9; color:#243548; }
+  .footer { border-top:1px solid #d7e5dd; color:#718076; font-size:7.5px; }
+  .notes-section { border-top:1px solid #eadcdd; color:#4d5d6c; }
+  @media print { .page { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+
+
+/* GUJRAT SOLAR ENERGY — refined professional print system */
+@page { size: A4; margin: 0; }
+html, body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+body { color:#172b24; font-family: Arial, Helvetica, sans-serif; font-size:10px; line-height:1.45; }
+.page { width:210mm; min-height:297mm; padding:13mm 13mm 17mm; background:#fff; color:#172b24; }
+.top-header { align-items:flex-start; border-bottom:0; border-radius:0; padding:0 0 7mm; position:relative; gap:8mm; }
+.top-header:after { content:""; display:block; height:3px; position:absolute; bottom:0; left:0; right:0; background:linear-gradient(90deg,#087f4d 0%,#19a768 65%,#d5f4e3 100%); }
+.company-section { width:61%; }
+.company-logo { max-width:42mm; max-height:22mm; margin-bottom:3mm; }
+.company-name { font-size:21px; font-weight:800; letter-spacing:.25px; color:#0b4b34; line-height:1.15; }
+.company-address { color:#52665d; font-size:9px; margin-top:4px; max-width:105mm; }
+.company-contact { color:#52665d; font-size:8.5px; margin-top:2px; overflow-wrap:anywhere; }
+.invoice-heading { width:36%; background:#f0faf4; border:1px solid #d5eee0; border-top:4px solid #07834f; border-radius:12px; padding:5mm; }
+.invoice-title { font-size:22px; letter-spacing:1.2px; color:#087f4d; margin-bottom:3mm; }
+.invoice-meta { gap:5px 8px; text-align:right; font-size:8.5px; }
+.invoice-meta-label { color:#62766b; }
+.invoice-meta-value { color:#173126; font-weight:700; overflow-wrap:anywhere; }
+.status { border:1px solid #b9e5cd; color:#087f4d; background:#eaf9f0; border-radius:999px; padding:4px 10px; letter-spacing:.4px; }
+.parties { gap:5mm; margin-top:6mm; }
+.party-card { border:1px solid #dce9e1; border-radius:10px; padding:4mm; background:#fff; break-inside:avoid; }
+.party-title { color:#087f4d; border-bottom:1px solid #e2eee7; font-size:9px; letter-spacing:.7px; padding-bottom:2.5mm; margin-bottom:3mm; }
+.party-name { font-size:12px; color:#142f23; margin-bottom:2mm; }
+.info-row { margin-bottom:1.5mm; gap:4px; }
+.info-label { color:#708077; width:30%; font-size:8.5px; }
+.info-value { color:#293e33; width:70%; font-size:8.5px; overflow-wrap:anywhere; }
+.section { margin-top:6mm; }
+.section-title { color:#0b4b34; font-size:11px; letter-spacing:.2px; border-bottom:0; border-left:3px solid #0a965b; padding:1mm 0 1mm 3mm; margin-bottom:3mm; }
+table { width:100%; border-collapse:separate; border-spacing:0; }
+thead { display:table-header-group; }
+th { background:#0b4b34; color:#fff; border:0; border-right:1px solid #28644b; padding:8px 5px; font-size:7.5px; letter-spacing:.25px; text-align:left; }
+th:first-child { border-radius:6px 0 0 0; }
+th:last-child { border-radius:0 6px 0 0; }
+td { border:0; border-bottom:1px solid #e3eee7; padding:7px 5px; vertical-align:top; color:#263d31; font-size:8.5px; overflow-wrap:anywhere; }
+tbody tr:nth-child(even) td { background:#f7fbf8; }
+tbody tr { break-inside:avoid; }
+.small-text { color:#708077; font-size:7.8px; line-height:1.35; }
+.empty { text-align:center; padding:12px; color:#708077; }
+.summary-wrapper { margin-top:5mm; }
+.summary { width:82mm; padding:3mm 4mm; background:#f6fbf8; border:1px solid #dcece2; border-radius:10px; }
+.summary-row { border-bottom:1px solid #e2eee7; padding:5px 0; gap:12px; color:#50675a; }
+.summary-row strong { color:#173126; text-align:right; }
+.summary-row.total { background:#0b4b34; color:#fff; border:0; border-radius:7px; margin:4px -2mm -2mm; padding:10px 2mm; font-size:12px; }
+.summary-row.total strong { color:#fff; font-size:14px; }
+.amount-words { margin-top:5mm; border:1px solid #dcece2; border-left:3px solid #0a965b; border-radius:8px; padding:3.5mm; background:#fbfefc; }
+.amount-words-title { color:#6a7e72; font-size:8px; letter-spacing:.8px; font-weight:700; }
+.amount-words-value { color:#173126; font-weight:700; font-size:9px; }
+.bank-and-notes { gap:5mm; margin-top:5mm; }
+.box { border:1px solid #dce9e1; border-radius:9px; padding:4mm; background:#fff; break-inside:avoid; }
+.box-title { color:#087f4d; font-size:9px; letter-spacing:.5px; margin-bottom:3mm; }
+.bank-row { margin-bottom:1.5mm; gap:4px; font-size:8px; }
+.bank-label { color:#708077; width:38%; }
+.bank-value { color:#293e33; width:62%; overflow-wrap:anywhere; }
+.terms { margin-top:5mm; border:1px solid #dce9e1; border-radius:9px; padding:4mm; font-size:8px; color:#52665d; break-inside:avoid; }
+.terms-title { color:#087f4d; font-size:9px; margin-bottom:2mm; }
+.signature-section { margin-top:7mm; }
+.signature { width:60mm; color:#52665d; }
+.signature-image { max-width:40mm; max-height:17mm; object-fit:contain; }
+.signature-line { border-top:1px solid #9fb9aa; margin-top:5mm; padding-top:2mm; color:#173126; }
+.footer { color:#6e8177; border-top:1px solid #dce9e1; font-size:7.5px; padding-top:2mm; bottom:5mm; }
+@media print { .page { break-after:page; } .page:last-child { break-after:auto; } }
+
 </style>
 
 </head>
@@ -951,7 +1063,22 @@ const invoiceTemplate = (data = {}) => {
        BILL FROM / BILL TO
   ================================================= -->
 
-  <div class="parties parties-single">
+  <div class="parties">
+
+    <div class="party-card seller-card">
+
+      <div class="party-title">
+        Seller / Bill From
+      </div>
+
+      <div class="party-name">${escapeHtml(companyName)}</div>
+      <div class="info-row"><div class="info-label">Address</div><div class="info-value">${escapeHtml(sellerAddress || companyAddress)}</div></div>
+      ${seller.phone || companyPhone ? `<div class="info-row"><div class="info-label">Phone</div><div class="info-value">${escapeHtml(seller.phone || companyPhone)}</div></div>` : ""}
+      ${seller.email || companyEmail ? `<div class="info-row"><div class="info-label">Email</div><div class="info-value">${escapeHtml(seller.email || companyEmail)}</div></div>` : ""}
+      ${seller.gstin || companyGstin ? `<div class="info-row"><div class="info-label">GSTIN</div><div class="info-value">${escapeHtml(seller.gstin || companyGstin)}</div></div>` : ""}
+      ${company.pan ? `<div class="info-row"><div class="info-label">PAN</div><div class="info-value">${escapeHtml(company.pan)}</div></div>` : ""}
+
+    </div>
 
     <div class="party-card">
 

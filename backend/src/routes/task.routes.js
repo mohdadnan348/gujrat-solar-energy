@@ -38,7 +38,7 @@ router.post(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   validateTask,
   createTask
@@ -54,8 +54,8 @@ router.get(
   "/my",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getMyTasks
@@ -72,7 +72,7 @@ router.get(
   "/overdue",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getOverdueTasks
@@ -89,8 +89,8 @@ router.get(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR
+    ROLES.ADMIN,
+    ROLES.ADMIN
   ),
   getTasks
 );
@@ -105,7 +105,7 @@ router.patch(
   "/:id/status",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   updateTaskStatus
@@ -121,7 +121,7 @@ router.patch(
   "/:id/complete",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   completeTask
@@ -137,7 +137,7 @@ router.patch(
   "/:id/cancel",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   cancelTask
 );
@@ -154,7 +154,7 @@ router.put(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   validateTaskUpdate,
@@ -171,7 +171,7 @@ router.delete(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   deleteTask
 );
@@ -186,8 +186,8 @@ router.get(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getTask

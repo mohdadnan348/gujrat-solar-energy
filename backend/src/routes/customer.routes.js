@@ -31,7 +31,7 @@ router.post(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   validateCustomer,
@@ -44,8 +44,8 @@ router.get(
   "/",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getCustomers
@@ -57,8 +57,8 @@ router.get(
   "/lead/:leadId",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getCustomerByLead
@@ -70,7 +70,7 @@ router.put(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   validateCustomerUpdate,
@@ -83,7 +83,7 @@ router.patch(
   "/:id/status",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   updateCustomerStatus
 );
@@ -94,7 +94,7 @@ router.delete(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER
+    ROLES.ADMIN
   ),
   deactivateCustomer
 );
@@ -105,8 +105,8 @@ router.get(
   "/:id",
   allowRoles(
     ROLES.ADMIN,
-    ROLES.MANAGER,
-    ROLES.HR,
+    ROLES.ADMIN,
+    ROLES.ADMIN,
     ROLES.EMPLOYEE
   ),
   getCustomer

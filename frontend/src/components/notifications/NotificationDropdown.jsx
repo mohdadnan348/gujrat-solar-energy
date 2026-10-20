@@ -17,6 +17,7 @@ const NotificationDropdown = ({
     unreadCount,
     markAsRead,
     markAllAsRead,
+    refreshNotifications,
   } = useNotification();
 
   useEffect(() => {
@@ -31,6 +32,7 @@ const NotificationDropdown = ({
 
     if (isOpen) {
       document.addEventListener("mousedown", handleOutsideClick);
+      refreshNotifications?.();
     }
 
     return () => {
@@ -39,7 +41,7 @@ const NotificationDropdown = ({
         handleOutsideClick
       );
     };
-  }, [isOpen]);
+  }, [isOpen, refreshNotifications]);
 
   const handleNotificationClick = (notification) => {
     markAsRead(notification);

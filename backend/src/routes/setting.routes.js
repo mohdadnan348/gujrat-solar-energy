@@ -22,13 +22,13 @@ router.use(protect);
 
 router.get(
   "/",
-  allowRoles("ADMIN", "MANAGER", "HR"),
+  allowRoles("ADMIN", "ADMIN", "ADMIN"),
   getSettings
 );
 
 router.get(
   "/document",
-  allowRoles("ADMIN", "MANAGER"),
+  allowRoles("ADMIN", "ADMIN"),
   getDocumentSettings
 );
 

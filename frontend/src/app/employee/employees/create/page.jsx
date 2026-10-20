@@ -448,14 +448,6 @@ const CreateEmployeePage = () => {
         value: "EMPLOYEE",
       },
       {
-        label: "Manager",
-        value: "MANAGER",
-      },
-      {
-        label: "HR",
-        value: "HR",
-      },
-      {
         label: "Admin",
         value: "ADMIN",
       },

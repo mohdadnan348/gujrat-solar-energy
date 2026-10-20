@@ -121,145 +121,6 @@ const ROLE_PERMISSIONS = {
     ],
   },
 
-  [ROLES.MANAGER]: {
-    [MODULES.DASHBOARD]: [VIEW],
-    [MODULES.LEADS]: [
-      VIEW,
-      CREATE,
-      EDIT,
-      ASSIGN,
-      EXPORT,
-    ],
-    [MODULES.SOLAR_REQUIREMENTS]: [
-      VIEW,
-      CREATE,
-      EDIT,
-      EXPORT,
-    ],
-    [MODULES.SYSTEM_CONFIGURATIONS]: [
-      VIEW,
-      CREATE,
-      EDIT,
-      EXPORT,
-    ],
-    [MODULES.QUOTATIONS]: [
-      VIEW,
-      CREATE,
-      EDIT,
-      APPROVE,
-      EXPORT,
-    ],
-    [MODULES.CUSTOMERS]: [
-      VIEW,
-      CREATE,
-      EDIT,
-      EXPORT,
-    ],
-    [MODULES.INVOICES]: [
-      VIEW,
-      CREATE,
-      EDIT,
-      EXPORT,
-    ],
-    [MODULES.TASKS]: [
-      VIEW,
-      CREATE,
-      EDIT,
-      ASSIGN,
-      EXPORT,
-    ],
-    [MODULES.EMPLOYEES]: [
-      VIEW,
-    ],
-    [MODULES.ATTENDANCE]: [
-      VIEW,
-    ],
-    [MODULES.LEAVES]: [
-      VIEW,
-      APPROVE,
-    ],
-    [MODULES.REPORTS]: [
-      VIEW,
-      EXPORT,
-    ],
-    [MODULES.NOTIFICATIONS]: [
-      VIEW,
-      EDIT,
-    ],
-    [MODULES.AUDIT_LOGS]: [
-      VIEW,
-    ],
-    [MODULES.SETTINGS]: [
-      VIEW,
-    ],
-  },
-
-  [ROLES.HR]: {
-    [MODULES.DASHBOARD]: [VIEW],
-    [MODULES.LEADS]: [
-      VIEW,
-    ],
-    [MODULES.SOLAR_REQUIREMENTS]: [
-      VIEW,
-    ],
-    [MODULES.SYSTEM_CONFIGURATIONS]: [
-      VIEW,
-    ],
-    [MODULES.QUOTATIONS]: [
-      VIEW,
-    ],
-    [MODULES.CUSTOMERS]: [
-      VIEW,
-    ],
-    [MODULES.INVOICES]: [
-      VIEW,
-    ],
-    [MODULES.TASKS]: [
-      VIEW,
-      CREATE,
-      EDIT,
-      ASSIGN,
-    ],
-    [MODULES.EMPLOYEES]: [
-      VIEW,
-      CREATE,
-      EDIT,
-      DELETE,
-      EXPORT,
-    ],
-    [MODULES.ATTENDANCE]: [
-      VIEW,
-      CREATE,
-      EDIT,
-      DELETE,
-      EXPORT,
-    ],
-    [MODULES.LEAVES]: [
-      VIEW,
-      CREATE,
-      EDIT,
-      DELETE,
-      APPROVE,
-      EXPORT,
-    ],
-    [MODULES.REPORTS]: [
-      VIEW,
-      EXPORT,
-    ],
-    [MODULES.NOTIFICATIONS]: [
-      VIEW,
-      EDIT,
-      DELETE,
-    ],
-    [MODULES.AUDIT_LOGS]: [
-      VIEW,
-    ],
-    [MODULES.SETTINGS]: [
-      VIEW,
-      EDIT,
-    ],
-  },
-
   [ROLES.EMPLOYEE]: {
     [MODULES.DASHBOARD]: [VIEW],
     [MODULES.LEADS]: [
@@ -419,32 +280,16 @@ export const canExport = (role, module) =>
 export const isAdmin = (role) =>
   normalizeRole(role) === ROLES.ADMIN;
 
-export const isManager = (role) =>
-  normalizeRole(role) === ROLES.MANAGER;
+export const isManager = (_role) => false;
 
-export const isHR = (role) =>
-  normalizeRole(role) === ROLES.HR;
+export const isHR = (_role) => false;
 
 export const isEmployee = (role) =>
   normalizeRole(role) === ROLES.EMPLOYEE;
 
-export const isAdminOrManager = (role) => {
-  const normalizedRole = normalizeRole(role);
+export const isAdminOrManager = (role) => isAdmin(role);
 
-  return (
-    normalizedRole === ROLES.ADMIN ||
-    normalizedRole === ROLES.MANAGER
-  );
-};
-
-export const isAdminOrHR = (role) => {
-  const normalizedRole = normalizeRole(role);
-
-  return (
-    normalizedRole === ROLES.ADMIN ||
-    normalizedRole === ROLES.HR
-  );
-};
+export const isAdminOrHR = (role) => isAdmin(role);
 
 export const canAccessModule = (role, module) =>
   canView(role, module);
