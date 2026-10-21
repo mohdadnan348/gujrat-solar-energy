@@ -15,6 +15,7 @@ import api from "@/services/api";
 const getPdfBlob = async (url, config = {}) => {
   const response = await api.get(url, {
     ...config,
+    timeout: 120000,
     responseType: "blob",
   });
 
