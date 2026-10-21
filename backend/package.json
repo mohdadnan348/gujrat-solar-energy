@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "description": "Gujrat Solar Energy Management System Backend",
   "main": "src/server.js",
-  "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "test": "jest --runInBand"
-  },
+ "scripts": {
+  "start": "node src/server.js",
+  "dev": "nodemon src/server.js",
+  "build": "npx puppeteer browsers install chrome",
+  "test": "jest --runInBand"
+},
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
