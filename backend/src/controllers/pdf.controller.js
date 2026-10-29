@@ -8,8 +8,8 @@ let browserLaunchPromise = null;
 
 // Give production Chrome/Render more time to render larger quotation and invoice HTML.
 const BROWSER_LAUNCH_TIMEOUT = 60000;
-const HTML_CONTENT_TIMEOUT = 60000;
-const IMAGE_LOAD_TIMEOUT = 10000;
+const HTML_CONTENT_TIMEOUT = 90000;
+const IMAGE_LOAD_TIMEOUT = 15000;
 
 const getBrowser = async () => {
   if (browserInstance && browserInstance.connected) {
