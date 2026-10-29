@@ -1164,7 +1164,7 @@ const getConfigurations = async ({
       )
       .populate(
         "solarRequirement",
-        "requiredKw monthlyBill systemType siteAddress"
+        "requiredKw monthlyBill monthlyUnits roofType roofArea siteAddress location connectionType sanctionedLoad systemType batteryRequired batteryCapacity siteSurveyRequired siteSurveyCompleted notes"
       )
       .populate(
         "customer",
@@ -1234,7 +1234,7 @@ const getConfigurationById =
         )
         .populate(
           "solarRequirement",
-          "requiredKw monthlyBill systemType siteAddress"
+          "requiredKw monthlyBill monthlyUnits roofType roofArea siteAddress location connectionType sanctionedLoad systemType batteryRequired batteryCapacity siteSurveyRequired siteSurveyCompleted notes"
         )
         .populate(
           "customer",
@@ -1761,7 +1761,7 @@ const getLatestConfiguration =
         )
         .populate(
           "solarRequirement",
-          "requiredKw monthlyBill systemType siteAddress"
+          "requiredKw monthlyBill monthlyUnits roofType roofArea siteAddress location connectionType sanctionedLoad systemType batteryRequired batteryCapacity siteSurveyRequired siteSurveyCompleted notes"
         )
         .populate(
           "customer",
@@ -1807,7 +1807,7 @@ const getConfigurationsByLead =
       })
         .populate(
           "solarRequirement",
-          "requiredKw monthlyBill systemType siteAddress"
+          "requiredKw monthlyBill monthlyUnits roofType roofArea siteAddress location connectionType sanctionedLoad systemType batteryRequired batteryCapacity siteSurveyRequired siteSurveyCompleted notes"
         )
         .populate(
           "customer",
