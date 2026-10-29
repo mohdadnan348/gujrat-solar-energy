@@ -6,8 +6,10 @@ const pdfService = require("../services/pdf.service");
 let browserInstance = null;
 let browserLaunchPromise = null;
 
-const HTML_CONTENT_TIMEOUT = 20000;
-const IMAGE_LOAD_TIMEOUT = 4000;
+// Give production Chrome/Render more time to render larger quotation and invoice HTML.
+const BROWSER_LAUNCH_TIMEOUT = 60000;
+const HTML_CONTENT_TIMEOUT = 60000;
+const IMAGE_LOAD_TIMEOUT = 10000;
 
 const getBrowser = async () => {
   if (browserInstance && browserInstance.connected) {
@@ -21,6 +23,7 @@ const getBrowser = async () => {
   browserLaunchPromise = puppeteer
     .launch({
       headless: "new",
+      timeout: BROWSER_LAUNCH_TIMEOUT,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
@@ -135,6 +138,7 @@ const generateQuotationPdf = async (req, res, next) => {
     const filename = `${result.quotationNumber || "quotation"}.pdf`;
     return sendPdf(res, pdfBuffer, filename);
   } catch (error) {
+    console.error(`Quotation PDF generation failed for ${req.params.id}:`, error);
     return next(error);
   }
 };
@@ -146,6 +150,7 @@ const generateInvoicePdf = async (req, res, next) => {
     const filename = `${result.invoiceNumber || "invoice"}.pdf`;
     return sendPdf(res, pdfBuffer, filename);
   } catch (error) {
+    console.error(`Invoice PDF generation failed for ${req.params.id}:`, error);
     return next(error);
   }
 };

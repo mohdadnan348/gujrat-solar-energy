@@ -6,8 +6,6 @@ const attendanceService = require("../services/attendance.service");
 |--------------------------------------------------------------------------
 */
 
-
-
 const createAttendance = async (
   req,
   res,

@@ -60,42 +60,31 @@ const createSolarRequirement = async (
         data.status ||
         SOLAR_REQUIREMENT_STATUS.PENDING,
 
-      requiredKw:
-        data.requiredKw ?? data.requiredCapacity ?? data.systemCapacity,
-      monthlyBill:
-        data.monthlyBill ?? data.monthlyElectricityBill,
-      monthlyUnits:
-        data.monthlyUnits ?? data.monthlyConsumption ?? data.monthlyUnitsConsumed,
+      requiredKw: data.requiredKw,
+      monthlyBill: data.monthlyBill,
+      monthlyUnits: data.monthlyUnits,
 
-      roofType: data.roofType ?? data.roof,
-      roofArea: data.roofArea ?? data.roofAreaSqFt ?? data.roofAreaSqft,
+      roofType: data.roofType,
+      roofArea: data.roofArea,
 
-      siteAddress:
-        data.siteAddress ?? data.installationSiteAddress ?? data.installationAddress,
-      location:
-        data.location ?? data.installationCity ?? data.city,
+      siteAddress: data.siteAddress,
+      location: data.location,
 
-      connectionType:
-        data.connectionType ?? data.connectionPhase ?? data.phase,
-      sanctionedLoad:
-        data.sanctionedLoad ?? data.sanctionedLoadKw,
+      connectionType: data.connectionType,
+      sanctionedLoad: data.sanctionedLoad,
 
       systemType: data.systemType,
 
       batteryRequired:
-        data.batteryRequired !== undefined
-          ? data.batteryRequired === true || String(data.batteryRequired).toLowerCase() === "true" || String(data.batteryRequired).toLowerCase() === "yes"
-          : false,
+        data.batteryRequired || false,
 
       batteryCapacity:
-        data.batteryCapacity ?? data.batteryCapacityKwh,
+        data.batteryCapacity,
 
       siteSurveyRequired:
         data.siteSurveyRequired !== undefined
-          ? data.siteSurveyRequired === true || String(data.siteSurveyRequired).toLowerCase() === "true" || String(data.siteSurveyRequired).toLowerCase() === "yes"
-          : data.surveyRequired !== undefined
-            ? data.surveyRequired === true || String(data.surveyRequired).toLowerCase() === "true" || String(data.surveyRequired).toLowerCase() === "yes"
-            : true,
+          ? data.siteSurveyRequired
+          : true,
 
       siteSurveyCompleted:
         data.siteSurveyCompleted || false,
@@ -460,36 +449,34 @@ const updateRequirement = async (
      OTHER FIELDS
   ========================= */
 
-  const fieldAliases = {
-    requiredKw: ["requiredKw", "requiredCapacity", "systemCapacity"],
-    monthlyBill: ["monthlyBill", "monthlyElectricityBill"],
-    monthlyUnits: ["monthlyUnits", "monthlyConsumption", "monthlyUnitsConsumed"],
-    roofType: ["roofType", "roof"],
-    roofArea: ["roofArea", "roofAreaSqFt", "roofAreaSqft"],
-    siteAddress: ["siteAddress", "installationSiteAddress", "installationAddress"],
-    location: ["location", "installationCity", "city"],
-    connectionType: ["connectionType", "connectionPhase", "phase"],
-    sanctionedLoad: ["sanctionedLoad", "sanctionedLoadKw"],
-    systemType: ["systemType"],
-    batteryRequired: ["batteryRequired"],
-    batteryCapacity: ["batteryCapacity", "batteryCapacityKwh"],
-    siteSurveyRequired: ["siteSurveyRequired", "surveyRequired"],
-    siteSurveyCompleted: ["siteSurveyCompleted"],
-    photos: ["photos"],
-    documents: ["documents"],
-    notes: ["notes"],
-  };
+  const allowedFields = [
+    "requiredKw",
+    "monthlyBill",
+    "monthlyUnits",
+    "roofType",
+    "roofArea",
+    "siteAddress",
+    "location",
+    "connectionType",
+    "sanctionedLoad",
+    "systemType",
+    "batteryRequired",
+    "batteryCapacity",
+    "siteSurveyRequired",
+    "siteSurveyCompleted",
+    "photos",
+    "documents",
+    "notes",
+  ];
 
-  Object.entries(fieldAliases).forEach(([field, aliases]) => {
-    const alias = aliases.find((key) => data[key] !== undefined);
-    if (alias === undefined) return;
-
-    let value = data[alias];
-    if (["batteryRequired", "siteSurveyRequired", "siteSurveyCompleted"].includes(field)) {
-      value = value === true || String(value).toLowerCase() === "true" || String(value).toLowerCase() === "yes";
+  allowedFields.forEach(
+    (field) => {
+      if (data[field] !== undefined) {
+        requirement[field] =
+          data[field];
+      }
     }
-    requirement[field] = value;
-  });
+  );
 
   requirement.updatedBy =
     updatedBy;

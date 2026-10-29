@@ -5,16 +5,7 @@ const path = require("path");
  * Loads an image from public/assets and embeds it in the generated HTML.
  * This keeps Puppeteer/PDF generation independent of relative URL resolution.
  */
-// Cache embedded assets in memory. The template may request the same logo/photos
-// several times during a process lifetime; avoid repeated synchronous disk reads
-// and base64 encoding for every quotation download.
-const publicAssetDataUriCache = new Map();
-
 const getPublicAssetDataUri = (fileName) => {
-  if (publicAssetDataUriCache.has(fileName)) {
-    return publicAssetDataUriCache.get(fileName);
-  }
-
   const roots = [
     path.join(__dirname, "public", "assets"),
     path.join(__dirname, "..", "public", "assets"),
@@ -36,16 +27,13 @@ const getPublicAssetDataUri = (fileName) => {
               ? "image/webp"
               : "image/png";
         const encoded = fs.readFileSync(filePath).toString("base64");
-        const dataUri = `data:${mimeType};base64,${encoded}`;
-        publicAssetDataUriCache.set(fileName, dataUri);
-        return dataUri;
+        return `data:${mimeType};base64,${encoded}`;
       }
     } catch (error) {
       // Try the next known public/assets location.
     }
   }
 
-  publicAssetDataUriCache.set(fileName, "");
   return "";
 };
 
@@ -68,12 +56,6 @@ const formatCurrency = (value) => {
     currency: "INR",
     maximumFractionDigits: 2,
   }).format(amount);
-};
-
-const extractCapacity = (value) => {
-  if (value === undefined || value === null || value === "") return undefined;
-  const match = String(value).match(/(\\d+(?:\\.\\d+)?)\\s*(?:kw|kwh)\\b/i);
-  return match ? Number(match[1]) : undefined;
 };
 
 const formatNumber = (value) => {
@@ -199,33 +181,23 @@ const pageHeader = (
 const pageFooter = (
   companyName,
   section,
-  page,
-  company = {}
+  page
 ) => {
-  // Keep the client-reference red footer band and social/contact icon row.
-  // Icons are always visible; links are active only when configured in Company Settings.
-  const social = company.socialLinks || company.socials || {};
-  const phone = String(company.whatsapp || company.phone || company.mobile || "").replace(/[^0-9+]/g, "");
-  const links = [
-    { key: "facebook", label: "Facebook", glyph: "f", url: social.facebook || company.facebook },
-    { key: "instagram", label: "Instagram", glyph: "◎", url: social.instagram || company.instagram },
-    { key: "linkedin", label: "LinkedIn", glyph: "in", url: social.linkedin || company.linkedin },
-    { key: "whatsapp", label: "WhatsApp", glyph: `<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="#e31b23" d="M20.52 3.48A11.8 11.8 0 0 0 12.13 0C5.6 0 .28 5.31.28 11.84c0 2.09.55 4.13 1.6 5.93L.17 24l6.39-1.67a11.84 11.84 0 0 0 5.57 1.42h.01c6.53 0 11.85-5.31 11.85-11.84 0-3.17-1.23-6.15-3.47-8.43ZM12.14 21.7h-.01a9.83 9.83 0 0 1-5.01-1.37l-.36-.21-3.79.99 1.01-3.69-.23-.38a9.82 9.82 0 1 1 8.39 4.66Zm5.39-7.36c-.29-.14-1.72-.85-1.99-.95-.27-.1-.46-.14-.65.14-.19.29-.75.95-.92 1.14-.17.19-.34.21-.63.07-.29-.14-1.22-.45-2.33-1.44-.86-.77-1.44-1.72-1.61-2.01-.17-.29-.02-.44.13-.58.13-.13.29-.34.43-.5.14-.17.19-.29.29-.48.1-.19.05-.36-.02-.5-.07-.14-.65-1.57-.89-2.15-.23-.56-.47-.49-.65-.5h-.55c-.19 0-.5.07-.77.36-.27.29-1.01.99-1.01 2.42s1.03 2.8 1.17 2.99c.14.19 2.03 3.1 4.92 4.35.69.3 1.22.48 1.64.61.69.22 1.32.19 1.82.12.56-.08 1.72-.7 1.96-1.38.24-.68.24-1.26.17-1.38-.07-.12-.26-.19-.55-.33Z"/></svg>`, url: social.whatsapp || company.whatsappUrl || "" },
-    { key: "email", label: "Email", glyph: "✉", url: company.email ? `mailto:${company.email}` : "" },
-    { key: "phone", label: "Call", glyph: "☎", url: phone ? `tel:${phone}` : "" },
-  ];
-  const icons = links.map((item) => {
-    const glyph = `<span class="footer-social-glyph footer-${item.key}">${item.glyph}</span>`;
-    return item.url
-      ? `<a class="footer-social-link" href="${escapeHtml(item.url)}" aria-label="${escapeHtml(item.label)}">${glyph}</a>`
-      : `<span class="footer-social-link" aria-label="${escapeHtml(item.label)}">${glyph}</span>`;
-  }).join("");
-
   return `
     <div class="footer">
-      <span class="footer-company">${escapeHtml(companyName)}</span>
-      <span class="footer-page">${escapeHtml(String(page))}/11</span>
-      <span class="footer-socials">${icons}</span>
+
+      <span>
+        ${escapeHtml(companyName)}
+      </span>
+
+      <span>
+        ${escapeHtml(section)}
+      </span>
+
+      <span>
+        Page ${page}
+      </span>
+
     </div>
   `;
 };
@@ -236,7 +208,7 @@ const renderQuotationItems = (items) => {
   if (!rows.length) {
     return `
       <tr>
-        <td colspan="6" class="empty">
+        <td colspan="9" class="empty">
           No quotation items available
         </td>
       </tr>
@@ -245,66 +217,86 @@ const renderQuotationItems = (items) => {
 
   return rows
     .map((item, index) => {
-      const itemName = firstValue(
-        item.name,
-        item.item,
-        item.description,
-        item.title,
-        "Solar Component"
-      );
-      const quantity = Math.max(0, Number(item.quantity ?? item.qty) || 0);
-      const rate = Math.max(0, Number(item.rate ?? item.unitPrice ?? item.price) || 0);
-      const discountPercent = Math.min(100, Math.max(0, Number(item.discount) || 0));
-      const grossAmount = Number.isFinite(Number(item.grossAmount))
-        ? Number(item.grossAmount)
-        : quantity * rate;
-      const discountAmount = Number.isFinite(Number(item.discountAmount))
-        ? Number(item.discountAmount)
-        : grossAmount * discountPercent / 100;
-      const taxableAmount = Number.isFinite(Number(item.taxableAmount))
-        ? Number(item.taxableAmount)
-        : Math.max(0, grossAmount - discountAmount);
-      const taxRate = Math.max(0, Number(item.taxRate ?? item.gstRate) || 0);
-      const taxAmount = Number.isFinite(Number(item.taxAmount))
-        ? Number(item.taxAmount)
-        : taxableAmount * taxRate / 100;
-      const amount = Number.isFinite(Number(item.amount))
-        ? Number(item.amount)
-        : taxableAmount + taxAmount;
+      const itemName =
+        item.name ||
+        item.item ||
+        item.description ||
+        "";
 
       return `
         <tr>
-          <td class="center">${index + 1}</td>
-          <td>
-            <strong>${escapeHtml(itemName)}</strong>
-            ${item.category ? `<div class="small-text">${escapeHtml(item.category)}</div>` : ""}
-            ${item.description && itemName !== item.description ? `
-              <div class="small-text">${escapeHtml(item.description)}</div>
-            ` : ""}
+
+          <td class="center">
+            ${index + 1}
           </td>
-          <td class="right">${formatNumber(quantity)}${item.unit ? `<div class="small-text">${escapeHtml(item.unit)}</div>` : ""}</td>
-          <td class="right">${formatCurrency(rate)}</td>
-          <td class="right">${formatCurrency(discountAmount)}</td>
-          <td class="right">${formatCurrency(taxAmount)}</td>
-          <td class="right bold">${formatCurrency(amount)}</td>
+
+          <td>
+            ${escapeHtml(
+              item.category || ""
+            )}
+          </td>
+
+          <td>
+            <strong>
+              ${escapeHtml(itemName)}
+            </strong>
+
+            ${
+              item.description &&
+              item.name
+                ? `
+                  <div class="small-text">
+                    ${escapeHtml(
+                      item.description
+                    )}
+                  </div>
+                `
+                : ""
+            }
+          </td>
+
+          <td class="right">
+            ${formatNumber(
+              item.quantity
+            )}
+          </td>
+
+          <td class="center">
+            ${escapeHtml(
+              item.unit || ""
+            )}
+          </td>
+
+          <td class="right">
+            ${formatCurrency(
+              item.rate
+            )}
+          </td>
+
+          <td class="right">
+            ${formatCurrency(
+              (Number(item.quantity) || 0) *
+              (Number(item.rate) || 0) *
+              Math.min(100, Math.max(0, Number(item.discount) || 0)) / 100
+            )}
+          </td>
+
+          <td class="right">
+            ${formatCurrency(
+              item.taxAmount
+            )}
+          </td>
+
+          <td class="right bold">
+            ${formatCurrency(
+              item.amount
+            )}
+          </td>
+
         </tr>
       `;
     })
     .join("");
-};
-
-const normalizeBOMKey = (item) =>
-  String(item?.item || item?.name || item?.description || "")
-    .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-
-const uniqueBOMItems = (items) => {
-  const seen = new Set();
-  return asArray(items).filter((item) => {
-    const key = normalizeBOMKey(item);
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
 };
 
 const renderBOMRows = (items) => {
@@ -313,7 +305,7 @@ const renderBOMRows = (items) => {
   if (!rows.length) {
     return `
       <tr>
-        <td colspan="5" class="empty">
+        <td colspan="8" class="empty">
           No BOM items available
         </td>
       </tr>
@@ -333,18 +325,55 @@ const renderBOMRows = (items) => {
           </td>
 
           <td>
-            <strong>${escapeHtml(item.item || item.name || item.description || "")}</strong>
-            ${item.specification || item.description ? `
-              <div class="small-text">${escapeHtml(item.specification || item.description)}</div>
-            ` : ""}
-            ${item.category ? `<div class="small-text">${escapeHtml(item.category)}</div>` : ""}
+            ${escapeHtml(
+              item.category || ""
+            )}
           </td>
 
-          <td class="right">${formatNumber(item.qty ?? item.quantity)}</td>
+          <td>
+            <strong>
+              ${escapeHtml(
+                item.item ||
+                item.name ||
+                ""
+              )}
+            </strong>
+          </td>
 
-          <td class="center">${escapeHtml(item.unit || "")}</td>
+          <td>
+            ${escapeHtml(
+              item.specification || ""
+            )}
+          </td>
 
-          <td>${escapeHtml(item.brand || item.make || "")}</td>
+          <td>
+            ${escapeHtml(
+              item.brand || ""
+            )}
+          </td>
+
+          <td class="right">
+            ${formatNumber(
+              item.qty ??
+              item.quantity
+            )}
+          </td>
+
+          <td class="center">
+            ${escapeHtml(
+              item.unit || ""
+            )}
+          </td>
+
+          <td class="center">
+            ${
+              item.createdAt
+                ? formatDate(
+                    item.createdAt
+                  )
+                : ""
+            }
+          </td>
 
         </tr>
       `;
@@ -546,167 +575,9 @@ const renderPanelLayout = ({
 };
 
 
-
 /* =========================================================
-   DYNAMIC ROOFTOP VISUALIZATION — TOP + FRONT ANGLE
-   This is generated from the saved panel count, not a fixed image.
+   DYNAMIC ELECTRICAL FLOW DIAGRAM
 ========================================================= */
-
-const renderRooftopVisualization = ({
-  panelCount,
-  panelWattage,
-  panelBrand,
-  systemCapacity,
-  systemType,
-}) => {
-  const parsedCount = Number(panelCount);
-  const count = Number.isFinite(parsedCount)
-    ? Math.min(120, Math.max(0, Math.floor(parsedCount)))
-    : 0;
-  // Use the actual roof photographs supplied for this proposal. The photos are
-  // embedded as data URIs so Puppeteer does not depend on relative URL paths.
-  const topRoofImage = getPublicAssetDataUri("front_roof.jpg");
-  const frontRoofImage = getPublicAssetDataUri("front_engle.png");
-
-  const safeBrand = escapeHtml(panelBrand || "Solar Panel");
-  const safeWattage = panelWattage ? `${escapeHtml(panelWattage)} W` : "";
-  const panelInfo = `${count} Panel${count === 1 ? "" : "s"}`;
-
-  // Bilinear projection maps every panel to the perspective plane of the
-  // roof photo. It keeps the count dynamic rather than baking panels into photos.
-  const lerp = (a, b, t) => a + (b - a) * t;
-  const bilinear = (p00, p10, p01, p11, u, v) => ({
-    x: lerp(lerp(p00.x, p10.x, u), lerp(p01.x, p11.x, u), v),
-    y: lerp(lerp(p00.y, p10.y, u), lerp(p01.y, p11.y, u), v),
-  });
-  const pt = (p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`;
-  const cols = count ? Math.min(8, Math.max(1, Math.ceil(Math.sqrt(count * 2.2)))) : 1;
-  const rows = count ? Math.ceil(count / cols) : 1;
-
-  const renderPhotoPanels = (corners, prefix, viewWidth, viewHeight) => {
-    if (!count) {
-      return `<text x="${viewWidth / 2}" y="${viewHeight / 2}" text-anchor="middle" font-size="13" fill="#fff" stroke="#24342d" stroke-width=".35">Panel quantity not configured</text>`;
-    }
-    const { p00, p10, p01, p11 } = corners;
-    const parts = [];
-    // Mounting rails are placed first, below the panels.
-    // Keep support rails beneath the first two rows so they remain hidden by
-    // the modules instead of protruding past a shorter final row (e.g. 19 panels).
-    [0.16, 0.49].forEach((v) => {
-      const a = bilinear(p00, p10, p01, p11, 0.015, v);
-      const b = bilinear(p00, p10, p01, p11, 0.985, v);
-      parts.push(`<path d="M ${pt(a)} L ${pt(b)}" stroke="#293a3d" stroke-width="5.2" opacity=".9"/><path d="M ${pt(a)} L ${pt(b)}" stroke="#b9c6c3" stroke-width="1.3" opacity=".95"/>`);
-    });
-
-    for (let i = 0; i < count; i++) {
-      const c = i % cols;
-      const r = Math.floor(i / cols);
-      const u0 = c / cols;
-      const u1 = (c + 1) / cols;
-      const v0 = r / rows;
-      const v1 = (r + 1) / rows;
-      const gapU = Math.min(0.012, 0.045 / cols);
-      const gapV = Math.min(0.018, 0.055 / rows);
-      const a = bilinear(p00, p10, p01, p11, u0 + gapU, v0 + gapV);
-      const b = bilinear(p00, p10, p01, p11, u1 - gapU, v0 + gapV);
-      const c1 = bilinear(p00, p10, p01, p11, u1 - gapU, v1 - gapV);
-      const d = bilinear(p00, p10, p01, p11, u0 + gapU, v1 - gapV);
-      const panelPath = `M ${pt(a)} L ${pt(b)} L ${pt(c1)} L ${pt(d)} Z`;
-      const grid = [];
-      for (let j = 1; j <= 2; j++) {
-        const u = u0 + (u1 - u0) * j / 3;
-        const g1 = bilinear(p00, p10, p01, p11, u, v0 + gapV);
-        const g2 = bilinear(p00, p10, p01, p11, u, v1 - gapV);
-        grid.push(`<path d="M ${pt(g1)} L ${pt(g2)}"/>`);
-      }
-      const midA = bilinear(p00, p10, p01, p11, u0 + gapU, (v0 + v1) / 2);
-      const midB = bilinear(p00, p10, p01, p11, u1 - gapU, (v0 + v1) / 2);
-      // Feet are subtle and follow the same perspective as the panel row.
-      const footA = bilinear(p00, p10, p01, p11, (u0 + u1) / 2, Math.min(1, v1 - gapV / 2));
-      const footB = { x: footA.x + 1.5, y: footA.y + 7 };
-      parts.push(`<g filter="url(#${prefix}PanelShadow)">
-        <path d="${panelPath}" fill="#071b2a" stroke="#e4ecec" stroke-width="2.2" stroke-linejoin="round"/>
-        <path d="${panelPath}" fill="url(#${prefix}Glass)" stroke="#8ca8b9" stroke-width=".65" stroke-linejoin="round"/>
-        <path d="${panelPath}" fill="#fff" opacity=".055"/>
-        <g stroke="#9dc3dc" stroke-width=".8" opacity=".82">${grid.join("")}<path d="M ${pt(midA)} L ${pt(midB)}"/></g>
-        <path d="M ${pt(a)} L ${pt(b)} L ${pt({x:a.x+(b.x-a.x)*.35,y:a.y+(b.y-a.y)*.35})}" stroke="#f4fbff" stroke-width="1" opacity=".5" fill="none"/>
-      </g>
-      <path d="M ${pt(footA)} L ${pt(footB)}" stroke="#d0d9d7" stroke-width="2" opacity=".9"/>`);
-    }
-    return parts.join("");
-  };
-
-  const photoSvg = (imageData, viewBox, ariaLabel, prefix, corners) => {
-    const [width, height] = viewBox;
-    return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(ariaLabel)}" preserveAspectRatio="xMidYMid meet">
-      <defs>
-        <linearGradient id="${prefix}Glass" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#2e6c9a"/><stop offset=".34" stop-color="#10446f"/><stop offset=".72" stop-color="#082b4b"/><stop offset="1" stop-color="#173f61"/>
-        </linearGradient>
-        <filter id="${prefix}PanelShadow" x="-30%" y="-30%" width="170%" height="180%">
-          <feDropShadow dx="2" dy="4" stdDeviation="2.2" flood-color="#102018" flood-opacity=".58"/>
-        </filter>
-      </defs>
-      ${imageData
-        ? `<image href="${imageData}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice"/>`
-        : `<rect x="0" y="0" width="${width}" height="${height}" fill="#c7d0c8"/><text x="${width/2}" y="${height/2}" text-anchor="middle" font-size="14" fill="#31453a">Roof photo missing: check backend/public/assets</text>`}
-      <rect x="0" y="0" width="${width}" height="${height}" fill="#0b2418" opacity=".035"/>
-      ${renderPhotoPanels(corners, prefix, width, height)}
-    </svg>`;
-  };
-
-  // Coordinates are matched to the bundled reference photos. These are
-  // perspective overlays, not a claim of a surveyed/engineering roof model.
-  const topSvg = photoSvg(topRoofImage, [720, 288], "Top view of roof with dynamically placed solar panels", "topPhoto", {
-    p00: { x: 222, y: 72 }, p10: { x: 632, y: 72 },
-    p01: { x: 220, y: 244 }, p11: { x: 632, y: 244 },
-  });
-  // Front photo: move the array fully onto the visible concrete slab, below
-  // the rear parapet and above the front parapet. Calibrated for this exact image.
-  const frontSvg = photoSvg(frontRoofImage, [720, 480], "Front angle roof photograph with dynamically placed solar panels", "frontPhoto", {
-    p00: { x: 154, y: 198 }, p10: { x: 666, y: 202 },
-    p01: { x: 112, y: 286 }, p11: { x: 642, y: 291 },
-  });
-
-
-  const meta = [
-    ["Panel Count", String(count)],
-    ["System Capacity", systemCapacity ? `${systemCapacity} kW` : "—"],
-    ["System Type", systemType || "—"],
-    ["Panel Make", panelBrand || "—"],
-    ["Panel Wattage", panelWattage ? `${panelWattage} W` : "—"],
-  ];
-
-  return `
-    <section class="rooftop-visual-page">
-      <div class="rooftop-visual-heading">
-        <div>
-          <div class="rooftop-visual-title">PROPOSED ROOFTOP SOLAR DESIGN</div>
-          <div class="rooftop-visual-subtitle">Reference roof photos with dynamic panel overlay • ${escapeHtml(panelInfo)} • ${safeBrand}${safeWattage ? ` • ${safeWattage}` : ""}</div>
-        </div>
-        <div class="rooftop-capacity">
-          <span>Total Panels</span><strong>${count}</strong>
-          <span>System Capacity</span><strong>${escapeHtml(systemCapacity || "—")} ${systemCapacity ? "kW" : ""}</strong>
-        </div>
-      </div>
-      <div class="rooftop-view rooftop-top-view">
-        <div class="rooftop-view-label">TOP VIEW <span>(${count} panels)</span></div>
-        ${topSvg}
-      </div>
-      <div class="rooftop-angle-grid">
-        <div class="rooftop-view">
-          <div class="rooftop-view-label">3D VIEW — FRONT ANGLE <span>(${count} panels)</span></div>
-          ${frontSvg}
-        </div>
-      </div>
-      <div class="rooftop-meta-grid">
-        ${meta.map(([label, value]) => `<div class="rooftop-meta-item"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("")}
-      </div>
-      <div class="rooftop-disclaimer">Conceptual visualization: panel count is dynamic; roof placement and clearances must be verified by site survey before installation.</div>
-    </section>
-  `;
-};
-
 
 const renderElectricalFlow = ({
   systemType,
@@ -1278,9 +1149,8 @@ const quotationTemplate = (
   const quotation =
     data.quotation || {};
 
-  const company = {
-    ...(data.company || {}),
-  };
+  const company =
+    data.company || {};
 
   // Use the company's uploaded Gujrat Solar logo when no logo is supplied
   // by the quotation/company settings.
@@ -1315,20 +1185,10 @@ const quotationTemplate = (
   const signature =
     data.signature || {};
 
-  const customer = {
-    ...(quotation.customer && typeof quotation.customer === "object" ? quotation.customer : {}),
-    ...(quotation.lead && typeof quotation.lead === "object" ? {
-      name: quotation.lead.name,
-      mobile: quotation.lead.mobile,
-      email: quotation.lead.email,
-      address: quotation.lead.address,
-      city: quotation.lead.city,
-      state: quotation.lead.state,
-      pincode: quotation.lead.pincode,
-    } : {}),
-    ...(quotation.customerDetails && typeof quotation.customerDetails === "object" ? quotation.customerDetails : {}),
-    ...(data.customerDetails && typeof data.customerDetails === "object" ? data.customerDetails : {}),
-  };
+  const customer =
+    data.customerDetails ||
+    quotation.customerDetails ||
+    {};
 
   const proposal =
     data.proposalContent || {};
@@ -1341,14 +1201,10 @@ const quotationTemplate = (
 
   const system =
     quotation.systemConfiguration ||
-    data.systemConfiguration ||
-    data.plantDetails ||
-    quotation.plantDetails ||
     {};
 
   const solarRequirement =
     quotation.solarRequirement ||
-    data.solarRequirement ||
     {};
 
   const components =
@@ -1391,22 +1247,6 @@ const quotationTemplate = (
         "ACCESSORY"
     );
 
-  // BOM should list configured technical components, not repeat priced quotation items.
-  const configuredBOMRows = components.map((component, index) => ({
-    srNo: index + 1,
-    item: firstValue(component.name, component.model, component.componentType, "Component"),
-    description: component.model || component.specifications?.description || "",
-    specification: component.specifications?.specification || "",
-    qty: firstValue(component.quantity, component.qty, 1),
-    unit: component.unit || "Nos",
-    brand: component.brand || component.make || "",
-    category: component.componentType || "",
-  }));
-  // Include BOM rows saved with the quotation as well as configuration components;
-  // deduplication prevents the same configured item from appearing twice.
-  const bomRows = uniqueBOMItems([...configuredBOMRows, ...asArray(data.bomItems)])
-    .map((item, index) => ({ ...item, srNo: index + 1 }));
-
 
   const companyName =
     company.name ||
@@ -1429,20 +1269,16 @@ const quotationTemplate = (
     .join(", ");
 
 
-  const customerName = firstValue(
-    customer.name,
-    customer.customerName,
-    customer.fullName,
-    quotation.customer?.name,
-    quotation.lead?.name,
-    quotation.lead?.customerName,
-    "Customer"
-  );
+  const customerName =
+    customer.name ||
+    customer.customerName ||
+    quotation.customer?.name ||
+    quotation.lead?.name ||
+    "Customer";
 
 
   const customerAddress = [
     customer.address,
-    customer.siteAddress,
     customer.city,
     customer.state,
     customer.pincode,
@@ -1460,135 +1296,71 @@ const quotationTemplate = (
   const quotationDate =
     quotation.quotationDate ||
     quotation.date ||
-    quotation.createdAt ||
-    data.quotationDate;
+    quotation.createdAt;
 
 
   const expiryDate =
     quotation.expiryDate ||
-    quotation.validUntil ||
-    quotation.expiryDate;
+    quotation.validUntil;
 
 
   const systemCapacity =
     firstValue(
       system.systemCapacity,
-      system.systemSizeKW,
-      system.systemSizeKw,
-      system.requiredKw,
       system.capacity,
-      quotation.systemCapacity,
-      quotation.systemSizeKW,
-      quotation.plantDetails?.systemCapacity,
-      quotation.plantDetails?.capacity,
-      solarRequirement.requiredKw
+      quotation.systemCapacity
     );
 
 
   const systemType =
     firstValue(
       system.systemType,
-      system.type,
       quotation.systemType,
-      quotation.plantDetails?.systemType,
-      solarRequirement.systemType,
       "ON_GRID"
     );
 
 
-  // Keep quotation PDF aligned with the Quotation Details page:
-  // use the actual SOLAR_PANEL component quantity first. Older records can
-  // have a stale aggregate panelCount (for example 20) while the saved panel
-  // component and quotation line item both contain 10.
   const panelCount =
     firstValue(
-      panel.quantity,
-      panel.qty,
       system.panelCount,
-      system.panelQuantity,
-      system.numberOfPanels,
+      panel.quantity,
       0
     );
 
 
   const panelWattage =
     firstValue(
-      system.panelWattage,
-      system.panelWatt,
       panel.specifications?.wattage,
-      panel.specifications?.panelWattage,
-      panel.wattage,
-      panel.capacity,
-      (String(panel.model || panel.name || "").match(/(\\d{3,4})\\s*w/i) || [])[1]
+      panel.capacity
     );
 
 
   const panelBrand =
     firstValue(
-      system.panelMake,
-      system.panelBrand,
       panel.brand,
-      panel.make,
       panel.name
     );
 
 
-  // Prefer the saved inverter component quantity over stale aggregate counts.
   const inverterCount =
     firstValue(
-      inverter.quantity,
-      inverter.qty,
       system.inverterCount,
-      system.numberOfInverters,
+      inverter.quantity,
       0
     );
 
 
   const inverterBrand =
     firstValue(
-      system.inverterMake,
-      system.inverterBrand,
       inverter.brand,
-      inverter.make,
       inverter.name
     );
 
 
   const inverterCapacity =
     firstValue(
-      system.inverterCapacity,
       inverter.specifications?.capacity,
-      inverter.specifications?.inverterCapacity,
-      inverter.capacity,
-      inverter.wattage,
-      extractCapacity(inverter.model),
-      extractCapacity(inverter.name)
-    );
-
-  const batteryCapacity =
-    firstValue(
-      solarRequirement.batteryCapacity,
-      system.batteryCapacity,
-      battery.specifications?.capacity,
-      battery.capacity,
-      extractCapacity(battery.model),
-      extractCapacity(battery.name)
-    );
-
-  const batteryBrand =
-    firstValue(system.batteryBrand, battery.brand, battery.make);
-
-  const batteryModel =
-    firstValue(system.batteryModel, battery.model, battery.name);
-
-  const panelCapacity =
-    firstValue(
-      system.panelCapacity,
-      panel.specifications?.panelCapacity,
-      panel.capacityKw,
-      (Number(panelWattage) > 0 && Number(panelCount) > 0)
-        ? (Number(panelWattage) * Number(panelCount)) / 1000
-        : undefined
+      inverter.capacity
     );
 
 
@@ -1596,7 +1368,6 @@ const quotationTemplate = (
     firstValue(
       system.batteryCount,
       battery.quantity,
-      battery.qty,
       0
     );
 
@@ -1619,33 +1390,8 @@ const quotationTemplate = (
     [];
 
 
-  const totals = {
-    ...(data.totals || {}),
-  };
-  if (totals.subtotal == null) {
-    totals.subtotal = asArray(data.items).reduce((sum, item) => {
-      const quantity = Number(item.quantity ?? item.qty) || 0;
-      const rate = Number(item.rate ?? item.unitPrice ?? item.price) || 0;
-      return sum + (Number(item.grossAmount) || quantity * rate);
-    }, 0);
-  }
-  if (totals.discount == null) {
-    totals.discount = firstValue(quotation.totalDiscount, quotation.discount, 0);
-  }
-  if (totals.taxableAmount == null) {
-    totals.taxableAmount = firstValue(quotation.taxableAmount, Math.max(0, Number(totals.subtotal) - Number(totals.discount || 0)));
-  }
-  if (totals.cgst == null) totals.cgst = quotation.cgst || 0;
-  if (totals.sgst == null) totals.sgst = quotation.sgst || 0;
-  if (totals.igst == null) totals.igst = quotation.igst || 0;
-  if (totals.totalTax == null) totals.totalTax = quotation.totalTax || (Number(totals.cgst) + Number(totals.sgst) + Number(totals.igst));
-  if (totals.grandTotal == null) {
-    totals.grandTotal = firstValue(
-      quotation.grandTotal,
-      Number(totals.taxableAmount) + Number(totals.totalTax),
-      0
-    );
-  }
+  const totals =
+    data.totals || {};
 
 
   const companyProfile =
@@ -1673,57 +1419,45 @@ installed solar systems with dependable service.`;
 
   const paymentTerms =
     data.paymentTerms ||
-    quotation.paymentTerms ||
     proposalSettings.defaultPaymentTerms ||
     "";
 
 
   const warrantyTerms =
     data.warrantyTerms ||
-    quotation.warrantyTerms ||
-    quotation.warrantyDetails ||
     proposalSettings.defaultWarrantyTerms ||
     "";
 
 
   const subsidyTerms =
     data.subsidyTerms ||
-    quotation.subsidyTerms ||
-    quotation.subsidyDetails ||
     proposalSettings.defaultSubsidyTerms ||
     "";
 
 
   const installationTerms =
     data.installationTerms ||
-    quotation.installationTerms ||
-    quotation.installationSchedule ||
     proposalSettings.defaultInstallationTerms ||
     "";
 
 
   const scopeOfWork =
     data.scopeOfWork ||
-    quotation.scopeOfWork ||
     proposalSettings.defaultScopeOfWork ||
     "";
 
 
   const warrantyExclusions =
     data.warrantyExclusions ||
-    quotation.warrantyExclusions ||
     proposalSettings.defaultWarrantyExclusions ||
     "";
 
 
-  // The saved validUntil date is authoritative for the PDF.
-  const validity = firstValue(
-    expiryDate ? `Valid until ${formatDate(expiryDate)}` : "",
-    data.quotationValidity,
-    quotation.quotationValidity,
-    quotationSettings.validityDays ? `${quotationSettings.validityDays} days` : "",
-    "1 week from the date of issue"
-  );
+  const validity =
+    data.quotationValidity ||
+    quotation.quotationValidity ||
+    quotationSettings.validityDays ||
+    "As mentioned in quotation";
 
 
   return `<!DOCTYPE html>
@@ -2495,20 +2229,6 @@ tbody tr:nth-child(even) td {
   gap: 6mm;
 
   margin-bottom: 6mm;
-}
-
-.quote-reference-meta {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2mm 5mm;
-  margin: 0 0 4mm;
-  padding: 3mm 4mm;
-  border: 1px solid #ddd;
-  color: #333;
-  font-size: 7.5px;
-}
-.quote-reference-meta strong {
-  color: #555;
 }
 
 .summary {
@@ -3463,52 +3183,6 @@ tbody tr { break-inside:avoid; }
 .contact-bottom { border-top:1px solid #dce9e1; color:#6d8175; padding-top:3mm; font-size:7.5px; }
 @media print { .page { break-after:page; } .page:last-of-type { break-after:auto; } }
 
-
-/* Dynamic three-view rooftop design sheet */
-.rooftop-visual-page { color:#183b2d; }
-.rooftop-visual-heading { display:flex; justify-content:space-between; align-items:center; gap:8mm; border-bottom:2px solid #e31b23; padding:0 0 4mm; margin-bottom:4mm; }
-.rooftop-visual-title { font-size:16px; font-weight:900; color:#0b4b34; letter-spacing:.25px; }
-.rooftop-visual-subtitle { color:#6d8175; font-size:8px; margin-top:2mm; }
-.rooftop-capacity { min-width:34mm; border:1px solid #e31b23; border-radius:8px; padding:3mm; display:grid; gap:1mm; background:#fff; }
-.rooftop-capacity span { font-size:7px; color:#52645a; }
-.rooftop-capacity strong { color:#d71920; font-size:13px; }
-.rooftop-view { position:relative; border:1px solid #d4e1d8; border-radius:9px; overflow:hidden; background:linear-gradient(145deg,#f7faf7 0%,#eaf0eb 100%); box-shadow:0 2px 7px rgba(27,55,39,.06); break-inside:avoid; }
-.rooftop-view-label { position:absolute; z-index:2; top:3mm; left:3mm; border-radius:6px; padding:2mm 3mm; background:#0b4b34; color:#fff; font-weight:800; font-size:8px; }
-.rooftop-view-label span { display:block; font-weight:500; margin-top:1px; }
-.rooftop-view svg { display:block; width:100%; height:auto; background:linear-gradient(180deg,#f8faf7 0%,#eaf0eb 100%); }
-.rooftop-top-view { margin-bottom:4mm; }
-.rooftop-top-view svg { height:72mm; }
-.rooftop-angle-grid { display:grid; grid-template-columns:1fr; gap:4mm; }
-.rooftop-angle-grid .rooftop-view svg { height:72mm; }
-.rooftop-meta-grid { margin-top:4mm; display:grid; grid-template-columns:repeat(5,1fr); background:#edf8f1; border-radius:8px; padding:3mm 1mm; }
-.rooftop-meta-item { padding:1mm 2mm; border-right:1px solid #bad7c6; min-width:0; }
-.rooftop-meta-item:last-child { border-right:0; }
-.rooftop-meta-item span { display:block; font-size:6.5px; color:#647a6d; margin-bottom:1.5mm; }
-.rooftop-meta-item strong { display:block; font-size:8px; color:#0b4b34; overflow-wrap:anywhere; }
-.rooftop-disclaimer { margin-top:2mm; font-size:6.5px; color:#718176; }
-@media print { .rooftop-visual-page, .rooftop-view, .rooftop-meta-grid { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
-
-
-/* Client-reference footer band: red strip with social/contact icons. */
-.footer {
-  position:absolute !important; left:0 !important; right:0 !important; bottom:0 !important;
-  height:11mm; box-sizing:border-box; display:flex; align-items:center; justify-content:space-between;
-  gap:4mm; padding:0 13mm !important; border:0 !important; border-top:0 !important;
-  background:#e31b23 !important; color:#fff !important; font-size:7.5px !important;
-  -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important;
-}
-.footer-company { flex:1 1 34%; color:#fff !important; font-weight:600; }
-.footer-page { flex:0 0 auto; color:#fff !important; text-align:center; white-space:nowrap; }
-.footer-socials { flex:1 1 34%; display:flex; align-items:center; justify-content:flex-end; gap:2.2mm; }
-.footer-social-link { display:inline-flex; align-items:center; justify-content:center; width:5.2mm; height:5.2mm; border-radius:50%; background:#fff; color:#e31b23 !important; text-decoration:none; font-size:7px; font-weight:800; line-height:1; }
-.footer-social-glyph { color:#e31b23 !important; }
-.footer-instagram { font-size:10px; }
-.footer-linkedin { font-size:6px; }
-.footer-whatsapp { font-size:10px; }
-.footer-email { font-size:9px; }
-.footer-phone { font-size:9px; }
-@media print { .footer { position:absolute !important; } }
-
 </style>
 
 </head>
@@ -4078,8 +3752,7 @@ ${pageHeader(
 ${pageFooter(
   companyName,
   "Company Profile",
-  2,
-  company
+  2
 )}
 
 </section>
@@ -4313,39 +3986,7 @@ ${pageHeader(
 ${pageFooter(
   companyName,
   "Solar Products",
-  3,
-  company
-)}
-
-</section>
-
-
-<!-- ======================================================
-     ROOFTOP VISUALIZATION — TOP VIEW + TWO 3D ANGLES
-====================================================== -->
-
-<section class="page">
-
-${pageHeader(
-  companyName,
-  company.logo,
-  "ROOFTOP LAYOUT",
-  quotationNumber
-)}
-
-${renderRooftopVisualization({
-  panelCount,
-  panelWattage,
-  panelBrand,
-  systemCapacity,
-  systemType,
-})}
-
-${pageFooter(
-  companyName,
-  "Proposed Rooftop Solar Design",
-  4,
-  company
+  3
 )}
 
 </section>
@@ -4370,6 +4011,14 @@ ${pageHeader(
 </div>
 
 
+${renderPanelLayout({
+  panelCount,
+  panelWattage,
+  panelBrand,
+  systemCapacity,
+})}
+
+
 ${renderElectricalFlow({
   systemType,
   systemCapacity,
@@ -4384,8 +4033,7 @@ ${renderElectricalFlow({
 ${pageFooter(
   companyName,
   "System Design & Energy Flow",
-  5,
-  company
+  4
 )}
 
 </section>
@@ -4436,7 +4084,7 @@ ${pageHeader(
 
     ${infoRow(
       "GSTIN",
-      firstValue(company.gstin, company.gstNumber, company.gst)
+      company.gstin
     )}
 
   </div>
@@ -4474,22 +4122,10 @@ ${pageHeader(
       customerAddress
     )}
 
-    ${infoRow(
-      "GSTIN",
-      firstValue(customer.gstin, customer.gstNumber, customer.gst)
-    )}
-
   </div>
 
 </div>
 
-<div class="quote-reference-meta">
-  <span><strong>Date:</strong> ${formatDate(quotationDate)}</span>
-  <span><strong>Expiry Date:</strong> ${formatDate(expiryDate)}</span>
-  <span><strong>Estimate #:</strong> ${escapeHtml(quotationNumber)}</span>
-  <span><strong>Created by:</strong> ${escapeHtml(quotation.createdBy?.username || quotation.createdBy?.name || "")}</span>
-  <span><strong>Contact:</strong> ${escapeHtml(firstValue(company.phone, company.alternatePhone, ""))}</span>
-</div>
 
 <table>
 
@@ -4498,11 +4134,14 @@ ${pageHeader(
 <tr>
 
 <th>#</th>
-<th>Item & Description</th>
+<th>Category</th>
+<th>Description</th>
 <th>Qty</th>
+<th>Unit</th>
 <th>Rate</th>
 <th>Discount</th>
-<th>Amount with Tax</th>
+<th>Tax</th>
+<th>Amount</th>
 
 </tr>
 
@@ -4677,8 +4316,7 @@ ${
 ${pageFooter(
   companyName,
   "Quotation",
-  6,
-  company
+  5
 )}
 
 </section>
@@ -4709,11 +4347,14 @@ ${pageHeader(
 
 <tr>
 
-<th>Sr. No.</th>
+<th>Sr.</th>
+<th>Category</th>
 <th>Item</th>
+<th>Specification</th>
+<th>Brand</th>
 <th>Qty</th>
 <th>Unit</th>
-<th>Brand</th>
+<th>Date</th>
 
 </tr>
 
@@ -4723,7 +4364,7 @@ ${pageHeader(
 <tbody>
 
 ${renderBOMRows(
-  bomRows
+  data.bomItems
 )}
 
 </tbody>
@@ -4782,15 +4423,6 @@ ${renderTechnicalSummary({
       solarRequirement.siteAddress
     )}
 
-    ${infoRow(
-      "Site Survey Required",
-      solarRequirement.siteSurveyRequired === true
-        ? "Yes"
-        : solarRequirement.siteSurveyRequired === false
-          ? "No"
-          : ""
-    )}
-
   </div>
 
 
@@ -4817,41 +4449,10 @@ ${renderTechnicalSummary({
 
     ${infoRow(
       "Monthly Bill",
-      solarRequirement.monthlyBill !== undefined && solarRequirement.monthlyBill !== null
-        ? formatCurrency(solarRequirement.monthlyBill)
-        : ""
-    )}
-
-    ${infoRow(
-      "Battery Required",
-      solarRequirement.batteryRequired === true
-        ? "Yes"
-        : solarRequirement.batteryRequired === false
-          ? "No"
-          : ""
-    )}
-
-    ${infoRow(
-      "Battery Capacity",
-      batteryCapacity !== undefined && batteryCapacity !== null && batteryCapacity !== ""
-        ? `${batteryCapacity} kWh`
-        : ""
-    )}
-
-    ${infoRow("Battery Brand", batteryBrand)}
-    ${infoRow("Battery Model", batteryModel)}
-
-    ${infoRow(
-      "Panel Capacity",
-      panelCapacity !== undefined && panelCapacity !== null && panelCapacity !== ""
-        ? `${Number(panelCapacity).toFixed(2)} kW`
-        : ""
-    )}
-
-    ${infoRow(
-      "Inverter Capacity",
-      inverterCapacity !== undefined && inverterCapacity !== null && inverterCapacity !== ""
-        ? `${inverterCapacity} kW`
+      solarRequirement.monthlyBill
+        ? formatCurrency(
+            solarRequirement.monthlyBill
+          )
         : ""
     )}
 
@@ -4863,8 +4464,7 @@ ${renderTechnicalSummary({
 ${pageFooter(
   companyName,
   "Bill of Materials",
-  7,
-  company
+  6
 )}
 
 </section>
@@ -4923,7 +4523,9 @@ ${pageHeader(
   </h3>
 
   <p>
-    90% of rated capacity for the first 15 years and 80% for the next 15 years (30-year panel life), subject to the selected manufacturer's datasheet and warranty conditions.
+    Solar panel warranty shall be applicable
+    according to the selected manufacturer's
+    product warranty policy.
   </p>
 
 </div>
@@ -4936,24 +4538,10 @@ ${pageHeader(
   </h3>
 
   <p>
-    Manufacturing-defect warranty: 12 years, extendable where offered by the selected manufacturer. The inverter datasheet and applicable warranty terms prevail.
+    Inverter warranty shall be applicable
+    according to the selected manufacturer's
+    warranty policy.
   </p>
-
-</div>
-
-
-<div class="terms-box">
-
-  <h3>Battery Warranty</h3>
-  <p>For hybrid and off-grid systems with a battery, manufacturing-defect warranty is 8 years, extendable where offered by the selected manufacturer. Applicable only where supported by the selected battery's warranty documentation.</p>
-
-</div>
-
-
-<div class="terms-box">
-
-  <h3>Balance of System (BOS) & O&amp;M</h3>
-  <p>BOS items: 12 months from commissioning or put-into-service date, whichever is earlier, subject to the supplier's terms. O&amp;M support may include fault finding, remote monitoring, site visits and warranty-claim assistance; panel cleaning/washing is excluded unless separately agreed.</p>
 
 </div>
 
@@ -5042,8 +4630,7 @@ ${pageHeader(
 ${pageFooter(
   companyName,
   "Warranty & Support",
-  8,
-  company
+  7
 )}
 
 </section>
@@ -5082,7 +4669,9 @@ ${pageHeader(
             paymentTerms
           )
         : `
-          50% advance payment upon contract signing, 40% upon delivery of structure material, and 10% before meter installation is complete. Any variation must be recorded in the accepted quotation.
+          Payment schedule shall be mutually agreed
+          between the company and customer and shall
+          be governed by the accepted quotation.
         `
     }
 
@@ -5105,7 +4694,9 @@ ${pageHeader(
             installationTerms
           )
         : `
-          Material dispatch and installation start after required DISCOM approval. Dispatch is targeted within 6 weeks after order confirmation and payment. Installation and commissioning are targeted within approximately 60–70 days after project accreditation, contract agreement and site possession, subject to approvals, site readiness and material availability.
+          Installation timeline is subject to site
+          readiness, material availability, approvals
+          and other project conditions.
         `
     }
 
@@ -5128,7 +4719,9 @@ ${pageHeader(
             scopeOfWork
           )
         : `
-          Supply and installation of the solar system components listed in the accepted quotation and BOM. The customer is responsible for rooftop access, site clearance, safe material unloading/storage, ladders, water and electricity during installation, required approval documents, and DISCOM-related electrical modifications or net/smart meter charges unless expressly included in the quotation.
+          Supply and installation of the solar system
+          components mentioned in the accepted quotation
+          and applicable BOM.
         `
     }
 
@@ -5212,12 +4805,12 @@ ${pageHeader(
 
     ${infoRow(
       "IFSC",
-      firstValue(bankDetails.ifsc, bankDetails.ifscCode)
+      bankDetails.ifscCode
     )}
 
     ${infoRow(
       "Branch",
-      firstValue(bankDetails.branch, bankDetails.branchName)
+      bankDetails.branchName
     )}
 
     ${infoRow(
@@ -5280,8 +4873,7 @@ ${pageHeader(
 ${pageFooter(
   companyName,
   "Terms & Conditions",
-  9,
-  company
+  8
 )}
 
 </section>
@@ -5505,8 +5097,7 @@ ${pageHeader(
 ${pageFooter(
   companyName,
   "Customer Experience",
-  10,
-  company
+  9
 )}
 
 </section>
