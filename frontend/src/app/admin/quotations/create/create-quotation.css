@@ -20,7 +20,7 @@
 .admin-create-quotation-back {
   border: 0;
   background: transparent;
-  color: #16803c;
+  color: #2563eb;
   font-size: 14px;
   font-weight: 700;
   padding: 0;
@@ -47,7 +47,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #16803c, #27a957);
+  background: linear-gradient(135deg, #2563eb, #27a957);
   color: #ffffff;
   font-size: 22px;
   font-weight: 800;
@@ -169,7 +169,7 @@
   justify-content: center;
   border-radius: 11px;
   background: #ecfdf3;
-  color: #16803c;
+  color: #2563eb;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.5px;
@@ -334,7 +334,7 @@
 
 .admin-quotation-grand-total {
   padding: 18px 17px !important;
-  background: #16803c;
+  background: #2563eb;
   border-bottom: 0 !important;
 }
 
@@ -401,7 +401,7 @@
 }
 
 .admin-create-quotation-final strong {
-  color: #16803c;
+  color: #2563eb;
   font-size: 22px;
   font-weight: 850;
 }
@@ -780,3 +780,168 @@
     flex: 1;
   }
 }
+
+
+/* ==========================================================
+   PREMIUM NAVY + ELECTRIC BLUE THEME — CREATE QUOTATION
+   Theme-only overrides. Existing layout and responsive rules
+   are preserved.
+   ========================================================== */
+.admin-create-quotation-page,
+.inline-quotation-page {
+  color: #17233b !important;
+}
+.admin-create-quotation-back,
+.inline-q-text-button {
+  color: #2563eb !important;
+}
+.admin-create-quotation-back:hover {
+  color: #1d4ed8 !important;
+}
+.admin-create-quotation-icon {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, .22) !important;
+}
+.admin-create-quotation-title h1,
+.admin-quotation-form-card-header h2 {
+  color: #101b35 !important;
+}
+.admin-quotation-form-card,
+.admin-create-quotation-loading-card {
+  border-color: #e1e7f0 !important;
+  box-shadow: 0 6px 25px rgba(16, 27, 53, .045) !important;
+}
+.admin-quotation-section-number {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+.admin-quotation-item-head {
+  background: #f1f5fb !important;
+  border-bottom-color: #e1e7f0 !important;
+  color: #64748b !important;
+}
+.admin-quotation-item-row {
+  border-bottom-color: #edf1f7 !important;
+}
+.admin-quotation-total-box {
+  border-color: #dbe5f5 !important;
+  background: #f8faff !important;
+}
+.admin-quotation-total-box > div {
+  border-bottom-color: #e5ebf5 !important;
+}
+.admin-quotation-grand-total {
+  background: linear-gradient(100deg, #1d4ed8, #3b82f6) !important;
+}
+.admin-create-quotation-final strong {
+  color: #1d4ed8 !important;
+}
+.inline-q-field {
+  color: #334155 !important;
+}
+.inline-q-field input,
+.inline-q-field select,
+.inline-q-field textarea,
+.inline-q-item-row input,
+.inline-q-item-row select {
+  border-color: #d7e1ef !important;
+  color: #17233b !important;
+}
+.inline-q-field input:focus,
+.inline-q-field select:focus,
+.inline-q-field textarea:focus,
+.inline-q-item-row input:focus,
+.inline-q-item-row select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, .14) !important;
+}
+.inline-q-subpanel {
+  border-color: #d7e4f8 !important;
+  background: #f7faff !important;
+}
+.inline-q-customer-summary {
+  background: #eef4ff !important;
+  color: #475569 !important;
+}
+.inline-q-customer-summary strong {
+  color: #1e40af !important;
+}
+.inline-q-add {
+  border-color: #bfdbfe !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+}
+.admin-create-quotation-actions {
+  border-color: #dfe7f2 !important;
+  box-shadow: 0 -8px 30px rgba(16, 27, 53, .08) !important;
+}
+
+
+
+/* ===== QuickEstimate Premium Navy + Electric Blue theme overrides ===== */
+:root {
+  --qe-navy: #101b35;
+  --qe-navy-deep: #0b1429;
+  --qe-electric-blue: #2563eb;
+  --qe-electric-blue-hover: #1d4ed8;
+  --qe-blue-soft: #eef4ff;
+  --qe-theme-border: #e2e8f0;
+}
+:where(
+  .admin-leads-page, .admin-create-lead-page, .admin-lead-details-page,
+  .admin-dashboard-page, .admin-dashboard, .dashboard-page,
+  .employee-dashboard-page, .employee-dashboard, .admin-page,
+  .employee-page, .content-page
+) {
+  background-color: #f4f7fc;
+}
+:where(
+  .admin-leads-header h1, .admin-create-lead-header h1,
+  .admin-lead-title-line h1, .page-header h1, .page-title,
+  .section-title, .card-title, .dashboard-title
+) {
+  color: var(--qe-navy);
+}
+:where(
+  .admin-lead-stat-card, .admin-leads-filter-card, .admin-leads-table-card,
+  .admin-create-lead-card, .admin-lead-summary-card, .admin-detail-card,
+  .stat-card, .stats-card, .dashboard-card, .content-card, .form-card,
+  .table-card, .panel, .settings-card
+) {
+  border-color: var(--qe-theme-border);
+}
+:where(
+  .admin-lead-stat-icon, .admin-create-lead-section-icon,
+  .admin-lead-avatar, .stat-icon, .card-icon, .section-icon
+) {
+  background-color: var(--qe-blue-soft);
+  color: var(--qe-electric-blue);
+}
+:where(
+  .admin-back-button, .admin-lead-view-btn:hover,
+  .admin-leads-reset-btn:hover, .text-primary, .link-primary
+) {
+  color: var(--qe-electric-blue);
+}
+:where(
+  button.primary, .btn-primary, .button-primary,
+  .admin-primary-btn, .submit-btn, .save-btn, .create-btn,
+  [class*="primaryButton"], [class*="primary-button"]
+) {
+  border-color: var(--qe-electric-blue);
+  background-color: var(--qe-electric-blue);
+  color: #fff;
+}
+:where(
+  button.primary:hover, .btn-primary:hover, .button-primary:hover,
+  .admin-primary-btn:hover, .submit-btn:hover, .save-btn:hover,
+  .create-btn:hover, [class*="primaryButton"]:hover,
+  [class*="primary-button"]:hover
+) {
+  border-color: var(--qe-electric-blue-hover);
+  background-color: var(--qe-electric-blue-hover);
+}
+:where(input, select, textarea, button):focus-visible {
+  outline-color: var(--qe-electric-blue);
+}
+

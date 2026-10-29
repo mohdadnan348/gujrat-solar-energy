@@ -84,8 +84,8 @@ const getQuotationPdfData = async (
     getActiveSettings(),
   ]);
 
-  // Brand defaults are based on the approved EST-00215 proposal.
-  // Values saved in Settings always take priority over these fallbacks.
+  // Company identity fallbacks are used only when Company Settings are not configured.
+  // Stored Company Settings always take priority; quotation-specific data remains dynamic.
   const configuredCompany = settings?.company || {};
   const company = {
     name: "Gujrat Solar Energy",
@@ -175,16 +175,19 @@ const getQuotationPdfData = async (
 
     warrantyTerms:
       quotation.warrantyTerms ||
+      quotation.warrantyDetails ||
       proposalSettings.defaultWarrantyTerms ||
       "",
 
     subsidyTerms:
       quotation.subsidyTerms ||
+      quotation.subsidyDetails ||
       proposalSettings.defaultSubsidyTerms ||
       "",
 
     installationTerms:
       quotation.installationTerms ||
+      quotation.installationSchedule ||
       proposalSettings.defaultInstallationTerms ||
       "",
 
@@ -192,7 +195,7 @@ const getQuotationPdfData = async (
       quotation.quotationValidity ||
       proposalSettings.defaultQuotationValidity ||
       quotationSettings.validityDays ||
-      "",
+      "As mentioned in quotation",
 
     scopeOfWork:
       quotation.scopeOfWork ||
@@ -277,8 +280,8 @@ const getInvoicePdfData = async (
     getActiveSettings(),
   ]);
 
-  // Brand defaults are based on the approved EST-00215 proposal.
-  // Values saved in Settings always take priority over these fallbacks.
+  // Company identity fallbacks are used only when Company Settings are not configured.
+  // Stored Company Settings always take priority; quotation-specific data remains dynamic.
   const configuredCompany = settings?.company || {};
   const company = {
     name: "Gujrat Solar Energy",

@@ -58,7 +58,7 @@ export default function GlobalError({ error, reset }) {
           background:
             radial-gradient(
               circle at 50% 20%,
-              rgba(34, 197, 94, 0.08),
+              rgba(37, 99, 235, 0.08),
               transparent 30%
             ),
             #f8fafc;
@@ -86,7 +86,7 @@ export default function GlobalError({ error, reset }) {
         }
 
         .error-label {
-          color: #16a34a;
+          color: #2563eb;
           font-size: 10px;
           font-weight: 800;
           letter-spacing: 0.12em;
@@ -134,14 +134,14 @@ export default function GlobalError({ error, reset }) {
 
         .retry-btn {
           border: none;
-          background: #16a34a;
+          background: #2563eb;
           color: #ffffff;
-          box-shadow: 0 7px 18px rgba(22, 163, 74, 0.18);
+          box-shadow: 0 7px 18px rgba(37, 99, 235, 0.18);
           cursor: pointer;
         }
 
         .retry-btn:hover {
-          background: #15803d;
+          background: #1d4ed8;
           transform: translateY(-1px);
         }
 
@@ -171,8 +171,8 @@ export default function GlobalError({ error, reset }) {
           width: 7px;
           height: 7px;
           border-radius: 50%;
-          background: #16a34a;
-          box-shadow: 0 0 0 4px #dcfce7;
+          background: #2563eb;
+          box-shadow: 0 0 0 4px #dbeafe;
         }
 
         @media (max-width: 480px) {

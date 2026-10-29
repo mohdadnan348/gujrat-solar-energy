@@ -308,17 +308,116 @@ export default function CreateQuotationPage() {
           installationCost: Number(configuration.installationCost) || 0,
           transportationCost: Number(configuration.transportationCost) || 0,
           otherCost: Number(configuration.otherCost) || 0,
-          components: normalizedItems.map((item) => ({
-            componentType: "OTHER",
-            name: item.name,
-            quantity: item.quantity,
-            unit: item.unit,
-            unitPrice: item.rate,
-            tax: item.taxRate,
-          })),
+          components: [
+            ...(configuration.panelMake || configuration.panelModel || Number(configuration.panelCount) > 0
+              ? [{
+                  componentType: "SOLAR_PANEL",
+                  name: [configuration.panelMake, configuration.panelModel].filter(Boolean).join(" ") || "Solar Panels (PV Modules)",
+                  brand: configuration.panelMake || "",
+                  quantity: Number(configuration.panelCount) || 0,
+                  unit: "Nos",
+                  capacity: Number(configuration.panelWattage) || 0,
+                  specifications: { wattage: Number(configuration.panelWattage) || 0, model: configuration.panelModel || "" },
+                  unitPrice: 0,
+                  tax: 0,
+                }]
+              : []),
+            ...(configuration.inverterMake || configuration.inverterModel || configuration.inverterCapacity
+              ? [{
+                  componentType: "INVERTER",
+                  name: [configuration.inverterMake, configuration.inverterModel].filter(Boolean).join(" ") || "Solar Inverter",
+                  brand: configuration.inverterMake || "",
+                  quantity: 1,
+                  unit: "Nos",
+                  capacity: Number(configuration.inverterCapacity) || 0,
+                  specifications: { capacity: Number(configuration.inverterCapacity) || 0, model: configuration.inverterModel || "" },
+                  unitPrice: 0,
+                  tax: 0,
+                }]
+              : []),
+            ...(configuration.batteryMake || configuration.batteryModel || requirement.batteryRequired === "true"
+              ? [{
+                  componentType: "BATTERY",
+                  name: [configuration.batteryMake, configuration.batteryModel].filter(Boolean).join(" ") || "Solar Battery",
+                  brand: configuration.batteryMake || "",
+                  quantity: requirement.batteryRequired === "true" ? 1 : 0,
+                  unit: "Nos",
+                  specifications: { model: configuration.batteryModel || "" },
+                  unitPrice: 0,
+                  tax: 0,
+                }]
+              : []),
+            ...(configuration.mountingStructure
+              ? [{
+                  componentType: "STRUCTURE",
+                  name: configuration.mountingStructure,
+                  brand: configuration.mountingStructure,
+                  quantity: 1,
+                  unit: "Set",
+                  unitPrice: 0,
+                  tax: 0,
+                }]
+              : []),
+            ...normalizedItems.map((item) => {
+              const text = `${item.name} ${item.description}`.toLowerCase();
+              const componentType = /panel|module|pv/.test(text) ? "SOLAR_PANEL"
+                : /inverter/.test(text) ? "INVERTER"
+                : /battery|batteries/.test(text) ? "BATTERY"
+                : /structure|mounting/.test(text) ? "STRUCTURE"
+                : /cable|earthing|protection|dcdb|acdb|spd|accessor|logger|meter/.test(text) ? "ACCESSORY"
+                : "OTHER";
+              return {
+                componentType,
+                name: item.name,
+                quantity: item.quantity,
+                unit: item.unit,
+                unitPrice: item.rate,
+                tax: item.taxRate,
+              };
+            }),
+          ],
           notes: form.notes,
         },
         items: quotationItems,
+        // BOM contains only configured or explicitly entered components; no quantities/specifications are invented.
+        bom: [
+          ...(Number(configuration.panelCount) > 0 ? [{
+            category: "Solar Panels (PV Modules)",
+            item: "Solar Panels (PV Modules)",
+            description: [configuration.panelModel, configuration.panelWattage ? `${configuration.panelWattage} W` : ""].filter(Boolean).join(" "),
+            qty: Number(configuration.panelCount),
+            unit: "Nos",
+            brand: configuration.panelMake || "",
+            specification: [configuration.panelModel, configuration.panelWattage ? `${configuration.panelWattage} W` : ""].filter(Boolean).join(" "),
+          }] : []),
+          ...(configuration.inverterMake || configuration.inverterModel || configuration.inverterCapacity ? [{
+            category: "Solar String Inverter",
+            item: "Solar String Inverter",
+            description: configuration.inverterModel || "",
+            qty: 1,
+            unit: "Nos",
+            brand: configuration.inverterMake || "",
+            specification: configuration.inverterCapacity ? `${configuration.inverterCapacity} kW` : configuration.inverterModel || "",
+          }] : []),
+          ...(configuration.mountingStructure ? [{
+            category: "Structure",
+            item: "Solar Mounting Structure",
+            description: configuration.mountingStructure,
+            qty: 1,
+            unit: "Set",
+            brand: configuration.mountingStructure,
+            specification: configuration.mountingStructure,
+          }] : []),
+          ...normalizedItems.filter((item) => !/solar pv system/i.test(item.name)).map((item) => ({
+            category: item.category || "Other Accessories",
+            item: item.name,
+            description: item.description || "",
+            qty: Number(item.quantity) || 0,
+            unit: item.unit || "Nos",
+            brand: "",
+            specification: item.description || "",
+          })),
+        ],
         globalDiscount: discountValue,
         paymentTerms: form.paymentTerms || undefined,
         warrantyDetails: form.warranty || undefined,

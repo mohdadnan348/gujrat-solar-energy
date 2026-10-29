@@ -24,7 +24,7 @@
 .attendance-calendar-day.empty{background:#f8fafc;border-color:transparent}
 .attendance-calendar-day strong{font-size:14px}
 .attendance-calendar-day span,.attendance-calendar-day small{font-size:10px;overflow-wrap:anywhere}
-.attendance-calendar-day.status-present{background:#f0fdf4;border-color:#bbf7d0}
+.attendance-calendar-day.status-present{background:#f5f8ff;border-color:#bbf7d0}
 .attendance-calendar-day.status-late{background:#fffbeb;border-color:#fde68a}
 .attendance-calendar-day.status-absent{background:#fff1f2;border-color:#fecdd3}
 .attendance-calendar-day.status-half-day{background:#fff7ed;border-color:#fed7aa}
@@ -40,3 +40,98 @@
 .admin-attendance-employee-link:hover strong{color:#07834f;text-decoration:underline}
 @media(max-width:900px){.attendance-detail-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.attendance-weekly-card{align-items:flex-start;flex-direction:column}.attendance-weekly-values{gap:16px}}
 @media(max-width:560px){.attendance-detail-page{padding:16px}.attendance-detail-top{flex-direction:column}.attendance-period-controls{justify-content:flex-start;flex-wrap:wrap}.attendance-detail-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.attendance-stat-card{padding:13px}.attendance-stat-card strong{font-size:21px}.attendance-calendar-day{min-height:58px;padding:5px}.attendance-calendar-day span,.attendance-calendar-day small{font-size:9px}}
+
+
+/* Monthly salary calculator */
+.attendance-salary-card{background:#fff;border:1px solid #dce8e1;border-radius:15px;padding:22px;margin:18px 0;box-shadow:0 3px 12px #0f172a08}
+.attendance-salary-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:20px}
+.attendance-salary-heading h2{font-size:19px;font-weight:800;color:#12223a;margin:0}
+.attendance-salary-heading p{font-size:13px;color:#718096;margin:7px 0 0}
+.attendance-salary-input{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:800;color:#526174;min-width:220px}
+.attendance-salary-input input{width:100%;box-sizing:border-box;border:1px solid #dbe4e8;border-radius:9px;padding:12px 14px;color:#142033;font-size:16px;font-weight:700;outline:none}
+.attendance-salary-input input:focus{border-color:#07834f;box-shadow:0 0 0 3px #07834f18}
+.attendance-salary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.attendance-salary-grid article{border:1px solid #e2e8f0;border-radius:10px;padding:14px;min-width:0}
+.attendance-salary-grid article span{display:block;color:#718096;font-size:12px;margin-bottom:8px}
+.attendance-salary-grid article strong{display:block;color:#10223b;font-size:18px;font-weight:800;overflow-wrap:anywhere}
+.attendance-salary-grid article strong.salary-deduction{color:#c62828}
+.attendance-salary-payable{margin-top:14px;padding:18px;border-radius:12px;background:#effaf3;border:1px solid #ccebd7;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.attendance-salary-payable span{display:block;font-size:13px;font-weight:800;color:#1e40af}
+.attendance-salary-payable small{display:block;color:#64748b;margin-top:5px}
+.attendance-salary-payable>strong{font-size:26px;font-weight:900;color:#087f4d;text-align:right}
+.attendance-salary-note{font-size:12px;line-height:1.6;color:#64748b;margin:14px 0 0}
+@media(max-width:900px){.attendance-salary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.attendance-salary-heading{align-items:stretch;flex-direction:column}.attendance-salary-input{min-width:0}}
+@media(max-width:560px){.attendance-salary-card{padding:15px}.attendance-salary-grid article{padding:11px}.attendance-salary-grid article strong{font-size:16px}.attendance-salary-payable{align-items:flex-start;flex-direction:column}.attendance-salary-payable>strong{text-align:left;font-size:23px}}
+
+
+
+/* ===== QuickEstimate Premium Navy + Electric Blue theme overrides ===== */
+:root {
+  --qe-navy: #101b35;
+  --qe-navy-deep: #0b1429;
+  --qe-electric-blue: #2563eb;
+  --qe-electric-blue-hover: #1d4ed8;
+  --qe-blue-soft: #eef4ff;
+  --qe-theme-border: #e2e8f0;
+}
+:where(
+  .admin-leads-page, .admin-create-lead-page, .admin-lead-details-page,
+  .admin-dashboard-page, .admin-dashboard, .dashboard-page,
+  .employee-dashboard-page, .employee-dashboard, .admin-page,
+  .employee-page, .content-page
+) {
+  background-color: #f4f7fc;
+}
+
+:where(
+  .admin-leads-header h1, .admin-create-lead-header h1,
+  .admin-lead-title-line h1, .page-header h1, .page-title,
+  .section-title, .card-title, .dashboard-title
+) {
+  color: var(--qe-navy);
+}
+
+:where(
+  .admin-lead-stat-card, .admin-leads-filter-card, .admin-leads-table-card,
+  .admin-create-lead-card, .admin-lead-summary-card, .admin-detail-card,
+  .stat-card, .stats-card, .dashboard-card, .content-card, .form-card,
+  .table-card, .panel, .settings-card
+) {
+  border-color: var(--qe-theme-border);
+}
+
+:where(
+  .admin-lead-stat-icon, .admin-create-lead-section-icon,
+  .admin-lead-avatar, .stat-icon, .card-icon, .section-icon
+) {
+  background-color: var(--qe-blue-soft);
+  color: var(--qe-electric-blue);
+}
+:where(
+  .admin-back-button, .admin-lead-view-btn:hover,
+  .admin-leads-reset-btn:hover, .text-primary, .link-primary
+) {
+  color: var(--qe-electric-blue);
+}
+:where(
+  button.primary, .btn-primary, .button-primary,
+  .admin-primary-btn, .submit-btn, .save-btn, .create-btn,
+  [class*="primaryButton"], [class*="primary-button"]
+) {
+  border-color: var(--qe-electric-blue);
+  background-color: var(--qe-electric-blue);
+  color: #fff;
+}
+:where(
+  button.primary:hover, .btn-primary:hover, .button-primary:hover,
+  .admin-primary-btn:hover, .submit-btn:hover, .save-btn:hover,
+  .create-btn:hover, [class*="primaryButton"]:hover,
+  [class*="primary-button"]:hover
+) {
+  border-color: var(--qe-electric-blue-hover);
+  background-color: var(--qe-electric-blue-hover);
+}
+:where(input, select, textarea, button):focus-visible {
+  outline-color: var(--qe-electric-blue);
+}
+

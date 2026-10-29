@@ -258,10 +258,10 @@ export default function HomePage() {
           background:
             radial-gradient(
               circle at 85% 15%,
-              rgba(34, 197, 94, 0.14),
+              rgba(37, 99, 235, 0.12),
               transparent 28%
             ),
-            linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+            linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
           border-bottom: 1px solid #e2e8f0;
         }
 
@@ -277,13 +277,13 @@ export default function HomePage() {
         .hero-glow-one {
           top: -180px;
           right: -100px;
-          background: rgba(34, 197, 94, 0.12);
+          background: rgba(37, 99, 235, 0.10);
         }
 
         .hero-glow-two {
           bottom: -220px;
           left: -150px;
-          background: rgba(22, 163, 74, 0.08);
+          background: rgba(37, 99, 235, 0.08);
         }
 
         .hero .home-container {
@@ -300,7 +300,7 @@ export default function HomePage() {
           align-items: center;
           gap: 9px;
           margin-bottom: 22px;
-          color: #15803d;
+          color: #1d4ed8;
           font-size: 13px;
           font-weight: 800;
           letter-spacing: 0.04em;
@@ -312,10 +312,10 @@ export default function HomePage() {
           gap: 8px;
           padding: 8px 13px;
           margin-bottom: 20px;
-          border: 1px solid #bbf7d0;
+          border: 1px solid #bfdbfe;
           border-radius: 999px;
           background: rgba(255, 255, 255, 0.8);
-          color: #166534;
+          color: #1e40af;
           font-size: 12px;
           font-weight: 700;
         }
@@ -324,8 +324,8 @@ export default function HomePage() {
           width: 7px;
           height: 7px;
           border-radius: 50%;
-          background: #22c55e;
-          box-shadow: 0 0 0 4px #dcfce7;
+          background: #3b82f6;
+          box-shadow: 0 0 0 4px #dbeafe;
         }
 
         .hero h1 {
@@ -339,7 +339,7 @@ export default function HomePage() {
 
         .hero h1 span {
           display: block;
-          color: #16a34a;
+          color: #2563eb;
         }
 
         .hero p {
@@ -363,18 +363,18 @@ export default function HomePage() {
           gap: 9px;
           padding: 13px 19px;
           border-radius: 10px;
-          background: #16a34a;
+          background: #2563eb;
           color: white;
           font-size: 14px;
           font-weight: 700;
-          box-shadow: 0 8px 20px rgba(22, 163, 74, 0.2);
+          box-shadow: 0 8px 20px rgba(37, 99, 235, 0.20);
           transition:
             transform 0.2s ease,
             background 0.2s ease;
         }
 
         .primary-button:hover {
-          background: #15803d;
+          background: #1d4ed8;
           transform: translateY(-2px);
         }
 
@@ -388,7 +388,7 @@ export default function HomePage() {
         }
 
         .secure-badge svg {
-          color: #16a34a;
+          color: #2563eb;
         }
 
         .dashboard-preview {
@@ -420,8 +420,8 @@ export default function HomePage() {
           display: grid;
           place-items: center;
           border-radius: 9px;
-          background: #dcfce7;
-          color: #16a34a;
+          background: #dbeafe;
+          color: #2563eb;
         }
 
         .preview-brand strong,
@@ -450,7 +450,7 @@ export default function HomePage() {
           display: grid;
           place-items: center;
           border-radius: 50%;
-          background: #16a34a;
+          background: #2563eb;
           color: white;
           font-size: 11px;
           font-weight: 800;
@@ -477,7 +477,7 @@ export default function HomePage() {
         }
 
         .sidebar-line.active {
-          background: #86efac;
+          background: #93c5fd;
         }
 
         .preview-content {
@@ -530,8 +530,8 @@ export default function HomePage() {
           place-items: center;
           margin-bottom: 9px;
           border-radius: 7px;
-          background: #dcfce7;
-          color: #16a34a;
+          background: #dbeafe;
+          color: #2563eb;
         }
 
         .preview-stat-label {
@@ -593,7 +593,7 @@ export default function HomePage() {
           width: 7%;
           min-height: 15px;
           border-radius: 5px 5px 0 0;
-          background: linear-gradient(to top, #16a34a, #86efac);
+          background: linear-gradient(to top, #2563eb, #93c5fd);
         }
 
         .features {
@@ -608,7 +608,7 @@ export default function HomePage() {
         }
 
         .section-heading > span {
-          color: #16a34a;
+          color: #2563eb;
           font-size: 11px;
           font-weight: 800;
           letter-spacing: 0.12em;
@@ -645,7 +645,7 @@ export default function HomePage() {
         }
 
         .feature-card:hover {
-          border-color: #bbf7d0;
+          border-color: #bfdbfe;
           box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07);
           transform: translateY(-4px);
         }
@@ -657,8 +657,8 @@ export default function HomePage() {
           place-items: center;
           margin-bottom: 18px;
           border-radius: 11px;
-          background: #dcfce7;
-          color: #16a34a;
+          background: #dbeafe;
+          color: #2563eb;
         }
 
         .feature-card h3 {
@@ -675,7 +675,7 @@ export default function HomePage() {
 
         .developers-section {
           padding: 78px 0 82px;
-          background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+          background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%);
           border-top: 1px solid #e2e8f0;
         }
 
@@ -686,7 +686,7 @@ export default function HomePage() {
         }
 
         .developers-heading > span {
-          color: #16a34a;
+          color: #2563eb;
           font-size: 11px;
           font-weight: 800;
           letter-spacing: 0.12em;
@@ -736,9 +736,9 @@ export default function HomePage() {
           height: 124px;
           margin-bottom: 17px;
           padding: 4px;
-          border: 1px solid #bbf7d0;
+          border: 1px solid #bfdbfe;
           border-radius: 50%;
-          background: #f0fdf4;
+          background: #eff6ff;
         }
 
         .developer-photo {
@@ -770,7 +770,7 @@ export default function HomePage() {
           margin-top: 20px;
           padding: 0 16px;
           border-radius: 9px;
-          background: #16a34a;
+          background: #2563eb;
           color: #ffffff;
           font-size: 12px;
           font-weight: 750;
@@ -778,7 +778,7 @@ export default function HomePage() {
         }
 
         .developer-contact:hover {
-          background: #15803d;
+          background: #1d4ed8;
           transform: translateY(-1px);
         }
 
@@ -794,11 +794,11 @@ export default function HomePage() {
         }
 
         .developer-company-link strong {
-          color: #15803d;
+          color: #1d4ed8;
         }
 
         .developer-company-link:hover {
-          color: #15803d;
+          color: #1d4ed8;
         }
 
         .home-footer {

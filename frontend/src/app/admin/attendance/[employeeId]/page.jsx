@@ -37,6 +37,7 @@ export default function EmployeeAttendanceDetailPage() {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [monthlySalary, setMonthlySalary] = useState("");
 
   const load = async () => {
     if (!employeeId) return;
@@ -79,6 +80,37 @@ export default function EmployeeAttendanceDetailPage() {
       lateMinutes,
     };
   }, [records]);
+
+  const salarySummary = useMemo(() => {
+    const salary = Math.max(0, Number(monthlySalary) || 0);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    let workingDays = 0;
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      if (new Date(year, month, day).getDay() !== 0) workingDays += 1; // Sunday weekly off
+    }
+
+    const absentDays = records.filter((r) => norm(r.status) === "absent").length;
+    const halfDays = records.filter((r) => ["half day", "half-day", "halfday"].includes(norm(r.status))).length;
+    const leaveDays = records.filter((r) => ["leave", "on leave", "approved leave"].includes(norm(r.status))).length;
+    const presentDays = records.filter((r) => ["present", "late"].includes(norm(r.status))).length;
+    const dailyRate = workingDays > 0 ? salary / workingDays : 0;
+    const absentDeduction = dailyRate * absentDays;
+    const halfDayDeduction = dailyRate * 0.5 * halfDays;
+    const totalDeduction = Math.min(salary, absentDeduction + halfDayDeduction);
+    return {
+      salary,
+      workingDays,
+      presentDays,
+      absentDays,
+      halfDays,
+      leaveDays,
+      dailyRate,
+      absentDeduction,
+      halfDayDeduction,
+      totalDeduction,
+      payable: Math.max(0, salary - totalDeduction),
+    };
+  }, [monthlySalary, records, month, year]);
 
   const weekly = useMemo(() => {
     const today = startOfDay(new Date());
@@ -145,6 +177,42 @@ export default function EmployeeAttendanceDetailPage() {
           ["Late", stats.late], ["Half Day", stats.halfDay], ["On Leave", stats.leave],
           ["Working Hours", `${stats.totalHours} hrs`], ["Late Minutes", stats.lateMinutes],
         ].map(([label, value]) => <article key={label} className="attendance-stat-card"><span>{label}</span><strong>{value}</strong></article>)}
+      </section>
+
+      <section className="attendance-salary-card">
+        <div className="attendance-salary-heading">
+          <div>
+            <h2>Monthly Salary Calculator</h2>
+            <p>{monthNames[month]} {year} · Attendance records ke according estimated salary</p>
+          </div>
+          <label className="attendance-salary-input">
+            Monthly Salary (₹)
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={monthlySalary}
+              onChange={(e) => setMonthlySalary(e.target.value)}
+              placeholder="e.g. 15000"
+              aria-label="Monthly salary in rupees"
+            />
+          </label>
+        </div>
+        <div className="attendance-salary-grid">
+          <article><span>Working Days (Sunday off)</span><strong>{salarySummary.workingDays}</strong></article>
+          <article><span>Present / Late</span><strong>{salarySummary.presentDays}</strong></article>
+          <article><span>Absent Days</span><strong>{salarySummary.absentDays}</strong></article>
+          <article><span>Half Days</span><strong>{salarySummary.halfDays}</strong></article>
+          <article><span>Daily Salary Rate</span><strong>{salarySummary.dailyRate.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 })}</strong></article>
+          <article><span>Absent Deduction</span><strong className="salary-deduction">{salarySummary.absentDeduction.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 })}</strong></article>
+          <article><span>Half-day Deduction</span><strong className="salary-deduction">{salarySummary.halfDayDeduction.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 })}</strong></article>
+          <article><span>Total Deduction</span><strong className="salary-deduction">{salarySummary.totalDeduction.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 })}</strong></article>
+        </div>
+        <div className="attendance-salary-payable">
+          <div><span>Estimated Payable Salary</span><small>Approved leave aur unmarked dates ko absent nahi maana gaya.</small></div>
+          <strong>{salarySummary.payable.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 })}</strong>
+        </div>
+        <p className="attendance-salary-note">Rule: Daily rate = monthly salary ÷ selected month ke working days (Sunday excluded). Absent par 1 din aur Half Day par 0.5 din ki deduction. Late ko full paid day maana hai. Ye estimate hai; salary abhi database mein save nahi hoti.</p>
       </section>
 
       <section className="attendance-weekly-card">

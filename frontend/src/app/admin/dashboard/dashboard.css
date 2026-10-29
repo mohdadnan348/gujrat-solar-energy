@@ -7,7 +7,7 @@
   width: 100%;
   min-height: 100%;
   padding: 24px;
-  background: #f7f9fc;
+  background: #f4f7fc;
   color: #172033;
   box-sizing: border-box;
 }
@@ -59,7 +59,7 @@
   align-items: center;
   justify-content: center;
   min-height: 60vh;
-  background: #f7f9fc;
+  background: #f4f7fc;
 }
 
 /* =========================================================
@@ -645,3 +645,200 @@
     padding: 16px;
   }
 }
+
+
+/* ==========================================================
+   ADMIN DASHBOARD — PREMIUM NAVY + ELECTRIC BLUE THEME
+   Theme overrides only; dashboard data and layout behavior
+   remain unchanged.
+   ========================================================== */
+.admin-dashboard-page {
+  --gse-green: #2563eb;
+  --gse-green-dark: #1d4ed8;
+  --gse-ink: #101b35;
+  --gse-muted: #718096;
+  --gse-border: #e1e7f0;
+  background:
+    radial-gradient(ellipse at 92% 0%, rgba(59, 130, 246, .10), transparent 32%),
+    linear-gradient(180deg, #f8faff 0%, #f2f5fb 100%) !important;
+  color: #17233b !important;
+}
+
+.admin-dashboard-breadcrumb {
+  color: #2563eb !important;
+}
+
+.admin-dashboard-header {
+  border-bottom-color: #e1e7f0 !important;
+}
+
+.admin-dashboard-header h1 {
+  color: #101b35 !important;
+}
+
+.admin-dashboard-header p {
+  color: #718096 !important;
+}
+
+.admin-dashboard-page .admin-dashboard-section,
+.admin-dashboard-page .admin-dashboard-summary-card,
+.admin-dashboard-page .admin-dashboard-chart-card,
+.admin-dashboard-page .admin-dashboard-recent-card,
+.admin-dashboard-page .admin-dashboard-footer-summary > div {
+  border-color: #e1e7f0 !important;
+  background: #ffffff !important;
+  box-shadow: 0 8px 26px rgba(16, 27, 53, .045) !important;
+}
+
+.admin-dashboard-page .admin-dashboard-section:hover,
+.admin-dashboard-page .admin-dashboard-summary-card:hover,
+.admin-dashboard-page .admin-dashboard-chart-card:hover,
+.admin-dashboard-page .admin-dashboard-recent-card:hover {
+  border-color: #cbdaf4 !important;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, .08) !important;
+}
+
+.admin-dashboard-section-header,
+.admin-dashboard-card-header {
+  border-bottom-color: #edf1f8 !important;
+}
+
+.admin-dashboard-section-header h2,
+.admin-dashboard-card-header h2 {
+  color: #172b4d !important;
+}
+
+.admin-dashboard-section-header p,
+.admin-dashboard-card-header p {
+  color: #7b879b !important;
+}
+
+.admin-dashboard-summary-top span {
+  color: #718096 !important;
+}
+
+.admin-dashboard-summary-top strong,
+.admin-dashboard-footer-summary strong {
+  color: #101b35 !important;
+}
+
+.admin-dashboard-summary-icon {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+
+.admin-dashboard-summary-card p {
+  color: #8793a7 !important;
+}
+
+.admin-dashboard-page .gse-stat-grid-item {
+  border-color: #e1e7f0 !important;
+  background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%) !important;
+  box-shadow: 0 5px 18px rgba(16, 27, 53, .045) !important;
+}
+
+.admin-dashboard-page .gse-stat-grid-item:hover {
+  border-color: #bfd3fb !important;
+  box-shadow: 0 12px 26px rgba(37, 99, 235, .10) !important;
+}
+
+.admin-dashboard-page .admin-dashboard-footer-summary {
+  border-color: #d7e4fb !important;
+  background: linear-gradient(120deg, #edf4ff, #f8faff) !important;
+  color: #1e40af !important;
+}
+
+.admin-dashboard-page .admin-dashboard-footer-summary span {
+  color: #64748b !important;
+}
+
+.admin-dashboard-page button:focus-visible,
+.admin-dashboard-page a:focus-visible,
+.admin-dashboard-page select:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, .28) !important;
+  outline-offset: 2px;
+}
+
+.admin-dashboard-page select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, .13) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-dashboard-page *,
+  .admin-dashboard-page *::before,
+  .admin-dashboard-page *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+
+
+/* ===== QuickEstimate Premium Navy + Electric Blue theme overrides ===== */
+:root {
+  --qe-navy: #101b35;
+  --qe-navy-deep: #0b1429;
+  --qe-electric-blue: #2563eb;
+  --qe-electric-blue-hover: #1d4ed8;
+  --qe-blue-soft: #eef4ff;
+  --qe-theme-border: #e2e8f0;
+}
+:where(
+  .admin-leads-page, .admin-create-lead-page, .admin-lead-details-page,
+  .admin-dashboard-page, .admin-dashboard, .dashboard-page,
+  .employee-dashboard-page, .employee-dashboard, .admin-page,
+  .employee-page, .content-page
+) {
+  background-color: #f4f7fc;
+}
+:where(
+  .admin-leads-header h1, .admin-create-lead-header h1,
+  .admin-lead-title-line h1, .page-header h1, .page-title,
+  .section-title, .card-title, .dashboard-title
+) {
+  color: var(--qe-navy);
+}
+:where(
+  .admin-lead-stat-card, .admin-leads-filter-card, .admin-leads-table-card,
+  .admin-create-lead-card, .admin-lead-summary-card, .admin-detail-card,
+  .stat-card, .stats-card, .dashboard-card, .content-card, .form-card,
+  .table-card, .panel, .settings-card
+) {
+  border-color: var(--qe-theme-border);
+}
+:where(
+  .admin-lead-stat-icon, .admin-create-lead-section-icon,
+  .admin-lead-avatar, .stat-icon, .card-icon, .section-icon
+) {
+  background-color: var(--qe-blue-soft);
+  color: var(--qe-electric-blue);
+}
+:where(
+  .admin-back-button, .admin-lead-view-btn:hover,
+  .admin-leads-reset-btn:hover, .text-primary, .link-primary
+) {
+  color: var(--qe-electric-blue);
+}
+:where(
+  button.primary, .btn-primary, .button-primary,
+  .admin-primary-btn, .submit-btn, .save-btn, .create-btn,
+  [class*="primaryButton"], [class*="primary-button"]
+) {
+  border-color: var(--qe-electric-blue);
+  background-color: var(--qe-electric-blue);
+  color: #fff;
+}
+:where(
+  button.primary:hover, .btn-primary:hover, .button-primary:hover,
+  .admin-primary-btn:hover, .submit-btn:hover, .save-btn:hover,
+  .create-btn:hover, [class*="primaryButton"]:hover,
+  [class*="primary-button"]:hover
+) {
+  border-color: var(--qe-electric-blue-hover);
+  background-color: var(--qe-electric-blue-hover);
+}
+:where(input, select, textarea, button):focus-visible {
+  outline-color: var(--qe-electric-blue);
+}
+

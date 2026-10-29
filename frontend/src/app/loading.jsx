@@ -34,7 +34,7 @@ export default function Loading() {
           background:
             radial-gradient(
               circle at 50% 40%,
-              rgba(34, 197, 94, 0.08),
+              rgba(37, 99, 235, 0.08),
               transparent 32%
             ),
             #f8fafc;
@@ -64,8 +64,8 @@ export default function Loading() {
           width: 27px;
           height: 27px;
           border-radius: 50%;
-          background: #16a34a;
-          box-shadow: 0 0 0 7px #dcfce7;
+          background: #2563eb;
+          box-shadow: 0 0 0 7px #dbeafe;
         }
 
         .sun-ray {
@@ -75,7 +75,7 @@ export default function Loading() {
           width: 4px;
           height: 9px;
           border-radius: 999px;
-          background: #22c55e;
+          background: #3b82f6;
           transform-origin: 50% 22px;
         }
 
@@ -131,7 +131,7 @@ export default function Loading() {
           width: 35%;
           height: 100%;
           border-radius: inherit;
-          background: #16a34a;
+          background: #2563eb;
           animation: loading-progress 1.3s ease-in-out infinite;
         }
 

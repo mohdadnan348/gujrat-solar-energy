@@ -10,6 +10,7 @@ import Loader from "@/components/common/Loader";
 import quotationService from "@/services/quotation.service";
 import pdfService from "@/services/pdf.service";
 import systemConfigurationService from "@/services/systemConfiguration.service";
+import solarRequirementService from "@/services/solarRequirement.service";
 
 import "./quotation-details.css";
 
@@ -115,6 +116,81 @@ const normalizeQuotationResponse = (response) => {
     items: Array.isArray(items) ? items : [],
     bom: Array.isArray(bom) ? bom : [],
   };
+};
+
+const extractSolarRequirementRecord = (response) => {
+  if (!response || typeof response !== "object") return null;
+
+  // Prefer the actual Solar Requirement document from common API envelopes:
+  // { success, data: { ...record } } or Axios response.data.data.
+  const candidates = [];
+  const visited = new Set();
+  const walk = (value, depth = 0) => {
+    if (!value || typeof value !== "object" || Array.isArray(value) || depth > 7 || visited.has(value)) return;
+    visited.add(value);
+    candidates.push(value);
+    for (const key of [
+      "solarRequirement",
+      "requirement",
+      "record",
+      "result",
+      "data",
+    ]) {
+      if (value[key] && typeof value[key] === "object") {
+        walk(value[key], depth + 1);
+      }
+    }
+  };
+
+  walk(response);
+
+  const keys = [
+    "batteryCapacity",
+    "batteryRequired",
+    "monthlyUnits",
+    "monthlyBill",
+    "roofType",
+    "roofArea",
+    "sanctionedLoad",
+    "siteSurveyRequired",
+    "siteAddress",
+    "location",
+    "requiredKw",
+    "systemType",
+  ];
+
+  const scored = candidates
+    .map((candidate) => ({
+      candidate,
+      score: keys.reduce(
+        (score, key) =>
+          candidate[key] !== undefined &&
+          candidate[key] !== null &&
+          candidate[key] !== ""
+            ? score + 1
+            : score,
+        0,
+      ),
+    }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  return scored[0]?.candidate || null;
+};
+
+const nestedValue = (object, keys = [], fallback = "") => {
+  const direct = firstValue(object, keys, undefined);
+  if (direct !== undefined) return direct;
+
+  for (const parentKey of ["data", "solarRequirement", "requirement", "record"]) {
+    const parent = object?.[parentKey];
+    if (parent && typeof parent === "object") {
+      const nested = firstValue(parent, keys, undefined);
+      if (nested !== undefined) return nested;
+    }
+  }
+
+  return fallback;
 };
 
 const normalizeConfigurationResponse = (response) => {
@@ -274,6 +350,7 @@ const QuotationDetailsPage = () => {
   const [items, setItems] = useState([]);
   const [bom, setBom] = useState([]);
   const [configuration, setConfiguration] = useState(null);
+  const [solarRequirementRecord, setSolarRequirementRecord] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -303,6 +380,61 @@ const QuotationDetailsPage = () => {
       setQuotation(normalized.quotation);
       setItems(normalized.items);
       setBom(normalized.bom);
+
+      // Fetch the complete Solar Requirement record when the quotation
+      // response contains only its MongoDB reference or a partial object.
+      const requirementRef =
+        normalized.quotation?.solarRequirement;
+      const requirementId = idOf(requirementRef);
+
+      // Keep any fields already populated by the quotation endpoint, but
+      // fetch the full record when key requirement fields (especially
+      // batteryCapacity) are missing.
+      let requirementData =
+        requirementRef && typeof requirementRef === "object"
+          ? { ...requirementRef }
+          : null;
+
+      const hasBatteryCapacity =
+        requirementData?.batteryCapacity !== undefined &&
+        requirementData?.batteryCapacity !== null &&
+        requirementData?.batteryCapacity !== "";
+
+      if (requirementId && !hasBatteryCapacity) {
+        try {
+          const getRequirement =
+            solarRequirementService.getSolarRequirementById ||
+            solarRequirementService.getSolarRequirement ||
+            solarRequirementService.getById;
+
+          if (typeof getRequirement === "function") {
+            const requirementResponse =
+              await getRequirement.call(
+                solarRequirementService,
+                requirementId
+              );
+
+            // API responses can be wrapped at different depths. Choose the
+            // object containing the actual requirement fields, not just a wrapper _id.
+            const fetchedRequirement =
+              extractSolarRequirementRecord(requirementResponse);
+
+            if (fetchedRequirement) {
+              requirementData = {
+                ...(requirementData || {}),
+                ...fetchedRequirement,
+              };
+            }
+          }
+        } catch (requirementError) {
+          console.warn(
+            "Full solar requirement could not be loaded:",
+            requirementError
+          );
+        }
+      }
+
+      setSolarRequirementRecord(requirementData || requirementRef || null);
 
       /*
        * Backend quotation detail only populates a summary of
@@ -361,16 +493,21 @@ const QuotationDetailsPage = () => {
      DERIVED DATA
   ========================================================= */
 
+  // Prefer the populated customer record, but retain the quotation snapshot
+  // as a fallback because older API responses may not populate all fields.
   const customer =
     objectValue(quotation, ["customer"]) ||
     objectValue(quotation, ["customerDetails"]) ||
     null;
+  const customerSnapshot =
+    objectValue(quotation, ["customerDetails"]) || {};
 
   const lead =
     objectValue(quotation, ["lead"]) ||
     null;
 
   const solarRequirement =
+    solarRequirementRecord ||
     objectValue(quotation, ["solarRequirement"]) ||
     null;
 
@@ -398,7 +535,7 @@ const QuotationDetailsPage = () => {
 
   const title = firstValue(
     quotation,
-    ["title", "quotationTitle"],
+    ["title", "quotationTitle", "proposalTitle"],
     "Solar Power System Proposal"
   );
 
@@ -444,7 +581,7 @@ const QuotationDetailsPage = () => {
     firstValue(
       customer,
       ["companyName"],
-      ""
+      firstValue(customerSnapshot, ["companyName", "company"], "")
     ) ||
     firstValue(
       lead,
@@ -461,7 +598,7 @@ const QuotationDetailsPage = () => {
     firstValue(
       customer,
       ["mobile", "phone", "contactNumber"],
-      ""
+      firstValue(customerSnapshot, ["mobile", "phone", "contactNumber"], "")
     ) ||
     firstValue(
       lead,
@@ -478,7 +615,7 @@ const QuotationDetailsPage = () => {
     firstValue(
       customer,
       ["email"],
-      ""
+      firstValue(customerSnapshot, ["email"], "")
     ) ||
     firstValue(
       lead,
@@ -495,7 +632,7 @@ const QuotationDetailsPage = () => {
     firstValue(
       customer,
       ["address", "siteAddress"],
-      ""
+      firstValue(customerSnapshot, ["address", "siteAddress"], "")
     ) ||
     firstValue(
       lead,
@@ -517,11 +654,11 @@ const QuotationDetailsPage = () => {
     firstValue(
       customer,
       ["city", "location"],
-      ""
+      firstValue(customerSnapshot, ["city", "location"], "")
     ) ||
     firstValue(
       solarRequirement,
-      ["location"],
+      ["city", "location"],
       ""
     );
 
@@ -561,30 +698,43 @@ const QuotationDetailsPage = () => {
       "ACCESSORY"
   );
 
-  const panelWattage = numberValue(
+  const panelWattageRaw = firstValue(
+    configuration,
+    ["panelWattage"],
     firstValue(
       panel?.specifications,
-      ["wattage"],
-      firstValue(
-        panel,
-        ["capacity"],
-        0
-      )
+      ["wattage", "panelWattage", "powerWatt"],
+      firstValue(panel, ["wattage", "capacity"], 0)
     )
   );
+  const panelWattage = numberValue(
+    Number(panelWattageRaw) > 0
+      ? panelWattageRaw
+      : (
+          String(firstValue(configuration, ["panelModel"], firstValue(panel, ["model", "name"], ""))).match(/(\d{3,4})\s*w/i)?.[1] || 0
+        )
+  );
 
+  // Prefer the typed panel component quantity over the aggregate count.
+  // This avoids showing a doubled count when old records contain duplicated
+  // component rows, while retaining the saved aggregate as a fallback.
   const panelCount = numberValue(
     firstValue(
-      configuration,
-      ["panelCount"],
-      firstValue(panel, ["quantity"], 0)
+      panel,
+      ["quantity"],
+      firstValue(configuration, ["panelCount"], 0)
     )
   );
 
+  const savedPanelCapacity = numberValue(
+    firstValue(configuration, ["panelCapacity"], 0)
+  );
   const panelCapacity =
-    panelWattage && panelCount
-      ? (panelWattage * panelCount) / 1000
-      : 0;
+    savedPanelCapacity > 0
+      ? savedPanelCapacity
+      : panelWattage && panelCount
+        ? (panelWattage * panelCount) / 1000
+        : 0;
 
   const panelMake =
     firstValue(
@@ -610,23 +760,38 @@ const QuotationDetailsPage = () => {
       ""
     );
 
-  const inverterCapacity = numberValue(
+  const inverterCapacityRaw = firstValue(
+    configuration,
+    ["inverterCapacity"],
     firstValue(
       inverter?.specifications,
-      ["capacity"],
-      firstValue(
-        inverter,
-        ["capacity"],
-        0
-      )
+      ["capacity", "inverterCapacity", "ratedCapacity"],
+      firstValue(inverter, ["capacity", "ratedCapacity"], 0)
     )
   );
+  const inverterModelCapacity = numberValue(
+    String(
+      firstValue(
+        configuration,
+        ["inverterModel"],
+        firstValue(inverter, ["model", "name"], "")
+      )
+    ).match(/(\d+(?:\.\d+)?)\s*kw/i)?.[1] || 0
+  );
+  const parsedInverterCapacity = numberValue(
+    String(inverterCapacityRaw ?? "").toLowerCase().replace(/\s*kw\s*/g, ""),
+    0
+  );
+  const inverterCapacity =
+    parsedInverterCapacity > 0
+      ? parsedInverterCapacity
+      : inverterModelCapacity;
 
   const inverterCount = numberValue(
     firstValue(
-      configuration,
-      ["inverterCount"],
-      firstValue(inverter, ["quantity"], 0)
+      inverter,
+      ["quantity"],
+      firstValue(configuration, ["inverterCount"], 0)
     )
   );
 
@@ -656,33 +821,51 @@ const QuotationDetailsPage = () => {
 
   const batteryCount = numberValue(
     firstValue(
-      configuration,
-      ["batteryCount"],
-      firstValue(battery, ["quantity"], 0)
+      battery,
+      ["quantity"],
+      firstValue(configuration, ["batteryCount"], 0)
     )
   );
 
+  const explicitBatteryRequired = configuration?.batteryRequired;
   const batteryRequired =
-    batteryCount > 0 || Boolean(battery);
+    typeof explicitBatteryRequired === "boolean"
+      ? explicitBatteryRequired
+      : batteryCount > 0 || Boolean(battery);
 
-  const batteryCapacity = numberValue(
+  const configuredBatteryCapacity = numberValue(
+    firstValue(configuration, ["batteryCapacity"], 0)
+  );
+  const componentBatteryCapacity = numberValue(
     firstValue(
       battery,
       ["capacity"],
       firstValue(
         battery?.specifications,
-        ["capacity"],
+        ["capacity", "batteryCapacity"],
         0
       )
     )
   );
+  const batteryCapacity =
+    configuredBatteryCapacity > 0
+      ? configuredBatteryCapacity
+      : componentBatteryCapacity;
 
   const batteryUnit =
     firstValue(
       battery,
       ["capacityUnit"],
-      "KWH"
+      firstValue(configuration, ["batteryCapacityUnit"], "KWH")
     );
+
+  const batteryMake =
+    firstValue(battery, ["brand", "manufacturer"], "") ||
+    firstValue(configuration, ["batteryMake", "batteryBrand"], "");
+
+  const batteryModel =
+    firstValue(battery, ["model", "name"], "") ||
+    firstValue(configuration, ["batteryModel"], "");
 
   const systemType =
     firstValue(
@@ -746,20 +929,60 @@ const QuotationDetailsPage = () => {
       ""
     );
 
-  const cable = accessoryText(
-    accessories,
-    ["cable", "wire"]
-  );
+  const cable =
+    firstValue(configuration, ["cable"], "") ||
+    accessoryText(accessories, ["cable", "wire"]);
 
-  const earthing = accessoryText(
-    accessories,
-    ["earthing", "earth"]
-  );
+  const earthing =
+    firstValue(configuration, ["earthing"], "") ||
+    accessoryText(accessories, ["earthing", "earth"]);
 
-  const protection = accessoryText(
-    accessories,
-    ["protection", "spd", "mc4", "ac db", "dc db"]
-  );
+  const protection =
+    firstValue(configuration, ["protection"], "") ||
+    accessoryText(accessories, ["protection", "spd", "mc4", "ac db", "dc db"]);
+
+  const requirementValue = (keys, fallback = "—") =>
+    firstValue(solarRequirement, keys, firstValue(quotation, keys, fallback));
+
+  const monthlyBill = requirementValue(["monthlyBill", "monthlyElectricityBill"], "");
+  const monthlyUnits = requirementValue(["monthlyUnits", "monthlyConsumption", "monthlyUnitsConsumed"], "");
+  const roofType = requirementValue(["roofType"], "");
+  const roofArea = requirementValue(["roofArea", "roofAreaSqFt", "roofAreaSqft"], "");
+  const sanctionedLoad = requirementValue(["sanctionedLoad", "sanctionedLoadKw"], "");
+  const siteSurvey = requirementValue(["siteSurveyRequired", "surveyRequired"], "");
+  const requirementBatteryRaw = requirementValue(["batteryRequired"], "");
+  const requirementBatteryRequired =
+    requirementBatteryRaw === true ||
+    String(requirementBatteryRaw).toLowerCase() === "true" ||
+    String(requirementBatteryRaw).toLowerCase() === "yes";
+  const requirementAddress = requirementValue(["siteAddress", "installationSiteAddress"], "");
+
+  // Older create flows sometimes saved both configuration components and
+  // quotation items into BOM. Keep the first matching component to avoid
+  // repeated panel/inverter/structure rows on the detail page.
+  const bomIdentity = (row) => {
+    const value = [
+      row?.category,
+      row?.item,
+      row?.componentName,
+      row?.name,
+      row?.description,
+      row?.specification,
+    ].filter(Boolean).join(" ").toLowerCase();
+    if (/panel|pv module|mono perc/.test(value)) return "solar-panel";
+    if (/inverter/.test(value)) return "inverter";
+    if (/mounting structure|structure/.test(value)) return "structure";
+    if (/cable|wire/.test(value)) return "cable";
+    if (/earthing|lightning/.test(value)) return "earthing";
+    if (/protection|spd|mc4|ac db|dc db/.test(value)) return "protection";
+    if (/installation|commissioning/.test(value)) return "installation";
+    if (/transport/.test(value)) return "transport";
+    return value.replace(/[^a-z0-9]/g, "");
+  };
+  const displayBom = bom.filter((row, index, allRows) => {
+    const key = bomIdentity(row);
+    return allRows.findIndex((candidate) => bomIdentity(candidate) === key) === index;
+  });
 
   /* =========================================================
      AMOUNTS
@@ -817,7 +1040,7 @@ const QuotationDetailsPage = () => {
 
   const warranty = firstValue(
     quotation,
-    ["warranty", "warrantyTerms"],
+    ["warranty", "warrantyTerms", "warrantyDetails"],
     ""
   );
 
@@ -1093,6 +1316,8 @@ const handleDownloadPDF = async () => {
                       {[
                         customerAddress,
                         customerCity,
+                        firstValue(customer, ["state"], firstValue(customerSnapshot, ["state"], "")),
+                        firstValue(customer, ["pincode", "postalCode"], firstValue(customerSnapshot, ["pincode", "postalCode"], "")),
                       ]
                         .filter(Boolean)
                         .join(", ") || "—"}
@@ -1156,6 +1381,53 @@ const handleDownloadPDF = async () => {
                     "—"}
                 </strong>
               </div>
+            </div>
+          </section>
+
+          {/* SOLAR REQUIREMENT */}
+
+          <section className="admin-quotation-detail-card">
+            <div className="admin-quotation-detail-card-header">
+              <div>
+                <h2>Solar Requirement</h2>
+                <p>Customer/site requirements saved with this quotation.</p>
+              </div>
+            </div>
+
+            <div className="admin-quotation-system-grid">
+              <div><span>Required Capacity</span><strong>{requirementValue(["requiredKw", "requiredCapacity", "systemCapacity"], systemSize ? `${systemSize} kW` : "—")}{typeof requirementValue(["requiredKw", "requiredCapacity", "systemCapacity"], "") === "number" ? " kW" : ""}</strong></div>
+              <div><span>Monthly Electricity Bill</span><strong>{monthlyBill !== "" ? money(monthlyBill) : "—"}</strong></div>
+              <div><span>Monthly Units</span><strong>{monthlyUnits !== "" ? `${monthlyUnits} units` : "—"}</strong></div>
+              <div><span>Roof Type</span><strong>{roofType ? readable(roofType) : "—"}</strong></div>
+              <div><span>Roof Area</span><strong>{roofArea !== "" ? `${roofArea} sq. ft.` : "—"}</strong></div>
+              <div><span>Sanctioned Load</span><strong>{sanctionedLoad !== "" ? `${sanctionedLoad} kW` : "—"}</strong></div>
+              <div><span>Installation City / Location</span><strong>{requirementValue(["location", "city", "installationCity"], "") || "—"}</strong></div>
+              <div><span>Battery Required</span><strong>{requirementBatteryRaw === "" ? "—" : requirementBatteryRequired ? "Yes" : "No"}</strong></div>
+              <div><span>Battery Capacity</span><strong>{(() => {
+                // Read the saved value from the actual Solar Requirement first.
+                // Keep fallbacks for older quotations/configuration snapshots.
+                const capacity = firstValue(
+                  solarRequirementRecord,
+                  ["batteryCapacity"],
+                  firstValue(
+                    solarRequirement,
+                    ["batteryCapacity"],
+                    firstValue(
+                      solarRequirement?.data,
+                      ["batteryCapacity"],
+                      firstValue(
+                        configuration,
+                        ["batteryCapacity"],
+                        firstValue(quotation, ["batteryCapacity"], "")
+                      )
+                    )
+                  )
+                );
+                const numericCapacity = numberValue(capacity, 0);
+                return numericCapacity > 0 ? `${numericCapacity} kWh` : "—";
+              })()}</strong></div>
+              <div><span>Site Survey Required</span><strong>{siteSurvey === "" ? "—" : (siteSurvey === true || String(siteSurvey).toLowerCase() === "yes" ? "Yes" : siteSurvey === false || String(siteSurvey).toLowerCase() === "no" ? "No" : readable(siteSurvey))}</strong></div>
+              <div><span>Installation Site Address</span><strong>{requirementAddress || customerAddress || "—"}</strong></div>
             </div>
           </section>
 
@@ -1277,6 +1549,16 @@ const handleDownloadPDF = async () => {
                     ? "Yes"
                     : "No"}
                 </strong>
+              </div>
+
+              <div>
+                <span>Battery Brand</span>
+                <strong>{batteryMake || "—"}</strong>
+              </div>
+
+              <div>
+                <span>Battery Model</span>
+                <strong>{batteryModel || "—"}</strong>
               </div>
 
               <div>
@@ -1535,7 +1817,7 @@ const handleDownloadPDF = async () => {
                   </thead>
 
                   <tbody>
-                    {bom.map((row, index) => {
+                    {displayBom.map((row, index) => {
                       const quantity =
                         numberValue(
                           firstValue(
@@ -1549,7 +1831,7 @@ const handleDownloadPDF = async () => {
                         numberValue(
                           firstValue(
                             row,
-                            ["rate", "unitPrice", "price"],
+                            ["rate", "unitPrice", "unitRate", "price", "cost"],
                             0
                           )
                         );
@@ -1562,6 +1844,7 @@ const handleDownloadPDF = async () => {
                               "total",
                               "amount",
                               "totalPrice",
+                              "lineTotal",
                             ],
                             quantity * rate
                           )

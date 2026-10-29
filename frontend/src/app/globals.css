@@ -1,41 +1,22 @@
+/* Premium QuickEstimate theme tokens; page-specific UI is styled by modern-theme.css. */
 :root {
-  --primary: #16a34a;
-  --primary-dark: #15803d;
-  --primary-light: #dcfce7;
-
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #dbeafe;
   --secondary: #0f172a;
-  --accent: #22c55e;
-
-  --background: #f8fafc;
+  --accent: #38bdf8;
+  --background: #f4f7fb;
   --surface: #ffffff;
-  --surface-soft: #f1f5f9;
-
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-
+  --surface-soft: #f8fafc;
+  --text-primary: #172033;
+  --text-secondary: #526079;
+  --text-muted: #8995a8;
   --border: #e2e8f0;
-  --border-light: #f1f5f9;
-
-  --success: #16a34a;
-  --warning: #f59e0b;
-  --danger: #dc2626;
+  --border-light: #edf1f7;
+  --success: #0f9f6e;
+  --warning: #d97706;
+  --danger: #dc3545;
   --info: #2563eb;
-
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
-
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-
-  --container-width: 1440px;
-
-  --font-sans:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
 }
 
 * {
@@ -100,8 +81,8 @@ table {
 }
 
 ::selection {
-  background: var(--primary-light);
-  color: var(--primary-dark);
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 /* Scrollbar */
@@ -125,7 +106,7 @@ table {
 
 /* Focus */
 :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
 
@@ -198,3 +179,73 @@ table {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+
+/* ===== QuickEstimate Premium Navy + Electric Blue theme overrides ===== */
+:root {
+  --qe-navy: #101b35;
+  --qe-navy-deep: #0b1429;
+  --qe-electric-blue: #2563eb;
+  --qe-electric-blue-hover: #1d4ed8;
+  --qe-blue-soft: #eef4ff;
+  --qe-theme-border: #e2e8f0;
+}
+:where(
+  .admin-leads-page, .admin-create-lead-page, .admin-lead-details-page,
+  .admin-dashboard-page, .admin-dashboard, .dashboard-page,
+  .employee-dashboard-page, .employee-dashboard, .admin-page,
+  .employee-page, .content-page
+) {
+  background-color: #f4f7fc;
+}
+:where(
+  .admin-leads-header h1, .admin-create-lead-header h1,
+  .admin-lead-title-line h1, .page-header h1, .page-title,
+  .section-title, .card-title, .dashboard-title
+) {
+  color: var(--qe-navy);
+}
+:where(
+  .admin-lead-stat-card, .admin-leads-filter-card, .admin-leads-table-card,
+  .admin-create-lead-card, .admin-lead-summary-card, .admin-detail-card,
+  .stat-card, .stats-card, .dashboard-card, .content-card, .form-card,
+  .table-card, .panel, .settings-card
+) {
+  border-color: var(--qe-theme-border);
+}
+:where(
+  .admin-lead-stat-icon, .admin-create-lead-section-icon,
+  .admin-lead-avatar, .stat-icon, .card-icon, .section-icon
+) {
+  background-color: var(--qe-blue-soft);
+  color: var(--qe-electric-blue);
+}
+:where(
+  .admin-back-button, .admin-lead-view-btn:hover,
+  .admin-leads-reset-btn:hover, .text-primary, .link-primary
+) {
+  color: var(--qe-electric-blue);
+}
+:where(
+  button.primary, .btn-primary, .button-primary,
+  .admin-primary-btn, .submit-btn, .save-btn, .create-btn,
+  [class*="primaryButton"], [class*="primary-button"]
+) {
+  border-color: var(--qe-electric-blue);
+  background-color: var(--qe-electric-blue);
+  color: #fff;
+}
+:where(
+  button.primary:hover, .btn-primary:hover, .button-primary:hover,
+  .admin-primary-btn:hover, .submit-btn:hover, .save-btn:hover,
+  .create-btn:hover, [class*="primaryButton"]:hover,
+  [class*="primary-button"]:hover
+) {
+  border-color: var(--qe-electric-blue-hover);
+  background-color: var(--qe-electric-blue-hover);
+}
+:where(input, select, textarea, button):focus-visible {
+  outline-color: var(--qe-electric-blue);
+}
+

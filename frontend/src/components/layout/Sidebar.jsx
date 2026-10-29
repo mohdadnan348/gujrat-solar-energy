@@ -57,11 +57,11 @@ const Sidebar = ({
         href: "/admin/attendance",
         icon: "attendance",
       },
-      {
-        label: "Salary / Payroll",
-        href: "/admin/payroll",
-        icon: "reports",
-      },
+      // {
+      //   label: "Salary / Payroll",
+      //   href: "/admin/payroll",
+      //   icon: "reports",
+      // },
       {
         label: "Leaves",
         href: "/admin/leaves",

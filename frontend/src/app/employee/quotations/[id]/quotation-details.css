@@ -23,7 +23,7 @@
   padding: 0;
   margin-bottom: 16px;
   background: transparent;
-  color: #16803c;
+  color: #2563eb;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -49,7 +49,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 15px;
-  background: linear-gradient(135deg, #16803c, #27a957);
+  background: linear-gradient(135deg, #2563eb, #27a957);
   color: #ffffff;
   font-size: 22px;
   font-weight: 800;
@@ -193,12 +193,12 @@
 }
 
 .admin-quotation-summary-total {
-  background: #f4fbf6;
+  background: #f5f8ff;
   border-color: #ccebd5;
 }
 
 .admin-quotation-summary-total strong {
-  color: #16803c;
+  color: #2563eb;
   font-size: 22px;
 }
 
@@ -274,7 +274,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 13px;
-  background: #16803c;
+  background: #2563eb;
   color: #ffffff;
   font-size: 18px;
   font-weight: 800;
@@ -513,7 +513,7 @@
 .admin-quotation-sidebar-total {
   margin: 8px -19px -19px;
   padding: 17px 19px !important;
-  background: #16803c;
+  background: #2563eb;
   border-bottom: 0 !important;
   border-radius: 0 0 16px 16px;
 }
@@ -791,3 +791,73 @@
     width: 100%;
   }
 }
+
+
+
+/* ===== QuickEstimate Premium Navy + Electric Blue theme overrides ===== */
+:root {
+  --qe-navy: #101b35;
+  --qe-navy-deep: #0b1429;
+  --qe-electric-blue: #2563eb;
+  --qe-electric-blue-hover: #1d4ed8;
+  --qe-blue-soft: #eef4ff;
+  --qe-theme-border: #e2e8f0;
+}
+:where(
+  .admin-leads-page, .admin-create-lead-page, .admin-lead-details-page,
+  .admin-dashboard-page, .admin-dashboard, .dashboard-page,
+  .employee-dashboard-page, .employee-dashboard, .admin-page,
+  .employee-page, .content-page
+) {
+  background-color: #f4f7fc;
+}
+:where(
+  .admin-leads-header h1, .admin-create-lead-header h1,
+  .admin-lead-title-line h1, .page-header h1, .page-title,
+  .section-title, .card-title, .dashboard-title
+) {
+  color: var(--qe-navy);
+}
+:where(
+  .admin-lead-stat-card, .admin-leads-filter-card, .admin-leads-table-card,
+  .admin-create-lead-card, .admin-lead-summary-card, .admin-detail-card,
+  .stat-card, .stats-card, .dashboard-card, .content-card, .form-card,
+  .table-card, .panel, .settings-card
+) {
+  border-color: var(--qe-theme-border);
+}
+:where(
+  .admin-lead-stat-icon, .admin-create-lead-section-icon,
+  .admin-lead-avatar, .stat-icon, .card-icon, .section-icon
+) {
+  background-color: var(--qe-blue-soft);
+  color: var(--qe-electric-blue);
+}
+:where(
+  .admin-back-button, .admin-lead-view-btn:hover,
+  .admin-leads-reset-btn:hover, .text-primary, .link-primary
+) {
+  color: var(--qe-electric-blue);
+}
+:where(
+  button.primary, .btn-primary, .button-primary,
+  .admin-primary-btn, .submit-btn, .save-btn, .create-btn,
+  [class*="primaryButton"], [class*="primary-button"]
+) {
+  border-color: var(--qe-electric-blue);
+  background-color: var(--qe-electric-blue);
+  color: #fff;
+}
+:where(
+  button.primary:hover, .btn-primary:hover, .button-primary:hover,
+  .admin-primary-btn:hover, .submit-btn:hover, .save-btn:hover,
+  .create-btn:hover, [class*="primaryButton"]:hover,
+  [class*="primary-button"]:hover
+) {
+  border-color: var(--qe-electric-blue-hover);
+  background-color: var(--qe-electric-blue-hover);
+}
+:where(input, select, textarea, button):focus-visible {
+  outline-color: var(--qe-electric-blue);
+}
+

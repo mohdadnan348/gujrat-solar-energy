@@ -299,9 +299,10 @@ const buildCustomerSnapshot = (
       ? customer.name
       : lead?.customerName,
 
-    company:
+    companyName:
       customer?.companyName ||
-      lead?.companyName,
+      lead?.companyName ||
+      "",
 
     mobile:
       customer?.mobile ||
@@ -331,9 +332,12 @@ const buildCustomerSnapshot = (
       customer?.pincode ||
       lead?.pincode,
 
-    gst:
+    gstNumber:
       customer?.gstNumber ||
-      undefined,
+      customer?.gstin ||
+      lead?.gstNumber ||
+      lead?.gstin ||
+      "",
   };
 };
 
@@ -403,17 +407,46 @@ const createQuotation = async (
     if (data.inlineSystemConfiguration) {
       const configInput = data.inlineSystemConfiguration;
       const sourceComponents = Array.isArray(configInput.components) ? configInput.components : [];
-      const components = sourceComponents.map((component) => ({
-        componentType: ["SOLAR_PANEL", "INVERTER", "BATTERY", "STRUCTURE", "ACCESSORY", "INSTALLATION", "OTHER"].includes(component.componentType) ? component.componentType : "OTHER",
-        name: String(component.name || component.description || "Solar Component"),
-        brand: component.brand || "",
-        model: component.model || "",
-        quantity: Math.max(0, Number(component.quantity || 1)),
-        unit: component.unit || "Unit",
-        unitPrice: Math.max(0, Number(component.unitPrice || component.rate || 0)),
-        totalPrice: Math.max(0, Number(component.quantity || 1)) * Math.max(0, Number(component.unitPrice || component.rate || 0)),
-        tax: Math.max(0, Number(component.tax || component.taxRate || 0)),
-      }));
+      const components = sourceComponents.map((component) => {
+        const name = String(component.name || component.description || "Solar Component");
+        const normalizedName = name.toLowerCase();
+        let componentType = component.componentType;
+
+        // The create-quotation form sends line items as OTHER. Infer their
+        // real type from the item description so counts and technical views
+        // can use the canonical component structure.
+        if (!["SOLAR_PANEL", "INVERTER", "BATTERY", "STRUCTURE", "ACCESSORY", "INSTALLATION", "OTHER"].includes(componentType) || componentType === "OTHER") {
+          if (/solar panel|photovoltaic panel|pv panel/.test(normalizedName)) componentType = "SOLAR_PANEL";
+          else if (/inverter/.test(normalizedName)) componentType = "INVERTER";
+          else if (/battery/.test(normalizedName)) componentType = "BATTERY";
+          else if (/mounting structure|gi structure|aluminium structure|ground mount/.test(normalizedName)) componentType = "STRUCTURE";
+          else if (/installation|commissioning/.test(normalizedName)) componentType = "INSTALLATION";
+          else if (/cable|earthing|protection|accessor/.test(normalizedName)) componentType = "ACCESSORY";
+          else componentType = "OTHER";
+        }
+
+        const quantity = Math.max(0, Number(component.quantity || 1));
+        const unitPrice = Math.max(0, Number(component.unitPrice || component.rate || 0));
+        return {
+          componentType,
+          name,
+          brand: component.brand || (
+            componentType === "SOLAR_PANEL" ? configInput.panelMake :
+            componentType === "INVERTER" ? configInput.inverterMake :
+            componentType === "BATTERY" ? configInput.batteryMake : ""
+          ) || "",
+          model: component.model || (
+            componentType === "SOLAR_PANEL" ? configInput.panelModel :
+            componentType === "INVERTER" ? configInput.inverterModel :
+            componentType === "BATTERY" ? configInput.batteryModel : ""
+          ) || "",
+          quantity,
+          unit: component.unit || "Unit",
+          unitPrice,
+          totalPrice: quantity * unitPrice,
+          tax: Math.max(0, Number(component.tax || component.taxRate || 0)),
+        };
+      });
       const componentSubtotal = components.reduce((sum, component) => sum + component.totalPrice, 0);
       const installationCost = Math.max(0, Number(configInput.installationCost || 0));
       const transportationCost = Math.max(0, Number(configInput.transportationCost || 0));
@@ -429,8 +462,23 @@ const createQuotation = async (
         capacityUnit: configInput.capacityUnit || "KW",
         systemType: configInput.systemType || requirementInput.systemType || "ON_GRID",
         phase: configInput.phase || undefined,
+        panelMake: configInput.panelMake || "",
+        panelModel: configInput.panelModel || "",
+        panelWattage: Math.max(0, Number(configInput.panelWattage || 0)),
+        panelCapacity: Math.round((Math.max(0, Number(configInput.panelCount || 0)) * Math.max(0, Number(configInput.panelWattage || 0)) / 1000) * 100) / 100,
         panelCount: Math.max(0, Number(configInput.panelCount || 0)),
-        inverterCount: components.filter((item) => item.componentType === "INVERTER").reduce((sum, item) => sum + item.quantity, 0),
+        inverterMake: configInput.inverterMake || "",
+        inverterModel: configInput.inverterModel || "",
+        inverterCapacity: String(configInput.inverterCapacity || ""),
+        batteryRequired: Boolean(requirementInput.batteryRequired),
+        batteryCapacity: Math.max(0, Number(configInput.batteryCapacity || requirementInput.batteryCapacity || 0)),
+        mountingStructure: configInput.mountingStructure || "",
+        cable: components.filter((item) => /cable/i.test(item.name)).map((item) => item.name).join(", "),
+        earthing: components.filter((item) => /earthing/i.test(item.name)).map((item) => item.name).join(", "),
+        protection: components.filter((item) => /protection|accessor/i.test(item.name)).map((item) => item.name).join(", "),
+        inverterCount: components.some((item) => item.componentType === "INVERTER")
+          ? components.filter((item) => item.componentType === "INVERTER").reduce((sum, item) => sum + item.quantity, 0)
+          : (configInput.inverterMake || configInput.inverterModel || configInput.inverterCapacity ? 1 : 0),
         batteryCount: components.filter((item) => item.componentType === "BATTERY").reduce((sum, item) => sum + item.quantity, 0),
         components,
         subtotal: componentSubtotal + installationCost + transportationCost + otherCost,
@@ -524,12 +572,16 @@ const createQuotation = async (
     data.proposalContent ||
     activeProposal?._id;
 
-  const customerDetails =
+  const rawCustomerDetails =
     data.customerDetails ||
-    buildCustomerSnapshot(
-      customer,
-      lead
-    );
+    buildCustomerSnapshot(customer, lead);
+
+  // Normalize customer snapshot aliases to the Quotation schema fields.
+  const customerDetails = {
+    ...rawCustomerDetails,
+    companyName: rawCustomerDetails.companyName || rawCustomerDetails.company || "",
+    gstNumber: rawCustomerDetails.gstNumber || rawCustomerDetails.gstin || rawCustomerDetails.gst || "",
+  };
 
   const quotation =
     await Quotation.create({

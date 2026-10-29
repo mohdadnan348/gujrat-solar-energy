@@ -64,7 +64,7 @@
   flex-shrink: 0;
 
   color: #ffffff;
-  background: #16a34a;
+  background: #2563eb;
 
   border-radius: 10px;
 
@@ -81,7 +81,7 @@
 }
 
 .gse-sidebar-brand-text strong {
-  color: #166534;
+  color: #1e40af;
 
   font-size: 14px;
   font-weight: 800;
@@ -138,9 +138,9 @@
   margin: 14px 14px 8px;
   padding: 11px;
 
-  background: #f0fdf4;
+  background: #f5f8ff;
 
-  border: 1px solid #dcfce7;
+  border: 1px solid #eef4ff;
   border-radius: 10px;
 }
 
@@ -154,7 +154,7 @@
 
   flex-shrink: 0;
 
-  color: #166534;
+  color: #1e40af;
   background: #bbf7d0;
 
   border-radius: 50%;
@@ -185,7 +185,7 @@
 .gse-sidebar-user span {
   margin-top: 3px;
 
-  color: #16a34a;
+  color: #2563eb;
 
   font-size: 11px;
   font-weight: 500;
@@ -261,13 +261,13 @@
 }
 
 .gse-sidebar-link:hover {
-  color: #166534;
-  background: #f0fdf4;
+  color: #1e40af;
+  background: #f5f8ff;
 }
 
 .gse-sidebar-link-active {
-  color: #166534;
-  background: #dcfce7;
+  color: #1e40af;
+  background: #eef4ff;
 
   font-weight: 600;
 }
@@ -282,7 +282,7 @@
 
   width: 3px;
 
-  background: #16a34a;
+  background: #2563eb;
 
   border-radius: 0 4px 4px 0;
 }
@@ -366,8 +366,8 @@
 
   flex-shrink: 0;
 
-  color: #16a34a;
-  background: #dcfce7;
+  color: #2563eb;
+  background: #eef4ff;
 
   border-radius: 7px;
 
@@ -731,5 +731,233 @@
 .gse-sidebar .gse-sidebar-link.gse-sidebar-link-active:hover {
   color: #043b28 !important;
   background: #b6efc8 !important;
+}
+
+
+/* ==========================================================
+   QUICKESTIMATE — PREMIUM NAVY + ELECTRIC BLUE THEME
+   Appended overrides: preserves existing layout and behavior.
+   ========================================================== */
+
+:root {
+  --gse-theme-navy: #101b35;
+  --gse-theme-navy-deep: #0a1226;
+  --gse-theme-blue: #2563eb;
+  --gse-theme-blue-bright: #3b82f6;
+  --gse-theme-blue-soft: #dbeafe;
+  --gse-theme-text: #1e293b;
+  --gse-theme-muted: #94a3b8;
+}
+
+.gse-sidebar {
+  color: #dbeafe !important;
+  background: linear-gradient(180deg, #101b35 0%, #132747 55%, #0a1226 100%) !important;
+  border-right: 1px solid rgba(148, 163, 184, 0.16) !important;
+  box-shadow: 8px 0 28px rgba(10, 18, 38, 0.16) !important;
+}
+
+.gse-sidebar-brand,
+.gse-sidebar-footer {
+  border-color: rgba(226, 232, 240, 0.12) !important;
+}
+
+.gse-sidebar-logo-icon {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 5px 16px rgba(37, 99, 235, 0.32) !important;
+}
+
+.gse-sidebar-brand-text strong {
+  color: #ffffff !important;
+}
+
+.gse-sidebar-brand-text small {
+  color: #9fb4d4 !important;
+}
+
+.gse-sidebar-close {
+  color: #cbd5e1 !important;
+}
+
+.gse-sidebar-close:hover {
+  color: #ffffff !important;
+  background: rgba(148, 163, 184, 0.15) !important;
+}
+
+.gse-sidebar-profile {
+  background: rgba(59, 130, 246, 0.11) !important;
+  border: 1px solid rgba(147, 197, 253, 0.18) !important;
+  border-radius: 14px !important;
+}
+
+.gse-sidebar-avatar {
+  color: #1d4ed8 !important;
+  background: #dbeafe !important;
+}
+
+.gse-sidebar-user strong {
+  color: #f8fafc !important;
+}
+
+.gse-sidebar-user span {
+  color: #93c5fd !important;
+}
+
+.gse-sidebar-section-title {
+  color: #8ea5c8 !important;
+  letter-spacing: 0.12em !important;
+}
+
+.gse-sidebar-nav {
+  scrollbar-color: rgba(147, 197, 253, 0.32) transparent !important;
+}
+
+.gse-sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(147, 197, 253, 0.32) !important;
+}
+
+.gse-sidebar-link {
+  color: #c0cee3 !important;
+  border-radius: 10px !important;
+  font-weight: 550 !important;
+  transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease !important;
+}
+
+.gse-sidebar-link:hover {
+  color: #ffffff !important;
+  background: rgba(96, 165, 250, 0.14) !important;
+}
+
+.gse-sidebar .gse-sidebar-link.gse-sidebar-link-active,
+.gse-sidebar .gse-sidebar-link.active,
+.gse-sidebar .gse-sidebar-link[aria-current="page"] {
+  color: #ffffff !important;
+  background: linear-gradient(100deg, #2563eb 0%, #3b82f6 100%) !important;
+  box-shadow: 0 5px 16px rgba(37, 99, 235, 0.28) !important;
+  font-weight: 750 !important;
+  opacity: 1 !important;
+}
+
+.gse-sidebar .gse-sidebar-link.gse-sidebar-link-active::before {
+  background: #bfdbfe !important;
+}
+
+.gse-sidebar .gse-sidebar-link.gse-sidebar-link-active .gse-sidebar-link-label,
+.gse-sidebar .gse-sidebar-link.gse-sidebar-link-active .gse-sidebar-link-icon,
+.gse-sidebar .gse-sidebar-link.gse-sidebar-link-active .gse-sidebar-link-icon svg,
+.gse-sidebar .gse-sidebar-link.gse-sidebar-link-active .gse-sidebar-link-icon svg * {
+  color: #ffffff !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.gse-sidebar .gse-sidebar-link.gse-sidebar-link-active:hover {
+  color: #ffffff !important;
+  background: linear-gradient(100deg, #1d4ed8 0%, #2563eb 100%) !important;
+}
+
+.gse-sidebar-footer-card {
+  background: rgba(255, 255, 255, 0.055) !important;
+  border-color: rgba(226, 232, 240, 0.1) !important;
+}
+
+.gse-sidebar-footer-sun {
+  color: #bfdbfe !important;
+  background: rgba(59, 130, 246, 0.2) !important;
+}
+
+.gse-sidebar-footer-card strong {
+  color: #e2e8f0 !important;
+}
+
+.gse-sidebar-footer-card small {
+  color: #94a3b8 !important;
+}
+
+.gse-sidebar-collapsed .gse-sidebar-link-active::before {
+  background: #bfdbfe !important;
+}
+
+@media (max-width: 768px) {
+  .gse-sidebar {
+    box-shadow: 16px 0 38px rgba(2, 6, 23, 0.32) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gse-sidebar,
+  .gse-sidebar-link {
+    transition: none !important;
+  }
+}
+
+
+
+/* ===== QuickEstimate Premium Navy + Electric Blue theme overrides ===== */
+:root {
+  --qe-navy: #101b35;
+  --qe-navy-deep: #0b1429;
+  --qe-electric-blue: #2563eb;
+  --qe-electric-blue-hover: #1d4ed8;
+  --qe-blue-soft: #eef4ff;
+  --qe-theme-border: #e2e8f0;
+}
+:where(
+  .admin-leads-page, .admin-create-lead-page, .admin-lead-details-page,
+  .admin-dashboard-page, .admin-dashboard, .dashboard-page,
+  .employee-dashboard-page, .employee-dashboard, .admin-page,
+  .employee-page, .content-page
+) {
+  background-color: #f4f7fc;
+}
+:where(
+  .admin-leads-header h1, .admin-create-lead-header h1,
+  .admin-lead-title-line h1, .page-header h1, .page-title,
+  .section-title, .card-title, .dashboard-title
+) {
+  color: var(--qe-navy);
+}
+:where(
+  .admin-lead-stat-card, .admin-leads-filter-card, .admin-leads-table-card,
+  .admin-create-lead-card, .admin-lead-summary-card, .admin-detail-card,
+  .stat-card, .stats-card, .dashboard-card, .content-card, .form-card,
+  .table-card, .panel, .settings-card
+) {
+  border-color: var(--qe-theme-border);
+}
+:where(
+  .admin-lead-stat-icon, .admin-create-lead-section-icon,
+  .admin-lead-avatar, .stat-icon, .card-icon, .section-icon
+) {
+  background-color: var(--qe-blue-soft);
+  color: var(--qe-electric-blue);
+}
+:where(
+  .admin-back-button, .admin-lead-view-btn:hover,
+  .admin-leads-reset-btn:hover, .text-primary, .link-primary
+) {
+  color: var(--qe-electric-blue);
+}
+:where(
+  button.primary, .btn-primary, .button-primary,
+  .admin-primary-btn, .submit-btn, .save-btn, .create-btn,
+  [class*="primaryButton"], [class*="primary-button"]
+) {
+  border-color: var(--qe-electric-blue);
+  background-color: var(--qe-electric-blue);
+  color: #fff;
+}
+:where(
+  button.primary:hover, .btn-primary:hover, .button-primary:hover,
+  .admin-primary-btn:hover, .submit-btn:hover, .save-btn:hover,
+  .create-btn:hover, [class*="primaryButton"]:hover,
+  [class*="primary-button"]:hover
+) {
+  border-color: var(--qe-electric-blue-hover);
+  background-color: var(--qe-electric-blue-hover);
+}
+:where(input, select, textarea, button):focus-visible {
+  outline-color: var(--qe-electric-blue);
 }
 
