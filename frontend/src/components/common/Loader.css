@@ -1,223 +1,39 @@
-.gse-loader {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-
-  color: #2563eb;
-}
-
-/* =========================
-   Spinner
-========================= */
-
-.gse-loader-spinner {
-  position: relative;
-
+.loader-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-
-  flex-shrink: 0;
+  padding: 40px;
+  width: 100%;
 }
 
-.gse-loader-spinner::before {
-  content: "";
+.loader-container.full-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+  background-color: rgba(255, 255, 255, 0.9);
+  z-index: 9999;
+}
 
-  position: absolute;
-  inset: 0;
-
-  border: 2px solid #eef4ff;
-  border-top-color: #2563eb;
-
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e0e0;
+  border-top: 4px solid #1e2a5e; /* Navy Blue */
   border-radius: 50%;
-
-  animation: gse-loader-spin 0.8s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
-.gse-loader-spinner span {
-  display: none;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* =========================
-   Sizes
-========================= */
-
-.gse-loader-small .gse-loader-spinner {
-  width: 22px;
-  height: 22px;
-}
-
-.gse-loader-medium .gse-loader-spinner {
-  width: 30px;
-  height: 30px;
-}
-
-.gse-loader-large .gse-loader-spinner {
-  width: 42px;
-  height: 42px;
-}
-
-/* =========================
-   Text
-========================= */
-
-.gse-loader-text {
-  color: #4b5563;
-
+.loader-text {
+  margin-top: 15px;
+  color: #666;
   font-size: 14px;
   font-weight: 500;
-  line-height: 1.4;
 }
-
-.gse-loader-small .gse-loader-text {
-  font-size: 12px;
-}
-
-.gse-loader-large .gse-loader-text {
-  font-size: 15px;
-}
-
-/* =========================
-   Full Screen
-========================= */
-
-.gse-loader-fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-
-  min-height: 100vh;
-
-  display: flex;
-  flex-direction: column;
-
-  background: #ffffff;
-}
-
-/* =========================
-   Overlay
-========================= */
-
-.gse-loader-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-
-  display: flex;
-  flex-direction: column;
-
-  background: rgba(255, 255, 255, 0.78);
-
-  backdrop-filter: blur(2px);
-}
-
-/* =========================
-   Spin Animation
-========================= */
-
-@keyframes gse-loader-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* =========================
-   Accessibility
-========================= */
-
-@media (prefers-reduced-motion: reduce) {
-  .gse-loader-spinner::before {
-    animation-duration: 1.5s;
-  }
-}
-
-/* =========================
-   Responsive
-========================= */
-
-@media (max-width: 640px) {
-  .gse-loader-medium .gse-loader-spinner {
-    width: 28px;
-    height: 28px;
-  }
-
-  .gse-loader-large .gse-loader-spinner {
-    width: 38px;
-    height: 38px;
-  }
-}
-
-
-
-/* ===== QuickEstimate Premium Navy + Electric Blue theme overrides ===== */
-:root {
-  --qe-navy: #101b35;
-  --qe-navy-deep: #0b1429;
-  --qe-electric-blue: #2563eb;
-  --qe-electric-blue-hover: #1d4ed8;
-  --qe-blue-soft: #eef4ff;
-  --qe-theme-border: #e2e8f0;
-}
-:where(
-  .admin-leads-page, .admin-create-lead-page, .admin-lead-details-page,
-  .admin-dashboard-page, .admin-dashboard, .dashboard-page,
-  .employee-dashboard-page, .employee-dashboard, .admin-page,
-  .employee-page, .content-page
-) {
-  background-color: #f4f7fc;
-}
-:where(
-  .admin-leads-header h1, .admin-create-lead-header h1,
-  .admin-lead-title-line h1, .page-header h1, .page-title,
-  .section-title, .card-title, .dashboard-title
-) {
-  color: var(--qe-navy);
-}
-:where(
-  .admin-lead-stat-card, .admin-leads-filter-card, .admin-leads-table-card,
-  .admin-create-lead-card, .admin-lead-summary-card, .admin-detail-card,
-  .stat-card, .stats-card, .dashboard-card, .content-card, .form-card,
-  .table-card, .panel, .settings-card
-) {
-  border-color: var(--qe-theme-border);
-}
-:where(
-  .admin-lead-stat-icon, .admin-create-lead-section-icon,
-  .admin-lead-avatar, .stat-icon, .card-icon, .section-icon
-) {
-  background-color: var(--qe-blue-soft);
-  color: var(--qe-electric-blue);
-}
-:where(
-  .admin-back-button, .admin-lead-view-btn:hover,
-  .admin-leads-reset-btn:hover, .text-primary, .link-primary
-) {
-  color: var(--qe-electric-blue);
-}
-:where(
-  button.primary, .btn-primary, .button-primary,
-  .admin-primary-btn, .submit-btn, .save-btn, .create-btn,
-  [class*="primaryButton"], [class*="primary-button"]
-) {
-  border-color: var(--qe-electric-blue);
-  background-color: var(--qe-electric-blue);
-  color: #fff;
-}
-:where(
-  button.primary:hover, .btn-primary:hover, .button-primary:hover,
-  .admin-primary-btn:hover, .submit-btn:hover, .save-btn:hover,
-  .create-btn:hover, [class*="primaryButton"]:hover,
-  [class*="primary-button"]:hover
-) {
-  border-color: var(--qe-electric-blue-hover);
-  background-color: var(--qe-electric-blue-hover);
-}
-:where(input, select, textarea, button):focus-visible {
-  outline-color: var(--qe-electric-blue);
-}
-

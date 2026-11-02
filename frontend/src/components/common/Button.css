@@ -1,331 +1,77 @@
-.gse-button {
-  --button-primary: #2563eb;
-  --button-primary-hover: #1d4ed8;
-  --button-danger: #dc2626;
-  --button-danger-hover: #b91c1c;
-  --button-warning: #d97706;
-  --button-warning-hover: #b45309;
-  --button-success: #2563eb;
-
+.btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-
-  border: 1px solid transparent;
-  border-radius: 9px;
-
-  font-family: inherit;
+  border-radius: 8px;
   font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  text-decoration: none;
-
   cursor: pointer;
-  user-select: none;
-
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.15s ease;
-
-  outline: none;
+  transition: all 0.3s ease;
+  border: none;
+  font-family: inherit;
 }
 
-.gse-button:focus-visible {
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+/* Sizes */
+.btn-sm { padding: 8px 16px; font-size: 13px; }
+.btn-md { padding: 12px 24px; font-size: 14px; }
+.btn-lg { padding: 15px 30px; font-size: 16px; }
+
+.btn-full { width: 100%; }
+
+/* Variants */
+.btn-primary {
+  background-color: #1e2a5e;
+  color: white;
+  box-shadow: 0 4px 10px rgba(30, 42, 94, 0.2);
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: #2a3a7a;
+  transform: translateY(-1px);
 }
 
-.gse-button:active:not(:disabled) {
-  transform: translateY(1px);
+.btn-secondary {
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: #e0e0e0;
 }
 
-.gse-button:disabled {
+.btn-danger {
+  background-color: #e74c3c;
+  color: white;
+}
+.btn-danger:hover:not(:disabled) {
+  background-color: #c0392b;
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: #1e2a5e;
+  border: 2px solid #1e2a5e;
+}
+.btn-outline:hover:not(:disabled) {
+  background-color: #1e2a5e;
+  color: white;
+}
+
+/* Loading & Disabled */
+.btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
 
-/* =========================
-   Sizes
-========================= */
-
-.gse-button-small {
-  min-height: 34px;
-  padding: 0 12px;
-  font-size: 13px;
-}
-
-.gse-button-medium {
-  min-height: 40px;
-  padding: 0 16px;
-  font-size: 14px;
-}
-
-.gse-button-large {
-  min-height: 46px;
-  padding: 0 20px;
-  font-size: 15px;
-}
-
-/* =========================
-   Primary
-========================= */
-
-.gse-button-primary {
-  color: #ffffff;
-  background: var(--button-primary);
-  border-color: var(--button-primary);
-}
-
-.gse-button-primary:hover:not(:disabled) {
-  background: var(--button-primary-hover);
-  border-color: var(--button-primary-hover);
-  box-shadow: 0 5px 14px rgba(22, 163, 74, 0.2);
-}
-
-/* =========================
-   Secondary
-========================= */
-
-.gse-button-secondary {
-  color: #1f2937;
-  background: #f3f4f6;
-  border-color: #e5e7eb;
-}
-
-.gse-button-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
-  border-color: #d1d5db;
-}
-
-/* =========================
-   Success
-========================= */
-
-.gse-button-success {
-  color: #ffffff;
-  background: var(--button-success);
-  border-color: var(--button-success);
-}
-
-.gse-button-success:hover:not(:disabled) {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
-  box-shadow: 0 5px 14px rgba(22, 163, 74, 0.2);
-}
-
-/* =========================
-   Danger
-========================= */
-
-.gse-button-danger {
-  color: #ffffff;
-  background: var(--button-danger);
-  border-color: var(--button-danger);
-}
-
-.gse-button-danger:hover:not(:disabled) {
-  background: var(--button-danger-hover);
-  border-color: var(--button-danger-hover);
-  box-shadow: 0 5px 14px rgba(220, 38, 38, 0.18);
-}
-
-/* =========================
-   Warning
-========================= */
-
-.gse-button-warning {
-  color: #ffffff;
-  background: var(--button-warning);
-  border-color: var(--button-warning);
-}
-
-.gse-button-warning:hover:not(:disabled) {
-  background: var(--button-warning-hover);
-  border-color: var(--button-warning-hover);
-}
-
-/* =========================
-   Outline
-========================= */
-
-.gse-button-outline {
-  color: var(--button-primary);
-  background: #ffffff;
-  border-color: #bbf7d0;
-}
-
-.gse-button-outline:hover:not(:disabled) {
-  color: #1d4ed8;
-  background: #f5f8ff;
-  border-color: #86efac;
-}
-
-/* =========================
-   Ghost
-========================= */
-
-.gse-button-ghost {
-  color: #374151;
-  background: transparent;
-  border-color: transparent;
-}
-
-.gse-button-ghost:hover:not(:disabled) {
-  color: #1d4ed8;
-  background: #f5f8ff;
-}
-
-/* =========================
-   Icon
-========================= */
-
-.gse-button-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 18px;
-  height: 18px;
-
-  flex-shrink: 0;
-}
-
-.gse-button-small .gse-button-icon {
+.btn-spinner {
   width: 16px;
   height: 16px;
-}
-
-.gse-button-large .gse-button-icon {
-  width: 20px;
-  height: 20px;
-}
-
-.gse-button-text {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* =========================
-   Full Width
-========================= */
-
-.gse-button-full {
-  width: 100%;
-}
-
-/* =========================
-   Loading
-========================= */
-
-.gse-button-loading {
-  pointer-events: none;
-}
-
-.gse-button-spinner {
-  width: 15px;
-  height: 15px;
-
-  border: 2px solid currentColor;
-  border-right-color: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
   border-radius: 50%;
-
-  animation: gse-button-spin 0.7s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
-@keyframes gse-button-spin {
-  to {
-    transform: rotate(360deg);
-  }
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
-
-/* =========================
-   Responsive
-========================= */
-
-@media (max-width: 640px) {
-  .gse-button-large {
-    min-height: 44px;
-    padding: 0 16px;
-    font-size: 14px;
-  }
-
-  .gse-button-medium {
-    min-height: 38px;
-    padding: 0 14px;
-  }
-}
-
-
-
-/* ===== QuickEstimate Premium Navy + Electric Blue theme overrides ===== */
-:root {
-  --qe-navy: #101b35;
-  --qe-navy-deep: #0b1429;
-  --qe-electric-blue: #2563eb;
-  --qe-electric-blue-hover: #1d4ed8;
-  --qe-blue-soft: #eef4ff;
-  --qe-theme-border: #e2e8f0;
-}
-:where(
-  .admin-leads-page, .admin-create-lead-page, .admin-lead-details-page,
-  .admin-dashboard-page, .admin-dashboard, .dashboard-page,
-  .employee-dashboard-page, .employee-dashboard, .admin-page,
-  .employee-page, .content-page
-) {
-  background-color: #f4f7fc;
-}
-:where(
-  .admin-leads-header h1, .admin-create-lead-header h1,
-  .admin-lead-title-line h1, .page-header h1, .page-title,
-  .section-title, .card-title, .dashboard-title
-) {
-  color: var(--qe-navy);
-}
-:where(
-  .admin-lead-stat-card, .admin-leads-filter-card, .admin-leads-table-card,
-  .admin-create-lead-card, .admin-lead-summary-card, .admin-detail-card,
-  .stat-card, .stats-card, .dashboard-card, .content-card, .form-card,
-  .table-card, .panel, .settings-card
-) {
-  border-color: var(--qe-theme-border);
-}
-:where(
-  .admin-lead-stat-icon, .admin-create-lead-section-icon,
-  .admin-lead-avatar, .stat-icon, .card-icon, .section-icon
-) {
-  background-color: var(--qe-blue-soft);
-  color: var(--qe-electric-blue);
-}
-:where(
-  .admin-back-button, .admin-lead-view-btn:hover,
-  .admin-leads-reset-btn:hover, .text-primary, .link-primary
-) {
-  color: var(--qe-electric-blue);
-}
-:where(
-  button.primary, .btn-primary, .button-primary,
-  .admin-primary-btn, .submit-btn, .save-btn, .create-btn,
-  [class*="primaryButton"], [class*="primary-button"]
-) {
-  border-color: var(--qe-electric-blue);
-  background-color: var(--qe-electric-blue);
-  color: #fff;
-}
-:where(
-  button.primary:hover, .btn-primary:hover, .button-primary:hover,
-  .admin-primary-btn:hover, .submit-btn:hover, .save-btn:hover,
-  .create-btn:hover, [class*="primaryButton"]:hover,
-  [class*="primary-button"]:hover
-) {
-  border-color: var(--qe-electric-blue-hover);
-  background-color: var(--qe-electric-blue-hover);
-}
-:where(input, select, textarea, button):focus-visible {
-  outline-color: var(--qe-electric-blue);
-}
-

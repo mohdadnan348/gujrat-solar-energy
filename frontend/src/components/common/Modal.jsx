@@ -1,123 +1,40 @@
-"use client";
+import { useEffect } from 'react';
+import { FiX } from 'react-icons/fi';
+import './Modal.css';
 
-import React, { useEffect } from "react";
-import "./Modal.css";
-
-const Modal = ({
-  isOpen = false,
-  onClose,
-  title = "",
-  children,
-  size = "medium",
-  showCloseButton = true,
-  closeOnOverlayClick = true,
-  closeOnEsc = true,
-  footer = null,
-  className = "",
-}) => {
+const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
+  // Modal khula ho toh background scroll band kar do
   useEffect(() => {
-    if (!isOpen || !closeOnEsc) return;
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        onClose?.();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, closeOnEsc, onClose]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
+      document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
 
-  if (!isOpen) {
-    return null;
-  }
-
-  const modalClasses = [
-    "gse-modal",
-    `gse-modal-${size}`,
-    className,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  const handleOverlayClick = (event) => {
-    if (
-      closeOnOverlayClick &&
-      event.target === event.currentTarget
-    ) {
-      onClose?.();
-    }
-  };
+  if (!isOpen) return null;
 
   return (
-    <div
-      className="gse-modal-overlay"
-      onMouseDown={handleOverlayClick}
-      role="presentation"
-    >
-      <div
-        className={modalClasses}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={title ? "gse-modal-title" : undefined}
+    <div className="modal-overlay" onClick={onClose}>
+      <div 
+        className={`modal-container modal-${size}`} 
+        onClick={(e) => e.stopPropagation()} // Clicking inside modal shouldn't close it
       >
-        {(title || showCloseButton) && (
-          <div className="gse-modal-header">
-            {title && (
-              <h2 id="gse-modal-title" className="gse-modal-title">
-                {title}
-              </h2>
-            )}
-
-            {showCloseButton && (
-              <button
-                type="button"
-                className="gse-modal-close"
-                onClick={onClose}
-                aria-label="Close modal"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M6 6L18 18M18 6L6 18"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </button>
-            )}
-          </div>
-        )}
-
-        <div className="gse-modal-body">
-          {children}
+        {/* Header */}
+        <div className="modal-header">
+          <h3 className="modal-title">{title}</h3>
+          <button className="modal-close-btn" onClick={onClose}>
+            <FiX />
+          </button>
         </div>
 
-        {footer && (
-          <div className="gse-modal-footer">
-            {footer}
-          </div>
-        )}
+        {/* Body */}
+        <div className="modal-body">
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -1,270 +1,66 @@
-.gse-select-wrapper {
+.select-container {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-}
-
-.gse-select-full {
+  gap: 6px;
+  margin-bottom: 15px;
   width: 100%;
 }
 
-/* =========================
-   Label
-========================= */
-
-.gse-select-label {
-  display: block;
-  margin: 0;
-
-  color: #1f2937;
-  font-size: 14px;
+.select-label {
+  font-size: 13px;
   font-weight: 600;
-  line-height: 1.4;
+  color: #444;
 }
 
-.gse-select-required {
-  margin-left: 3px;
-  color: #dc2626;
-}
-
-/* =========================
-   Select Container
-========================= */
-
-.gse-select-container {
+.select-wrapper {
   position: relative;
-  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fff;
+  transition: all 0.3s ease;
 }
 
-/* =========================
-   Select Field
-========================= */
+.select-wrapper:focus-within {
+  border-color: #1e2a5e;
+  box-shadow: 0 0 0 3px rgba(30, 42, 94, 0.1);
+}
 
-.gse-select-field {
+.select-wrapper.has-error {
+  border-color: #e74c3c;
+}
+
+.select-field {
   width: 100%;
-
-  border: 1px solid #d1d5db;
-  border-radius: 9px;
-
-  outline: none;
-  background-color: #ffffff;
-  color: #111827;
-
-  font-family: inherit;
+  padding: 12px 15px;
+  border: none;
+  background: transparent;
   font-size: 14px;
-  font-weight: 400;
-
-  cursor: pointer;
-
-  appearance: none;
+  color: #333;
+  outline: none;
+  appearance: none; /* Default browser arrow hatane ke liye */
   -webkit-appearance: none;
-
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    background-color 0.2s ease;
+  -moz-appearance: none;
+  cursor: pointer;
+  border-radius: 8px;
 }
 
-.gse-select-field:hover:not(:disabled) {
-  border-color: #9ca3af;
-}
-
-.gse-select-field:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
-}
-
-.gse-select-field:disabled {
-  background-color: #f3f4f6;
-  color: #9ca3af;
+.select-field:disabled {
+  background-color: #f9f9f9;
   cursor: not-allowed;
 }
 
-.gse-select-placeholder {
-  color: #9ca3af;
-}
-
-/* =========================
-   Sizes
-========================= */
-
-.gse-select-small {
-  min-height: 36px;
-  padding: 0 38px 0 11px;
-  font-size: 13px;
-}
-
-.gse-select-medium {
-  min-height: 42px;
-  padding: 0 42px 0 13px;
-  font-size: 14px;
-}
-
-.gse-select-large {
-  min-height: 48px;
-  padding: 0 44px 0 15px;
-  font-size: 15px;
-}
-
-/* =========================
-   Dropdown Arrow
-========================= */
-
-.gse-select-arrow {
+.select-arrow {
   position: absolute;
+  right: 15px;
   top: 50%;
-  right: 12px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 20px;
-  height: 20px;
-
-  color: #6b7280;
-
-  pointer-events: none;
   transform: translateY(-50%);
-
-  transition: color 0.2s ease;
+  font-size: 10px;
+  color: #999;
+  pointer-events: none;
 }
 
-.gse-select-container:focus-within .gse-select-arrow {
-  color: #2563eb;
-}
-
-/* =========================
-   Error State
-========================= */
-
-.gse-select-field.gse-select-error {
-  border-color: #dc2626;
-}
-
-.gse-select-field.gse-select-error:focus {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
-}
-
-.gse-select-container:has(.gse-select-error) .gse-select-arrow {
-  color: #dc2626;
-}
-
-/* =========================
-   Messages
-========================= */
-
-.gse-select-message {
-  margin: 0;
-
-  color: #6b7280;
+.select-error-text {
   font-size: 12px;
-  line-height: 1.4;
+  color: #e74c3c;
+  font-weight: 500;
 }
-
-.gse-select-error-message {
-  color: #dc2626;
-}
-
-/* =========================
-   Option Styling
-========================= */
-
-.gse-select-field option {
-  color: #111827;
-  background: #ffffff;
-}
-
-.gse-select-field option:disabled {
-  color: #9ca3af;
-}
-
-/* =========================
-   Responsive
-========================= */
-
-@media (max-width: 640px) {
-  .gse-select-medium {
-    min-height: 40px;
-  }
-
-  .gse-select-large {
-    min-height: 44px;
-    font-size: 14px;
-  }
-
-  .gse-select-label {
-    font-size: 13px;
-  }
-}
-
-
-
-/* ===== QuickEstimate Premium Navy + Electric Blue theme overrides ===== */
-:root {
-  --qe-navy: #101b35;
-  --qe-navy-deep: #0b1429;
-  --qe-electric-blue: #2563eb;
-  --qe-electric-blue-hover: #1d4ed8;
-  --qe-blue-soft: #eef4ff;
-  --qe-theme-border: #e2e8f0;
-}
-:where(
-  .admin-leads-page, .admin-create-lead-page, .admin-lead-details-page,
-  .admin-dashboard-page, .admin-dashboard, .dashboard-page,
-  .employee-dashboard-page, .employee-dashboard, .admin-page,
-  .employee-page, .content-page
-) {
-  background-color: #f4f7fc;
-}
-:where(
-  .admin-leads-header h1, .admin-create-lead-header h1,
-  .admin-lead-title-line h1, .page-header h1, .page-title,
-  .section-title, .card-title, .dashboard-title
-) {
-  color: var(--qe-navy);
-}
-:where(
-  .admin-lead-stat-card, .admin-leads-filter-card, .admin-leads-table-card,
-  .admin-create-lead-card, .admin-lead-summary-card, .admin-detail-card,
-  .stat-card, .stats-card, .dashboard-card, .content-card, .form-card,
-  .table-card, .panel, .settings-card
-) {
-  border-color: var(--qe-theme-border);
-}
-:where(
-  .admin-lead-stat-icon, .admin-create-lead-section-icon,
-  .admin-lead-avatar, .stat-icon, .card-icon, .section-icon
-) {
-  background-color: var(--qe-blue-soft);
-  color: var(--qe-electric-blue);
-}
-:where(
-  .admin-back-button, .admin-lead-view-btn:hover,
-  .admin-leads-reset-btn:hover, .text-primary, .link-primary
-) {
-  color: var(--qe-electric-blue);
-}
-:where(
-  button.primary, .btn-primary, .button-primary,
-  .admin-primary-btn, .submit-btn, .save-btn, .create-btn,
-  [class*="primaryButton"], [class*="primary-button"]
-) {
-  border-color: var(--qe-electric-blue);
-  background-color: var(--qe-electric-blue);
-  color: #fff;
-}
-:where(
-  button.primary:hover, .btn-primary:hover, .button-primary:hover,
-  .admin-primary-btn:hover, .submit-btn:hover, .save-btn:hover,
-  .create-btn:hover, [class*="primaryButton"]:hover,
-  [class*="primary-button"]:hover
-) {
-  border-color: var(--qe-electric-blue-hover);
-  background-color: var(--qe-electric-blue-hover);
-}
-:where(input, select, textarea, button):focus-visible {
-  outline-color: var(--qe-electric-blue);
-}
-

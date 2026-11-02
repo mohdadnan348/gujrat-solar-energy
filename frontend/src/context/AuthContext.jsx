@@ -1,212 +1,61 @@
-"use client";
+import { createContext, useState, useEffect, useContext } from 'react';
+import authService from '../services/authService';
 
-import { createContext, useCallback, useEffect, useMemo, useState } from "react";
-import api from "@/lib/axios";
+const AuthContext = createContext();
 
-const AuthContext = createContext(null);
+const extractUser = (response) => {
+  const payload = response?.data ?? response;
+  // Support both { data: { user, token } } and { data: user } login responses.
+  return payload?.user || payload?.employee || payload?.data?.user || payload?.data || payload || null;
+};
 
-const TOKEN_KEY = "gse_access_token";
-const USER_KEY = "gse_user";
-const EMPLOYEE_KEY = "gse_employee";
-
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const isAuthenticated = Boolean(user);
-
-  const saveAuth = useCallback((userData, employeeData, token) => {
-    if (userData) {
-      setUser(userData);
-      localStorage.setItem(USER_KEY, JSON.stringify(userData));
-    }
-
-    if (employeeData) {
-      setEmployee(employeeData);
-      localStorage.setItem(EMPLOYEE_KEY, JSON.stringify(employeeData));
-    } else {
-      setEmployee(null);
-      localStorage.removeItem(EMPLOYEE_KEY);
-    }
-
-    if (token) {
-      localStorage.setItem(TOKEN_KEY, token);
-    }
-  }, []);
-
-  const clearAuth = useCallback(() => {
-    setUser(null);
-    setEmployee(null);
-
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    localStorage.removeItem(EMPLOYEE_KEY);
-  }, []);
-
- const login = useCallback(
-  async ({ email, password }) => {
-    try {
-      const response = await api.post("/auth/login", {
-        email,
-        password,
-      });
-
-      const responseData =
-        response?.data?.data || response?.data || {};
-
-      const token = responseData?.token;
-      const userData = responseData?.user;
-      const employeeData = responseData?.employee || null;
-
-      if (!token || !userData) {
-        throw new Error("Invalid login response");
-      }
-
-      saveAuth(userData, employeeData, token);
-
-      return {
-        success: true,
-        user: userData,
-        employee: employeeData,
-        token,
-        data: responseData,
-      };
-    } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "Login failed";
-
-      const normalizedError = new Error(message);
-      normalizedError.response = error?.response;
-
-      throw normalizedError;
-    }
-  },
-  [saveAuth]
-);
-
-  const fetchCurrentUser = useCallback(async () => {
-    try {
-      const token = localStorage.getItem(TOKEN_KEY);
-
-      if (!token) {
-        clearAuth();
-        return null;
-      }
-
-      const response = await api.get("/auth/me");
-
-      const responseData = response.data?.data || response.data;
-
-      const userData = responseData?.user;
-      const employeeData = responseData?.employee || null;
-
-      if (!userData) {
-        clearAuth();
-        return null;
-      }
-
-      setUser(userData);
-      localStorage.setItem(USER_KEY, JSON.stringify(userData));
-
-      if (employeeData) {
-        setEmployee(employeeData);
-        localStorage.setItem(
-          EMPLOYEE_KEY,
-          JSON.stringify(employeeData)
-        );
-      } else {
-        setEmployee(null);
-        localStorage.removeItem(EMPLOYEE_KEY);
-      }
-
-      return {
-        user: userData,
-        employee: employeeData,
-      };
-    } catch (error) {
-      clearAuth();
-      return null;
-    }
-  }, [clearAuth]);
-
-  const logout = useCallback(async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch (error) {
-      // Logout should still clear local authentication data
-    } finally {
-      clearAuth();
-    }
-  }, [clearAuth]);
-
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const token = localStorage.getItem(TOKEN_KEY);
+    try {
+      const currentUser = authService.getCurrentUser();
+      setUser(extractUser(currentUser));
+    } catch (error) {
+      console.error('Unable to restore logged-in user', error);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-        if (!token) {
-          setLoading(false);
-          return;
-        }
+  const login = async (email, password) => {
+    const response = await authService.login(email, password);
+    const loggedInUser = extractUser(response);
+    setUser(loggedInUser);
 
-        const storedUser = localStorage.getItem(USER_KEY);
-        const storedEmployee = localStorage.getItem(EMPLOYEE_KEY);
+    // Keep the user object available after refresh if authService did not
+    // already persist it itself.
+    if (loggedInUser && !localStorage.getItem('user')) {
+      localStorage.setItem('user', JSON.stringify(loggedInUser));
+    }
+    return response;
+  };
 
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
-        }
-
-        if (storedEmployee) {
-          setEmployee(JSON.parse(storedEmployee));
-        }
-
-        await fetchCurrentUser();
-      } catch (error) {
-        clearAuth();
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
-  }, [fetchCurrentUser, clearAuth]);
-
-  const value = useMemo(
-    () => ({
-      user,
-      employee,
-      loading,
-      isAuthenticated,
-
-      login,
-      logout,
-      fetchCurrentUser,
-
-      token:
-        typeof window !== "undefined"
-          ? localStorage.getItem(TOKEN_KEY)
-          : null,
-    }),
-    [
-      user,
-      employee,
-      loading,
-      isAuthenticated,
-      login,
-      logout,
-      fetchCurrentUser,
-    ]
-  );
+  const logout = () => {
+    try {
+      authService.logout();
+    } finally {
+      // Ensure the client session is cleared even if the service only clears
+      // one of these keys or its cleanup throws.
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
+      setUser(null);
+    }
+  };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export default AuthContext;
+export const useAuth = () => useContext(AuthContext);
